@@ -16,6 +16,24 @@ import {
   insertChatMessageSchema
 } from "@shared/schema";
 
+// Importações para o Stripe e Supabase
+import { 
+  stripe, 
+  STRIPE_PRICE_IDS, 
+  getOrCreateStripeCustomer, 
+  createCheckoutSession,
+  getSubscriptionDetails,
+  cancelSubscription,
+  updateUserSubscriptionTier,
+  MESSAGE_LIMITS
+} from './stripe';
+import { 
+  supabase, 
+  checkSubscriptionStatus, 
+  incrementMessageCount, 
+  checkMessageLimit 
+} from './supabase';
+
 const UPLOADS_DIR = path.join(process.cwd(), "uploads");
 
 // Create uploads directory if it doesn't exist
