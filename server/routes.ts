@@ -450,6 +450,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(newAvatar);
   });
   
+  // Dashboard stats (admin)
+  app.get("/api/admin/stats", isAuthenticated, checkRole("admin"), async (req, res) => {
+    const allUsers = await storage.getUsers();
+    
+    // Calculate dashboard stats
+    const stats = {
+      userCount: allUsers.length,
+      technicianCount: allUsers.filter(user => user.role === "technician").length,
+      adminCount: allUsers.filter(user => user.role === "admin").length,
+      activeUsers: allUsers.filter(user => !user.is_blocked).length,
+      blockedUsers: allUsers.filter(user => user.is_blocked).length,
+      totalChatSessions: 0, // Será implementado em versão futura
+      activeChatSessions: 0, // Será implementado em versão futura
+      messageCount: 0, // Será implementado em versão futura
+      averageResponseTime: 0, // Será implementado em versão futura
+    };
+    
+    res.json(stats);
+  });
+
+  // Audit logs (admin)
+  app.get("/api/admin/logs", isAuthenticated, checkRole("admin"), async (req, res) => {
+    const logs = await storage.getAuditLogs();
+    res.json(logs);
+  });
+  
   // User management (admin)
   app.get("/api/admin/users", isAuthenticated, checkRole("admin"), async (req, res) => {
     // Get all users (in a real DB you'd want pagination)
