@@ -15,6 +15,11 @@ export const users = pgTable("users", {
   last_login: timestamp("last_login"),
   twofa_secret: text("twofa_secret"),
   twofa_enabled: boolean("twofa_enabled").notNull().default(false),
+  stripe_customer_id: text("stripe_customer_id"),
+  stripe_subscription_id: text("stripe_subscription_id"),
+  subscription_tier: text("subscription_tier", { enum: ["none", "basic", "intermediate"] }).notNull().default("none"),
+  message_count: integer("message_count").notNull().default(0),
+  max_messages: integer("max_messages").notNull().default(0),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
