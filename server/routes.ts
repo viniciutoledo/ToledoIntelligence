@@ -453,7 +453,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // User management (admin)
   app.get("/api/admin/users", isAuthenticated, checkRole("admin"), async (req, res) => {
     // Get all users (in a real DB you'd want pagination)
-    const allUsers = Array.from(Object.values(await storage.getUsers()));
+    const allUsers = await storage.getUsers();
     
     // Filter out sensitive information
     const safeUsers = allUsers.map(user => {
