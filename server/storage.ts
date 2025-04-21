@@ -445,4 +445,292 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+import { db, pool } from './db';
+import connectPg from "connect-pg-simple";
+import { eq, and, isNull, lt } from 'drizzle-orm';
+import { usersSessions } from '@shared/schema';
+
+const PostgresSessionStore = connectPg(session);
+
+export class DatabaseStorage implements IStorage {
+  sessionStore: session.Store;
+
+  constructor() {
+    this.sessionStore = new PostgresSessionStore({ 
+      pool,
+      createTableIfMissing: true 
+    });
+  }
+
+  // User management
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const [user] = await db.insert(users).values(insertUser).returning();
+    return user;
+  }
+
+  async updateUser(id: number, data: Partial<User>): Promise<User | undefined> {
+    const [updatedUser] = await db
+      .update(users)
+      .set({ ...data, updated_at: new Date() })
+      .where(eq(users.id, id))
+      .returning();
+    return updatedUser;
+  }
+
+  async blockUser(id: number): Promise<User | undefined> {
+    return this.updateUser(id, { is_blocked: true });
+  }
+
+  async unblockUser(id: number): Promise<User | undefined> {
+    return this.updateUser(id, { is_blocked: false });
+  }
+  
+  // LLM configuration
+  async getLlmConfig(id: number): Promise<LlmConfig | undefined> {
+    const [config] = await db.select().from(llmConfigs).where(eq(llmConfigs.id, id));
+    return config;
+  }
+
+  async getActiveLlmConfig(): Promise<LlmConfig | undefined> {
+    const [config] = await db.select().from(llmConfigs).where(eq(llmConfigs.is_active, true));
+    return config;
+  }
+
+  async createLlmConfig(config: InsertLlmConfig): Promise<LlmConfig> {
+    // Primeiro, defina todos os configs como não-ativos
+    await db.update(llmConfigs).set({ is_active: false });
+    
+    // Crie o novo config já como ativo
+    const [newConfig] = await db
+      .insert(llmConfigs)
+      .values({ ...config, is_active: true })
+      .returning();
+    
+    return newConfig;
+  }
+
+  async updateLlmConfig(id: number, data: Partial<LlmConfig>): Promise<LlmConfig | undefined> {
+    const [updatedConfig] = await db
+      .update(llmConfigs)
+      .set({ ...data, updated_at: new Date() })
+      .where(eq(llmConfigs.id, id))
+      .returning();
+    
+    return updatedConfig;
+  }
+
+  async setActiveLlmConfig(id: number): Promise<LlmConfig | undefined> {
+    // Primeiro, defina todos os configs como não-ativos
+    await db.update(llmConfigs).set({ is_active: false });
+    
+    // Agora, defina o config especificado como ativo
+    const [activatedConfig] = await db
+      .update(llmConfigs)
+      .set({ is_active: true, updated_at: new Date() })
+      .where(eq(llmConfigs.id, id))
+      .returning();
+    
+    return activatedConfig;
+  }
+  
+  // Avatar management
+  async getAvatar(id: number): Promise<Avatar | undefined> {
+    const [avatar] = await db.select().from(avatars).where(eq(avatars.id, id));
+    return avatar;
+  }
+
+  async getActiveAvatar(): Promise<Avatar | undefined> {
+    const [avatar] = await db.select().from(avatars).where(eq(avatars.is_active, true));
+    return avatar;
+  }
+
+  async createAvatar(avatar: InsertAvatar): Promise<Avatar> {
+    const [newAvatar] = await db
+      .insert(avatars)
+      .values(avatar)
+      .returning();
+    
+    return newAvatar;
+  }
+
+  async updateAvatar(id: number, data: Partial<Avatar>): Promise<Avatar | undefined> {
+    const [updatedAvatar] = await db
+      .update(avatars)
+      .set({ ...data, updated_at: new Date() })
+      .where(eq(avatars.id, id))
+      .returning();
+    
+    return updatedAvatar;
+  }
+
+  async setActiveAvatar(id: number): Promise<Avatar | undefined> {
+    // Primeiro, defina todos os avatares como não-ativos
+    await db.update(avatars).set({ is_active: false });
+    
+    // Agora, defina o avatar especificado como ativo
+    const [activatedAvatar] = await db
+      .update(avatars)
+      .set({ is_active: true, updated_at: new Date() })
+      .where(eq(avatars.id, id))
+      .returning();
+    
+    return activatedAvatar;
+  }
+  
+  // Chat sessions
+  async getChatSession(id: number): Promise<ChatSession | undefined> {
+    const [session] = await db.select().from(chatSessions).where(eq(chatSessions.id, id));
+    return session;
+  }
+
+  async getUserChatSessions(userId: number): Promise<ChatSession[]> {
+    return db.select().from(chatSessions).where(eq(chatSessions.user_id, userId));
+  }
+
+  async createChatSession(session: InsertChatSession): Promise<ChatSession> {
+    const [newSession] = await db
+      .insert(chatSessions)
+      .values(session)
+      .returning();
+    
+    return newSession;
+  }
+
+  async endChatSession(id: number): Promise<ChatSession | undefined> {
+    const [endedSession] = await db
+      .update(chatSessions)
+      .set({ ended_at: new Date() })
+      .where(eq(chatSessions.id, id))
+      .returning();
+    
+    return endedSession;
+  }
+  
+  // Chat messages
+  async getChatMessage(id: number): Promise<ChatMessage | undefined> {
+    const [message] = await db.select().from(chatMessages).where(eq(chatMessages.id, id));
+    return message;
+  }
+
+  async getSessionMessages(sessionId: number): Promise<ChatMessage[]> {
+    return db.select().from(chatMessages).where(eq(chatMessages.session_id, sessionId));
+  }
+
+  async createChatMessage(message: InsertChatMessage): Promise<ChatMessage> {
+    const [newMessage] = await db
+      .insert(chatMessages)
+      .values(message)
+      .returning();
+    
+    return newMessage;
+  }
+  
+  // Audit logs
+  async createAuditLog(log: InsertAuditLog): Promise<AuditLog> {
+    const [newLog] = await db
+      .insert(auditLogs)
+      .values(log)
+      .returning();
+    
+    return newLog;
+  }
+
+  async getAuditLogs(userId?: number): Promise<AuditLog[]> {
+    if (userId) {
+      return db.select().from(auditLogs).where(eq(auditLogs.user_id, userId));
+    }
+    return db.select().from(auditLogs);
+  }
+  
+  // OTP management
+  async createOtpToken(token: InsertOtpToken): Promise<OtpToken> {
+    const [newToken] = await db
+      .insert(otpTokens)
+      .values(token)
+      .returning();
+    
+    return newToken;
+  }
+
+  async getOtpToken(token: string, userId: number): Promise<OtpToken | undefined> {
+    const [otpToken] = await db
+      .select()
+      .from(otpTokens)
+      .where(
+        and(
+          eq(otpTokens.token, token),
+          eq(otpTokens.user_id, userId),
+          eq(otpTokens.used, false)
+        )
+      );
+    
+    return otpToken;
+  }
+
+  async markOtpTokenUsed(id: number): Promise<OtpToken | undefined> {
+    const [updatedToken] = await db
+      .update(otpTokens)
+      .set({ used: true })
+      .where(eq(otpTokens.id, id))
+      .returning();
+    
+    return updatedToken;
+  }
+
+  async deleteExpiredOtpTokens(): Promise<void> {
+    const now = new Date();
+    await db
+      .delete(otpTokens)
+      .where(
+        and(
+          eq(otpTokens.used, false),
+          // Deleta tokens que expiraram
+          lt(otpTokens.expires_at, now)
+        )
+      );
+  }
+  
+  // User sessions
+  async getUserActiveSession(userId: number): Promise<{ sessionId: string } | undefined> {
+    const [userSession] = await db
+      .select({ sessionId: usersSessions.session_id })
+      .from(usersSessions)
+      .where(eq(usersSessions.user_id, userId));
+    
+    return userSession ? { sessionId: userSession.sessionId } : undefined;
+  }
+
+  async setUserActiveSession(userId: number, sessionId: string): Promise<void> {
+    // Remove qualquer sessão existente
+    await db
+      .delete(usersSessions)
+      .where(eq(usersSessions.user_id, userId));
+    
+    // Adiciona nova sessão
+    await db
+      .insert(usersSessions)
+      .values({
+        user_id: userId,
+        session_id: sessionId
+      });
+  }
+
+  async removeUserActiveSession(userId: number): Promise<void> {
+    await db
+      .delete(usersSessions)
+      .where(eq(usersSessions.user_id, userId));
+  }
+}
+
+// Use DatabaseStorage em vez de MemStorage
+export const storage = new DatabaseStorage();

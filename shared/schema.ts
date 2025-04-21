@@ -119,6 +119,14 @@ export const sessions = pgTable("sessions", {
   data: json("data"),
 });
 
+// User active sessions table
+export const usersSessions = pgTable("users_sessions", {
+  id: serial("id").primaryKey(),
+  user_id: integer("user_id").notNull().references(() => users.id),
+  session_id: varchar("session_id", { length: 255 }).notNull(),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Two-factor authentication tokens
 export const otpTokens = pgTable("otp_tokens", {
   id: serial("id").primaryKey(),
@@ -153,6 +161,8 @@ export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
 
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
+
+export type UserSession = typeof usersSessions.$inferSelect;
 
 export type OtpToken = typeof otpTokens.$inferSelect;
 export type InsertOtpToken = z.infer<typeof insertOtpTokenSchema>;
