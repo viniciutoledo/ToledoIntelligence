@@ -118,6 +118,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(safeUser);
   });
   
+  // Informações de assinatura do usuário
+  app.get("/api/user/subscription", isAuthenticated, async (req, res) => {
+    try {
+      // Verificar no Supabase os detalhes de assinatura
+      const subscriptionStatus = await checkSubscriptionStatus(req.user!.id.toString());
+      
+      // Se o usuário tem uma assinatura ativa, buscar mais detalhes no Stripe
+      if (subscriptionStatus.active && subscriptionStatus.tier !== 'none') {
+        // Consultar o usuário no Supabase para obter o ID da assinatura no Stripe
+        const { data: userData, error } = await supabase
+          .from('users')
+          .select('stripe_subscription_id')
+          .eq('id', req.user!.id.toString())
+          .single();
+        
+        if (error || !userData?.stripe_subscription_id) {
+          // Se não conseguir encontrar detalhes, apenas retornar o status básico
+          return res.json(subscriptionStatus);
+        }
+        
+        // Buscar detalhes adicionais no Stripe
+        const subscriptionDetails = await getSubscriptionDetails(userData.stripe_subscription_id);
+        
+        if (subscriptionDetails) {
+          return res.json({
+            ...subscriptionStatus,
+            details: subscriptionDetails
+          });
+        }
+      }
+      
+      // Caso não tenha detalhes adicionais, retornar apenas o status básico
+      return res.json(subscriptionStatus);
+    } catch (error) {
+      console.error('Erro ao buscar informações de assinatura:', error);
+      res.status(500).json({ 
+        message: 'Erro ao buscar informações de assinatura',
+        tier: 'none',
+        messageCount: 0,
+        maxMessages: 0,
+        active: false
+      });
+    }
+  });
+  
   app.post("/api/user/language", isAuthenticated, async (req, res) => {
     const schema = z.object({
       language: z.enum(["pt", "en"])
@@ -445,6 +490,164 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Return safe user
     const { password, twofa_secret, ...safeUser } = unblockedUser!;
     res.json(safeUser);
+  });
+  
+  // Rotas de assinatura
+  
+  // Endpoint para criar uma sessão de checkout do Stripe
+  app.post("/api/subscription/checkout", isAuthenticated, async (req, res) => {
+    try {
+      const schema = z.object({
+        plan: z.enum(["basic", "intermediate"])
+      });
+      
+      const { plan } = schema.parse(req.body);
+      
+      // Obter o preço do plano selecionado
+      const priceId = plan === "basic"
+        ? STRIPE_PRICE_IDS.BASIC
+        : STRIPE_PRICE_IDS.INTERMEDIATE;
+      
+      // Obter ou criar o cliente no Stripe
+      const stripeCustomerId = await getOrCreateStripeCustomer(
+        req.user!.id.toString(),
+        req.user!.email
+      );
+      
+      // Criar a sessão de checkout
+      const checkoutUrl = await createCheckoutSession(
+        stripeCustomerId,
+        priceId,
+        req.user!.id.toString()
+      );
+      
+      // Log da ação
+      await logAction({
+        userId: req.user!.id,
+        action: "subscription_checkout_started",
+        details: { plan },
+        ipAddress: req.ip
+      });
+      
+      res.json({ checkoutUrl });
+    } catch (error) {
+      console.error('Erro ao criar sessão de checkout:', error);
+      res.status(500).json({
+        message: 'Erro ao criar sessão de checkout',
+        error: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
+    }
+  });
+  
+  // Endpoint para processar o sucesso do checkout
+  app.get("/api/subscription/success", isAuthenticated, async (req, res) => {
+    try {
+      const sessionId = req.query.session_id as string;
+      
+      if (!sessionId) {
+        return res.status(400).json({ message: 'ID da sessão não fornecido' });
+      }
+      
+      // Obter a sessão do Stripe
+      const session = await stripe.checkout.sessions.retrieve(sessionId, {
+        expand: ['subscription']
+      });
+      
+      if (!session) {
+        return res.status(404).json({ message: 'Sessão não encontrada' });
+      }
+      
+      // Verificar se o usuário da sessão corresponde ao usuário autenticado
+      if (session.metadata?.userId !== req.user!.id.toString()) {
+        return res.status(403).json({ message: 'Acesso não autorizado a esta sessão' });
+      }
+      
+      // Obter a assinatura
+      const subscription = session.subscription as Stripe.Subscription;
+      
+      if (!subscription) {
+        return res.status(400).json({ message: 'Assinatura não encontrada na sessão' });
+      }
+      
+      // Determinar o plano com base no preço
+      const priceId = subscription.items.data[0].price.id;
+      const tier = priceId === STRIPE_PRICE_IDS.BASIC ? 'basic' : 'intermediate';
+      
+      // Atualizar o plano do usuário no banco de dados
+      await updateUserSubscriptionTier(
+        req.user!.id.toString(),
+        tier,
+        subscription.id
+      );
+      
+      // Log da ação
+      await logAction({
+        userId: req.user!.id,
+        action: "subscription_activated",
+        details: { tier, subscriptionId: subscription.id },
+        ipAddress: req.ip
+      });
+      
+      // Redirecionar para a página de sucesso
+      res.redirect('/subscription/success');
+    } catch (error) {
+      console.error('Erro ao processar sucesso da assinatura:', error);
+      res.status(500).json({
+        message: 'Erro ao processar a assinatura',
+        error: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
+    }
+  });
+  
+  // Endpoint para cancelar uma assinatura existente
+  app.post("/api/subscription/cancel", isAuthenticated, async (req, res) => {
+    try {
+      // Verificar se o usuário tem uma assinatura ativa
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('stripe_subscription_id, subscription_tier')
+        .eq('id', req.user!.id.toString())
+        .single();
+      
+      if (userError || !userData?.stripe_subscription_id) {
+        return res.status(400).json({ message: 'Nenhuma assinatura ativa encontrada' });
+      }
+      
+      // Cancelar a assinatura no Stripe
+      await cancelSubscription(userData.stripe_subscription_id);
+      
+      // Atualizar o usuário no banco de dados
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({
+          subscription_tier: 'none',
+          stripe_subscription_id: null,
+        })
+        .eq('id', req.user!.id.toString());
+      
+      if (updateError) {
+        throw new Error(`Erro ao atualizar dados do usuário: ${updateError.message}`);
+      }
+      
+      // Log da ação
+      await logAction({
+        userId: req.user!.id,
+        action: "subscription_cancelled",
+        details: { 
+          previous_tier: userData.subscription_tier,
+          subscription_id: userData.stripe_subscription_id
+        },
+        ipAddress: req.ip
+      });
+      
+      res.json({ message: 'Assinatura cancelada com sucesso' });
+    } catch (error) {
+      console.error('Erro ao cancelar assinatura:', error);
+      res.status(500).json({
+        message: 'Erro ao cancelar assinatura',
+        error: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
+    }
   });
   
   // Chat sessions
