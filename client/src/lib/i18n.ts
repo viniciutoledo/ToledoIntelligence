@@ -1,0 +1,251 @@
+import i18n from 'i18next';
+import { initReactI18next } from 'react-i18next';
+
+// English translations
+const enTranslations = {
+  common: {
+    email: 'Email',
+    password: 'Password',
+    login: 'Login',
+    logout: 'Logout',
+    register: 'Register',
+    submit: 'Submit',
+    cancel: 'Cancel',
+    save: 'Save',
+    loading: 'Loading...',
+    error: 'Error',
+    success: 'Success',
+    back: 'Back',
+    next: 'Next',
+    continue: 'Continue',
+    verify: 'Verify',
+    language: 'Language',
+    english: 'English',
+    portuguese: 'Portuguese',
+    confirmPassword: 'Confirm Password',
+    passwordRequirements: 'Must contain at least 12 characters, including uppercase, lowercase, numbers, and special characters.',
+    errorOccurred: 'An error occurred',
+    welcomeMessage: 'Welcome to ToledoIA'
+  },
+  auth: {
+    loginTitle: 'Login to Your Account',
+    registerTitle: 'Create Your Account',
+    loginSubtitle: 'AI-powered maintenance support platform',
+    emailPlaceholder: 'email@example.com',
+    passwordPlaceholder: '••••••••••••',
+    technician: 'Technician',
+    admin: 'Administrator',
+    twoFactorTitle: 'Two-Factor Verification',
+    twoFactorSubtitle: 'For your security, we need to verify your identity.',
+    emailCode: 'Email Code',
+    authApp: 'Authenticator App',
+    emailCodeSent: 'We sent a verification code to your email:',
+    didntReceiveCode: "Didn't receive the code?",
+    resend: 'Resend',
+    enterAuthCode: 'Enter the 6-digit code from your authenticator app (Google Authenticator, Authy, etc.)',
+    accountBlocked: 'Account Blocked',
+    accountBlockedMessage: 'Account blocked due to multiple active sessions. Contact support.',
+    backToLogin: 'Back to Login',
+    invalidCredentials: 'Invalid email or password',
+    incorrectCode: 'Incorrect verification code'
+  },
+  technician: {
+    title: 'Technician Interface',
+    uploadFile: 'Upload File',
+    uploadImage: 'Upload Image',
+    typeMessage: 'Type your message...',
+    send: 'Send',
+    supportedFormats: 'Supported formats: PNG, JPG, PDF, TXT (max 50MB)',
+    online: 'Online',
+    botWelcome: "Hello! I'm the ToledoIA Bot. How can I help with your maintenance today? You can send images or files of the circuit board for analysis."
+  },
+  admin: {
+    title: 'Admin Panel',
+    dashboard: 'Dashboard',
+    settings: 'Settings',
+    users: 'Users',
+    logs: 'Logs',
+    llmSettings: 'LLM Model Configuration',
+    llmSettingsSubtitle: 'Manage the AI model used by the system',
+    llmModel: 'LLM Model',
+    apiKey: 'API Key',
+    currentModel: 'Current model in use is',
+    updatedAt: 'Updated at',
+    testConnection: 'Test Connection',
+    saveSettings: 'Save Settings',
+    avatarSettings: 'Avatar Configuration',
+    avatarSettingsSubtitle: 'Customize the avatar displayed in the chat interface',
+    avatarImage: 'Avatar Image',
+    avatarName: 'Avatar Name',
+    maxCharacters: 'Maximum 50 characters',
+    avatarPreview: 'Avatar Preview',
+    changeImage: 'Change Image',
+    avatarImageRequirements: 'PNG or JPG (max. 5MB)',
+    resetDefault: 'Reset to Default',
+    saveAvatar: 'Save Avatar',
+    connectionSuccess: 'Connection successful',
+    connectionFailed: 'Connection failed',
+    settingsSaved: 'Settings saved successfully',
+    avatarSaved: 'Avatar saved successfully',
+    avatarReset: 'Avatar reset to default',
+    usersList: 'Users List',
+    userEmail: 'Email',
+    userRole: 'Role',
+    userStatus: 'Status',
+    userLastLogin: 'Last Login',
+    userLanguage: 'Language',
+    userActions: 'Actions',
+    unblock: 'Unblock',
+    blocked: 'Blocked',
+    active: 'Active',
+    never: 'Never'
+  },
+  errors: {
+    sessionExpired: 'Your session has expired. Please login again.',
+    networkError: 'Network error. Please check your connection.',
+    serverError: 'Server error. Please try again later.',
+    unauthorized: 'Unauthorized. Please login.',
+    forbidden: 'Forbidden. You do not have permission to access this resource.',
+    notFound: 'Not found. The requested resource does not exist.',
+    validation: 'Validation error. Please check your input.',
+    fileTooBig: 'File is too large.',
+    unsupportedFileType: 'Unsupported file type.',
+    uploadFailed: 'File upload failed.',
+    accountBlocked: 'Account blocked due to multiple active sessions. Contact support.'
+  }
+};
+
+// Portuguese translations
+const ptTranslations = {
+  common: {
+    email: 'Email',
+    password: 'Senha',
+    login: 'Entrar',
+    logout: 'Sair',
+    register: 'Registrar',
+    submit: 'Enviar',
+    cancel: 'Cancelar',
+    save: 'Salvar',
+    loading: 'Carregando...',
+    error: 'Erro',
+    success: 'Sucesso',
+    back: 'Voltar',
+    next: 'Próximo',
+    continue: 'Continuar',
+    verify: 'Verificar',
+    language: 'Idioma',
+    english: 'Inglês',
+    portuguese: 'Português',
+    confirmPassword: 'Confirmar Senha',
+    passwordRequirements: 'Deve conter pelo menos 12 caracteres, incluindo maiúsculas, minúsculas, números e caracteres especiais.',
+    errorOccurred: 'Ocorreu um erro',
+    welcomeMessage: 'Bem-vindo à ToledoIA'
+  },
+  auth: {
+    loginTitle: 'Acesse sua Conta',
+    registerTitle: 'Crie sua Conta',
+    loginSubtitle: 'Plataforma de suporte à manutenção com IA',
+    emailPlaceholder: 'email@exemplo.com',
+    passwordPlaceholder: '••••••••••••',
+    technician: 'Técnico',
+    admin: 'Administrador',
+    twoFactorTitle: 'Verificação em Duas Etapas',
+    twoFactorSubtitle: 'Para sua segurança, precisamos verificar sua identidade.',
+    emailCode: 'Código por Email',
+    authApp: 'Aplicativo Autenticador',
+    emailCodeSent: 'Enviamos um código de verificação para seu email:',
+    didntReceiveCode: 'Não recebeu o código?',
+    resend: 'Reenviar',
+    enterAuthCode: 'Insira o código de 6 dígitos do seu aplicativo autenticador (Google Authenticator, Authy, etc.)',
+    accountBlocked: 'Conta Bloqueada',
+    accountBlockedMessage: 'Conta bloqueada devido a múltiplas sessões ativas. Contate o suporte.',
+    backToLogin: 'Voltar para Login',
+    invalidCredentials: 'Email ou senha inválidos',
+    incorrectCode: 'Código de verificação incorreto'
+  },
+  technician: {
+    title: 'Interface do Técnico',
+    uploadFile: 'Enviar Arquivo',
+    uploadImage: 'Enviar Imagem',
+    typeMessage: 'Digite sua mensagem...',
+    send: 'Enviar',
+    supportedFormats: 'Formatos suportados: PNG, JPG, PDF, TXT (máx 50MB)',
+    online: 'Online',
+    botWelcome: "Olá! Sou o Bot ToledoIA. Como posso ajudar com sua manutenção hoje? Você pode enviar imagens ou arquivos da placa de circuito para análise."
+  },
+  admin: {
+    title: 'Painel de Administração',
+    dashboard: 'Dashboard',
+    settings: 'Configurações',
+    users: 'Usuários',
+    logs: 'Registros',
+    llmSettings: 'Configuração do Modelo LLM',
+    llmSettingsSubtitle: 'Gerencie o modelo de IA utilizado pelo sistema',
+    llmModel: 'Modelo LLM',
+    apiKey: 'Chave de API',
+    currentModel: 'O modelo atualmente em uso é',
+    updatedAt: 'Atualizado em',
+    testConnection: 'Testar Conexão',
+    saveSettings: 'Salvar Configurações',
+    avatarSettings: 'Configuração do Avatar',
+    avatarSettingsSubtitle: 'Personalize o avatar exibido na interface de chat',
+    avatarImage: 'Imagem do Avatar',
+    avatarName: 'Nome do Avatar',
+    maxCharacters: 'Máximo 50 caracteres',
+    avatarPreview: 'Prévia do Avatar',
+    changeImage: 'Alterar Imagem',
+    avatarImageRequirements: 'PNG ou JPG (máx. 5MB)',
+    resetDefault: 'Restaurar Padrão',
+    saveAvatar: 'Salvar Avatar',
+    connectionSuccess: 'Conexão bem-sucedida',
+    connectionFailed: 'Falha na conexão',
+    settingsSaved: 'Configurações salvas com sucesso',
+    avatarSaved: 'Avatar salvo com sucesso',
+    avatarReset: 'Avatar redefinido para o padrão',
+    usersList: 'Lista de Usuários',
+    userEmail: 'Email',
+    userRole: 'Função',
+    userStatus: 'Status',
+    userLastLogin: 'Último Login',
+    userLanguage: 'Idioma',
+    userActions: 'Ações',
+    unblock: 'Desbloquear',
+    blocked: 'Bloqueado',
+    active: 'Ativo',
+    never: 'Nunca'
+  },
+  errors: {
+    sessionExpired: 'Sua sessão expirou. Por favor, faça login novamente.',
+    networkError: 'Erro de rede. Por favor, verifique sua conexão.',
+    serverError: 'Erro no servidor. Por favor, tente novamente mais tarde.',
+    unauthorized: 'Não autorizado. Por favor, faça login.',
+    forbidden: 'Proibido. Você não tem permissão para acessar este recurso.',
+    notFound: 'Não encontrado. O recurso solicitado não existe.',
+    validation: 'Erro de validação. Por favor, verifique seus dados.',
+    fileTooBig: 'Arquivo muito grande.',
+    unsupportedFileType: 'Tipo de arquivo não suportado.',
+    uploadFailed: 'Falha no upload do arquivo.',
+    accountBlocked: 'Conta bloqueada devido a múltiplas sessões ativas. Contate o suporte.'
+  }
+};
+
+// Initialize i18next
+i18n
+  .use(initReactI18next)
+  .init({
+    resources: {
+      en: {
+        translation: enTranslations
+      },
+      pt: {
+        translation: ptTranslations
+      }
+    },
+    lng: localStorage.getItem('language') || 'pt', // Default to Portuguese
+    fallbackLng: 'pt',
+    interpolation: {
+      escapeValue: false // React already escapes values
+    }
+  });
+
+export default i18n;
