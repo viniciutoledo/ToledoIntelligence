@@ -2,7 +2,7 @@ import express, { type Express, Request, Response, NextFunction } from "express"
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated, checkRole } from "./auth";
-import { analyzeImage, analyzeFile } from "./llm";
+import { analyzeImage, analyzeFile, testConnection } from "./llm";
 import { logAction } from "./audit";
 import multer from "multer";
 import crypto from "crypto";
@@ -246,13 +246,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { model_name, api_key } = schema.parse(req.body);
       
-      // Test connection using the LLM service (implement this in llm.ts)
-      // For now, we'll just assume it's valid
-      const isValid = true; // TODO: Replace with actual API test
+      // Test connection using both OpenAI and Anthropic APIs
+      const isValid = await testConnection(api_key, model_name);
       
       res.json({ success: isValid });
     } catch (error) {
-      res.status(400).json({ message: "Invalid configuration" });
+      console.error('Error testing LLM connection:', error);
+      res.status(400).json({ message: error instanceof Error ? error.message : "Invalid configuration" });
     }
   });
   
