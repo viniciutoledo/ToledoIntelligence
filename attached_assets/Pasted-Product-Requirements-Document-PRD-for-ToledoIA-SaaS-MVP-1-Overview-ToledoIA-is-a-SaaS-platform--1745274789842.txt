@@ -1,0 +1,325 @@
+Product Requirements Document (PRD) for ToledoIA SaaS MVP
+1. Overview
+ToledoIA is a SaaS platform designed for maintenance technicians to interact with an AI-powered system for analyzing images and files related to circuit board maintenance. The platform includes a technician-facing interface with secure login and chat functionality, and an admin panel for managing LLM integrations and chatbot avatar customization. The MVP focuses on secure access, dual-factor authentication, core AI analysis features, avatar management, bilingual support in Portuguese and English, and a Supabase database for data storage.
+2. Objectives
+
+Provide technicians with a secure, single-access platform to upload images/files and interact with an LLM for maintenance support via a customizable chatbot, in Portuguese or English.
+Ensure robust security with two-factor authentication (2FA) and single-session enforcement.
+Enable administrators to manage LLM models, API keys, and chatbot avatar (name and image) securely via a separate panel, with bilingual interface support.
+Deliver a scalable MVP with a well-defined Supabase database schema to support future feature expansion.
+
+3. Key Features
+3.1 Technician Interface
+3.1.1 Secure Login
+
+Description: Technicians access the platform using a unique login (email) and password.
+Requirements:
+Passwords must be at least 12 characters, including uppercase, lowercase, numbers, and special characters.
+Implement 2FA using email-based one-time codes and an authenticator app (e.g., Google Authenticator).
+Single-session enforcement: If a second login attempt is detected with the same credentials, block the account and display a message in the user’s selected language: "Account blocked due to multiple active sessions. Contact support." (Portuguese: "Conta bloqueada devido a múltiplas sessões ativas. Contate o suporte.")
+Blocked accounts can only be unblocked by an administrator.
+Language selection (Portuguese or English) available on login screen, with Portuguese as default.
+
+
+
+3.1.2 Chat Interface
+
+Description: Technicians can upload images and files (e.g., PDFs, PNGs, JPGs) and interact with an LLM via a chat widget displaying a customizable avatar, in their chosen language.
+Requirements:
+Support file uploads up to 50MB per file.
+Supported formats: PNG, JPG, PDF, TXT.
+LLM analyzes uploaded files/images and provides text-based responses in the technician’s selected language (Portuguese or English).
+Chat widget displays the avatar (image and name) configured by the admin.
+Chat history is preserved for the technician’s session and accessible across logins, stored in Supabase.
+Basic UI: Simple chat window with upload button, message input, avatar display, and response display, with all text (labels, buttons, errors) in the selected language.
+Language toggle (Portuguese/English) available in the chat interface.
+
+
+
+3.1.3 LLM Analysis
+
+Description: The LLM processes uploaded images/files to provide maintenance-related insights (e.g., identifying circuit board issues).
+Requirements:
+LLM must support image analysis for circuit board components (e.g., identifying damaged parts).
+File analysis for text-based documents (e.g., extracting error codes from PDFs).
+Responses must be concise, actionable, and provided in the technician’s selected language (Portuguese or English).
+LLM prompts configured to respect language settings for consistent output.
+
+
+
+3.2 Admin Panel
+3.2.1 Secure Login
+
+Description: Administrators access a separate panel with the same security standards as the technician interface.
+Requirements:
+Unique login (email) and password with the same complexity requirements as technicians.
+2FA using email-based codes and authenticator app.
+Single-session enforcement with the same blocking mechanism as technicians, with messages in the admin’s selected language.
+Admin accounts can unblock technician accounts.
+Language selection (Portuguese or English) available on login screen, with Portuguese as default.
+
+
+
+3.2.2 LLM Management
+
+Description: Admins can configure the LLM model and API keys used by the technician chat.
+Requirements:
+Dropdown to select LLM models (e.g., GPT-4, Claude, or others supported via API), with labels in the admin’s selected language.
+Secure input field for API key entry, encrypted at rest (e.g., using AES-256) and stored in Supabase.
+Option to test API key connectivity before saving, with success/error messages in the selected language.
+Display current LLM model in use and last updated timestamp.
+Only one LLM model can be active at a time.
+
+
+
+3.2.3 Avatar Management
+
+Description: Admins can edit the chatbot avatar’s name and image displayed in the technician’s chat widget.
+Requirements:
+Input field for avatar name (max 50 characters, alphanumeric and spaces allowed), with placeholder text in the admin’s selected language.
+Upload field for avatar image (supported formats: PNG, JPG; max size: 5MB).
+Image preview before saving.
+Default avatar (generic bot image and name “ToledoIA Bot” in English or “Bot ToledoIA” in Portuguese) if none is set.
+Changes to avatar name/image are reflected in the technician chat widget immediately after saving, respecting the technician’s language for name display.
+Store avatar images securely in Supabase Storage with access restricted to authenticated users.
+Audit log entry for each avatar update (e.g., “Admin updated avatar name to ‘TechBot’ on [timestamp]” in the admin’s selected language), stored in Supabase.
+
+
+
+3.3 Security
+
+Encryption: All data (passwords, API keys, chat history, avatar images) encrypted at rest (using Supabase’s encryption) and in transit (TLS 1.3).
+Session Management: Sessions expire after 30 minutes of inactivity, requiring re-authentication, with prompts in the user’s selected language.
+Audit Logs: Track login attempts, account blocks, admin actions (e.g., API key updates, avatar changes) for security monitoring, with logs recorded in English for consistency but viewable in the admin’s selected language, stored in Supabase.
+Rate Limiting: Limit login attempts to 5 per minute per IP to prevent brute-force attacks, enforced via Supabase edge functions.
+
+4. Non-Functional Requirements
+
+Performance: System must handle up to 100 concurrent technician sessions with <2s response time for chat interactions, avatar updates, and language switching.
+Scalability: Cloud-based architecture (e.g., Supabase and AWS) to support future user growth.
+Availability: 99.9% uptime for MVP, leveraging Supabase’s high-availability infrastructure.
+UI/UX: Responsive web design, optimized for desktop and mobile (technician interface) and desktop-only (admin panel), with seamless language switching.
+Localization: Interface, error messages, and LLM responses fully supported in Portuguese and English, with language selection persistent across sessions, stored in Supabase.
+
+5. Technical Stack (Suggested)
+
+Frontend: React with Tailwind CSS for technician and admin interfaces, using i18next for bilingual support.
+Backend: Node.js with Express for API, Supabase (PostgreSQL) for data storage and authentication.
+Authentication: Supabase Auth for 2FA and session management, supporting localized 2FA prompts.
+LLM Integration: API-based integration with selected LLM providers (e.g., OpenAI, Anthropic), with language parameters in API calls.
+Storage: Supabase Storage for avatar images and file uploads.
+Hosting: AWS (EC2 for compute, S3 for additional file storage if needed) with Supabase for database and storage.
+Encryption: Supabase’s built-in encryption for data at rest, AWS KMS for key management, AES-256 for additional encryption needs.
+
+6. User Stories
+Technician
+
+As a technician, I want to log in securely with 2FA in my preferred language (Portuguese or English) so that my account is protected.
+As a technician, I want to upload images/files and get LLM analysis via a chat widget with a custom avatar, in my chosen language, so that I can diagnose circuit board issues.
+As a technician, I want to be notified and blocked in my selected language if someone else uses my credentials so that my account remains secure.
+
+Administrator
+
+As an admin, I want to log in securely with 2FA in my preferred language so that I can manage the system safely.
+As an admin, I want to select and configure the LLM model and API key in my chosen language so that the technician chat functions correctly.
+As an admin, I want to edit the chatbot avatar’s name and image in my selected language so that technicians see a personalized chat experience.
+As an admin, I want to unblock technician accounts so that legitimate users can regain access, with all interactions in my preferred language.
+
+7. Assumptions
+
+Technicians have basic technical literacy to use a web-based chat interface and select their preferred language.
+LLM providers offer APIs compatible with image and file analysis and support Portuguese/English outputs.
+Admins have access to valid API keys for selected LLMs.
+Admins can source or create suitable avatar images compliant with supported formats.
+Users are comfortable switching between Portuguese and English as needed.
+Supabase’s free or starter tier is sufficient for MVP storage and performance needs.
+
+8. Constraints
+
+MVP must be delivered within 3 months.
+Budget limited to cloud hosting costs for 100 users, including Supabase and AWS.
+No native mobile app for MVP; web-based only.
+Only Portuguese and English supported in MVP; additional languages deferred to future phases.
+
+9. Success Metrics
+
+90% of technicians successfully log in, select their preferred language, and use the chat within the first week.
+LLM analysis accuracy >80% for image/file-based queries in both languages (based on user feedback).
+Zero successful unauthorized access attempts during MVP phase.
+Admin panel setup (including LLM, avatar, and language configuration) completed by 100% of admins within 24 hours of access.
+95% of users report seamless language switching experience (based on feedback).
+Supabase database performance meets <2s response time for all queries under 100 concurrent users.
+
+10. Future Considerations
+
+Add support for multiple LLM models running concurrently.
+Introduce role-based access control for admins (e.g., super admin vs. regular admin).
+Develop a mobile app for technicians.
+Expand file format support (e.g., CAD files for circuit boards).
+Allow technicians to provide feedback on avatar appearance.
+Support additional languages (e.g., Spanish, German).
+Explore Supabase edge functions for advanced backend logic.
+
+11. Database Schema
+The database schema for ToledoIA is implemented in Supabase (PostgreSQL) to support user management, chat functionality, LLM configuration, avatar management, and audit logging. Below is the schema with tables, columns, constraints, and relationships.
+11.1 Tables
+11.1.1 users
+Stores technician and admin user information, leveraging Supabase Auth for authentication.
+
+Columns:
+id: UUID, primary key, auto-generated by Supabase Auth.
+email: VARCHAR(255), unique, not null (managed by Supabase Auth).
+role: ENUM('technician', 'admin'), not null, defines user type.
+is_blocked: BOOLEAN, default FALSE, indicates if account is blocked.
+language: ENUM('pt', 'en'), default 'pt', stores preferred language.
+created_at: TIMESTAMP, default CURRENT_TIMESTAMP.
+updated_at: TIMESTAMP, default CURRENT_TIMESTAMP, updated on changes.
+
+
+Constraints:
+Unique constraint on email.
+Check constraint on role to ensure valid values.
+
+
+Notes: Passwords and 2FA data are managed by Supabase Auth, not stored in this table.
+
+11.1.2 chat_sessions
+Stores chat session metadata for technicians.
+
+Columns:
+id: UUID, primary key, auto-generated.
+user_id: UUID, foreign key referencing users(id), not null.
+started_at: TIMESTAMP, default CURRENT_TIMESTAMP.
+ended_at: TIMESTAMP, nullable, set when session ends.
+language: ENUM('pt', 'en'), not null, language used in session.
+
+
+Constraints:
+Foreign key constraint on user_id with ON DELETE CASCADE.
+
+
+Indexes:
+Index on user_id for efficient session retrieval.
+
+
+
+11.1.3 chat_messages
+Stores individual chat messages, including user inputs and LLM responses.
+
+Columns:
+id: UUID, primary key, auto-generated.
+session_id: UUID, foreign key referencing chat_sessions(id), not null.
+user_id: UUID, foreign key referencing users(id), not null.
+message_type: ENUM('text', 'image', 'file'), not null, type of message.
+content: TEXT, nullable, stores text message or file metadata.
+file_url: VARCHAR(255), nullable, stores Supabase Storage URL for images/files.
+is_from_llm: BOOLEAN, default FALSE, indicates if message is from LLM.
+created_at: TIMESTAMP, default CURRENT_TIMESTAMP.
+
+
+Constraints:
+Foreign key constraint on session_id with ON DELETE CASCADE.
+Foreign key constraint on user_id with ON DELETE CASCADE.
+
+
+Indexes:
+Index on session_id for efficient message retrieval.
+Index on created_at for sorting messages.
+
+
+
+11.1.4 llm_config
+Stores LLM model and API key configuration.
+
+Columns:
+id: UUID, primary key, auto-generated.
+model_name: VARCHAR(100), not null, e.g., 'GPT-4', 'Claude'.
+api_key: TEXT, not null, encrypted at rest.
+is_active: BOOLEAN, default FALSE, indicates if model is currently active.
+created_at: TIMESTAMP, default CURRENT_TIMESTAMP.
+updated_at: TIMESTAMP, default CURRENT_TIMESTAMP, updated on changes.
+
+
+Constraints:
+Unique constraint on is_active when TRUE to ensure only one active model.
+
+
+Notes: API keys are encrypted using Supabase’s encryption.
+
+11.1.5 avatar_config
+Stores chatbot avatar configuration.
+
+Columns:
+id: UUID, primary key, auto-generated.
+avatar_name_pt: VARCHAR(50), default 'Bot ToledoIA', not null, name in Portuguese.
+avatar_name_en: VARCHAR(50), default 'ToledoIA Bot', not null, name in English.
+avatar_image_url: VARCHAR(255), nullable, Supabase Storage URL for avatar image.
+created_at: TIMESTAMP, default CURRENT_TIMESTAMP.
+updated_at: TIMESTAMP, default CURRENT_TIMESTAMP, updated on changes.
+
+
+Constraints:
+Check constraint on avatar_name_pt and avatar_name_en for max length (50).
+
+
+Notes: Only one row is expected, updated by admins as needed.
+
+11.1.6 audit_logs
+Stores audit logs for security and admin actions.
+
+Columns:
+id: UUID, primary key, auto-generated.
+user_id: UUID, foreign key referencing users(id), nullable (for system actions).
+action: VARCHAR(255), not null, e.g., 'login_attempt', 'avatar_update'.
+details: JSONB, nullable, stores additional data (e.g., IP address, error message).
+created_at: TIMESTAMP, default CURRENT_TIMESTAMP.
+
+
+Constraints:
+Foreign key constraint on user_id with ON DELETE SET NULL.
+
+
+Indexes:
+Index on created_at for efficient log retrieval.
+Index on user_id for user-specific logs.
+
+
+
+11.2 Relationships
+
+users → chat_sessions: One-to-many (one user can have multiple sessions).
+chat_sessions → chat_messages: One-to-many (one session can have multiple messages).
+users → chat_messages: One-to-many (one user can have multiple messages across sessions).
+users → audit_logs: One-to-many (one user can have multiple log entries).
+llm_config and avatar_config are standalone but referenced by the application logic.
+
+11.3 Storage
+
+Supabase Storage:
+Bucket: chat_files for storing uploaded images/files (PNG, JPG, PDF, TXT).
+Bucket: avatar_images for storing avatar images (PNG, JPG).
+Access restricted to authenticated users via Supabase policies.
+File URLs stored in chat_messages.file_url and avatar_config.avatar_image_url.
+
+
+
+11.4 Security Policies
+
+Row-Level Security (RLS):
+users: Only admins can update is_blocked or role. Users can update their own language.
+chat_sessions and chat_messages: Users can only access their own sessions/messages.
+llm_config: Only admins can read/write.
+avatar_config: Only admins can write; all users can read (for chat widget).
+audit_logs: Only admins can read; writes are system-driven.
+
+
+Supabase Auth: Manages user authentication, 2FA, and session tokens.
+
+11.5 Notes
+
+Schema is optimized for 100 concurrent users, with indexes for performance.
+Supabase Storage handles file uploads securely, with size limits enforced via application logic.
+Audit logs use JSONB for flexibility in storing varying details.
+Language-specific fields (e.g., avatar_name_pt, avatar_name_en) ensure bilingual support without complex joins.
+Schema supports future scalability (e.g., adding new tables for features like feedback).
+
