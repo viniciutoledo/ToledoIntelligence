@@ -56,9 +56,25 @@ export function LoginForm({
     } catch (error: any) {
       console.error("Login error:", error);
       
-      // Exibe mensagem de erro específica
+      // Exibe mensagem de erro específica com tratamento inteligente
       if (error.message?.includes("Incorrect user role") || error.message?.includes("Função de usuário incorreta")) {
-        setLoginError(t("auth.incorrectRole"));
+        // Alterna automaticamente para a função oposta quando recebe erro de função incorreta
+        const correctRole = activeRole === "admin" ? "technician" : "admin";
+        setActiveRole(correctRole);
+        
+        // Mensagem de erro informativa indicando a troca automática
+        setLoginError(`${t("auth.incorrectRole")} ${t("common.tryingAs")} ${correctRole === "admin" ? t("auth.admin") : t("auth.technician")}`);
+        
+        // Destaca a alteração para ajudar o usuário
+        setTimeout(() => {
+          const roleIndicator = document.querySelector(".text-center.mb-6");
+          if (roleIndicator) {
+            roleIndicator.classList.add("animate-pulse", "bg-yellow-100", "border-yellow-300");
+            setTimeout(() => {
+              roleIndicator.classList.remove("animate-pulse", "bg-yellow-100", "border-yellow-300");
+            }, 2000);
+          }
+        }, 100);
       } else if (error.message?.includes("Invalid credentials") || error.message?.includes("Credenciais inválidas")) {
         setLoginError(t("auth.invalidCredentials"));
       } else if (error.message?.includes("Account blocked") || error.message?.includes("Conta bloqueada")) {
@@ -72,7 +88,7 @@ export function LoginForm({
   return (
     <>
       {/* Role Selector */}
-      <div className="flex justify-center space-x-4 mb-6">
+      <div className="flex justify-center space-x-4 mb-4">
         <Button
           type="button"
           onClick={() => setActiveRole("technician")}
@@ -99,9 +115,11 @@ export function LoginForm({
         </Button>
       </div>
       
-      {/* Role Indicator - Para destacar melhor qual função está selecionada */}
-      <div className="text-center mb-4 text-sm font-medium text-primary">
-        {activeRole === "admin" ? t("auth.loggingAsAdmin") : t("auth.loggingAsTechnician")}
+      {/* Role Indicator - Destaque melhorado para a função selecionada */}
+      <div className="text-center mb-6 text-sm font-medium bg-primary/10 p-2 rounded border border-primary/20">
+        <span className="font-bold text-primary">
+          {activeRole === "admin" ? t("auth.loggingAsAdmin") : t("auth.loggingAsTechnician")}
+        </span>
       </div>
 
       {/* Login Form */}

@@ -25,7 +25,8 @@ const enTranslations = {
     confirmPassword: 'Confirm Password',
     passwordRequirements: 'Must contain at least 12 characters, including uppercase, lowercase, numbers, and special characters.',
     errorOccurred: 'An error occurred',
-    welcomeMessage: 'Welcome to ToledoIA'
+    welcomeMessage: 'Welcome to ToledoIA',
+    tryingAs: 'Trying as'
   },
   auth: {
     loginTitle: 'Login to Your Account',
@@ -283,7 +284,8 @@ const ptTranslations = {
     confirmPassword: 'Confirmar Senha',
     passwordRequirements: 'Deve conter pelo menos 12 caracteres, incluindo maiúsculas, minúsculas, números e caracteres especiais.',
     errorOccurred: 'Ocorreu um erro',
-    welcomeMessage: 'Bem-vindo à ToledoIA'
+    welcomeMessage: 'Bem-vindo à ToledoIA',
+    tryingAs: 'Tentando como'
   },
   auth: {
     loginTitle: 'Acesse sua Conta',
@@ -308,6 +310,8 @@ const ptTranslations = {
     backToLogin: 'Voltar para Login',
     invalidCredentials: 'Email ou senha inválidos',
     incorrectCode: 'Código de verificação incorreto',
+    incorrectRole: 'Função de usuário incorreta. Por favor, selecione sua função correta (técnico ou administrador).',
+    loginError: 'Erro de login. Por favor, tente novamente.',
     emailAlreadyRegistered: 'Este email já está registrado',
     registrationSuccess: 'Registro realizado com sucesso',
     registrationError: 'Erro durante o registro',
