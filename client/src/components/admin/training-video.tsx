@@ -257,11 +257,11 @@ export function TrainingVideo() {
             
             <div>
               <Label htmlFor="video_description" className="text-sm text-muted-foreground mb-1 block">
-                admin.training.descriptionLabel <span className="text-xs text-muted-foreground">common.optional</span>
+                Descrição <span className="text-xs text-muted-foreground">(opcional)</span>
               </Label>
               <Textarea
                 id="video_description"
-                placeholder="admin.training.videoDescriptionPlaceholder"
+                placeholder="Digite uma descrição para o vídeo (opcional)"
                 value={videoDescription}
                 onChange={(e) => setVideoDescription(e.target.value)}
                 className="resize-none text-sm min-h-[80px]"
@@ -273,8 +273,8 @@ export function TrainingVideo() {
           <div className="flex items-center justify-between border-t bg-muted/20 px-4 py-2">
             <div className="text-xs text-muted-foreground">
               {activeTab === 'url' 
-                ? "admin.training.supportedVideoServices" 
-                : "admin.training.supportedVideoFormats"}
+                ? "Serviços suportados: YouTube, Vimeo" 
+                : "Formatos suportados: MP4, AVI, MOV"}
             </div>
             <Button
               type="button" 
@@ -289,10 +289,10 @@ export function TrainingVideo() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  admin.training.submitVideo
+                  Processando...
                 </span>
               ) : (
-                "admin.training.submitVideo"
+                "Enviar Vídeo"
               )}
             </Button>
           </div>
@@ -310,14 +310,14 @@ export function TrainingVideo() {
             <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted">
               <FileVideo className="h-10 w-10 text-muted-foreground/60" />
             </div>
-            <h3 className="mt-4 text-lg font-medium">admin.training.noVideoTrainings</h3>
+            <h3 className="mt-4 text-lg font-medium">Nenhum Treinamento de Vídeo</h3>
             <p className="mt-2 text-sm text-muted-foreground text-center max-w-sm">
-              admin.training.uploadVideoToTrain
+              Faça upload de um vídeo ou adicione uma URL de vídeo para treinar o modelo de IA
             </p>
           </div>
         ) : (
           <>
-            <h3 className="text-base font-medium mb-2">admin.training.noVideoTrainings</h3>
+            <h3 className="text-base font-medium mb-2">Vídeos de Treinamento</h3>
             <div className="grid gap-2">
               {videoDocuments.map((doc) => (
                 <div key={doc.id} className="rounded-lg border bg-card p-4 transition-all hover:shadow-sm">
@@ -360,7 +360,7 @@ export function TrainingVideo() {
                             </div>
                           )}
                           <div className="text-xs text-muted-foreground mt-1">
-                            admin.training.videoSizeLimit
+                            {formatDate(doc.created_at)}
                           </div>
                         </div>
                       </div>
@@ -374,7 +374,7 @@ export function TrainingVideo() {
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                             <MoreVertical className="h-4 w-4" />
-                            <span className="sr-only">common.actions</span>
+                            <span className="sr-only">Ações</span>
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
@@ -384,14 +384,14 @@ export function TrainingVideo() {
                               onClick={() => navigator.clipboard.writeText(doc.website_url || '')}
                             >
                               <ClipboardIcon className="mr-2 h-4 w-4" />
-                              <span>common.copyLink</span>
+                              <span>Copiar Link</span>
                             </DropdownMenuItem>
                           )}
                           <DropdownMenuItem 
                             className="flex cursor-pointer items-center text-red-600 focus:text-red-600" 
                             onClick={() => handleDeleteDocument(doc.id)}
                           >
-                            <span>common.delete</span>
+                            <span>Excluir</span>
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
