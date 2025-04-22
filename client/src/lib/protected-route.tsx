@@ -35,6 +35,27 @@ export function ProtectedRoute({
   
   // Check roles if specified
   if (roles && !roles.includes(user.role)) {
+    console.log(`ProtectedRoute: Acesso negado a ${path} para papel ${user.role}, redirecionando`);
+    
+    // Se um administrador tenta acessar uma página de técnico, manda para o admin
+    if (user.role === "admin" && path === "/technician") {
+      return (
+        <Route path={path}>
+          <Redirect to="/admin" />
+        </Route>
+      );
+    }
+    
+    // Se um técnico tenta acessar uma página de admin, manda para o técnico
+    if (user.role === "technician" && path === "/admin") {
+      return (
+        <Route path={path}>
+          <Redirect to="/technician" />
+        </Route>
+      );
+    }
+    
+    // Outros casos
     return (
       <Route path={path}>
         <Redirect to={user.role === "admin" ? "/admin" : "/technician"} />

@@ -29,10 +29,10 @@ function Router() {
       <ProtectedRoute path="/checkout-success" component={CheckoutSuccessPage} />
       
       {/* Protected routes */}
-      <ProtectedRoute path="/technician" component={TechnicianPage} roles={["technician"]} />
+      <ProtectedRoute path="/technician" component={TechnicianPage} roles={["technician", "admin"]} />
       <ProtectedRoute path="/admin" component={AdminPage} roles={["admin"]} />
       <ProtectedRoute path="/subscription" component={SubscriptionPage} />
-      <ProtectedRoute path="/dashboard" component={TechnicianPage} roles={["technician"]} />
+      <ProtectedRoute path="/dashboard" component={TechnicianPage} roles={["technician", "admin"]} />
       
       {/* Subscription success/cancel pages */}
       <ProtectedRoute 
