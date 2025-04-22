@@ -219,6 +219,94 @@ export function useTraining() {
     }
   });
 
+  // Mutation específica para vídeos
+  const createVideoDocumentMutation = useMutation({
+    mutationFn: async (data: { name: string; description?: string | null; website_url?: string; file?: File }) => {
+      // Se for um upload de arquivo
+      if (data.file) {
+        const formData = new FormData();
+        formData.append('name', data.name);
+        formData.append('document_type', 'video');
+        formData.append('file', data.file);
+        
+        if (data.description) {
+          formData.append('description', data.description);
+        }
+        
+        const res = await fetch("/api/training/documents", {
+          method: "POST",
+          body: formData,
+        });
+        
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.message || "Failed to upload video");
+        }
+        
+        return await res.json();
+      } 
+      // Se for um link de vídeo
+      else if (data.website_url) {
+        const payload = {
+          name: data.name,
+          document_type: "video",
+          website_url: data.website_url,
+          description: data.description || null
+        };
+        
+        const res = await apiRequest("POST", "/api/training/documents", payload);
+        return await res.json();
+      }
+      
+      throw new Error("Either a file or website URL must be provided");
+    },
+    onSuccess: () => {
+      toast({
+        title: t("common.success"),
+        description: t("admin.training.videoTrainingAdded"),
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/training/documents"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: t("common.error"),
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Mutation específica para arquivos de documento (PDF, DOCX, etc)
+  const createFileDocumentMutation = useMutation({
+    mutationFn: async (formData: FormData) => {
+      const res = await fetch("/api/training/documents", {
+        method: "POST",
+        body: formData,
+      });
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Failed to upload document");
+      }
+      
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: t("common.success"),
+        description: t("admin.training.documentTrainingAdded"),
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/training/documents"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: t("common.error"),
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+
   const updateDocumentMutation = useMutation({
     mutationFn: async (data: { id: number; document: Partial<DocumentFormData> }) => {
       const res = await apiRequest("PATCH", `/api/training/documents/${data.id}`, data.document);
@@ -374,6 +462,8 @@ export function useTraining() {
     createDocumentFileMutation,
     createTextDocumentMutation,
     createWebsiteDocumentMutation,
+    createVideoDocumentMutation,
+    createFileDocumentMutation,
     updateDocumentMutation,
     deleteDocumentMutation,
     
