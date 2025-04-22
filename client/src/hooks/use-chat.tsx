@@ -143,28 +143,58 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       sessionId: number;
       file: File;
     }) => {
+      console.log("Iniciando upload de arquivo:", {
+        name: file.name,
+        type: file.mimetype || file.type,
+        size: file.size,
+        sessionId
+      });
+      
       const formData = new FormData();
       formData.append("file", file);
+      
+      try {
+        const res = await fetch(`/api/chat/sessions/${sessionId}/messages`, {
+          method: "POST",
+          body: formData,
+          credentials: "include",
+        });
 
-      const res = await fetch(`/api/chat/sessions/${sessionId}/messages`, {
-        method: "POST",
-        body: formData,
-        credentials: "include",
-      });
+        console.log("Resposta do servidor:", {
+          status: res.status,
+          statusText: res.statusText,
+          ok: res.ok
+        });
 
-      if (!res.ok) {
-        const errorText = await res.text();
-        throw new Error(errorText || res.statusText);
+        if (!res.ok) {
+          const errorText = await res.text();
+          console.error("Erro na resposta:", errorText);
+          throw new Error(errorText || res.statusText);
+        }
+
+        const data = await res.json();
+        console.log("Dados recebidos após upload:", data);
+        return data;
+      } catch (err) {
+        console.error("Erro no upload:", err);
+        throw err;
       }
-
-      return await res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("Upload bem-sucedido:", data);
       queryClient.invalidateQueries({
         queryKey: ["/api/chat/sessions", currentSession?.id, "messages"],
       });
+      
+      // Força uma atualização imediata da lista de mensagens
+      setTimeout(() => {
+        queryClient.invalidateQueries({
+          queryKey: ["/api/chat/sessions", currentSession?.id, "messages"],
+        });
+      }, 500);
     },
     onError: (error: Error) => {
+      console.error("Erro no mutation de upload:", error);
       toast({
         title: t("common.error"),
         description: error.message,

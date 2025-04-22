@@ -25,6 +25,7 @@ export function ChatInterface() {
                    uploadFileMutation.isPending;
   
   const [message, setMessage] = useState("");
+  const [fileSelected, setFileSelected] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -56,9 +57,13 @@ export function ChatInterface() {
     if (!e.target.files || !currentSession) return;
     
     const file = e.target.files[0];
-    if (!file) return;
+    if (!file) {
+      setFileSelected(false);
+      return;
+    }
     
     console.log("Enviando arquivo:", file.name, file.type, file.size);
+    setFileSelected(true);
     
     uploadFileMutation.mutate({
       sessionId: currentSession.id,
@@ -67,6 +72,9 @@ export function ChatInterface() {
     
     // Reset the file input
     e.target.value = "";
+    
+    // Reset o fileSelected após o upload
+    uploadFileMutation.isSuccess && setTimeout(() => setFileSelected(false), 1000);
   };
   
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -157,7 +165,19 @@ export function ChatInterface() {
                     src={msg.file_url}
                     alt="Uploaded file"
                     className="rounded-md max-h-48 w-auto"
+                    onError={(e) => {
+                      console.error("Erro ao carregar imagem:", msg.file_url);
+                      e.currentTarget.alt = "Erro ao carregar imagem";
+                    }}
                   />
+                  <a 
+                    href={msg.file_url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="mt-2 inline-block text-xs text-primary hover:underline"
+                  >
+                    {t("technician.downloadFile")}
+                  </a>
                 </div>
               ) : msg.message_type === "file" && msg.file_url ? (
                 <div>
@@ -175,7 +195,12 @@ export function ChatInterface() {
                   </a>
                 </div>
               ) : (
-                <p className="text-sm text-neutral-500">{t("technician.messageUnavailable")}</p>
+                <div>
+                  <p className="text-sm text-neutral-500">{t("technician.messageUnavailable")}</p>
+                  <pre className="text-xs mt-2 p-2 bg-gray-100 rounded overflow-x-auto">
+                    {JSON.stringify(msg, null, 2)}
+                  </pre>
+                </div>
               )}
             </div>
           </div>

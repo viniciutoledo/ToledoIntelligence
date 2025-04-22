@@ -66,8 +66,41 @@ function getAnthropicClient(apiKey: string) {
 
 // Convert image to base64
 async function imageToBase64(imagePath: string): Promise<string> {
-  const imageBuffer = await readFile(imagePath);
-  return imageBuffer.toString('base64');
+  try {
+    console.log(`Tentando ler arquivo de imagem: ${imagePath}`);
+    
+    if (!fs.existsSync(imagePath)) {
+      console.error(`Arquivo não encontrado: ${imagePath}`);
+      
+      // Tentar construir caminhos alternativos
+      const alternativePath1 = path.join(process.cwd(), 'uploads', 'files', path.basename(imagePath));
+      const alternativePath2 = path.join('/home/runner/workspace/uploads/files', path.basename(imagePath));
+      
+      console.log(`Tentando caminhos alternativos: 
+        1. ${alternativePath1} (existe: ${fs.existsSync(alternativePath1)})
+        2. ${alternativePath2} (existe: ${fs.existsSync(alternativePath2)})`);
+      
+      // Se encontrarmos o arquivo em um dos caminhos alternativos, usamos ele
+      if (fs.existsSync(alternativePath1)) {
+        console.log(`Usando caminho alternativo 1: ${alternativePath1}`);
+        const imageBuffer = await readFile(alternativePath1);
+        return imageBuffer.toString('base64');
+      } else if (fs.existsSync(alternativePath2)) {
+        console.log(`Usando caminho alternativo 2: ${alternativePath2}`);
+        const imageBuffer = await readFile(alternativePath2);
+        return imageBuffer.toString('base64');
+      }
+      
+      throw new Error(`Arquivo não encontrado: ${imagePath}`);
+    }
+    
+    const imageBuffer = await readFile(imagePath);
+    console.log(`Arquivo lido com sucesso: ${imagePath}, tamanho: ${imageBuffer.length} bytes`);
+    return imageBuffer.toString('base64');
+  } catch (error) {
+    console.error(`Erro ao converter imagem para base64: ${error instanceof Error ? error.message : error}`);
+    throw error;
+  }
 }
 
 // Analyze image with either Anthropic or OpenAI

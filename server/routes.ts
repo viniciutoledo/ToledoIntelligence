@@ -927,21 +927,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Process with LLM if file uploaded
       if (req.file) {
+        console.log("Arquivo enviado:", {
+          originalName: req.file.originalname,
+          filename: req.file.filename,
+          path: req.file.path,
+          mimetype: req.file.mimetype,
+          size: req.file.size
+        });
+        
         let botResponse;
         let filePath = req.file.path;
         
         // Verificar se o arquivo existe
         if (!fs.existsSync(filePath)) {
           console.error(`Arquivo não encontrado: ${filePath}`);
-          // Tentar construir o caminho correto
-          filePath = path.join(process.cwd(), 'uploads', 'files', path.basename(req.file.path));
-          console.log(`Tentando caminho alternativo: ${filePath}`);
+          
+          // Tentar diferentes caminhos
+          const possiblePaths = [
+            path.join(process.cwd(), 'uploads', 'files', path.basename(req.file.path)),
+            path.join('/home/runner/workspace/uploads/files', path.basename(req.file.path)),
+            path.join(UPLOADS_DIR, 'files', path.basename(req.file.path))
+          ];
+          
+          console.log("Tentando caminhos alternativos:");
+          for (const altPath of possiblePaths) {
+            console.log(`- ${altPath} (existe: ${fs.existsSync(altPath)})`);
+            if (fs.existsSync(altPath)) {
+              filePath = altPath;
+              console.log(`Usando caminho alternativo: ${filePath}`);
+              break;
+            }
+          }
         }
         
-        if (messageType === "image") {
-          botResponse = await analyzeImage(filePath, session.language);
-        } else {
-          botResponse = await analyzeFile(filePath, session.language);
+        try {
+          console.log(`Processando arquivo ${filePath} com LLM (tipo: ${messageType})`);
+          
+          if (messageType === "image") {
+            botResponse = await analyzeImage(filePath, session.language);
+          } else {
+            botResponse = await analyzeFile(filePath, session.language);
+          }
+          
+          console.log("Resposta da LLM recebida:", {
+            length: botResponse.length,
+            preview: botResponse.substring(0, 100) + "..."
+          });
+        } catch (llmError) {
+          console.error("Erro ao processar arquivo com LLM:", llmError);
+          botResponse = session.language === 'pt' 
+            ? "Desculpe, houve um erro ao processar este arquivo. Por favor, tente novamente."
+            : "Sorry, there was an error processing this file. Please try again.";
         }
         
         // Create bot response message
