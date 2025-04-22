@@ -4,6 +4,7 @@ import fs from 'fs';
 import { promisify } from 'util';
 import { storage } from './storage';
 import path from 'path';
+import pdfParse from 'pdf-parse';
 
 // Default models
 // the newest Anthropic model is "claude-3-7-sonnet-20250219" which was released February 24, 2025
@@ -315,25 +316,77 @@ export async function analyzeFile(filePath: string, language: string): Promise<s
   try {
     // Verificar se é um arquivo PDF
     const extension = path.extname(filePath).toLowerCase();
-    if (extension === '.pdf') {
-      // Para arquivos PDF, envie uma mensagem explicativa
-      return language === 'pt'
-        ? 'Arquivos PDF são muito complexos para análise direta. Por favor, considere extrair o texto relevante e enviá-lo como arquivo de texto, ou enviar imagens da placa de circuito para análise visual.'
-        : 'PDF files are too complex for direct analysis. Please consider extracting the relevant text and sending it as a text file, or send circuit board images for visual analysis.';
-    }
-    
-    // Read file content
     let fileContent = '';
     
-    try {
-      fileContent = await readFile(filePath, 'utf-8');
-    } catch (error) {
-      console.error('Erro ao ler arquivo como texto:', error);
-      
-      // Se falhar como UTF-8, pode ser um arquivo binário
-      return language === 'pt'
-        ? 'Este arquivo não pode ser analisado como texto. Por favor, envie um arquivo de texto (.txt) ou imagem (.jpg, .png).'
-        : 'This file cannot be analyzed as text. Please upload a text file (.txt) or image (.jpg, .png).';
+    if (extension === '.pdf') {
+      try {
+        console.log(`Tentando extrair texto do PDF: ${filePath}`);
+        
+        // Ler o arquivo PDF como buffer
+        const pdfBuffer = await readFile(filePath);
+        
+        try {
+          // Extrair o texto do PDF com configurações personalizadas
+          const pdfData = await pdfParse(pdfBuffer, {
+            // Configurações para evitar problemas com PDFs mal formados
+            max: 50, // Limitar o número de páginas processadas
+            pagerender: undefined, // Não usar renderização personalizada
+            // Arquivo de teste do pdf-parse pode não existir, então vamos desativar esse teste
+            version: false // Não verificar a versão do PDF
+          });
+          
+          fileContent = pdfData.text;
+          console.log(`Texto extraído do PDF, tamanho: ${fileContent.length} caracteres`);
+          
+          // Se não conseguimos extrair texto útil
+          if (!fileContent || fileContent.trim().length < 50) {
+            return language === 'pt'
+              ? 'O PDF não contém texto suficiente para análise. Por favor, envie um PDF com texto extraível ou uma imagem da placa de circuito para análise visual.'
+              : 'The PDF does not contain enough extractable text for analysis. Please upload a PDF with extractable text content or a circuit board image for visual analysis.';
+          }
+        } catch (pdfError) {
+          console.error('Erro específico ao processar PDF:', pdfError);
+          
+          // Vamos tentar uma abordagem alternativa - extrair texto como UTF-8
+          try {
+            // Alguns PDFs podem conter texto reconhecível mesmo não sendo válidos para pdf-parse
+            const rawText = pdfBuffer.toString('utf8');
+            // Filtrar apenas caracteres imprimíveis e espaços
+            const cleanText = rawText.replace(/[^\x20-\x7E\r\n\t]/g, ' ').replace(/\s+/g, ' ').trim();
+            
+            if (cleanText.length > 200) {
+              console.log('Usando extração alternativa de texto para PDF');
+              fileContent = cleanText;
+            } else {
+              throw new Error('Texto extraído insuficiente');
+            }
+          } catch (alternativeError) {
+            console.error('Falha na extração alternativa:', alternativeError);
+            return language === 'pt'
+              ? 'Não foi possível extrair texto deste PDF. Por favor, converta-o para texto usando uma ferramenta externa ou envie imagens da placa de circuito.'
+              : 'Could not extract text from this PDF. Please convert it to text using an external tool or send circuit board images.';
+          }
+        }
+      } catch (error) {
+        console.error('Erro ao ler arquivo PDF:', error);
+        
+        // Erro ao ler o PDF
+        return language === 'pt'
+          ? 'Não foi possível ler este arquivo PDF. O arquivo pode estar danificado ou protegido. Por favor, tente converter o PDF para texto ou envie imagens da placa de circuito.'
+          : 'Could not read this PDF file. The file may be damaged or protected. Please try to convert the PDF to text or send circuit board images.';
+      }
+    } else {
+      // Para outros tipos de arquivo, tentamos ler como texto
+      try {
+        fileContent = await readFile(filePath, 'utf-8');
+      } catch (error) {
+        console.error('Erro ao ler arquivo como texto:', error);
+        
+        // Se falhar como UTF-8, pode ser um arquivo binário
+        return language === 'pt'
+          ? 'Este arquivo não pode ser analisado como texto. Por favor, envie um arquivo de texto (.txt), PDF com texto ou imagem (.jpg, .png).'
+          : 'This file cannot be analyzed as text. Please upload a text file (.txt), PDF with text or image (.jpg, .png).';
+      }
     }
 
     // Verificar o tamanho do arquivo (em tokens)
