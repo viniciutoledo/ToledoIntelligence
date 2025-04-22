@@ -131,7 +131,7 @@ export default function LandingPage() {
                   setAuthMode("login");
                 }}
               >
-                {t("auth.login")}
+                Entrar
               </Button>
               <Button
                 style={{ backgroundColor: colors.primary }}
@@ -140,7 +140,7 @@ export default function LandingPage() {
                   setAuthMode("register");
                 }}
               >
-                {t("auth.register")}
+                Cadastrar
               </Button>
             </div>
           </div>
@@ -165,7 +165,7 @@ export default function LandingPage() {
               setAuthMode("register");
             }}
           >
-            {t("landing.getStarted")}
+            Começar Agora
           </Button>
         </div>
       </section>
@@ -324,7 +324,7 @@ export default function LandingPage() {
                     variant={plan.popular ? "default" : "outline"}
                     onClick={() => handleSelectPlan(plan.id)}
                   >
-                    {t("landing.selectPlan")}
+                    Selecionar Plano
                   </Button>
                 </div>
               </Card>
@@ -339,15 +339,15 @@ export default function LandingPage() {
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="mb-4 md:mb-0">
               <p className="text-gray-500">
-                &copy; {new Date().getFullYear()} ToledoIA. {t("landing.allRightsReserved")}
+                &copy; {new Date().getFullYear()} ToledoIA. Todos os direitos reservados ao Prof. Vinícius Toledo
               </p>
             </div>
             <div className="flex space-x-4">
               <a href="#" className="text-gray-500 hover:text-white">
-                {t("landing.termsOfService")}
+                Termos de Serviço
               </a>
               <a href="#" className="text-gray-500 hover:text-white">
-                {t("landing.privacyPolicy")}
+                Política de Privacidade
               </a>
             </div>
           </div>
@@ -381,7 +381,7 @@ export default function LandingPage() {
               </svg>
             </button>
             <h3 className="text-2xl font-bold mb-6 text-center">
-              {authMode === "login" ? t("auth.login") : t("auth.register")}
+              {authMode === "login" ? "Entrar" : "Cadastrar"}
             </h3>
             <AuthForm
               mode={authMode}
