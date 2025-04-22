@@ -102,6 +102,7 @@ const enTranslations = {
     adminAccess: 'Administrator Access',
     adminPanelAccess: 'Control Panel Access',
     accessAdminPanel: 'Access Admin Panel',
+    accessPanel: 'Access Admin Panel',
     adminAccessWarning: 'This area is restricted to administrators only. You must have administrative privileges to access this panel.',
     dashboard: 'Dashboard',
     settings: 'Settings',
