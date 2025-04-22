@@ -15,6 +15,7 @@ import LandingPage from "@/pages/landing-page";
 import CheckoutPage from "@/pages/checkout-page";
 import CheckoutSuccessPage from "@/pages/checkout-success-page";
 import CpanelLoginPage from "@/pages/cpanel-login-page";
+import DiagnosticPage from "@/pages/diagnostic-page";
 
 function Router() {
   return (
@@ -27,6 +28,9 @@ function Router() {
       {/* Checkout routes */}
       <ProtectedRoute path="/checkout" component={CheckoutPage} />
       <ProtectedRoute path="/checkout-success" component={CheckoutSuccessPage} />
+      
+      {/* Diagnostic tool - será removido após a correção */}
+      <Route path="/diagnostic" component={DiagnosticPage} />
       
       {/* Protected routes */}
       <ProtectedRoute path="/technician" component={TechnicianPage} roles={["technician", "admin"]} />
