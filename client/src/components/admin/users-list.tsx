@@ -433,7 +433,7 @@ export function UsersList() {
           <AlertDialogHeader>
             <AlertDialogTitle>{t("admin.deleteUserTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t("admin.deleteUserDesc", { email: userToDelete.email })}
+              {t("admin.deleteUserDesc").replace("{email}", userToDelete.email)}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
