@@ -21,6 +21,20 @@ export default function LandingPage() {
   const { user } = useAuth();
   const [showAuthForm, setShowAuthForm] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
+  
+  // Redirecionar usuário já autenticado para a página apropriada
+  useEffect(() => {
+    if (user) {
+      // Se for admin, vai para o painel admin
+      if (user.role === "admin") {
+        setLocation("/admin");
+      } 
+      // Se for técnico, vai para a página do técnico
+      else if (user.role === "technician") {
+        setLocation("/technician");
+      }
+    }
+  }, [user, setLocation]);
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
 
   // Planos disponíveis
@@ -52,12 +66,7 @@ export default function LandingPage() {
     }
   ];
 
-  // Redirecionar para o dashboard se já estiver autenticado
-  useEffect(() => {
-    if (user) {
-      setLocation("/dashboard");
-    }
-  }, [user, setLocation]);
+  // Este efeito foi removido porque já temos um efeito de redirecionamento acima
 
   // Manipular o sucesso da autenticação
   const handleAuthSuccess = () => {
