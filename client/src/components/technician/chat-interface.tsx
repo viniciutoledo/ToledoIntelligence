@@ -20,6 +20,10 @@ export function ChatInterface() {
     uploadFileMutation,
   } = useChat();
   
+  const isLoading = createSessionMutation.isPending || 
+                   sendMessageMutation.isPending || 
+                   uploadFileMutation.isPending;
+  
   const [message, setMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -53,6 +57,8 @@ export function ChatInterface() {
     
     const file = e.target.files[0];
     if (!file) return;
+    
+    console.log("Enviando arquivo:", file.name, file.type, file.size);
     
     uploadFileMutation.mutate({
       sessionId: currentSession.id,
@@ -194,8 +200,13 @@ export function ChatInterface() {
               type="button"
               className="p-2 rounded-full text-neutral-500 hover:text-primary hover:bg-primary-50"
               onClick={() => fileInputRef.current?.click()}
+              disabled={!currentSession || isLoading}
             >
-              <Paperclip className="h-5 w-5" />
+              {uploadFileMutation.isPending ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <Paperclip className="h-5 w-5" />
+              )}
             </Button>
           </div>
           
@@ -213,8 +224,13 @@ export function ChatInterface() {
               type="button"
               className="p-2 rounded-full text-neutral-500 hover:text-primary hover:bg-primary-50"
               onClick={() => imageInputRef.current?.click()}
+              disabled={!currentSession || isLoading}
             >
-              <Image className="h-5 w-5" />
+              {uploadFileMutation.isPending ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <Image className="h-5 w-5" />
+              )}
             </Button>
           </div>
           
@@ -232,7 +248,7 @@ export function ChatInterface() {
             size="icon"
             className="p-2 rounded-full bg-primary text-white hover:bg-primary-600"
             onClick={handleSendMessage}
-            disabled={!message.trim() || !currentSession || sendMessageMutation.isPending}
+            disabled={!message.trim() || !currentSession || isLoading}
           >
             {sendMessageMutation.isPending ? (
               <Loader2 className="h-5 w-5 animate-spin" />
