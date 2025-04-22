@@ -66,23 +66,13 @@ async function generateEmailOtp(user: User): Promise<string> {
     expires_at: expiresAt
   });
   
-  // Email content
-  const subject = user.language === "pt" 
-    ? "Código de verificação ToledoIA"
-    : "ToledoIA verification code";
-    
-  const text = user.language === "pt"
-    ? `Seu código de verificação é: ${otp}\nEste código expira em 10 minutos.`
-    : `Your verification code is: ${otp}\nThis code expires in 10 minutes.`;
-  
-  // Send email (in a real implementation)
+  // Send email via Supabase
   try {
-    await transporter.sendMail({
-      from: '"ToledoIA" <noreply@toledoia.com>',
-      to: user.email,
-      subject,
-      text
-    });
+    const emailSent = await sendOtpEmail(user, otp);
+    
+    if (!emailSent) {
+      throw new Error("Failed to send email via Supabase");
+    }
     
     return otp;
   } catch (error) {
