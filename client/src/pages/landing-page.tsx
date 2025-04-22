@@ -123,8 +123,7 @@ export default function LandingPage() {
             {/* Botões de autenticação */}
             <div className="flex items-center gap-2">
               <Button
-                className="text-white border-white bg-gray-800"
-                variant="outline"
+                className="text-white bg-gray-700 hover:bg-gray-600 border-2 border-gray-600 transform transition-all duration-200 hover:scale-105"
                 onClick={() => {
                   setShowAuthForm(true);
                   setAuthMode("login");
@@ -133,7 +132,7 @@ export default function LandingPage() {
                 Entrar
               </Button>
               <Button
-                style={{ backgroundColor: colors.primary }}
+                className="bg-pink-600 hover:bg-pink-500 transform transition-all duration-200 hover:scale-105 font-medium"
                 onClick={() => {
                   setShowAuthForm(true);
                   setAuthMode("register");
@@ -157,8 +156,7 @@ export default function LandingPage() {
           </p>
           <Button
             size="lg"
-            className="text-lg px-8 py-6"
-            style={{ backgroundColor: colors.primary }}
+            className="text-lg px-8 py-6 bg-pink-600 hover:bg-pink-500 shadow-lg hover:shadow-xl transform transition-all duration-300 hover:scale-105 font-bold"
             onClick={() => {
               setShowAuthForm(true);
               setAuthMode("register");
@@ -277,10 +275,11 @@ export default function LandingPage() {
             {plans.map((plan) => (
               <Card
                 key={plan.id}
-                className="border-0 relative overflow-hidden shadow-xl"
+                className="border-0 relative overflow-hidden shadow-xl transition-all duration-300 hover:shadow-2xl hover:translate-y-[-5px]"
                 style={{ 
-                  backgroundColor: plan.popular ? "rgba(40, 40, 40, 0.95)" : "rgba(35, 35, 35, 0.95)",
-                  borderLeft: plan.popular ? `4px solid ${colors.primary}` : "none"
+                  backgroundColor: plan.popular ? "rgba(45, 45, 45, 0.95)" : "rgba(40, 40, 40, 0.95)",
+                  borderLeft: plan.popular ? `4px solid ${colors.primary}` : "2px solid #333",
+                  borderRadius: "8px"
                 }}
               >
                 {plan.popular && (
@@ -292,17 +291,17 @@ export default function LandingPage() {
                   </div>
                 )}
                 <div className="p-6">
-                  <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
+                  <h3 className="text-2xl font-bold mb-2 text-white">{plan.name}</h3>
                   <div className="flex items-baseline mb-4">
-                    <span className="text-4xl font-bold">{plan.price}</span>
-                    <span className="text-gray-400 ml-2">/{t("common.month")}</span>
+                    <span className="text-4xl font-bold text-white">{plan.price}</span>
+                    <span className="text-white ml-2 opacity-70">/{t("common.month")}</span>
                   </div>
-                  <ul className="space-y-3 mb-6">
+                  <ul className="space-y-4 mb-6">
                     {plan.features.map((feature, i) => (
-                      <li key={i} className="flex items-center">
+                      <li key={i} className="flex items-center group">
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
-                          className="h-5 w-5 mr-2 text-green-500"
+                          className="h-5 w-5 mr-3 text-green-400"
                           fill="none"
                           viewBox="0 0 24 24"
                           stroke="currentColor"
@@ -310,21 +309,16 @@ export default function LandingPage() {
                           <path
                             strokeLinecap="round"
                             strokeLinejoin="round"
-                            strokeWidth={2}
+                            strokeWidth={2.5}
                             d="M5 13l4 4L19 7"
                           />
                         </svg>
-                        {feature}
+                        <span className="text-white text-base font-medium group-hover:text-green-300 transition-colors duration-200">{feature}</span>
                       </li>
                     ))}
                   </ul>
                   <Button
-                    className="w-full"
-                    style={{
-                      backgroundColor: plan.popular ? colors.primary : "#444",
-                      color: "white",
-                      border: "none"
-                    }}
+                    className={`w-full transform transition-all duration-200 hover:scale-105 hover:shadow-lg font-medium ${plan.popular ? 'bg-pink-600 hover:bg-pink-500' : 'bg-gray-700 hover:bg-gray-600'}`}
                     onClick={() => handleSelectPlan(plan.id)}
                   >
                     Selecionar Plano
