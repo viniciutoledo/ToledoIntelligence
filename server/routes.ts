@@ -1350,6 +1350,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Rota especial para verificar e listar usuários (temporária para diagnóstico)
+  app.get("/api/users-check", isAuthenticated, async (req, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      
+      // Retorna apenas informações básicas e seguras
+      const safeUsers = users.map(user => ({
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        subscription_tier: user.subscription_tier
+      }));
+      
+      res.json(safeUsers);
+    } catch (error) {
+      console.error("Erro ao buscar usuários:", error);
+      res.status(500).json({ message: "Erro ao buscar usuários" });
+    }
+  });
+  
+  // Rota especial para corrigir papel do usuário específico
+  app.post("/api/fix-user-role", isAuthenticated, checkRole("admin"), async (req, res) => {
+    try {
+      const email = req.body.email;
+      const newRole = req.body.role;
+      
+      if (!email || !newRole || (newRole !== "technician" && newRole !== "admin")) {
+        return res.status(400).json({ message: "Email e papel válido (technician ou admin) são obrigatórios" });
+      }
+      
+      const user = await storage.getUserByEmail(email);
+      
+      if (!user) {
+        return res.status(404).json({ message: "Usuário não encontrado" });
+      }
+      
+      // Atualiza o papel do usuário
+      const updatedUser = await storage.updateUser(user.id, { role: newRole });
+      
+      // Log da ação
+      await logAction({
+        userId: req.user!.id,
+        action: "user_role_updated",
+        details: { userId: user.id, email: user.email, oldRole: user.role, newRole },
+        ipAddress: req.ip
+      });
+      
+      res.json({ 
+        message: `Papel do usuário ${email} atualizado para ${newRole}`,
+        user: {
+          id: updatedUser.id,
+          email: updatedUser.email,
+          role: updatedUser.role
+        }
+      });
+    } catch (error) {
+      console.error("Erro ao atualizar papel do usuário:", error);
+      res.status(500).json({ message: "Erro ao atualizar papel do usuário" });
+    }
+  });
+  
   // Serve uploaded files
   app.use("/uploads", express.static(UPLOADS_DIR));
   console.log(`Servindo arquivos estáticos de ${UPLOADS_DIR} na rota /uploads`);

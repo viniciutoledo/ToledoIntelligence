@@ -30,18 +30,32 @@ export function AuthRedirect({
     if (user) {
       console.log(`AuthRedirect - Usuário autenticado: ${user.email} (${user.role})`);
       
+      // Se temos um caminho específico de redirecionamento fornecido pelo componente pai
       if (redirectPathWhenLoggedIn) {
-        // Se um caminho específico de redirecionamento foi fornecido
         console.log(`AuthRedirect - Redirecionando para caminho específico: ${redirectPathWhenLoggedIn}`);
         window.location.href = redirectPathWhenLoggedIn;
-      } else if (user.role === "technician") {
-        // Redirecionar para a página do técnico se logado como técnico
+        return;
+      }
+      
+      // Obtém o caminho atual
+      const currentPath = window.location.pathname;
+      
+      // Verificamos se estamos na tela de login do admin
+      if (currentPath.includes('admin-login') || currentPath.includes('cpanel-login')) {
+        if (user.role === "admin") {
+          // Se for admin na tela de login de admin, redireciona para o painel admin
+          console.log("AuthRedirect - Redirecionando para painel do administrador");
+          window.location.href = "/admin";
+        } else {
+          // Se for técnico tentando acessar login de admin, redireciona para área de técnico
+          console.log("AuthRedirect - Técnico tentando acessar área de admin, redirecionando para área técnica");
+          window.location.href = "/technician";
+        }
+      } else {
+        // Para todas as outras páginas públicas, redirecionar sempre para a área de técnico
+        // Isso atende ao requisito de que administradores também possam acessar a interface de técnico
         console.log("AuthRedirect - Redirecionando para interface do técnico");
         window.location.href = "/technician";
-      } else if (user.role === "admin") {
-        // Redirecionar para a página do admin se logado como admin
-        console.log("AuthRedirect - Redirecionando para painel do administrador");
-        window.location.href = "/admin";
       }
     } else {
       console.log("AuthRedirect - Usuário não autenticado, permanecendo na página atual");
