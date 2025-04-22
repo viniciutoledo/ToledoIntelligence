@@ -26,7 +26,25 @@ const enTranslations = {
     passwordRequirements: 'Must contain at least 12 characters, including uppercase, lowercase, numbers, and special characters.',
     errorOccurred: 'An error occurred',
     welcomeMessage: 'Welcome to ToledoIA',
-    tryingAs: 'Trying as'
+    tryingAs: 'Trying as',
+    switchLanguage: 'Switch language',
+    month: 'month'
+  },
+  landing: {
+    heroTitle: 'AI-Powered Circuit Board Analysis',
+    heroSubtitle: 'The most advanced AI solution for maintenance technicians. Upload circuit board images and get expert analysis and troubleshooting guidance.',
+    getStarted: 'Get Started',
+    featuresTitle: 'Advanced Features',
+    featureOneTitle: 'Circuit Analysis',
+    featureOneDescription: 'Upload circuit board images and get detailed technical analysis with component identification',
+    featureTwoTitle: 'Multilingual Support',
+    featureTwoDescription: 'Get assistance in both English and Portuguese with seamless language switching',
+    featureThreeTitle: 'Technical Training',
+    featureThreeDescription: 'Train the AI with your own technical documents for improved circuit analysis',
+    pricingTitle: 'Subscription Plans',
+    pricingSubtitle: 'Choose the plan that best fits your needs',
+    mostPopular: 'Most Popular',
+    selectPlan: 'Select Plan'
   },
   auth: {
     loginTitle: 'Login to Your Account',
@@ -287,7 +305,25 @@ const ptTranslations = {
     passwordRequirements: 'Deve conter pelo menos 12 caracteres, incluindo maiúsculas, minúsculas, números e caracteres especiais.',
     errorOccurred: 'Ocorreu um erro',
     welcomeMessage: 'Bem-vindo à ToledoIA',
-    tryingAs: 'Tentando como'
+    tryingAs: 'Tentando como',
+    switchLanguage: 'Mudar idioma',
+    month: 'mês'
+  },
+  landing: {
+    heroTitle: 'Análise de Placas de Circuito com IA',
+    heroSubtitle: 'A solução de IA mais avançada para técnicos de manutenção. Envie imagens de placas de circuito e obtenha análise especializada e orientação para solução de problemas.',
+    getStarted: 'Começar Agora',
+    featuresTitle: 'Recursos Avançados',
+    featureOneTitle: 'Análise de Circuitos',
+    featureOneDescription: 'Envie imagens de placas de circuito e obtenha análise técnica detalhada com identificação de componentes',
+    featureTwoTitle: 'Suporte Multilíngue',
+    featureTwoDescription: 'Obtenha assistência em inglês e português com troca de idioma simplificada',
+    featureThreeTitle: 'Treinamento Técnico',
+    featureThreeDescription: 'Treine a IA com seus próprios documentos técnicos para melhorar a análise de circuitos',
+    pricingTitle: 'Planos de Assinatura',
+    pricingSubtitle: 'Escolha o plano que melhor atende às suas necessidades',
+    mostPopular: 'Mais Popular',
+    selectPlan: 'Selecionar Plano'
   },
   auth: {
     loginTitle: 'Acesse sua Conta',
