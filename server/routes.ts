@@ -633,7 +633,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Rotas de assinatura
   
-  // Endpoint para criar uma sessão de checkout do Stripe
+  // Endpoint para criar uma assinatura diretamente pela API
+  app.post("/api/create-subscription", isAuthenticated, async (req, res) => {
+    try {
+      const schema = z.object({
+        priceId: z.string()
+      });
+      
+      const { priceId } = schema.parse(req.body);
+      
+      // Validar se o priceId é um dos planos válidos
+      const isValidPriceId = Object.values(STRIPE_PRICE_IDS).includes(priceId);
+      if (!isValidPriceId) {
+        return res.status(400).json({ message: "Invalid price ID" });
+      }
+      
+      // Obter ou criar cliente Stripe
+      const stripeCustomerId = await getOrCreateStripeCustomer(
+        req.user!.id.toString(),
+        req.user!.email
+      );
+      
+      // Criar assinatura com pagamento incompleto
+      const subscription = await stripe.subscriptions.create({
+        customer: stripeCustomerId,
+        items: [{ price: priceId }],
+        payment_behavior: 'default_incomplete',
+        payment_settings: { save_default_payment_method: 'on_subscription' },
+        expand: ['latest_invoice.payment_intent'],
+      });
+      
+      // Atualizar usuário com as informações da assinatura
+      await updateUserSubscriptionTier(
+        req.user!.id.toString(),
+        stripeCustomerId,
+        subscription.id,
+        priceId === STRIPE_PRICE_IDS.BASIC ? 'basic' : 'intermediate'
+      );
+      
+      // Log da ação
+      await logAction({
+        userId: req.user!.id,
+        action: "subscription_started",
+        details: { 
+          priceId,
+          subscriptionId: subscription.id
+        },
+        ipAddress: req.ip
+      });
+      
+      // Obter detalhes do plano para exibição
+      const planName = priceId === STRIPE_PRICE_IDS.BASIC ? 
+        "Plano Básico" : "Plano Intermediário";
+      
+      const planPrice = priceId === STRIPE_PRICE_IDS.BASIC ? 
+        "R$29,90/mês" : "R$39,90/mês";
+        
+      const planDescription = priceId === STRIPE_PRICE_IDS.BASIC ? 
+        "2.500 interações por mês" : "5.000 interações por mês";
+      
+      // Retornar as informações necessárias para o checkout
+      const invoice = subscription.latest_invoice as any;
+      const clientSecret = invoice.payment_intent.client_secret;
+      
+      res.json({
+        subscriptionId: subscription.id,
+        clientSecret,
+        planName,
+        planPrice,
+        planDescription
+      });
+    } catch (error) {
+      console.error("Erro ao criar assinatura:", error);
+      res.status(500).json({ 
+        message: error instanceof Error ? error.message : "Error creating subscription" 
+      });
+    }
+  });
+  
+  // Endpoint para criar uma sessão de checkout do Stripe (método antigo)
   app.post("/api/subscription/checkout", isAuthenticated, async (req, res) => {
     try {
       const schema = z.object({
