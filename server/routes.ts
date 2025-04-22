@@ -780,7 +780,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Obter a assinatura
-      const subscription = session.subscription as Stripe.Subscription;
+      const subscription = session.subscription as any;
       
       if (!subscription) {
         return res.status(400).json({ message: 'Assinatura não encontrada na sessão' });
@@ -995,7 +995,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const messageData = {
         session_id: sessionId,
         user_id: req.user!.id,
-        message_type: messageType,
+        message_type: messageType as "text" | "image" | "file",
         content,
         file_url: fileUrl,
         is_user: true
@@ -1086,7 +1086,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.createChatMessage({
           session_id: sessionId,
           user_id: req.user!.id,
-          message_type: "text",
+          message_type: "text" as "text",
           content: botResponse,
           is_user: false
         });

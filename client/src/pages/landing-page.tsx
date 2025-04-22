@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { useLanguage } from "@/hooks/use-language";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { AuthForm } from "@/components/auth/auth-form";
+import { AuthForm } from "@/components/auth";
 import { useAuth } from "@/hooks/use-auth";
 
 // Cores do tema
