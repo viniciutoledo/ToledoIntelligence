@@ -75,14 +75,14 @@ export function TrainingText() {
         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
           <FileText className="h-4 w-4 text-primary" />
         </div>
-        <h3 className="ml-2 text-base font-medium">admin.training.newTextTraining</h3>
+        <h3 className="ml-2 text-base font-medium">Novo Treinamento de Texto</h3>
       </div>
 
       {/* Área de input do texto */}
       <div className="mb-6 rounded-lg border bg-card">
         <div className="p-4">
           <Textarea
-            placeholder="admin.training.enterTextContent"
+            placeholder="Digite o conteúdo de texto para treinar o modelo de IA..."
             value={textContent}
             onChange={e => setTextContent(e.target.value)}
             className="min-h-[120px] resize-none border-0 bg-transparent p-0 text-sm ring-0 focus-visible:ring-0 focus-visible:ring-offset-0"
@@ -90,7 +90,7 @@ export function TrainingText() {
         </div>
         <div className="flex items-center justify-between border-t bg-muted/20 px-4 py-2">
           <div className="flex items-center text-xs text-muted-foreground">
-            <span>admin.training.typeOrPaste</span>
+            <span>Digite ou cole o conteúdo de texto</span>
           </div>
           <Button
             type="button" 
@@ -105,10 +105,10 @@ export function TrainingText() {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                admin.training.processing
+                Processando...
               </span>
             ) : (
-              "admin.training.submitText"
+              "Enviar Texto"
             )}
           </Button>
         </div>
@@ -125,14 +125,14 @@ export function TrainingText() {
             <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted">
               <FileText className="h-10 w-10 text-muted-foreground/60" />
             </div>
-            <h3 className="mt-4 text-lg font-medium">admin.training.noTextTrainings</h3>
+            <h3 className="mt-4 text-lg font-medium">Nenhum Treinamento de Texto</h3>
             <p className="mt-2 text-sm text-muted-foreground text-center max-w-sm">
-              admin.training.enterTextToTrain
+              Digite conteúdo de texto para treinar o modelo de IA
             </p>
           </div>
         ) : (
           <>
-            <h3 className="text-base font-medium mb-2">admin.training.noTextTrainings</h3>
+            <h3 className="text-base font-medium mb-2">Itens de Treinamento</h3>
             <div className="space-y-2">
               {textDocuments.map((doc) => (
                 <div key={doc.id} className="rounded-lg border bg-card p-4 transition-all hover:shadow-sm">
@@ -142,7 +142,7 @@ export function TrainingText() {
                         {doc.content}
                       </div>
                       <div className="mt-1 flex items-center text-xs text-muted-foreground">
-                        <span>admin.training.enterTextToTrain</span>
+                        <span>Item de Treinamento</span>
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
@@ -154,7 +154,7 @@ export function TrainingText() {
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                             <MoreVertical className="h-4 w-4" />
-                            <span className="sr-only">common.actions</span>
+                            <span className="sr-only">Ações</span>
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
@@ -163,13 +163,13 @@ export function TrainingText() {
                             onClick={() => navigator.clipboard.writeText(doc.content || '')}
                           >
                             <ClipboardIcon className="mr-2 h-4 w-4" />
-                            <span>common.copy</span>
+                            <span>Copiar</span>
                           </DropdownMenuItem>
                           <DropdownMenuItem 
                             className="flex cursor-pointer items-center text-red-600 focus:text-red-600" 
                             onClick={() => handleDeleteDocument(doc.id)}
                           >
-                            <span>common.delete</span>
+                            <span>Excluir</span>
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>

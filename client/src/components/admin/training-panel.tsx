@@ -51,11 +51,11 @@ export function TrainingPanel() {
             </div>
             <div className="flex-1">
               <p className="text-sm text-muted-foreground">
-                admin.training.modelDescription
+                Modelo de IA treinado com seus próprios dados para análise de placas de circuito
               </p>
               <div className="mt-1 flex items-center">
                 <div className="flex items-center text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
-                  <span className="mr-1">admin.training.currentModel: </span>
+                  <span className="mr-1">Modelo Atual: </span>
                   <span className="font-medium">GPT-4o</span>
                 </div>
               </div>
@@ -68,7 +68,7 @@ export function TrainingPanel() {
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 type="search"
-                placeholder="admin.training.searchTraining"
+                placeholder="Buscar materiais de treinamento..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9"
