@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
 import { AdminSidebar } from "@/components/admin/sidebar";
 import { LlmSettings } from "@/components/admin/llm-settings";
 import { AvatarSettings } from "@/components/admin/avatar-settings";
@@ -9,10 +10,21 @@ import { TrainingPanel } from "@/components/admin/training-panel";
 import { LlmProvider } from "@/hooks/use-llm";
 import { AvatarProvider } from "@/hooks/use-avatar";
 import { useLanguage } from "@/hooks/use-language";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function AdminPage() {
   const { t } = useLanguage();
+  const { user } = useAuth();
+  const [, setLocation] = useLocation();
   const [activeSection, setActiveSection] = useState("dashboard");
+  
+  // Verificação explícita de função de usuário - garantir que apenas admins tenham acesso
+  useEffect(() => {
+    if (user && user.role !== "admin") {
+      console.log("Redirecionando: usuário não é administrador");
+      setLocation("/technician");
+    }
+  }, [user, setLocation]);
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-neutral-50 to-neutral-100">
