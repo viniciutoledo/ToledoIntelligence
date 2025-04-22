@@ -3,6 +3,7 @@ import { useLanguage } from "@/hooks/use-language";
 import { useChat } from "@/hooks/use-chat";
 import { useAvatar } from "@/hooks/use-avatar";
 import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Paperclip, Image, Send, Loader2 } from "lucide-react";
@@ -11,6 +12,7 @@ export function ChatInterface() {
   const { t } = useLanguage();
   const { user } = useAuth();
   const { avatar } = useAvatar();
+  const { toast } = useToast();
   const {
     currentSession,
     messages,
@@ -28,7 +30,6 @@ export function ChatInterface() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const imageInputRef = useRef<HTMLInputElement>(null);
   
   // Create a new session when component mounts if none exists
   useEffect(() => {
@@ -50,6 +51,20 @@ export function ChatInterface() {
     if (!file) {
       setFileSelected(false);
       setSelectedFile(null);
+      return;
+    }
+    
+    // Verificar tamanho do arquivo (máximo 50MB)
+    const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB em bytes
+    if (file.size > MAX_FILE_SIZE) {
+      toast({
+        title: t("common.error"),
+        description: t("technician.fileTooLarge"),
+        variant: "destructive",
+      });
+      
+      // Limpar seleção
+      if (fileInputRef.current) fileInputRef.current.value = "";
       return;
     }
     
@@ -76,7 +91,6 @@ export function ChatInterface() {
       
       // Reset do input de arquivo
       if (fileInputRef.current) fileInputRef.current.value = "";
-      if (imageInputRef.current) imageInputRef.current.value = "";
     }
     
     if (message.trim()) {
@@ -229,7 +243,7 @@ export function ChatInterface() {
               ref={fileInputRef} 
               className="hidden" 
               onChange={handleFileUpload}
-              accept=".pdf,.txt"
+              accept=".pdf,.txt,.png,.jpg,.jpeg,.gif"
             />
             <Button 
               variant="ghost" 
@@ -238,35 +252,12 @@ export function ChatInterface() {
               className="p-2 rounded-full text-neutral-500 hover:text-primary hover:bg-primary-50"
               onClick={() => fileInputRef.current?.click()}
               disabled={!currentSession || isLoading}
+              title={t("technician.uploadFileOrImage")}
             >
               {uploadFileMutation.isPending ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
                 <Paperclip className="h-5 w-5" />
-              )}
-            </Button>
-          </div>
-          
-          <div className="relative ml-1">
-            <input 
-              type="file" 
-              ref={imageInputRef} 
-              className="hidden" 
-              onChange={handleFileUpload}
-              accept=".png,.jpg,.jpeg"
-            />
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              type="button"
-              className="p-2 rounded-full text-neutral-500 hover:text-primary hover:bg-primary-50"
-              onClick={() => imageInputRef.current?.click()}
-              disabled={!currentSession || isLoading}
-            >
-              {uploadFileMutation.isPending ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <Image className="h-5 w-5" />
               )}
             </Button>
           </div>
@@ -303,7 +294,7 @@ export function ChatInterface() {
         )}
         
         <div className="text-xs text-neutral-500 mt-2 ml-1">
-          {t("technician.supportedFormats")}
+          Formatos suportados: PNG, JPG, PDF, TXT (máx 50MB)
         </div>
       </div>
     </div>
