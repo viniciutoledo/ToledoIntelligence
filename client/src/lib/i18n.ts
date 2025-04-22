@@ -66,6 +66,8 @@ const enTranslations = {
     send: 'Send',
     supportedFormats: 'Supported formats: PNG, JPG, PDF, TXT (max 50MB)',
     online: 'Online',
+    messageUnavailable: 'Message unavailable',
+    downloadFile: 'Download file',
     botWelcome: "Hello! I'm the ToledoIA Bot. How can I help with your maintenance today? You can send images or files of the circuit board for analysis."
   },
   admin: {
@@ -325,6 +327,8 @@ const ptTranslations = {
     send: 'Enviar',
     supportedFormats: 'Formatos suportados: PNG, JPG, PDF, TXT (máx 50MB)',
     online: 'Online',
+    messageUnavailable: 'Mensagem indisponível',
+    downloadFile: 'Baixar arquivo',
     botWelcome: "Olá! Sou o Bot ToledoIA. Como posso ajudar com sua manutenção hoje? Você pode enviar imagens ou arquivos da placa de circuito para análise."
   },
   admin: {
