@@ -22,7 +22,7 @@ function Router() {
       {/* Public routes */}
       <Route path="/" component={LandingPage} />
       <Route path="/auth" component={AuthPage} />
-      <Route path="/cpanel" component={CpanelLoginPage} />
+      <Route path="/admin-login" component={CpanelLoginPage} />
       
       {/* Checkout routes */}
       <ProtectedRoute path="/checkout" component={CheckoutPage} />
