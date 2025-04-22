@@ -97,6 +97,9 @@ export class MemStorage implements IStorage {
   private auditLogs: Map<number, AuditLog>;
   private otpTokens: Map<number, OtpToken>;
   private userActiveSessions: Map<number, string>;
+  private trainingDocuments: Map<number, TrainingDocument>;
+  private trainingCategories: Map<number, TrainingCategory>;
+  private documentCategories: Map<number, DocumentCategory>;
   
   sessionStore: session.Store;
   
@@ -108,6 +111,9 @@ export class MemStorage implements IStorage {
     chatMessageId: number;
     auditLogId: number;
     otpTokenId: number;
+    trainingDocumentId: number;
+    trainingCategoryId: number;
+    documentCategoryId: number;
   };
 
   constructor() {
@@ -119,6 +125,9 @@ export class MemStorage implements IStorage {
     this.auditLogs = new Map();
     this.otpTokens = new Map();
     this.userActiveSessions = new Map();
+    this.trainingDocuments = new Map();
+    this.trainingCategories = new Map();
+    this.documentCategories = new Map();
     
     this.currentIds = {
       userId: 1,
@@ -127,7 +136,10 @@ export class MemStorage implements IStorage {
       chatSessionId: 1,
       chatMessageId: 1,
       auditLogId: 1,
-      otpTokenId: 1
+      otpTokenId: 1,
+      trainingDocumentId: 1,
+      trainingCategoryId: 1,
+      documentCategoryId: 1
     };
     
     this.sessionStore = new MemoryStore({
@@ -469,12 +481,179 @@ export class MemStorage implements IStorage {
   async removeUserActiveSession(userId: number): Promise<void> {
     this.userActiveSessions.delete(userId);
   }
+  
+  // Training documents
+  async getTrainingDocument(id: number): Promise<TrainingDocument | undefined> {
+    return this.trainingDocuments.get(id);
+  }
+  
+  async getTrainingDocuments(): Promise<TrainingDocument[]> {
+    return Array.from(this.trainingDocuments.values())
+      .filter(doc => doc.is_active)
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  }
+  
+  async createTrainingDocument(document: InsertTrainingDocument): Promise<TrainingDocument> {
+    const id = this.currentIds.trainingDocumentId++;
+    const now = new Date();
+    
+    const newDocument: TrainingDocument = {
+      ...document,
+      id,
+      is_active: true,
+      created_at: now,
+      updated_at: now
+    };
+    
+    this.trainingDocuments.set(id, newDocument);
+    return newDocument;
+  }
+  
+  async updateTrainingDocument(id: number, data: Partial<TrainingDocument>): Promise<TrainingDocument | undefined> {
+    const document = this.trainingDocuments.get(id);
+    if (!document) return undefined;
+    
+    const updatedDocument = {
+      ...document,
+      ...data,
+      updated_at: new Date()
+    };
+    
+    this.trainingDocuments.set(id, updatedDocument);
+    return updatedDocument;
+  }
+  
+  async deleteTrainingDocument(id: number): Promise<void> {
+    const document = this.trainingDocuments.get(id);
+    if (document) {
+      this.trainingDocuments.set(id, { ...document, is_active: false, updated_at: new Date() });
+    }
+  }
+  
+  async updateTrainingDocumentStatus(id: number, status: string, errorMessage?: string): Promise<TrainingDocument | undefined> {
+    const document = this.trainingDocuments.get(id);
+    if (!document) return undefined;
+    
+    const updatedDocument = {
+      ...document,
+      status: status as any,
+      error_message: errorMessage,
+      updated_at: new Date()
+    };
+    
+    this.trainingDocuments.set(id, updatedDocument);
+    return updatedDocument;
+  }
+  
+  // Training categories
+  async getTrainingCategory(id: number): Promise<TrainingCategory | undefined> {
+    return this.trainingCategories.get(id);
+  }
+  
+  async getTrainingCategories(): Promise<TrainingCategory[]> {
+    return Array.from(this.trainingCategories.values())
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }
+  
+  async createTrainingCategory(category: InsertTrainingCategory): Promise<TrainingCategory> {
+    const id = this.currentIds.trainingCategoryId++;
+    const now = new Date();
+    
+    const newCategory: TrainingCategory = {
+      ...category,
+      id,
+      created_at: now,
+      updated_at: now
+    };
+    
+    this.trainingCategories.set(id, newCategory);
+    return newCategory;
+  }
+  
+  async updateTrainingCategory(id: number, data: Partial<TrainingCategory>): Promise<TrainingCategory | undefined> {
+    const category = this.trainingCategories.get(id);
+    if (!category) return undefined;
+    
+    const updatedCategory = {
+      ...category,
+      ...data,
+      updated_at: new Date()
+    };
+    
+    this.trainingCategories.set(id, updatedCategory);
+    return updatedCategory;
+  }
+  
+  async deleteTrainingCategory(id: number): Promise<void> {
+    // Remove all associations first
+    for (const [docCatId, docCat] of this.documentCategories.entries()) {
+      if (docCat.category_id === id) {
+        this.documentCategories.delete(docCatId);
+      }
+    }
+    
+    // Then delete the category
+    this.trainingCategories.delete(id);
+  }
+  
+  // Document categories
+  async addDocumentToCategory(documentId: number, categoryId: number): Promise<DocumentCategory> {
+    const id = this.currentIds.documentCategoryId++;
+    
+    const association: DocumentCategory = {
+      id,
+      document_id: documentId,
+      category_id: categoryId
+    };
+    
+    this.documentCategories.set(id, association);
+    return association;
+  }
+  
+  async removeDocumentFromCategory(documentId: number, categoryId: number): Promise<void> {
+    for (const [id, docCat] of this.documentCategories.entries()) {
+      if (docCat.document_id === documentId && docCat.category_id === categoryId) {
+        this.documentCategories.delete(id);
+        break;
+      }
+    }
+  }
+  
+  async getDocumentCategories(documentId: number): Promise<TrainingCategory[]> {
+    const categoryIds = Array.from(this.documentCategories.values())
+      .filter(docCat => docCat.document_id === documentId)
+      .map(docCat => docCat.category_id);
+    
+    return Array.from(this.trainingCategories.values())
+      .filter(category => categoryIds.includes(category.id))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }
+  
+  async getCategoryDocuments(categoryId: number): Promise<TrainingDocument[]> {
+    const documentIds = Array.from(this.documentCategories.values())
+      .filter(docCat => docCat.category_id === categoryId)
+      .map(docCat => docCat.document_id);
+    
+    return Array.from(this.trainingDocuments.values())
+      .filter(doc => doc.is_active && documentIds.includes(doc.id))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }
 }
 
 import { db, pool } from './db';
 import connectPg from "connect-pg-simple";
-import { eq, and, isNull, lt } from 'drizzle-orm';
-import { usersSessions } from '@shared/schema';
+import { eq, and, isNull, lt, gt, or, desc, asc } from 'drizzle-orm';
+import { 
+  usersSessions, 
+  trainingDocuments, 
+  trainingCategories, 
+  documentCategories,
+  TrainingDocument,
+  InsertTrainingDocument,
+  TrainingCategory,
+  InsertTrainingCategory,
+  DocumentCategory
+} from '@shared/schema';
 
 const PostgresSessionStore = connectPg(session);
 
@@ -759,6 +938,173 @@ export class DatabaseStorage implements IStorage {
     await db
       .delete(usersSessions)
       .where(eq(usersSessions.user_id, userId));
+  }
+
+  // Training documents
+  async getTrainingDocument(id: number): Promise<TrainingDocument | undefined> {
+    const [document] = await db
+      .select()
+      .from(trainingDocuments)
+      .where(eq(trainingDocuments.id, id));
+    return document;
+  }
+  
+  async getTrainingDocuments(): Promise<TrainingDocument[]> {
+    return db
+      .select()
+      .from(trainingDocuments)
+      .where(eq(trainingDocuments.is_active, true))
+      .orderBy(desc(trainingDocuments.created_at));
+  }
+  
+  async createTrainingDocument(document: InsertTrainingDocument): Promise<TrainingDocument> {
+    const [newDocument] = await db
+      .insert(trainingDocuments)
+      .values(document)
+      .returning();
+    return newDocument;
+  }
+  
+  async updateTrainingDocument(id: number, data: Partial<TrainingDocument>): Promise<TrainingDocument | undefined> {
+    const [updatedDocument] = await db
+      .update(trainingDocuments)
+      .set({ ...data, updated_at: new Date() })
+      .where(eq(trainingDocuments.id, id))
+      .returning();
+    return updatedDocument;
+  }
+  
+  async deleteTrainingDocument(id: number): Promise<void> {
+    await db
+      .update(trainingDocuments)
+      .set({ is_active: false, updated_at: new Date() })
+      .where(eq(trainingDocuments.id, id));
+  }
+  
+  async updateTrainingDocumentStatus(id: number, status: string, errorMessage?: string): Promise<TrainingDocument | undefined> {
+    const [updatedDocument] = await db
+      .update(trainingDocuments)
+      .set({ 
+        status: status as any, 
+        error_message: errorMessage,
+        updated_at: new Date() 
+      })
+      .where(eq(trainingDocuments.id, id))
+      .returning();
+    return updatedDocument;
+  }
+  
+  // Training categories
+  async getTrainingCategory(id: number): Promise<TrainingCategory | undefined> {
+    const [category] = await db
+      .select()
+      .from(trainingCategories)
+      .where(eq(trainingCategories.id, id));
+    return category;
+  }
+  
+  async getTrainingCategories(): Promise<TrainingCategory[]> {
+    return db
+      .select()
+      .from(trainingCategories)
+      .orderBy(asc(trainingCategories.name));
+  }
+  
+  async createTrainingCategory(category: InsertTrainingCategory): Promise<TrainingCategory> {
+    const [newCategory] = await db
+      .insert(trainingCategories)
+      .values(category)
+      .returning();
+    return newCategory;
+  }
+  
+  async updateTrainingCategory(id: number, data: Partial<TrainingCategory>): Promise<TrainingCategory | undefined> {
+    const [updatedCategory] = await db
+      .update(trainingCategories)
+      .set({ ...data, updated_at: new Date() })
+      .where(eq(trainingCategories.id, id))
+      .returning();
+    return updatedCategory;
+  }
+  
+  async deleteTrainingCategory(id: number): Promise<void> {
+    // Remove all associations first
+    await db
+      .delete(documentCategories)
+      .where(eq(documentCategories.category_id, id));
+    
+    // Then delete the category
+    await db
+      .delete(trainingCategories)
+      .where(eq(trainingCategories.id, id));
+  }
+  
+  // Document categories
+  async addDocumentToCategory(documentId: number, categoryId: number): Promise<DocumentCategory> {
+    const [association] = await db
+      .insert(documentCategories)
+      .values({ document_id: documentId, category_id: categoryId })
+      .returning();
+    return association;
+  }
+  
+  async removeDocumentFromCategory(documentId: number, categoryId: number): Promise<void> {
+    await db
+      .delete(documentCategories)
+      .where(
+        and(
+          eq(documentCategories.document_id, documentId),
+          eq(documentCategories.category_id, categoryId)
+        )
+      );
+  }
+  
+  async getDocumentCategories(documentId: number): Promise<TrainingCategory[]> {
+    return db
+      .select({
+        id: trainingCategories.id,
+        name: trainingCategories.name,
+        description: trainingCategories.description,
+        created_at: trainingCategories.created_at,
+        updated_at: trainingCategories.updated_at,
+        created_by: trainingCategories.created_by
+      })
+      .from(documentCategories)
+      .innerJoin(
+        trainingCategories,
+        eq(documentCategories.category_id, trainingCategories.id)
+      )
+      .where(eq(documentCategories.document_id, documentId));
+  }
+  
+  async getCategoryDocuments(categoryId: number): Promise<TrainingDocument[]> {
+    return db
+      .select({
+        id: trainingDocuments.id,
+        name: trainingDocuments.name,
+        description: trainingDocuments.description,
+        document_type: trainingDocuments.document_type,
+        content: trainingDocuments.content,
+        file_url: trainingDocuments.file_url,
+        website_url: trainingDocuments.website_url,
+        status: trainingDocuments.status,
+        error_message: trainingDocuments.error_message,
+        created_by: trainingDocuments.created_by,
+        created_at: trainingDocuments.created_at,
+        updated_at: trainingDocuments.updated_at,
+        is_active: trainingDocuments.is_active
+      })
+      .from(documentCategories)
+      .innerJoin(
+        trainingDocuments,
+        eq(documentCategories.document_id, trainingDocuments.id)
+      )
+      .where(
+        and(
+          eq(documentCategories.category_id, categoryId),
+          eq(trainingDocuments.is_active, true)
+        )
+      );
   }
 }
 

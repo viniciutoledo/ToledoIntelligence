@@ -875,6 +875,215 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(logs);
   });
   
+  // Training document routes
+  app.get("/api/training/documents", isAuthenticated, checkRole("admin"), async (req, res) => {
+    try {
+      const documents = await storage.getTrainingDocuments();
+      res.json(documents);
+    } catch (error) {
+      res.status(500).json({ message: "Error fetching training documents" });
+    }
+  });
+  
+  app.get("/api/training/documents/:id", isAuthenticated, checkRole("admin"), async (req, res) => {
+    try {
+      const document = await storage.getTrainingDocument(parseInt(req.params.id));
+      if (!document) {
+        return res.status(404).json({ message: "Document not found" });
+      }
+      res.json(document);
+    } catch (error) {
+      res.status(500).json({ message: "Error fetching training document" });
+    }
+  });
+  
+  app.post("/api/training/documents", isAuthenticated, checkRole("admin"), upload.single("file"), async (req, res) => {
+    try {
+      const { name, description, document_type } = req.body;
+      
+      let content = null;
+      let file_url = null;
+      let website_url = null;
+      
+      if (document_type === "text") {
+        content = req.body.content;
+      } else if (document_type === "file" && req.file) {
+        file_url = `/uploads/${req.file.filename}`;
+      } else if (document_type === "website") {
+        website_url = req.body.website_url;
+      }
+      
+      const document = await storage.createTrainingDocument({
+        name,
+        description,
+        document_type: document_type as any,
+        content,
+        file_url,
+        website_url,
+        created_by: req.user!.id,
+        status: "pending"
+      });
+      
+      // Add to categories if specified
+      const categories = req.body.categories ? JSON.parse(req.body.categories) : [];
+      for (const categoryId of categories) {
+        await storage.addDocumentToCategory(document.id, parseInt(categoryId));
+      }
+      
+      // Process document asynchronously based on type
+      // This would be implemented separately in a worker thread or queue
+      
+      res.status(201).json(document);
+    } catch (error) {
+      res.status(500).json({ message: "Error creating training document" });
+    }
+  });
+  
+  app.put("/api/training/documents/:id", isAuthenticated, checkRole("admin"), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { name, description } = req.body;
+      
+      const document = await storage.updateTrainingDocument(id, {
+        name,
+        description,
+        updated_at: new Date()
+      });
+      
+      if (!document) {
+        return res.status(404).json({ message: "Document not found" });
+      }
+      
+      res.json(document);
+    } catch (error) {
+      res.status(500).json({ message: "Error updating training document" });
+    }
+  });
+  
+  app.delete("/api/training/documents/:id", isAuthenticated, checkRole("admin"), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteTrainingDocument(id);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Error deleting training document" });
+    }
+  });
+  
+  // Training category routes
+  app.get("/api/training/categories", isAuthenticated, checkRole("admin"), async (req, res) => {
+    try {
+      const categories = await storage.getTrainingCategories();
+      res.json(categories);
+    } catch (error) {
+      res.status(500).json({ message: "Error fetching training categories" });
+    }
+  });
+  
+  app.get("/api/training/categories/:id", isAuthenticated, checkRole("admin"), async (req, res) => {
+    try {
+      const category = await storage.getTrainingCategory(parseInt(req.params.id));
+      if (!category) {
+        return res.status(404).json({ message: "Category not found" });
+      }
+      res.json(category);
+    } catch (error) {
+      res.status(500).json({ message: "Error fetching training category" });
+    }
+  });
+  
+  app.post("/api/training/categories", isAuthenticated, checkRole("admin"), async (req, res) => {
+    try {
+      const { name, description } = req.body;
+      
+      const category = await storage.createTrainingCategory({
+        name,
+        description,
+        created_by: req.user!.id
+      });
+      
+      res.status(201).json(category);
+    } catch (error) {
+      res.status(500).json({ message: "Error creating training category" });
+    }
+  });
+  
+  app.put("/api/training/categories/:id", isAuthenticated, checkRole("admin"), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { name, description } = req.body;
+      
+      const category = await storage.updateTrainingCategory(id, {
+        name,
+        description,
+        updated_at: new Date()
+      });
+      
+      if (!category) {
+        return res.status(404).json({ message: "Category not found" });
+      }
+      
+      res.json(category);
+    } catch (error) {
+      res.status(500).json({ message: "Error updating training category" });
+    }
+  });
+  
+  app.delete("/api/training/categories/:id", isAuthenticated, checkRole("admin"), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteTrainingCategory(id);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Error deleting training category" });
+    }
+  });
+  
+  // Document-category association routes
+  app.post("/api/training/documents/:documentId/categories/:categoryId", isAuthenticated, checkRole("admin"), async (req, res) => {
+    try {
+      const documentId = parseInt(req.params.documentId);
+      const categoryId = parseInt(req.params.categoryId);
+      
+      const association = await storage.addDocumentToCategory(documentId, categoryId);
+      res.status(201).json(association);
+    } catch (error) {
+      res.status(500).json({ message: "Error adding document to category" });
+    }
+  });
+  
+  app.delete("/api/training/documents/:documentId/categories/:categoryId", isAuthenticated, checkRole("admin"), async (req, res) => {
+    try {
+      const documentId = parseInt(req.params.documentId);
+      const categoryId = parseInt(req.params.categoryId);
+      
+      await storage.removeDocumentFromCategory(documentId, categoryId);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Error removing document from category" });
+    }
+  });
+  
+  app.get("/api/training/documents/:documentId/categories", isAuthenticated, checkRole("admin"), async (req, res) => {
+    try {
+      const documentId = parseInt(req.params.documentId);
+      const categories = await storage.getDocumentCategories(documentId);
+      res.json(categories);
+    } catch (error) {
+      res.status(500).json({ message: "Error fetching document categories" });
+    }
+  });
+  
+  app.get("/api/training/categories/:categoryId/documents", isAuthenticated, checkRole("admin"), async (req, res) => {
+    try {
+      const categoryId = parseInt(req.params.categoryId);
+      const documents = await storage.getCategoryDocuments(categoryId);
+      res.json(documents);
+    } catch (error) {
+      res.status(500).json({ message: "Error fetching category documents" });
+    }
+  });
+  
   // Serve uploaded files
   app.use("/uploads", express.static(UPLOADS_DIR));
   
