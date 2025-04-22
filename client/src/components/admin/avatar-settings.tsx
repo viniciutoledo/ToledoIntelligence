@@ -33,6 +33,7 @@ export function AvatarSettings() {
   const formSchema = z.object({
     name: z.string().min(1, "Name is required").max(50, "Name is too long"),
     image: z.any().optional(),
+    welcomeMessage: z.string().max(200, "Mensagem muito longa").optional(),
   });
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -40,6 +41,7 @@ export function AvatarSettings() {
     defaultValues: {
       name: avatar?.name || "Bot ToledoIA",
       image: undefined,
+      welcomeMessage: avatar?.welcome_message || "Olá! Eu sou o assistente de IA que irá ajudar você a analisar placas de circuito.",
     },
   });
 
@@ -49,6 +51,7 @@ export function AvatarSettings() {
       form.reset({
         name: avatar.name,
         image: undefined,
+        welcomeMessage: avatar.welcome_message || "Olá! Eu sou o assistente de IA que irá ajudar você a analisar placas de circuito.",
       });
     }
   }, [avatar, form]);
@@ -59,7 +62,8 @@ export function AvatarSettings() {
     
     await saveAvatarMutation.mutateAsync({ 
       name: values.name,
-      image: file
+      image: file,
+      welcomeMessage: values.welcomeMessage
     });
     
     // Reset the file input and preview after save
@@ -213,6 +217,28 @@ export function AvatarSettings() {
                       </FormItem>
                     )}
                   />
+                  
+                  <FormField
+                    control={form.control}
+                    name="welcomeMessage"
+                    render={({ field }) => (
+                      <FormItem className="mb-6">
+                        <FormLabel className="text-lg font-medium">Mensagem de Boas-vindas</FormLabel>
+                        <FormControl>
+                          <textarea 
+                            {...field} 
+                            maxLength={200} 
+                            className="w-full rounded-md border border-neutral-300 text-sm p-2 min-h-[100px]"
+                            placeholder="Ex: Olá! Eu sou o assistente de IA que irá ajudar você a analisar placas de circuito."
+                          />
+                        </FormControl>
+                        <p className="mt-2 text-sm text-neutral-500">
+                          Máximo de 200 caracteres
+                        </p>
+                        <FormMessage className="text-red-500" />
+                      </FormItem>
+                    )}
+                  />
                   <div className="mt-8">
                     <h3 className="text-lg font-medium mb-3">Prévia do Avatar</h3>
                     <div className="bg-gradient-to-r from-neutral-50 to-white p-6 border rounded-md shadow-inner">
@@ -239,7 +265,7 @@ export function AvatarSettings() {
                             {form.watch('name') || avatar?.name || "Bot ToledoIA"}
                           </div>
                           <p className="text-neutral-800 text-sm">
-                            Olá! Eu sou o assistente de IA que irá ajudar você a analisar placas de circuito.
+                            {form.watch('welcomeMessage') || "Olá! Eu sou o assistente de IA que irá ajudar você a analisar placas de circuito."}
                           </p>
                         </div>
                       </div>
