@@ -22,7 +22,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2 } from "lucide-react";
 
 export function TwoFactorForm() {
-  const { twoFactorState, verifyTwoFactorMutation } = useAuth();
+  const { twoFactorState, verifyTwoFactorMutation, resendVerificationMutation } = useAuth();
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<"email" | "app">(
     twoFactorState?.twoFactorType || "email"
@@ -120,10 +120,14 @@ export function TwoFactorForm() {
                   variant="link" 
                   type="button" 
                   className="text-primary-600 font-medium ml-1"
-                  onClick={() => handleResendCode()}
-                  disabled={resendMutation.isPending}
+                  onClick={() => {
+                    if (twoFactorState?.userId) {
+                      resendVerificationMutation.mutate({ userId: twoFactorState.userId });
+                    }
+                  }}
+                  disabled={resendVerificationMutation.isPending}
                 >
-                  {resendMutation.isPending ? (
+                  {resendVerificationMutation.isPending ? (
                     <Loader2 className="mr-2 h-3 w-3 inline animate-spin" />
                   ) : null}
                   {t("auth.resend")}

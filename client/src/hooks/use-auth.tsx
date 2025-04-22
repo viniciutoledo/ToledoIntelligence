@@ -49,6 +49,7 @@ type AuthContextType = {
   registerMutation: UseMutationResult<User, Error, RegisterCredentials>;
   logoutMutation: UseMutationResult<void, Error, void>;
   verifyTwoFactorMutation: UseMutationResult<User, Error, TwoFactorVerification>;
+  resendVerificationMutation: UseMutationResult<any, Error, { userId: number }>;
   twoFactorState: TwoFactorState | null;
   changeLanguageMutation: UseMutationResult<User, Error, string>;
 };
@@ -207,6 +208,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
   });
   
+  // Resend verification code mutation
+  const resendVerificationMutation = useMutation({
+    mutationFn: async ({ userId }: { userId: number }) => {
+      const res = await apiRequest("POST", "/api/resend-verification", { userId });
+      return await res.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: t('common.success'),
+        description: t('auth.verificationCodeResent'),
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: t('common.error'),
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   // Change language mutation
   const changeLanguageMutation = useMutation({
     mutationFn: async (language: string) => {
@@ -239,6 +261,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         registerMutation,
         logoutMutation,
         verifyTwoFactorMutation,
+        resendVerificationMutation,
         twoFactorState,
         changeLanguageMutation,
       }}
