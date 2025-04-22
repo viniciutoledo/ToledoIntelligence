@@ -49,7 +49,7 @@ export default function AuthPage() {
         {/* Formulário de autenticação */}
         <div className="w-full max-w-md mx-auto">
           <div 
-            className="bg-gray-900 rounded-lg shadow-xl p-6"
+            className="bg-black border border-gray-800 rounded-lg shadow-xl p-6"
             style={{ borderTop: "4px solid #6d28d9" }}
           >
             <TechnicianAuthForm onSuccess={handleLoginSuccess} />
@@ -62,23 +62,23 @@ export default function AuthPage() {
             <h1 className="text-3xl font-bold mb-6 bg-gradient-to-r from-purple-400 to-pink-600 bg-clip-text text-transparent">
               {t("landing.heroTitle")}
             </h1>
-            <p className="text-gray-300 mb-6 text-lg">
+            <p className="text-white mb-6 text-lg">
               {t("landing.heroSubtitle")}
             </p>
             <div className="grid grid-cols-2 gap-4 mt-8">
-              <div className="bg-gray-800 p-4 rounded-lg">
+              <div className="bg-black border border-gray-800 p-4 rounded-lg">
                 <h3 className="text-lg font-medium text-purple-400 mb-2">
                   {t("landing.featureOneTitle")}
                 </h3>
-                <p className="text-gray-400 text-sm">
+                <p className="text-white text-sm">
                   {t("landing.featureOneDescription")}
                 </p>
               </div>
-              <div className="bg-gray-800 p-4 rounded-lg">
+              <div className="bg-black border border-gray-800 p-4 rounded-lg">
                 <h3 className="text-lg font-medium text-purple-400 mb-2">
                   {t("landing.featureTwoTitle")}
                 </h3>
-                <p className="text-gray-400 text-sm">
+                <p className="text-white text-sm">
                   {t("landing.featureTwoDescription")}
                 </p>
               </div>

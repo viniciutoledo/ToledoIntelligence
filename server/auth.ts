@@ -327,31 +327,29 @@ export function setupAuth(app: Express) {
           console.log(`Permitindo login mesmo com sessão ativa anterior`);
         }
         
-        // Generate 2FA challenge
-        if (user.twofa_enabled && user.twofa_secret) {
-          // User already set up 2FA - create challenge
-          return res.status(200).json({
+        // LOGIN DIRETO SEM 2FA
+        // Login the user directly without 2FA for simplification
+        req.login(user, async (err) => {
+          if (err) return next(err);
+          
+          // Set active session
+          storage.setUserActiveSession(user.id, req.sessionID);
+          
+          // Update last login
+          await storage.updateLastLogin(user.id);
+          
+          // Log the login
+          await logAction({
             userId: user.id,
-            requiresTwoFactor: true,
-            twoFactorType: "app"
+            action: "user_login",
+            details: { role: user.role },
+            ipAddress: req.ip
           });
-        } else {
-          // Generate email OTP for 2FA
-          try {
-            const otp = await generateEmailOtp(user);
-            
-            // In a real system, we wouldn't return the OTP
-            // Here we're just returning it for demonstration
-            return res.status(200).json({
-              userId: user.id,
-              requiresTwoFactor: true,
-              twoFactorType: "email",
-              emailHint: user.email.replace(/(.{2})(.*)@(.*)/, "$1***@$3")
-            });
-          } catch (error) {
-            return res.status(500).json({ message: "Failed to send verification code" });
-          }
-        }
+          
+          // Don't send password or 2FA secret in response
+          const { password, twofa_secret, ...safeUser } = user;
+          return res.json(safeUser);
+        });
       })(req, res, next);
     } catch (error) {
       res.status(400).json({ message: "Invalid request data" });

@@ -48,10 +48,10 @@ export default function CpanelLoginPage() {
       <main className="flex-1 flex items-center justify-center p-6">
         <div className="w-full max-w-md">
           <div 
-            className="bg-gray-900 rounded-lg shadow-xl p-6"
+            className="bg-black border border-gray-800 rounded-lg shadow-xl p-6"
             style={{ borderTop: "4px solid #f59e0b" }}
           >
-            <h1 className="text-2xl font-bold text-center mb-6">{t("admin.adminPanelAccess")}</h1>
+            <h1 className="text-2xl font-bold text-center mb-6 text-amber-500">{t("admin.adminPanelAccess")}</h1>
             <AdminAuthForm onSuccess={handleLoginSuccess} />
           </div>
         </div>
