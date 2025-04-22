@@ -1,9 +1,9 @@
-import { useEffect } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { useLanguage } from "@/hooks/use-language";
 import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
+import { AuthRedirect } from "@/components/auth";
 
 // Cores do tema
 const colors = {
@@ -19,15 +19,16 @@ export default function CheckoutSuccessPage() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
 
-  // Redirecionar se não estiver autenticado
-  useEffect(() => {
-    if (!user) {
-      setLocation("/");
-    }
-  }, [user, setLocation]);
-
+  // Se o usuário não estiver autenticado, o componente AuthRedirect
+  // redirecionará automaticamente para a página inicial
   if (!user) {
-    return null;
+    return (
+      <AuthRedirect>
+        <div className="min-h-screen flex items-center justify-center">
+          <p>Redirecionando...</p>
+        </div>
+      </AuthRedirect>
+    );
   }
 
   return (
