@@ -4,14 +4,16 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useTranslation } from "react-i18next";
 
 // Types
-type Document = {
+export type Document = {
   id: number;
   name: string;
   description: string | null;
-  document_type: "text" | "file" | "website";
+  document_type: "text" | "file" | "website" | "video";
   content: string | null;
+  file_path: string | null;
   file_url: string | null;
   website_url: string | null;
+  file_metadata: Record<string, any> | null;
   status: "pending" | "processing" | "completed" | "error";
   error_message: string | null;
   created_at: string;
@@ -20,7 +22,7 @@ type Document = {
   is_active: boolean;
 };
 
-type Category = {
+export type Category = {
   id: number;
   name: string;
   description: string | null;
@@ -33,10 +35,9 @@ type Category = {
 export type DocumentFormData = {
   name: string;
   description: string | null;
-  document_type: "text" | "file" | "website";
-  content?: string | null;
-  file_url?: string | null;
-  website_url?: string | null;
+  document_type: "text" | "file" | "website" | "video";
+  content?: string;
+  website_url?: string;
   categories?: number[];
   file?: File;
 };
@@ -66,13 +67,14 @@ export function useTraining() {
     }
   });
 
+  // Mutation genérica para documentos
   const createDocumentMutation = useMutation({
     mutationFn: async (document: DocumentFormData) => {
       const formData = new FormData();
       formData.append('name', document.name);
       
-      if (document.description) {
-        formData.append('description', document.description);
+      if (document.description !== undefined) {
+        formData.append('description', document.description !== null ? document.description : '');
       }
       
       formData.append('document_type', document.document_type);
@@ -82,6 +84,10 @@ export function useTraining() {
       }
       
       if (document.document_type === 'file' && document.file) {
+        formData.append('file', document.file);
+      }
+      
+      if (document.document_type === 'video' && document.file) {
         formData.append('file', document.file);
       }
       
@@ -100,12 +106,107 @@ export function useTraining() {
         method: "POST",
         body: formData,
       });
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Failed to create document");
+      }
+      
       return await res.json();
     },
     onSuccess: () => {
       toast({
         title: t("common.success"),
         description: t("admin.training.documentCreated"),
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/training/documents"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: t("common.error"),
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Mutation específica para arquivos de documento
+  const createDocumentFileMutation = useMutation({
+    mutationFn: async (formData: FormData) => {
+      const res = await fetch("/api/training/documents", {
+        method: "POST",
+        body: formData,
+      });
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Failed to upload file");
+      }
+      
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: t("common.success"),
+        description: t("admin.training.fileUploaded"),
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/training/documents"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: t("common.error"),
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Mutation específica para textos
+  const createTextDocumentMutation = useMutation({
+    mutationFn: async (data: { name: string; content: string; description?: string | null }) => {
+      const payload = {
+        name: data.name,
+        document_type: "text",
+        content: data.content,
+        description: data.description || null
+      };
+      
+      const res = await apiRequest("POST", "/api/training/documents", payload);
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: t("common.success"),
+        description: t("admin.training.textTrainingAdded"),
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/training/documents"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: t("common.error"),
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Mutation específica para websites
+  const createWebsiteDocumentMutation = useMutation({
+    mutationFn: async (data: { name: string; website_url: string; description?: string | null }) => {
+      const payload = {
+        name: data.name,
+        document_type: "website",
+        website_url: data.website_url,
+        description: data.description || null
+      };
+      
+      const res = await apiRequest("POST", "/api/training/documents", payload);
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: t("common.success"),
+        description: t("admin.training.websiteTrainingAdded"),
       });
       queryClient.invalidateQueries({ queryKey: ["/api/training/documents"] });
     },
@@ -177,7 +278,12 @@ export function useTraining() {
 
   const createCategoryMutation = useMutation({
     mutationFn: async (category: CategoryFormData) => {
-      const res = await apiRequest("POST", "/api/training/categories", category);
+      const payload = {
+        name: category.name,
+        description: category.description !== undefined ? category.description : null
+      };
+      
+      const res = await apiRequest("POST", "/api/training/categories", payload);
       return await res.json();
     },
     onSuccess: () => {
@@ -265,6 +371,9 @@ export function useTraining() {
     documentsError,
     refetchDocuments,
     createDocumentMutation,
+    createDocumentFileMutation,
+    createTextDocumentMutation,
+    createWebsiteDocumentMutation,
     updateDocumentMutation,
     deleteDocumentMutation,
     
