@@ -143,7 +143,7 @@ export function AuthForm({ mode, onSuccess, onToggleMode, selectedPlan }: AuthFo
                   <FormItem>
                     <FormLabel>{t("common.email")}</FormLabel>
                     <FormControl>
-                      <Input placeholder="exemplo@email.com" {...field} />
+                      <Input placeholder={t("auth.emailPlaceholder")} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -157,7 +157,7 @@ export function AuthForm({ mode, onSuccess, onToggleMode, selectedPlan }: AuthFo
                   <FormItem>
                     <FormLabel>{t("common.password")}</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="••••••" {...field} />
+                      <Input type="password" placeholder={t("auth.passwordPlaceholder")} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -177,8 +177,8 @@ export function AuthForm({ mode, onSuccess, onToggleMode, selectedPlan }: AuthFo
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="technician">{t("auth.roleTechnician")}</SelectItem>
-                        <SelectItem value="admin">{t("auth.roleAdmin")}</SelectItem>
+                        <SelectItem value="technician">{t("auth.technician")}</SelectItem>
+                        <SelectItem value="admin">{t("auth.admin")}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -188,9 +188,8 @@ export function AuthForm({ mode, onSuccess, onToggleMode, selectedPlan }: AuthFo
               
               <Button 
                 type="submit" 
-                className="w-full"
+                className="w-full bg-pink-600 hover:bg-pink-500 shadow-md hover:shadow-lg transform transition-all duration-200 hover:scale-[1.02]"
                 disabled={loginMutation.isPending}
-                style={{ backgroundColor: "#ff00c7" }}
               >
                 {loginMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {t("auth.login")}
@@ -223,7 +222,7 @@ export function AuthForm({ mode, onSuccess, onToggleMode, selectedPlan }: AuthFo
                   <FormItem>
                     <FormLabel>{t("common.email")}</FormLabel>
                     <FormControl>
-                      <Input placeholder="exemplo@email.com" {...field} />
+                      <Input placeholder={t("auth.emailPlaceholder")} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -237,7 +236,7 @@ export function AuthForm({ mode, onSuccess, onToggleMode, selectedPlan }: AuthFo
                   <FormItem>
                     <FormLabel>{t("common.password")}</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="••••••" {...field} />
+                      <Input type="password" placeholder={t("auth.passwordPlaceholder")} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -249,9 +248,9 @@ export function AuthForm({ mode, onSuccess, onToggleMode, selectedPlan }: AuthFo
                 name="confirmPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t("common.confirmPassword") || "Confirmar senha"}</FormLabel>
+                    <FormLabel>{t("common.confirmPassword")}</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="••••••" {...field} />
+                      <Input type="password" placeholder={t("auth.passwordPlaceholder")} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -271,8 +270,8 @@ export function AuthForm({ mode, onSuccess, onToggleMode, selectedPlan }: AuthFo
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="technician">{t("auth.roleTechnician")}</SelectItem>
-                        <SelectItem value="admin">{t("auth.roleAdmin")}</SelectItem>
+                        <SelectItem value="technician">{t("auth.technician")}</SelectItem>
+                        <SelectItem value="admin">{t("auth.admin")}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -294,9 +293,8 @@ export function AuthForm({ mode, onSuccess, onToggleMode, selectedPlan }: AuthFo
               
               <Button 
                 type="submit" 
-                className="w-full"
+                className="w-full bg-pink-600 hover:bg-pink-500 shadow-md hover:shadow-lg transform transition-all duration-200 hover:scale-[1.02]"
                 disabled={registerMutation.isPending}
-                style={{ backgroundColor: "#ff00c7" }}
               >
                 {registerMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {t("auth.register")}
