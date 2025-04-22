@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/hooks/use-auth";
 import { useLanguage } from "@/hooks/use-language";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -33,6 +34,7 @@ interface AdminAuthFormProps {
 // Componente de autenticação exclusivo para administradores
 export function AdminAuthForm({ onSuccess }: AdminAuthFormProps) {
   const { t } = useLanguage();
+  const { toast } = useToast();
   const { loginMutation } = useAuth();
   const [error, setError] = useState<string | null>(null);
   
@@ -53,6 +55,18 @@ export function AdminAuthForm({ onSuccess }: AdminAuthFormProps) {
     loginMutation.mutate(values, {
       onSuccess: (user) => {
         console.log("Login bem-sucedido no Admin Form:", user);
+        
+        // Verificar se o servidor está nos enviando um redirecionamento
+        if (user.redirect) {
+          console.log(`Redirecionamento detectado para: ${user.redirect}`);
+          toast({
+            title: t("common.redirecting"),
+            description: user.message || t("auth.redirectingBasedOnRole"),
+          });
+          // O redirecionamento já foi tratado no hook useAuth
+          return;
+        }
+        
         // Aqui garantimos que os administradores vão para o painel administrativo,
         // mesmo se algo mudar na interface de autenticação
         if (user.role === "admin") {

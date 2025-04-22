@@ -81,6 +81,18 @@ export function TechnicianAuthForm({ onSuccess }: TechnicianAuthFormProps) {
     loginMutation.mutate(values, {
       onSuccess: (user) => {
         console.log("Login bem-sucedido:", user);
+        
+        // Verificar se o servidor está nos enviando um redirecionamento
+        if (user.redirect) {
+          console.log(`Redirecionamento detectado para: ${user.redirect}`);
+          toast({
+            title: t("common.redirecting"),
+            description: user.message || t("auth.redirectingBasedOnRole"),
+          });
+          // O redirecionamento já foi tratado no hook useAuth
+          return;
+        }
+        
         // Redirecionar com base no papel do usuário
         if (user.role === "admin") {
           console.log("Usuário é admin, redirecionando para /admin");
