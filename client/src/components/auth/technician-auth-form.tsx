@@ -80,15 +80,20 @@ export function TechnicianAuthForm({ onSuccess }: TechnicianAuthFormProps) {
     setError(null);
     loginMutation.mutate(values, {
       onSuccess: (user) => {
+        console.log("Login bem-sucedido:", user);
         // Redirecionar com base no papel do usuário
         if (user.role === "admin") {
-          window.location.href = "/admin"; // Redirecionar administradores para o painel admin
+          console.log("Usuário é admin, redirecionando para /admin");
+          // Uso de navegação direta em vez de wouter para contornar possíveis problemas de estado
+          window.location.href = "/admin"; 
         } else {
+          console.log("Usuário é técnico, seguindo fluxo normal");
           // Técnicos seguem o fluxo normal
           if (onSuccess) onSuccess();
         }
       },
       onError: (error) => {
+        console.error("Erro de login:", error.message);
         setError(error.message || t("auth.genericError"));
       },
     });

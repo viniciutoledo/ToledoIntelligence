@@ -8,9 +8,10 @@ export default function AuthPage() {
   const [, setLocation] = useLocation();
   
   const handleLoginSuccess = () => {
-    // Não precisamos forçar redirecionamento aqui
-    // O componente AuthRedirect já vai redirecionar com base no papel do usuário
-    // Este callback é chamado apenas por TechnicianAuthForm, que já trata o redirecionamento
+    // Após o login bem-sucedido, nós explicitamente redirecionamos para a rota do técnico
+    // Isso serve como um backup no caso do AuthRedirect não funcionar por algum motivo
+    console.log("Login bem-sucedido, redirecionando...");
+    setLocation("/technician");
   };
 
   return (

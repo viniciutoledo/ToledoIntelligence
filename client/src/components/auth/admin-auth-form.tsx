@@ -49,19 +49,25 @@ export function AdminAuthForm({ onSuccess }: AdminAuthFormProps) {
   // Lidar com o envio do formulário de login
   const onLoginSubmit = (values: LoginFormValues) => {
     setError(null);
+    console.log("Tentando login como administrador:", values);
     loginMutation.mutate(values, {
       onSuccess: (user) => {
+        console.log("Login bem-sucedido no Admin Form:", user);
         // Aqui garantimos que os administradores vão para o painel administrativo,
         // mesmo se algo mudar na interface de autenticação
         if (user.role === "admin") {
-          if (onSuccess) onSuccess(); // Isso vai redirecionar para /admin
+          console.log("Usuário é admin, redirecionando para /admin");
+          // Uso de navegação direta em vez de wouter para contornar possíveis problemas de estado
+          window.location.href = "/admin";
         } else {
+          console.log("Usuário não é admin, redirecionando para /technician");
           // Caso de emergência: se um técnico usou esta página, 
           // redirecionamos para a interface de técnico
           window.location.href = "/technician";
         }
       },
       onError: (error) => {
+        console.error("Erro de login no Admin Form:", error.message);
         setError(error.message || t("auth.genericError"));
       },
     });

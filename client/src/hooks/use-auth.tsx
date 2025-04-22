@@ -101,18 +101,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Login mutation
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginCredentials) => {
+      console.log("Login mutation - credenciais:", { ...credentials, password: "********" });
       const res = await apiRequest("POST", "/api/login", credentials);
-      return await res.json();
+      const data = await res.json();
+      console.log("Login mutation - resposta:", data);
+      return data;
     },
     onSuccess: (data) => {
+      console.log("Login onSuccess - dados recebidos:", data);
       if (data.requiresTwoFactor) {
         // Store two-factor state for verification
+        console.log("Login onSuccess - verificação em dois fatores necessária");
         setTwoFactorState(data);
       } else {
         // No 2FA required, set user data
+        console.log("Login onSuccess - atualizando cache do usuário:", data);
         queryClient.setQueryData(["/api/user"], data);
         
+        // Redirecionar com base no papel do usuário
+        console.log("Login onSuccess - papel do usuário:", data.role);
+        if (data.role === "admin") {
+          console.log("Login onSuccess - redirecionando para /admin");
+          window.location.href = "/admin";
+        } else {
+          console.log("Login onSuccess - redirecionando para /technician");
+          window.location.href = "/technician";
+        }
+        
         if (data.language && data.language !== i18n.language) {
+          console.log(`Login onSuccess - alterando idioma para ${data.language}`);
           i18n.changeLanguage(data.language);
         }
       }
