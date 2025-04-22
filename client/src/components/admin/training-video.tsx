@@ -141,7 +141,7 @@ export function TrainingVideo() {
         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
           <FileVideo className="h-4 w-4 text-primary" />
         </div>
-        <h3 className="ml-2 text-base font-medium">admin.training.newVideoTraining</h3>
+        <h3 className="ml-2 text-base font-medium">Novo Treinamento de Vídeo</h3>
       </div>
 
       {/* Área de upload de vídeo */}
@@ -157,13 +157,13 @@ export function TrainingVideo() {
                 value="url"
                 className="flex-1 rounded-none border-b-2 border-transparent px-3 py-2 data-[state=active]:border-primary data-[state=active]:text-primary"
               >
-                admin.training.videoUrlTab
+                URL do Vídeo
               </TabsTrigger>
               <TabsTrigger
                 value="upload"
                 className="flex-1 rounded-none border-b-2 border-transparent px-3 py-2 data-[state=active]:border-primary data-[state=active]:text-primary"
               >
-                admin.training.videoFileTab
+                Upload de Vídeo
               </TabsTrigger>
             </TabsList>
           </div>
@@ -172,7 +172,7 @@ export function TrainingVideo() {
             <TabsContent value="url" className="m-0">
               <div>
                 <Label htmlFor="video_url" className="text-sm text-muted-foreground mb-1 block">
-                  admin.training.videoUrlLabel
+                  URL do Vídeo
                 </Label>
                 <div className="flex items-center">
                   <Link2 className="h-4 w-4 text-muted-foreground mr-2" />
@@ -191,7 +191,7 @@ export function TrainingVideo() {
             <TabsContent value="upload" className="m-0">
               <div>
                 <Label htmlFor="video_file" className="text-sm text-muted-foreground mb-1 block">
-                  admin.training.videoFileLabel
+                  Arquivo de Vídeo
                 </Label>
                 
                 <div className="mt-1 flex items-center justify-center border-2 border-dashed rounded-lg py-6 px-4 transition-colors hover:border-primary/50 cursor-pointer">
@@ -215,7 +215,7 @@ export function TrainingVideo() {
                         }}
                         className="mt-3 text-xs"
                       >
-                        <X className="h-3 w-3 mr-1" /> common.remove
+                        <X className="h-3 w-3 mr-1" /> Remover
                       </Button>
                     </div>
                   ) : (
@@ -234,11 +234,11 @@ export function TrainingVideo() {
                           disabled={isSubmitting}
                           className="text-xs"
                         >
-                          admin.training.selectVideoFile
+                          Selecionar Arquivo de Vídeo
                         </Button>
                       </div>
                       <div className="mt-1 text-xs text-muted-foreground">
-                        admin.training.videoSizeLimit
+                        Tamanho máximo: 50MB. Formatos suportados: MP4, AVI, MOV
                       </div>
                     </div>
                   )}

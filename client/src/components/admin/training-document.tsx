@@ -120,7 +120,7 @@ export function TrainingDocument() {
         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
           <FileText className="h-4 w-4 text-primary" />
         </div>
-        <h3 className="ml-2 text-base font-medium">admin.training.newDocumentTraining</h3>
+        <h3 className="ml-2 text-base font-medium">Novo Treinamento de Documento</h3>
       </div>
 
       {/* Área de upload de documento */}
@@ -128,7 +128,7 @@ export function TrainingDocument() {
         <div className="p-4 space-y-4">
           <div>
             <Label htmlFor="document_file" className="text-sm text-muted-foreground mb-1 block">
-              admin.training.documentFileLabel
+              Arquivo de Documento
             </Label>
             
             <div className="mt-1 flex items-center justify-center border-2 border-dashed rounded-lg py-6 px-4 transition-colors hover:border-primary/50 cursor-pointer">
@@ -152,7 +152,7 @@ export function TrainingDocument() {
                     }}
                     className="mt-3 text-xs"
                   >
-                    <X className="h-3 w-3 mr-1" /> common.remove
+                    <X className="h-3 w-3 mr-1" /> Remover
                   </Button>
                 </div>
               ) : (
@@ -171,11 +171,11 @@ export function TrainingDocument() {
                       disabled={isSubmitting}
                       className="text-xs"
                     >
-                      admin.training.selectDocumentFile
+                      Selecionar Arquivo de Documento
                     </Button>
                   </div>
                   <div className="mt-1 text-xs text-muted-foreground">
-                    admin.training.documentSizeLimit
+                    Tamanho máximo: 50MB. Formatos suportados: PDF, DOC, DOCX, TXT
                   </div>
                 </div>
               )}
@@ -193,11 +193,11 @@ export function TrainingDocument() {
           
           <div>
             <Label htmlFor="document_description" className="text-sm text-muted-foreground mb-1 block">
-              admin.training.descriptionLabel <span className="text-xs text-muted-foreground">common.optional</span>
+              Descrição <span className="text-xs text-muted-foreground">(opcional)</span>
             </Label>
             <Textarea
               id="document_description"
-              placeholder="admin.training.documentDescriptionPlaceholder"
+              placeholder="Digite uma descrição para o documento (opcional)"
               value={documentDescription}
               onChange={(e) => setDocumentDescription(e.target.value)}
               className="resize-none text-sm min-h-[80px]"
@@ -208,7 +208,7 @@ export function TrainingDocument() {
         
         <div className="flex items-center justify-between border-t bg-muted/20 px-4 py-2">
           <div className="text-xs text-muted-foreground">
-            admin.training.supportedDocumentFormats: PDF, DOC, DOCX, TXT
+            Formatos suportados: PDF, DOC, DOCX, TXT
           </div>
           <Button
             type="button" 
@@ -223,10 +223,10 @@ export function TrainingDocument() {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                admin.training.submitDocument
+                Processando...
               </span>
             ) : (
-              "admin.training.submitDocument"
+              "Enviar Documento"
             )}
           </Button>
         </div>
@@ -243,15 +243,15 @@ export function TrainingDocument() {
             <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted">
               <FileText className="h-10 w-10 text-muted-foreground/60" />
             </div>
-            <h3 className="mt-4 text-lg font-medium">{t("admin.training.noDocumentTrainings")}</h3>
+            <h3 className="mt-4 text-lg font-medium">Nenhum Treinamento de Documento</h3>
             <p className="mt-2 text-sm text-muted-foreground text-center max-w-sm">
-              {t("admin.training.uploadDocumentToTrain")}
+              Faça upload de um documento para treinar o modelo de IA
             </p>
           </div>
         ) : (
           <>
             <div className="text-sm font-medium text-muted-foreground mb-2">
-              {fileDocuments.length} {fileDocuments.length === 1 ? t("admin.training.trainingItem") : t("admin.training.trainingItems")}
+              {fileDocuments.length} {fileDocuments.length === 1 ? "Item de Treinamento" : "Itens de Treinamento"}
             </div>
             <div className="grid gap-2">
               {fileDocuments.map((doc) => (
@@ -288,13 +288,15 @@ export function TrainingDocument() {
                           : 'bg-amber-100 text-amber-800 border border-amber-200'
                       }`}>
                         {doc.status === 'completed' && <Check className="mr-1 h-3 w-3" />}
-                        {t(`admin.training.statusTypes.${doc.status}`)}
+                        {doc.status === 'completed' ? 'Concluído' : 
+                         doc.status === 'processing' ? 'Processando' : 
+                         doc.status === 'error' ? 'Erro' : 'Pendente'}
                       </Badge>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                             <MoreVertical className="h-4 w-4" />
-                            <span className="sr-only">{t("common.actions")}</span>
+                            <span className="sr-only">Ações</span>
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
@@ -304,14 +306,14 @@ export function TrainingDocument() {
                               onClick={() => window.open(`/api/training/documents/${doc.id}/download`, '_blank')}
                             >
                               <Download className="mr-2 h-4 w-4" />
-                              <span>{t("common.download")}</span>
+                              <span>Download</span>
                             </DropdownMenuItem>
                           )}
                           <DropdownMenuItem 
                             className="flex cursor-pointer items-center text-red-600 focus:text-red-600"
                             onClick={() => handleDeleteDocument(doc.id)}
                           >
-                            <span>{t("common.delete")}</span>
+                            <span>Excluir</span>
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
