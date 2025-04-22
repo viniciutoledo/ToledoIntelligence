@@ -878,27 +878,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Training document routes
   app.get("/api/training/documents", isAuthenticated, checkRole("admin"), async (req, res) => {
     try {
+      console.log("Buscando documentos de treinamento. Usuário:", req.user?.id, req.user?.email);
       const documents = await storage.getTrainingDocuments();
+      console.log(`Encontrados ${documents.length} documentos de treinamento`);
       res.json(documents);
     } catch (error) {
-      res.status(500).json({ message: "Error fetching training documents" });
+      console.error("Erro ao buscar documentos de treinamento:", error);
+      res.status(500).json({ message: "Error fetching training documents", error: error.message });
     }
   });
   
   app.get("/api/training/documents/:id", isAuthenticated, checkRole("admin"), async (req, res) => {
     try {
+      console.log("Buscando documento de treinamento específico. ID:", req.params.id);
       const document = await storage.getTrainingDocument(parseInt(req.params.id));
       if (!document) {
+        console.log("Documento não encontrado:", req.params.id);
         return res.status(404).json({ message: "Document not found" });
       }
       res.json(document);
     } catch (error) {
-      res.status(500).json({ message: "Error fetching training document" });
+      console.error("Erro ao buscar documento de treinamento:", error);
+      res.status(500).json({ message: "Error fetching training document", error: error.message });
     }
   });
   
   app.post("/api/training/documents", isAuthenticated, checkRole("admin"), upload.single("file"), async (req, res) => {
     try {
+      console.log("Criando novo documento de treinamento. Usuário:", req.user?.id, req.user?.email);
+      console.log("Body recebido:", req.body);
+      console.log("Arquivo recebido:", req.file);
+      
       const { name, description, document_type } = req.body;
       
       let content = null;
@@ -913,6 +923,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         website_url = req.body.website_url;
       }
       
+      console.log("Dados para criação do documento:", {
+        name,
+        description,
+        document_type,
+        content: content ? "Conteúdo existe" : null,
+        file_url,
+        website_url,
+        created_by: req.user?.id
+      });
+      
       const document = await storage.createTrainingDocument({
         name,
         description,
@@ -920,8 +940,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         content,
         file_url,
         website_url,
-        created_by: req.user!.id,
-        status: "pending"
+        created_by: req.user!.id
       });
       
       // Add to categories if specified

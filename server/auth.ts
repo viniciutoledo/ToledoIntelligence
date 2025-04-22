@@ -14,9 +14,11 @@ import speakeasy from "speakeasy";
 import qrcode from "qrcode";
 import { sendOtpEmail } from "./email";
 
+// Use the User type from schema.ts for Express.User
 declare global {
   namespace Express {
-    interface User extends User {}
+    // eslint-disable-next-line @typescript-eslint/no-empty-interface
+    interface User extends Omit<import('@shared/schema').User, ''> {}
   }
 }
 
@@ -96,24 +98,38 @@ async function hasActiveSession(userId: number, currentSessionId: string): Promi
 // Middleware to check user role
 export function checkRole(role: string) {
   return (req: Request, res: Response, next: NextFunction) => {
+    console.log("checkRole middleware - Is authenticated:", req.isAuthenticated());
+    console.log("checkRole middleware - User:", req.user ? 
+      `ID: ${req.user.id}, Email: ${req.user.email}, Role: ${req.user.role}` : 'No user');
+    
     if (!req.isAuthenticated()) {
+      console.log("checkRole middleware - User not authenticated");
       return res.status(401).json({ message: "Unauthorized" });
     }
     
     if (req.user!.role !== role) {
+      console.log(`checkRole middleware - User role mismatch: ${req.user!.role} !== ${role}`);
       return res.status(403).json({ message: "Forbidden" });
     }
     
+    console.log("checkRole middleware - Authorization successful");
     next();
   };
 }
 
 // Middleware to check if user is authenticated
 export function isAuthenticated(req: Request, res: Response, next: NextFunction) {
+  console.log("isAuthenticated middleware - Is authenticated:", req.isAuthenticated());
+  console.log("isAuthenticated middleware - User:", req.user ? 
+    `ID: ${req.user.id}, Email: ${req.user.email}, Role: ${req.user.role}` : 'No user');
+  console.log("isAuthenticated middleware - Session ID:", req.sessionID);
+  
   if (!req.isAuthenticated()) {
+    console.log("isAuthenticated middleware - User not authenticated");
     return res.status(401).json({ message: "Unauthorized" });
   }
   
+  console.log("isAuthenticated middleware - Authentication successful");
   next();
 }
 
