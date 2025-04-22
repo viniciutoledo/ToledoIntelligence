@@ -37,8 +37,14 @@ const registerSchema = z.object({
   password: z
     .string()
     .min(6, "Senha deve ter pelo menos 6 caracteres"),
+  confirmPassword: z
+    .string()
+    .min(1, "Confirmação de senha é obrigatória"),
   role: z.enum(["technician", "admin"]),
   language: z.enum(["pt", "en"]).default("pt"),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "As senhas não conferem",
+  path: ["confirmPassword"],
 });
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
@@ -75,6 +81,7 @@ export function AuthForm({ mode, onSuccess, onToggleMode, selectedPlan }: AuthFo
       username: "",
       email: "",
       password: "",
+      confirmPassword: "",
       role: "technician",
       language: language as "pt" | "en",
     },
@@ -229,6 +236,20 @@ export function AuthForm({ mode, onSuccess, onToggleMode, selectedPlan }: AuthFo
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>{t("common.password")}</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="••••••" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={registerForm.control}
+                name="confirmPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t("common.confirmPassword") || "Confirmar senha"}</FormLabel>
                     <FormControl>
                       <Input type="password" placeholder="••••••" {...field} />
                     </FormControl>
