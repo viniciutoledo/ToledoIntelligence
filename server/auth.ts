@@ -313,9 +313,47 @@ export function setupAuth(app: Express) {
         // Check for active session (single-session enforcement)
         const hasOtherSession = await hasActiveSession(user.id, req.sessionID);
         
+        // Se for perfil de técnico, aplicamos restrições mais rígidas de sessão
+        if (hasOtherSession && user.role === "technician") {
+          console.log(`Tentativa de login simultâneo para técnico ID ${user.id}`);
+          
+          // Verifica se já houve muitas tentativas de login simultâneo recentes
+          const recentAttempts = await storage.getRecentLoginAttempts(user.id, 30);
+          
+          if (recentAttempts > 3) {
+            // Se houver mais de 3 tentativas em 30 minutos, bloqueamos temporariamente
+            console.log(`Bloqueando temporariamente conta de técnico ID ${user.id} por tentativas excessivas`);
+            await storage.updateUser(user.id, { is_blocked: true });
+            
+            // Log do bloqueio temporário
+            await logAction({
+              userId: user.id,
+              action: "account_blocked_temp",
+              details: { reason: "excessive_concurrent_login_attempts", count: recentAttempts },
+              ipAddress: req.ip
+            });
+            
+            return res.status(403).json({ 
+              message: user.language === "pt"
+                ? "Conta temporariamente bloqueada devido a múltiplas tentativas de acesso simultâneo. Contate o suporte."
+                : "Account temporarily blocked due to multiple concurrent access attempts. Contact support."
+            });
+          }
+          
+          // Registra a tentativa para controle
+          await storage.recordLoginAttempt(user.id);
+          
+          // Notifica sobre o bloqueio da sessão anterior
+          return res.status(200).json({
+            sessionBlocked: true,
+            message: user.language === "pt"
+              ? "Você já possui uma sessão ativa. O acesso anterior será encerrado."
+              : "You already have an active session. The previous access will be terminated."
+          });
+        }
+        
+        // Para administradores ou caso não haja outra sessão, remove qualquer sessão anterior
         if (hasOtherSession) {
-          // Em vez de bloquear a conta, vamos apenas substituir a sessão
-          // Removemos a sessão antiga
           console.log(`Removendo sessão antiga para o usuário ID ${user.id}`);
           await storage.removeUserActiveSession(user.id);
           
@@ -327,7 +365,6 @@ export function setupAuth(app: Express) {
             ipAddress: req.ip
           });
           
-          // Continuamos o fluxo de login normalmente - não bloqueamos mais
           console.log(`Permitindo login mesmo com sessão ativa anterior`);
         }
         

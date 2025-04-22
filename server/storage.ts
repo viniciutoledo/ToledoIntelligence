@@ -25,6 +25,10 @@ export interface IStorage {
   unblockUser(id: number): Promise<User | undefined>;
   deleteUser(id: number): Promise<void>;
   
+  // Login security
+  getRecentLoginAttempts(userId: number, minutes: number): Promise<number>;
+  recordLoginAttempt(userId: number): Promise<void>;
+  
   // LLM configuration
   getLlmConfig(id: number): Promise<LlmConfig | undefined>;
   getActiveLlmConfig(): Promise<LlmConfig | undefined>;
@@ -102,6 +106,31 @@ export class MemStorage implements IStorage {
     // Em uma implementação real, você também removeria ou anonimizaria 
     // todos os dados associados ao usuário, como mensagens, logs, etc.
   }
+  
+  // Login security - controle de tentativas de login simultâneas
+  private loginAttempts: Map<number, Date[]> = new Map();
+  
+  async getRecentLoginAttempts(userId: number, minutes: number): Promise<number> {
+    const attempts = this.loginAttempts.get(userId) || [];
+    const cutoffTime = new Date(Date.now() - minutes * 60 * 1000);
+    
+    // Limpar tentativas antigas e contar recentes
+    const recentAttempts = attempts.filter(date => date > cutoffTime);
+    this.loginAttempts.set(userId, recentAttempts);
+    
+    return recentAttempts.length;
+  }
+  
+  async recordLoginAttempt(userId: number): Promise<void> {
+    const attempts = this.loginAttempts.get(userId) || [];
+    attempts.push(new Date());
+    this.loginAttempts.set(userId, attempts);
+  }
+  
+  async updateLastLogin(id: number): Promise<User | undefined> {
+    return this.updateUser(id, { last_login: new Date() });
+  }
+  
   private users: Map<number, User>;
   private llmConfigs: Map<number, LlmConfig>;
   private avatars: Map<number, Avatar>;
@@ -689,6 +718,39 @@ export class DatabaseStorage implements IStorage {
       pool,
       createTableIfMissing: true 
     });
+  }
+  
+  // Login security - controle de tentativas de login simultâneas
+  async getRecentLoginAttempts(userId: number, minutes: number): Promise<number> {
+    try {
+      const cutoffTime = new Date(Date.now() - minutes * 60 * 1000);
+      
+      const attempts = await db.query.auditLogs.findMany({
+        where: and(
+          eq(auditLogs.user_id, userId),
+          eq(auditLogs.action, "login_attempt"),
+          gt(auditLogs.created_at, cutoffTime)
+        )
+      });
+      
+      return attempts.length;
+    } catch (error) {
+      console.error("Error getting recent login attempts:", error);
+      return 0;
+    }
+  }
+  
+  async recordLoginAttempt(userId: number): Promise<void> {
+    try {
+      await db.insert(auditLogs).values({
+        user_id: userId,
+        action: "login_attempt",
+        details: JSON.stringify({ timestamp: new Date().toISOString() }),
+        ip_address: null
+      });
+    } catch (error) {
+      console.error("Error recording login attempt:", error);
+    }
   }
 
   // User management
