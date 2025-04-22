@@ -92,11 +92,9 @@ export default function LandingPage() {
       <header className="py-4 px-6 border-b border-gray-800">
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex items-center space-x-2">
-            <img
-              src="/default-avatar.svg"
-              alt="ToledoIA Logo"
-              className="h-10 w-10"
-            />
+            <div className="w-10 h-10 flex items-center justify-center rounded-full bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 text-white font-bold text-xl">
+              T
+            </div>
             <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500">
               ToledoIA
             </h1>
@@ -125,6 +123,7 @@ export default function LandingPage() {
             {/* Botões de autenticação */}
             <div className="flex items-center gap-2">
               <Button
+                className="text-white border-white hover:bg-white hover:text-black"
                 variant="outline"
                 onClick={() => {
                   setShowAuthForm(true);
@@ -317,7 +316,7 @@ export default function LandingPage() {
                     ))}
                   </ul>
                   <Button
-                    className="w-full"
+                    className={`w-full ${!plan.popular ? "text-white border-white hover:bg-white hover:text-black" : ""}`}
                     style={{
                       backgroundColor: plan.popular ? colors.primary : undefined,
                     }}
