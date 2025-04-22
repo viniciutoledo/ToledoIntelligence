@@ -96,6 +96,10 @@ const enTranslations = {
   },
   admin: {
     title: 'Admin Panel',
+    adminAccess: 'Administrator Access',
+    adminPanelAccess: 'Control Panel Access',
+    accessAdminPanel: 'Access Admin Panel',
+    adminAccessWarning: 'This area is restricted to administrators only. You must have administrative privileges to access this panel.',
     dashboard: 'Dashboard',
     settings: 'Settings',
     users: 'Users',
@@ -381,6 +385,10 @@ const ptTranslations = {
   },
   admin: {
     title: 'Painel de Administração',
+    adminAccess: 'Acesso de Administrador',
+    adminPanelAccess: 'Acesso ao Painel de Controle',
+    accessAdminPanel: 'Acessar Painel Admin',
+    adminAccessWarning: 'Esta área é restrita apenas para administradores. Você deve ter privilégios administrativos para acessar este painel.',
     dashboard: 'Dashboard',
     settings: 'Configurações',
     users: 'Usuários',

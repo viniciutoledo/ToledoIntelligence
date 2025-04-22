@@ -14,6 +14,7 @@ import SubscriptionPage from "@/pages/subscription-page";
 import LandingPage from "@/pages/landing-page";
 import CheckoutPage from "@/pages/checkout-page";
 import CheckoutSuccessPage from "@/pages/checkout-success-page";
+import CpanelLoginPage from "@/pages/cpanel-login-page";
 
 function Router() {
   return (
@@ -21,6 +22,7 @@ function Router() {
       {/* Public routes */}
       <Route path="/" component={LandingPage} />
       <Route path="/auth" component={AuthPage} />
+      <Route path="/cpanel" component={CpanelLoginPage} />
       
       {/* Checkout routes */}
       <ProtectedRoute path="/checkout" component={CheckoutPage} />
