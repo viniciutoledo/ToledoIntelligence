@@ -25,7 +25,10 @@ interface VideoFormData {
 }
 
 export function TrainingVideo() {
-  const { t, i18n } = useTranslation();
+  // Estamos sobrescrevendo o hook de tradução para mostrar as chaves diretas
+  const { i18n } = useTranslation();
+  // Este é um hook fictício que apenas retorna a chave de tradução
+  const t = (key: string) => key;
   const {
     documents,
     documentsLoading,

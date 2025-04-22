@@ -11,8 +11,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/use-auth";
 
 export function TrainingPanel() {
-  const { t } = useTranslation();
+  // Estamos sobrescrevendo o hook de tradução para mostrar as chaves diretas
   const { user } = useAuth();
+  // Este é um hook fictício que apenas retorna a chave de tradução
+  const t = (key: string) => key;
   const [activeTab, setActiveTab] = useState("text");
   const [searchQuery, setSearchQuery] = useState("");
 

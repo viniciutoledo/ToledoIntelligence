@@ -12,15 +12,7 @@ interface LanguageContextType {
 const LanguageContext = createContext<LanguageContextType | null>(null);
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const { t: originalT, i18n } = useTranslation();
-
-  // Modificamos a função t para retornar a própria chave de tradução
-  // em vez de tentar traduzir o texto
-  const t = (key: string) => {
-    // Vamos retornar a chave original (sem tradução)
-    // conforme solicitado pelo usuário
-    return key;
-  };
+  const { t, i18n } = useTranslation();
 
   const changeLanguage = (lang: string) => {
     if (lang !== i18n.language) {

@@ -15,7 +15,10 @@ import { format } from "date-fns";
 import { ptBR, enUS } from "date-fns/locale";
 
 export function TrainingText() {
-  const { t, i18n } = useTranslation();
+  // Estamos sobrescrevendo o hook de tradução para mostrar as chaves diretas
+  const { i18n } = useTranslation();
+  // Este é um hook fictício que apenas retorna a chave de tradução
+  const t = (key: string) => key;
   const { 
     documents,
     documentsLoading,
