@@ -124,9 +124,16 @@ export async function analyzeImage(imagePath: string, language: string): Promise
       const anthropic = getAnthropicClient(apiKey);
       const mediaType = getMediaType(imagePath);
       
-      // Claude only supports certain image formats
+      // Claude apenas suporta formatos específicos de imagem
       const supportedFormats = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-      const actualMediaType = supportedFormats.includes(mediaType) ? mediaType : 'image/jpeg';
+      // Se o formato não for suportado, vamos usar jpeg como padrão
+      let actualMediaType = 'image/jpeg';
+      
+      if (supportedFormats.includes(mediaType)) {
+        actualMediaType = mediaType;
+      }
+      
+      console.log(`Tipo de mídia original: ${mediaType}, tipo a ser usado: ${actualMediaType}`);
       
       const response = await anthropic.messages.create({
         model: modelName,
@@ -144,7 +151,7 @@ export async function analyzeImage(imagePath: string, language: string): Promise
                 type: 'image',
                 source: {
                   type: 'base64',
-                  media_type: actualMediaType,
+                  media_type: supportedFormats.includes(actualMediaType) ? actualMediaType : 'image/jpeg',
                   data: base64Image
                 }
               }
@@ -199,6 +206,81 @@ export async function analyzeImage(imagePath: string, language: string): Promise
 }
 
 // Analyze file with either Anthropic or OpenAI
+// Processa mensagens de texto com LLM
+export async function processTextMessage(message: string, language: string): Promise<string> {
+  try {
+    const { provider, modelName, apiKey } = await getActiveLlmInfo();
+    
+    // Prompts para os diferentes provedores
+    const systemPrompt = language === 'pt' 
+      ? `Você é um assistente especializado em manutenção de placas de circuito. 
+         Forneça respostas técnicas precisas e úteis relacionadas à manutenção, 
+         diagnóstico e reparo de placas de circuito. Responda em Português.`
+      : `You are an assistant specialized in circuit board maintenance. 
+         Provide accurate and helpful technical responses related to maintenance, 
+         diagnosis, and repair of circuit boards. Respond in English.`;
+    
+    // Process with appropriate provider
+    if (provider === 'anthropic') {
+      // Use Anthropic Claude
+      console.log("Processando texto com Anthropic Claude:", {
+        model: modelName,
+        messageLength: message.length
+      });
+      
+      const anthropic = getAnthropicClient(apiKey);
+      
+      const response = await anthropic.messages.create({
+        model: modelName,
+        max_tokens: 1024,
+        system: systemPrompt,
+        messages: [
+          {
+            role: 'user',
+            content: message
+          }
+        ]
+      });
+
+      if (response.content[0].type === 'text') {
+        return response.content[0].text;
+      } else {
+        return 'Erro no formato da resposta do modelo.';
+      }
+    } else {
+      // Use OpenAI
+      console.log("Processando texto com OpenAI:", {
+        model: modelName,
+        messageLength: message.length
+      });
+      
+      const openai = getOpenAIClient(apiKey);
+      
+      const response = await openai.chat.completions.create({
+        model: modelName,
+        max_tokens: 1024,
+        messages: [
+          {
+            role: "system",
+            content: systemPrompt
+          },
+          {
+            role: "user",
+            content: message
+          }
+        ]
+      });
+
+      return response.choices[0].message.content || 'Sem resposta do modelo.';
+    }
+  } catch (error) {
+    console.error('Erro ao processar mensagem de texto:', error);
+    return language === 'pt'
+      ? 'Ocorreu um erro ao processar sua mensagem. Por favor, tente novamente mais tarde.'
+      : 'An error occurred while processing your message. Please try again later.';
+  }
+}
+
 export async function analyzeFile(filePath: string, language: string): Promise<string> {
   try {
     // Read file content

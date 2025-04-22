@@ -925,8 +925,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const userMessage = await storage.createChatMessage(messageData);
       
-      // Process with LLM if file uploaded
+      // Process content with LLM - both files and text messages
+      let botResponse;
+      
       if (req.file) {
+        // Process file
         console.log("Arquivo enviado:", {
           originalName: req.file.originalname,
           filename: req.file.filename,
@@ -935,7 +938,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           size: req.file.size
         });
         
-        let botResponse;
         let filePath = req.file.path;
         
         // Verificar se o arquivo existe
@@ -968,19 +970,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
           } else {
             botResponse = await analyzeFile(filePath, session.language);
           }
-          
-          console.log("Resposta da LLM recebida:", {
-            length: botResponse.length,
-            preview: botResponse.substring(0, 100) + "..."
-          });
         } catch (llmError) {
           console.error("Erro ao processar arquivo com LLM:", llmError);
           botResponse = session.language === 'pt' 
             ? "Desculpe, houve um erro ao processar este arquivo. Por favor, tente novamente."
             : "Sorry, there was an error processing this file. Please try again.";
         }
+      } else if (content && content.trim() !== '') {
+        // Process text message
+        try {
+          console.log("Processando mensagem de texto:", {
+            length: content.length,
+            preview: content.substring(0, 100) + (content.length > 100 ? "..." : "")
+          });
+          
+          botResponse = await processTextMessage(content, session.language);
+          
+          console.log("Resposta da LLM recebida para mensagem de texto:", {
+            length: botResponse.length,
+            preview: botResponse.substring(0, 100) + "..."
+          });
+        } catch (textError) {
+          console.error("Erro ao processar mensagem de texto com LLM:", textError);
+          botResponse = session.language === 'pt'
+            ? "Desculpe, houve um erro ao processar sua mensagem. Por favor, tente novamente."
+            : "Sorry, there was an error processing your message. Please try again.";
+        }
+      }
+      
+      // Create bot response message if we have one
+      if (botResponse) {
+        console.log("Resposta da LLM recebida:", {
+          length: botResponse.length,
+          preview: botResponse.substring(0, 100) + "..."
+        });
         
-        // Create bot response message
         await storage.createChatMessage({
           session_id: sessionId,
           user_id: req.user!.id,

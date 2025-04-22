@@ -145,7 +145,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     }) => {
       console.log("Iniciando upload de arquivo:", {
         name: file.name,
-        type: file.mimetype || file.type,
+        type: file.type,
         size: file.size,
         sessionId
       });

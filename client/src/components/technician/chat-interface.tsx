@@ -273,7 +273,7 @@ export function ChatInterface() {
             size="icon"
             className="p-2 rounded-full bg-primary text-white hover:bg-primary-600"
             onClick={handleSendMessage}
-            disabled={!message.trim() || !currentSession || isLoading}
+            disabled={(!message.trim() && !fileSelected) || !currentSession || isLoading}
           >
             {sendMessageMutation.isPending ? (
               <Loader2 className="h-5 w-5 animate-spin" />
