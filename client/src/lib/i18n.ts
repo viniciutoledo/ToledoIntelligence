@@ -47,7 +47,10 @@ const enTranslations = {
     accountBlockedMessage: 'Account blocked due to multiple active sessions. Contact support.',
     backToLogin: 'Back to Login',
     invalidCredentials: 'Invalid email or password',
-    incorrectCode: 'Incorrect verification code'
+    incorrectCode: 'Incorrect verification code',
+    emailAlreadyRegistered: 'This email is already registered',
+    registrationSuccess: 'Registration successful',
+    registrationError: 'Error during registration'
   },
   technician: {
     title: 'Technician Interface',
@@ -191,7 +194,10 @@ const ptTranslations = {
     accountBlockedMessage: 'Conta bloqueada devido a múltiplas sessões ativas. Contate o suporte.',
     backToLogin: 'Voltar para Login',
     invalidCredentials: 'Email ou senha inválidos',
-    incorrectCode: 'Código de verificação incorreto'
+    incorrectCode: 'Código de verificação incorreto',
+    emailAlreadyRegistered: 'Este email já está registrado',
+    registrationSuccess: 'Registro realizado com sucesso',
+    registrationError: 'Erro durante o registro'
   },
   technician: {
     title: 'Interface do Técnico',

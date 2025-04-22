@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/hooks/use-auth";
 import { useLanguage } from "@/hooks/use-language";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -21,7 +22,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { passwordSchema } from "@shared/schema";
 
 export function RegisterForm({
@@ -31,6 +33,8 @@ export function RegisterForm({
 }) {
   const { registerMutation } = useAuth();
   const { t, language } = useLanguage();
+  const { toast } = useToast();
+  const [registrationError, setRegistrationError] = useState<string | null>(null);
   
   // Create a more robust form schema with password validation
   const formSchema = z.object({
@@ -56,17 +60,38 @@ export function RegisterForm({
   });
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    // Limpa o erro anterior ao tentar submeter novamente
+    setRegistrationError(null);
+    
     try {
       await registerMutation.mutateAsync(values);
+      toast({
+        title: t("common.success"),
+        description: t("auth.registrationSuccess"),
+      });
       onSuccess();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Registration error:", error);
+      
+      // Verifica se o erro é de email já cadastrado
+      if (error.message && error.message.includes("Email already registered")) {
+        setRegistrationError(t("auth.emailAlreadyRegistered"));
+      } else {
+        setRegistrationError(t("auth.registrationError"));
+      }
     }
   };
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        {registrationError && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>{t("common.error")}</AlertTitle>
+            <AlertDescription>{registrationError}</AlertDescription>
+          </Alert>
+        )}
         <FormField
           control={form.control}
           name="email"
