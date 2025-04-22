@@ -78,31 +78,40 @@ export function TechnicianAuthForm({ onSuccess }: TechnicianAuthFormProps) {
   // Funções de submit
   const onLoginSubmit = (values: LoginFormValues) => {
     setError(null);
+    console.log("Login mutation - credenciais:", {...values, password: "********"});
+    
     loginMutation.mutate(values, {
       onSuccess: (user) => {
-        console.log("Login bem-sucedido:", user);
+        console.log("Login onSuccess - dados recebidos:", user);
         
         // Verificar se o servidor está nos enviando um redirecionamento
         if (user.redirect) {
-          console.log(`Redirecionamento detectado para: ${user.redirect}`);
+          console.log(`Login mutation - redirecionamento detectado: ${user.redirect}`);
           toast({
             title: t("common.redirecting"),
             description: user.message || t("auth.redirectingBasedOnRole"),
           });
-          // O redirecionamento já foi tratado no hook useAuth
+          console.log("Login onSuccess - atualizando cache do usuário:", user);
+          console.log("Login onSuccess - papel do usuário:", user.role);
+          
+          // Vamos redirecionar para o local apropriado com base no papel
+          if (user.role === "admin") {
+            console.log("Login onSuccess - redirecionando para /admin");
+            window.location.href = "/admin";
+          } else {
+            console.log("Login onSuccess - redirecionando para /technician");
+            // Técnicos vão para a página de técnico
+            if (onSuccess) onSuccess();
+          }
+          
+          console.log("Login bem-sucedido:", user);
+          console.log("Redirecionamento detectado para: " + user.redirect);
           return;
         }
         
-        // Redirecionar com base no papel do usuário
-        if (user.role === "admin") {
-          console.log("Usuário é admin, redirecionando para /admin");
-          // Uso de navegação direta em vez de wouter para contornar possíveis problemas de estado
-          window.location.href = "/admin"; 
-        } else {
-          console.log("Usuário é técnico, seguindo fluxo normal");
-          // Técnicos seguem o fluxo normal
-          if (onSuccess) onSuccess();
-        }
+        // Se não houver redirecionamento explícito, use o padrão
+        console.log("Login bem-sucedido, sem redirecionamento explícito");
+        if (onSuccess) onSuccess();
       },
       onError: (error) => {
         console.error("Erro de login:", error.message);

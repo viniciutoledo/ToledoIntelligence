@@ -290,16 +290,21 @@ export function setupAuth(app: Express) {
         
         // Verificação de role para garantir que o usuário está usando a interface correta
         console.log(`Login: user role ${user.role}, requested role ${loginData.role}`);
-        if (user.role !== loginData.role) {
-          // Se o usuário está tentando acessar a interface errada, redirecionamos para a correta
+        
+        // Se for um técnico tentando acessar a área de admin, redirecionamos
+        if (user.role === "technician" && loginData.role === "admin") {
           return res.status(200).json({
-            redirect: user.role === "admin" ? "/admin" : "/technician",
+            redirect: "/technician",
             role: user.role,
             message: user.language === "pt"
-              ? "Redirecionando para a interface correta de acordo com seu perfil"
-              : "Redirecting to the correct interface based on your role"
+              ? "Acesso restrito. Redirecionando para a interface de técnico."
+              : "Restricted access. Redirecting to the technician interface."
           });
         }
+        
+        // Permitir que administradores usem tanto a interface admin quanto a de técnico
+        // Se um admin estiver tentando acessar área de técnico, permitimos
+        // Isto resolve o problema reportado pelo usuário
         
         // Check if account is blocked
         if (user.is_blocked) {

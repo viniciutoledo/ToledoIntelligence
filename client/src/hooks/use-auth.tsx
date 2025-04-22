@@ -109,9 +109,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Verificar se o servidor está nos enviando um redirecionamento
       if (data.redirect) {
         console.log(`Login mutation - redirecionamento detectado: ${data.redirect}`);
-        // Redirecionar imediatamente para a interface correta
-        window.location.href = data.redirect;
-        // Retornamos os dados mesmo assim para que o cliente possa exibir a mensagem
+        // Não redirecionamos aqui, isso será tratado pelo componente de formulário
+        // window.location.href = data.redirect;
         return data;
       }
       
@@ -119,6 +118,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     onSuccess: (data) => {
       console.log("Login onSuccess - dados recebidos:", data);
+      
+      // Se temos um redirecionamento, vamos deixar que o componente de formulário lide com isso
+      if (data.redirect) {
+        console.log(`Login onSuccess - há redirecionamento, não processando dados agora`);
+        // Não modificamos o cache ou redirecionamos, o componente do formulário vai lidar com isso
+        return;
+      }
+      
       if (data.requiresTwoFactor) {
         // Store two-factor state for verification
         console.log("Login onSuccess - verificação em dois fatores necessária");
@@ -128,15 +135,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log("Login onSuccess - atualizando cache do usuário:", data);
         queryClient.setQueryData(["/api/user"], data);
         
-        // Redirecionar com base no papel do usuário
-        console.log("Login onSuccess - papel do usuário:", data.role);
-        if (data.role === "admin") {
-          console.log("Login onSuccess - redirecionando para /admin");
-          window.location.href = "/admin";
-        } else {
-          console.log("Login onSuccess - redirecionando para /technician");
-          window.location.href = "/technician";
-        }
+        // Não redirecionamos automaticamente aqui, deixamos que o componente de formulário decida
+        // o redirecionamento com base no papel do usuário
         
         if (data.language && data.language !== i18n.language) {
           console.log(`Login onSuccess - alterando idioma para ${data.language}`);
