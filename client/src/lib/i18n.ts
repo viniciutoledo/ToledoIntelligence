@@ -28,7 +28,9 @@ const enTranslations = {
     welcomeMessage: 'Welcome to ToledoIA',
     tryingAs: 'Trying as',
     switchLanguage: 'Switch language',
-    month: 'month'
+    month: 'month',
+    role: 'Access Profile',
+    username: 'Username'
   },
   landing: {
     heroTitle: 'AI-Powered Circuit Board Analysis',
@@ -47,11 +49,15 @@ const enTranslations = {
     selectPlan: 'Select Plan'
   },
   auth: {
+    login: 'Login',
+    register: 'Register',
     loginTitle: 'Login to Your Account',
     registerTitle: 'Create Your Account',
     loginSubtitle: 'AI-powered maintenance support platform',
     emailPlaceholder: 'email@example.com',
     passwordPlaceholder: '••••••••••••',
+    usernamePlaceholder: 'Enter your username',
+    selectRole: 'Select role',
     technician: 'Technician',
     admin: 'Administrator',
     loggingAsAdmin: 'Logging in as Administrator',
@@ -307,7 +313,9 @@ const ptTranslations = {
     welcomeMessage: 'Bem-vindo à ToledoIA',
     tryingAs: 'Tentando como',
     switchLanguage: 'Mudar idioma',
-    month: 'mês'
+    month: 'mês',
+    role: 'Perfil de Acesso',
+    username: 'Nome de Usuário'
   },
   landing: {
     heroTitle: 'Análise de Placas de Circuito com IA',
@@ -326,11 +334,15 @@ const ptTranslations = {
     selectPlan: 'Selecionar Plano'
   },
   auth: {
+    login: 'Entrar',
+    register: 'Registrar',
     loginTitle: 'Acesse sua Conta',
     registerTitle: 'Crie sua Conta',
     loginSubtitle: 'Plataforma de suporte à manutenção com IA',
     emailPlaceholder: 'email@exemplo.com',
     passwordPlaceholder: '••••••••••••',
+    usernamePlaceholder: 'Digite seu nome de usuário',
+    selectRole: 'Selecione o perfil',
     technician: 'Técnico',
     admin: 'Administrador',
     loggingAsAdmin: 'Fazendo login como Administrador',
