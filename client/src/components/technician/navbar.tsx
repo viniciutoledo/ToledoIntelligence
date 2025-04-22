@@ -2,20 +2,27 @@ import { useAuth } from "@/hooks/use-auth";
 import { useLanguage } from "@/hooks/use-language";
 import { LanguageToggle } from "@/components/language-toggle";
 import { Button } from "@/components/ui/button";
+import { useLocation } from "wouter";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { User, LogOut } from "lucide-react";
+import { User, LogOut, Settings } from "lucide-react";
 
 export function TechnicianNavbar() {
   const { user, logoutMutation } = useAuth();
   const { t } = useLanguage();
+  const [, setLocation] = useLocation();
 
   const handleLogout = () => {
     logoutMutation.mutate();
+  };
+  
+  const navigateToAdmin = () => {
+    setLocation("/admin");
   };
 
   return (
@@ -44,6 +51,18 @@ export function TechnicianNavbar() {
                   <DropdownMenuItem disabled>
                     {user?.email}
                   </DropdownMenuItem>
+                  
+                  {user?.role === "admin" && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={navigateToAdmin}>
+                        <Settings className="mr-2 h-4 w-4 text-amber-500" />
+                        <span className="text-amber-500 font-medium">{t("admin.accessPanel")}</span>
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                  
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>{t("common.logout")}</span>
@@ -51,14 +70,7 @@ export function TechnicianNavbar() {
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleLogout}
-              className="text-neutral-700"
-            >
-              <LogOut className="h-5 w-5" />
-            </Button>
+            {/* Botão de logout removido para maior segurança */}
           </div>
         </div>
       </div>
