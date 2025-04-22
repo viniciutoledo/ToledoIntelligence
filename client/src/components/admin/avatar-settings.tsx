@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useLanguage } from "@/hooks/use-language";
 import { useAvatar } from "@/hooks/use-avatar";
 import { useForm } from "react-hook-form";
@@ -44,19 +44,14 @@ export function AvatarSettings() {
   });
 
   // Update form when avatar data is loaded
-  useState(() => {
+  useEffect(() => {
     if (avatar) {
       form.reset({
         name: avatar.name,
         image: undefined,
       });
     }
-  });
-  
-  // Fix to properly update form values when avatar data changes
-  if (avatar && avatar.name !== form.getValues().name) {
-    form.setValue('name', avatar.name);
-  }
+  }, [avatar, form]);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     const fileInput = fileInputRef.current;
