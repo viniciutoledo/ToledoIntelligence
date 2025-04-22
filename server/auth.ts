@@ -67,17 +67,17 @@ async function generateEmailOtp(user: User): Promise<string> {
     expires_at: expiresAt
   });
   
-  // Send email via Supabase
+  // Send email via Nodemailer
   try {
     const emailSent = await sendOtpEmail(user, otp);
     
     if (!emailSent) {
-      throw new Error("Failed to send email via Supabase");
+      throw new Error("Falha ao enviar email via Nodemailer");
     }
     
     return otp;
   } catch (error) {
-    console.error("Failed to send OTP email:", error);
+    console.error("Falha ao enviar email de verificação:", error);
     throw new Error("Failed to send verification code");
   }
 }
