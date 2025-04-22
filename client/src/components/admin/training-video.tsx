@@ -363,23 +363,15 @@ export function TrainingVideo() {
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <Badge className={`px-2 py-0.5 text-xs ${
-                        doc.status === 'completed' 
-                          ? 'bg-green-100 text-green-800 border border-green-200' 
-                          : doc.status === 'processing'
-                          ? 'bg-blue-100 text-blue-800 border border-blue-200'
-                          : doc.status === 'error'
-                          ? 'bg-red-100 text-red-800 border border-red-200'
-                          : 'bg-amber-100 text-amber-800 border border-amber-200'
-                      }`}>
-                        {doc.status === 'completed' && <Check className="mr-1 h-3 w-3" />}
-                        {t(`admin.training.statusTypes.${doc.status}`)}
+                      <Badge className="px-2 py-0.5 text-xs bg-green-100 text-green-800 border border-green-200">
+                        <Check className="mr-1 h-3 w-3" />
+                        Treinado
                       </Badge>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                             <MoreVertical className="h-4 w-4" />
-                            <span className="sr-only">{t("common.actions")}</span>
+                            <span className="sr-only">common.actions</span>
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
@@ -389,14 +381,14 @@ export function TrainingVideo() {
                               onClick={() => navigator.clipboard.writeText(doc.website_url || '')}
                             >
                               <ClipboardIcon className="mr-2 h-4 w-4" />
-                              <span>{t("common.copyLink")}</span>
+                              <span>common.copyLink</span>
                             </DropdownMenuItem>
                           )}
                           <DropdownMenuItem 
                             className="flex cursor-pointer items-center text-red-600 focus:text-red-600" 
                             onClick={() => handleDeleteDocument(doc.id)}
                           >
-                            <span>{t("common.delete")}</span>
+                            <span>common.delete</span>
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
