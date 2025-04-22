@@ -114,8 +114,8 @@ export function AvatarSettings() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>{t("admin.avatarSettings")}</CardTitle>
-          <CardDescription>{t("admin.avatarSettingsSubtitle")}</CardDescription>
+          <CardTitle>Configurações do Avatar</CardTitle>
+          <CardDescription>Personalize o nome e a imagem do avatar do assistente de IA</CardDescription>
         </CardHeader>
         <CardContent className="flex justify-center items-center py-10">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -128,9 +128,9 @@ export function AvatarSettings() {
     <Card className="shadow-md">
       <CardHeader className="bg-gradient-to-r from-primary-50 to-accent-50 border-b">
         <CardTitle className="flex items-center text-xl">
-          <span className="text-primary">{t("admin.avatarSettings")}</span>
+          <span className="text-primary">Configurações do Avatar</span>
         </CardTitle>
-        <CardDescription>{t("admin.avatarSettingsSubtitle")}</CardDescription>
+        <CardDescription>Personalize o nome e a imagem do avatar do assistente de IA</CardDescription>
       </CardHeader>
       <CardContent className="pt-6">
         <Form {...form}>
@@ -157,7 +157,7 @@ export function AvatarSettings() {
                       </div>
                     )}
                   </div>
-                  <h3 className="text-lg font-medium mb-3">{t("admin.avatarImage")}</h3>
+                  <h3 className="text-lg font-medium mb-3">Imagem do Avatar</h3>
                   <FormField
                     control={form.control}
                     name="image"
@@ -179,10 +179,10 @@ export function AvatarSettings() {
                           onClick={() => fileInputRef.current?.click()}
                           className="px-4 py-2 bg-primary-100 text-primary-700 rounded-md hover:bg-primary-200 transition-colors duration-200 inline-block"
                         >
-                          {t("admin.changeImage")}
+                          Alterar Imagem
                         </Button>
                         <p className="mt-3 text-xs text-neutral-500">
-                          {t("admin.avatarImageRequirements")}
+                          A imagem deve ter no máximo 5MB e estar nos formatos JPG ou PNG
                         </p>
                         <FormMessage className="text-red-500" />
                       </FormItem>
@@ -197,7 +197,7 @@ export function AvatarSettings() {
                     name="name"
                     render={({ field }) => (
                       <FormItem className="mb-6">
-                        <FormLabel className="text-lg font-medium">{t("admin.avatarName")}</FormLabel>
+                        <FormLabel className="text-lg font-medium">Nome do Avatar</FormLabel>
                         <FormControl>
                           <Input 
                             {...field} 
@@ -207,14 +207,14 @@ export function AvatarSettings() {
                           />
                         </FormControl>
                         <p className="mt-2 text-sm text-neutral-500">
-                          {t("admin.maxCharacters")}
+                          Máximo de 50 caracteres
                         </p>
                         <FormMessage className="text-red-500" />
                       </FormItem>
                     )}
                   />
                   <div className="mt-8">
-                    <h3 className="text-lg font-medium mb-3">{t("admin.avatarPreview")}</h3>
+                    <h3 className="text-lg font-medium mb-3">Prévia do Avatar</h3>
                     <div className="bg-gradient-to-r from-neutral-50 to-white p-6 border rounded-md shadow-inner">
                       <div className="flex items-start">
                         <div className="h-12 w-12 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 mr-3 shadow-sm">
@@ -239,7 +239,7 @@ export function AvatarSettings() {
                             {form.watch('name') || avatar?.name || "Bot ToledoIA"}
                           </div>
                           <p className="text-neutral-800 text-sm">
-                            {t("technician.botWelcome")}
+                            Olá! Eu sou o assistente de IA que irá ajudar você a analisar placas de circuito.
                           </p>
                         </div>
                       </div>
@@ -259,7 +259,7 @@ export function AvatarSettings() {
                 {resetAvatarMutation.isPending && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                {t("admin.resetDefault")}
+                Restaurar Padrão
               </Button>
               <Button
                 type="submit"
@@ -269,7 +269,7 @@ export function AvatarSettings() {
                 {saveAvatarMutation.isPending && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                {t("admin.saveAvatar")}
+                Salvar Avatar
               </Button>
             </div>
           </form>
