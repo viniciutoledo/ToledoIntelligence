@@ -10,7 +10,8 @@ import {
   FileText,
   Menu,
   X,
-  LogOut
+  LogOut,
+  BookOpen
 } from "lucide-react";
 import { LanguageToggle } from "@/components/language-toggle";
 
@@ -43,6 +44,11 @@ export function AdminSidebar({ activeItem, onItemClick }: SidebarProps) {
       id: "users",
       label: t("admin.users"),
       icon: <Users className="mr-3 h-5 w-5" />,
+    },
+    {
+      id: "training",
+      label: t("admin.training"),
+      icon: <BookOpen className="mr-3 h-5 w-5" />,
     },
     {
       id: "logs",
