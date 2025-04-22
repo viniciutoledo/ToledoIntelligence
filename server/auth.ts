@@ -378,6 +378,8 @@ export function setupAuth(app: Express) {
   // 2FA verification
   app.post("/api/verify-2fa", async (req, res, next) => {
     try {
+      console.log("Recebida requisição de verificação 2FA:", req.body);
+      
       const schema = z.object({
         userId: z.number(),
         token: z.string(),
@@ -386,15 +388,21 @@ export function setupAuth(app: Express) {
       
       const { userId, token, type } = schema.parse(req.body);
       
+      console.log(`Verificando 2FA - userId: ${userId}, token: ${token}, type: ${type}`);
+      
       // Get the user
       const user = await storage.getUser(userId);
       
       if (!user) {
+        console.log("Usuário não encontrado:", userId);
         return res.status(404).json({ message: "User not found" });
       }
       
+      console.log(`Usuário encontrado: ${user.email}, language: ${user.language}`);
+      
       // Check if account is blocked
       if (user.is_blocked) {
+        console.log("Conta de usuário bloqueada");
         return res.status(403).json({ 
           message: user.language === "pt"
             ? "Conta bloqueada devido a múltiplas sessões ativas. Contate o suporte."
@@ -405,17 +413,28 @@ export function setupAuth(app: Express) {
       let isValid = false;
       
       if (type === "email") {
+        console.log("Verificando código por email");
+        
         // Código fixo para desenvolvimento "123456"
         if (token === "123456") {
           console.log("Usando código fixo de desenvolvimento: 123456");
           isValid = true;
         } else {
           // Verificação normal do token OTP
+          console.log("Verificando token OTP no banco de dados");
           const otpToken = await storage.getOtpToken(token, userId);
           
-          if (otpToken && !otpToken.used) {
-            isValid = true;
-            await storage.markOtpTokenUsed(otpToken.id);
+          if (otpToken) {
+            console.log("Token encontrado:", otpToken);
+            if (!otpToken.used) {
+              console.log("Token válido, marcando como usado");
+              isValid = true;
+              await storage.markOtpTokenUsed(otpToken.id);
+            } else {
+              console.log("Token já foi usado");
+            }
+          } else {
+            console.log("Token não encontrado no banco de dados");
           }
         }
       } else if (type === "app" && user.twofa_secret) {
