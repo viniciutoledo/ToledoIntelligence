@@ -1,16 +1,13 @@
 import { useState } from "react";
+import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { useAuth } from "@/hooks/use-auth";
 import { useLanguage } from "@/hooks/use-language";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Loader2 } from "lucide-react";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -23,46 +20,31 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Loader2 } from "lucide-react";
 
-const registerSchema = z.object({
-  email: z.string().email({
-    message: "Por favor, insira um email válido.",
-  }),
-  password: z
-    .string()
-    .min(8, {
-      message: "A senha deve ter pelo menos 8 caracteres.",
-    })
-    .regex(/[A-Z]/, {
-      message: "A senha deve conter pelo menos uma letra maiúscula.",
-    })
-    .regex(/[a-z]/, {
-      message: "A senha deve conter pelo menos uma letra minúscula.",
-    })
-    .regex(/[0-9]/, {
-      message: "A senha deve conter pelo menos um número.",
-    }),
-  confirmPassword: z.string(),
+// Esquemas de validação
+const loginSchema = z.object({
+  email: z.string().email().min(1, "Email é obrigatório"),
+  password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
   role: z.enum(["technician", "admin"]),
-  language: z.enum(["pt", "en"]),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "As senhas não coincidem.",
-  path: ["confirmPassword"],
 });
 
-const loginSchema = z.object({
-  email: z.string().email({
-    message: "Por favor, insira um email válido.",
-  }),
-  password: z.string().min(1, {
-    message: "Por favor, insira sua senha.",
-  }),
+const registerSchema = z.object({
+  username: z.string().min(1, "Nome de usuário é obrigatório"),
+  email: z.string().email().min(1, "Email é obrigatório"),
+  password: z
+    .string()
+    .min(6, "Senha deve ter pelo menos 6 caracteres"),
   role: z.enum(["technician", "admin"]),
+  language: z.enum(["pt", "en"]).default("pt"),
 });
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
 type LoginFormValues = z.infer<typeof loginSchema>;
 
+// Props do componente
 interface AuthFormProps {
   mode: "login" | "register";
   onSuccess?: () => void;
@@ -70,24 +52,14 @@ interface AuthFormProps {
   selectedPlan?: string | null;
 }
 
+// Componente principal do formulário de autenticação
 export function AuthForm({ mode, onSuccess, onToggleMode, selectedPlan }: AuthFormProps) {
   const { t, language } = useLanguage();
   const { loginMutation, registerMutation } = useAuth();
+  const [activeMode, setActiveMode] = useState<"login" | "register">(mode);
   const [error, setError] = useState<string | null>(null);
-
-  // Formulário de registro
-  const registerForm = useForm<RegisterFormValues>({
-    resolver: zodResolver(registerSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-      confirmPassword: "",
-      role: "technician",
-      language: language === "pt" ? "pt" : "en", // Usar idioma atual como padrão
-    },
-  });
-
-  // Formulário de login
+  
+  // Form hooks
   const loginForm = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -96,18 +68,22 @@ export function AuthForm({ mode, onSuccess, onToggleMode, selectedPlan }: AuthFo
       role: "technician",
     },
   });
-
+  
+  const registerForm = useForm<RegisterFormValues>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: {
+      username: "",
+      email: "",
+      password: "",
+      role: "technician",
+      language: language as "pt" | "en",
+    },
+  });
+  
   // Lidar com o envio do formulário de registro
   const onRegisterSubmit = (values: RegisterFormValues) => {
     setError(null);
-    
-    // Adicionar o plano selecionado se existir
-    const registrationData = {
-      ...values,
-      stripeSubscriptionPlan: selectedPlan || undefined
-    };
-    
-    registerMutation.mutate(registrationData, {
+    registerMutation.mutate(values, {
       onSuccess: () => {
         if (onSuccess) onSuccess();
       },
@@ -116,7 +92,7 @@ export function AuthForm({ mode, onSuccess, onToggleMode, selectedPlan }: AuthFo
       },
     });
   };
-
+  
   // Lidar com o envio do formulário de login
   const onLoginSubmit = (values: LoginFormValues) => {
     setError(null);
@@ -129,7 +105,7 @@ export function AuthForm({ mode, onSuccess, onToggleMode, selectedPlan }: AuthFo
       },
     });
   };
-
+  
   return (
     <div className="space-y-4">
       {error && (
@@ -137,222 +113,177 @@ export function AuthForm({ mode, onSuccess, onToggleMode, selectedPlan }: AuthFo
           {error}
         </div>
       )}
-
-      {mode === "register" ? (
-        // Formulário de Registro
-        <Form {...registerForm}>
-          <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
-            <FormField
-              control={registerForm.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t("auth.emailLabel")}</FormLabel>
-                  <FormControl>
-                    <Input placeholder="seu@email.com" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={registerForm.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t("auth.passwordLabel")}</FormLabel>
-                  <FormControl>
-                    <Input type="password" placeholder="********" {...field} />
-                  </FormControl>
-                  <FormDescription className="text-xs">
-                    {t("auth.passwordRequirements")}
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={registerForm.control}
-              name="confirmPassword"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t("auth.confirmPasswordLabel")}</FormLabel>
-                  <FormControl>
-                    <Input type="password" placeholder="********" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={registerForm.control}
-              name="role"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t("auth.roleLabel")}</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
+      
+      <Tabs 
+        defaultValue={activeMode} 
+        onValueChange={(value) => {
+          setActiveMode(value as "login" | "register");
+          if (onToggleMode) onToggleMode();
+        }}
+      >
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="login">{t("auth.login")}</TabsTrigger>
+          <TabsTrigger value="register">{t("auth.register")}</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="login">
+          <Form {...loginForm}>
+            <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
+              <FormField
+                control={loginForm.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t("common.email")}</FormLabel>
                     <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder={t("auth.selectRole")} />
-                      </SelectTrigger>
+                      <Input placeholder="exemplo@email.com" {...field} />
                     </FormControl>
-                    <SelectContent>
-                      <SelectItem value="technician">{t("auth.roleTechnician")}</SelectItem>
-                      <SelectItem value="admin">{t("auth.roleAdmin")}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={registerForm.control}
-              name="language"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t("auth.languageLabel")}</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={loginForm.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t("common.password")}</FormLabel>
                     <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder={t("auth.selectLanguage")} />
-                      </SelectTrigger>
+                      <Input type="password" placeholder="••••••" {...field} />
                     </FormControl>
-                    <SelectContent>
-                      <SelectItem value="pt">🇧🇷 Português</SelectItem>
-                      <SelectItem value="en">🇺🇸 English</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <Button
-              type="submit"
-              className="w-full bg-purple-600 hover:bg-purple-700"
-              disabled={registerMutation.isPending}
-            >
-              {registerMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {t("auth.registering")}
-                </>
-              ) : (
-                t("auth.register")
-              )}
-            </Button>
-          </form>
-        </Form>
-      ) : (
-        // Formulário de Login
-        <Form {...loginForm}>
-          <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
-            <FormField
-              control={loginForm.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t("auth.emailLabel")}</FormLabel>
-                  <FormControl>
-                    <Input placeholder="seu@email.com" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={loginForm.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t("auth.passwordLabel")}</FormLabel>
-                  <FormControl>
-                    <Input type="password" placeholder="********" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={loginForm.control}
-              name="role"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t("auth.roleLabel")}</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={loginForm.control}
+                name="role"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t("common.role")}</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder={t("auth.selectRole")} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="technician">{t("auth.roleTechnician")}</SelectItem>
+                        <SelectItem value="admin">{t("auth.roleAdmin")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <Button 
+                type="submit" 
+                className="w-full"
+                disabled={loginMutation.isPending}
+                style={{ backgroundColor: "#ff00c7" }}
+              >
+                {loginMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {t("auth.login")}
+              </Button>
+            </form>
+          </Form>
+        </TabsContent>
+        
+        <TabsContent value="register">
+          <Form {...registerForm}>
+            <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
+              <FormField
+                control={registerForm.control}
+                name="username"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t("common.username")}</FormLabel>
                     <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder={t("auth.selectRole")} />
-                      </SelectTrigger>
+                      <Input placeholder={t("auth.usernamePlaceholder")} {...field} />
                     </FormControl>
-                    <SelectContent>
-                      <SelectItem value="technician">{t("auth.roleTechnician")}</SelectItem>
-                      <SelectItem value="admin">{t("auth.roleAdmin")}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={registerForm.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t("common.email")}</FormLabel>
+                    <FormControl>
+                      <Input placeholder="exemplo@email.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={registerForm.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t("common.password")}</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="••••••" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={registerForm.control}
+                name="role"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t("common.role")}</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder={t("auth.selectRole")} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="technician">{t("auth.roleTechnician")}</SelectItem>
+                        <SelectItem value="admin">{t("auth.roleAdmin")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <input
+                type="hidden"
+                {...registerForm.register("language")}
+                value={language as "pt" | "en"}
+              />
+              
+              {selectedPlan && (
+                <div className="bg-purple-600 bg-opacity-20 border border-purple-600 text-purple-500 px-4 py-2 rounded-md text-sm">
+                  {t("auth.registeringWithPlan")}
+                </div>
               )}
-            />
-            
-            <Button
-              type="submit"
-              className="w-full bg-purple-600 hover:bg-purple-700"
-              disabled={loginMutation.isPending}
-            >
-              {loginMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {t("auth.loggingIn")}
-                </>
-              ) : (
-                t("auth.login")
-              )}
-            </Button>
-          </form>
-        </Form>
-      )}
-
-      <div className="text-center mt-6">
-        {mode === "register" ? (
-          <p className="text-sm text-gray-400">
-            {t("auth.alreadyHaveAccount")}{" "}
-            <button
-              type="button"
-              onClick={onToggleMode}
-              className="text-purple-500 hover:underline"
-            >
-              {t("auth.login")}
-            </button>
-          </p>
-        ) : (
-          <p className="text-sm text-gray-400">
-            {t("auth.dontHaveAccount")}{" "}
-            <button
-              type="button"
-              onClick={onToggleMode}
-              className="text-purple-500 hover:underline"
-            >
-              {t("auth.register")}
-            </button>
-          </p>
-        )}
-      </div>
+              
+              <Button 
+                type="submit" 
+                className="w-full"
+                disabled={registerMutation.isPending}
+                style={{ backgroundColor: "#ff00c7" }}
+              >
+                {registerMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {t("auth.register")}
+              </Button>
+            </form>
+          </Form>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

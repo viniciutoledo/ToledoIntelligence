@@ -11,17 +11,26 @@ import AuthPage from "@/pages/auth-page";
 import TechnicianPage from "@/pages/technician-page";
 import AdminPage from "@/pages/admin-page";
 import SubscriptionPage from "@/pages/subscription-page";
+import LandingPage from "@/pages/landing-page";
+import CheckoutPage from "@/pages/checkout-page";
+import CheckoutSuccessPage from "@/pages/checkout-success-page";
 
 function Router() {
   return (
     <Switch>
       {/* Public routes */}
+      <Route path="/" component={LandingPage} />
       <Route path="/auth" component={AuthPage} />
+      
+      {/* Checkout routes */}
+      <ProtectedRoute path="/checkout" component={CheckoutPage} />
+      <ProtectedRoute path="/checkout-success" component={CheckoutSuccessPage} />
       
       {/* Protected routes */}
       <ProtectedRoute path="/technician" component={TechnicianPage} roles={["technician"]} />
       <ProtectedRoute path="/admin" component={AdminPage} roles={["admin"]} />
       <ProtectedRoute path="/subscription" component={SubscriptionPage} />
+      <ProtectedRoute path="/dashboard" component={TechnicianPage} roles={["technician"]} />
       
       {/* Subscription success/cancel pages */}
       <ProtectedRoute 
@@ -59,15 +68,6 @@ function Router() {
           </div>
         )} 
       />
-      
-      {/* Root redirect */}
-      <Route path="/">
-        {() => {
-          // This will redirect to the auth page by default
-          window.location.href = "/auth";
-          return null;
-        }}
-      </Route>
       
       {/* Fallback to 404 */}
       <Route component={NotFound} />

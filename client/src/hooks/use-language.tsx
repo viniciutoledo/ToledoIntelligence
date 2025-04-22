@@ -5,6 +5,7 @@ import i18n from '@/lib/i18n';
 interface LanguageContextType {
   language: string;
   changeLanguage: (lang: string) => void;
+  setLanguage: (lang: string) => void; // Alias para changeLanguage para compatibilidade
   t: (key: string) => string;
   i18n: typeof i18n;
 }
@@ -26,6 +27,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       value={{
         language: i18n.language,
         changeLanguage,
+        setLanguage: changeLanguage, // Alias para changeLanguage
         t,
         i18n
       }}
