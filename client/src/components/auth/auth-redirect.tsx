@@ -20,19 +20,31 @@ export function AuthRedirect({
   const { user, isLoading } = useAuth();
   
   useEffect(() => {
-    if (isLoading) return;
+    console.log("AuthRedirect - Verificando estado:", { isLoading, user, redirectPathWhenLoggedIn });
+    
+    if (isLoading) {
+      console.log("AuthRedirect - Carregando dados do usuário...");
+      return;
+    }
     
     if (user) {
+      console.log(`AuthRedirect - Usuário autenticado: ${user.email} (${user.role})`);
+      
       if (redirectPathWhenLoggedIn) {
         // Se um caminho específico de redirecionamento foi fornecido
-        setLocation(redirectPathWhenLoggedIn);
+        console.log(`AuthRedirect - Redirecionando para caminho específico: ${redirectPathWhenLoggedIn}`);
+        window.location.href = redirectPathWhenLoggedIn;
       } else if (user.role === "technician") {
         // Redirecionar para a página do técnico se logado como técnico
-        setLocation("/technician");
+        console.log("AuthRedirect - Redirecionando para interface do técnico");
+        window.location.href = "/technician";
       } else if (user.role === "admin") {
         // Redirecionar para a página do admin se logado como admin
-        setLocation("/admin");
+        console.log("AuthRedirect - Redirecionando para painel do administrador");
+        window.location.href = "/admin";
       }
+    } else {
+      console.log("AuthRedirect - Usuário não autenticado, permanecendo na página atual");
     }
   }, [user, isLoading, setLocation, redirectPathWhenLoggedIn]);
   
