@@ -65,6 +65,27 @@ export interface IStorage {
   getUserActiveSession(userId: number): Promise<{ sessionId: string } | undefined>;
   setUserActiveSession(userId: number, sessionId: string): Promise<void>;
   removeUserActiveSession(userId: number): Promise<void>;
+  
+  // Training documents
+  getTrainingDocument(id: number): Promise<TrainingDocument | undefined>;
+  getTrainingDocuments(): Promise<TrainingDocument[]>;
+  createTrainingDocument(document: InsertTrainingDocument): Promise<TrainingDocument>;
+  updateTrainingDocument(id: number, data: Partial<TrainingDocument>): Promise<TrainingDocument | undefined>;
+  deleteTrainingDocument(id: number): Promise<void>;
+  updateTrainingDocumentStatus(id: number, status: string, errorMessage?: string): Promise<TrainingDocument | undefined>;
+  
+  // Training categories
+  getTrainingCategory(id: number): Promise<TrainingCategory | undefined>;
+  getTrainingCategories(): Promise<TrainingCategory[]>;
+  createTrainingCategory(category: InsertTrainingCategory): Promise<TrainingCategory>;
+  updateTrainingCategory(id: number, data: Partial<TrainingCategory>): Promise<TrainingCategory | undefined>;
+  deleteTrainingCategory(id: number): Promise<void>;
+  
+  // Document categories
+  addDocumentToCategory(documentId: number, categoryId: number): Promise<DocumentCategory>;
+  removeDocumentFromCategory(documentId: number, categoryId: number): Promise<void>;
+  getDocumentCategories(documentId: number): Promise<TrainingCategory[]>;
+  getCategoryDocuments(categoryId: number): Promise<TrainingDocument[]>;
 }
 
 export class MemStorage implements IStorage {

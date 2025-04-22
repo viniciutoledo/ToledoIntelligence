@@ -148,6 +148,62 @@ export const insertOtpTokenSchema = createInsertSchema(otpTokens).pick({
   expires_at: true,
 });
 
+// Training documents table
+export const trainingDocuments = pgTable("training_documents", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  document_type: text("document_type", { enum: ["text", "file", "website"] }).notNull(),
+  content: text("content"),
+  file_url: text("file_url"),
+  website_url: text("website_url"),
+  status: text("status", { enum: ["pending", "processing", "completed", "error"] }).notNull().default("pending"),
+  error_message: text("error_message"),
+  created_by: integer("created_by").notNull().references(() => users.id),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+  updated_at: timestamp("updated_at").defaultNow().notNull(),
+  is_active: boolean("is_active").notNull().default(true),
+});
+
+export const insertTrainingDocumentSchema = createInsertSchema(trainingDocuments).pick({
+  name: true,
+  description: true,
+  document_type: true,
+  content: true,
+  file_url: true,
+  website_url: true,
+  created_by: true,
+});
+
+// Training categories table
+export const trainingCategories = pgTable("training_categories", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  created_by: integer("created_by").notNull().references(() => users.id),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+  updated_at: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertTrainingCategorySchema = createInsertSchema(trainingCategories).pick({
+  name: true,
+  description: true,
+  created_by: true,
+});
+
+// Junction table for documents and categories
+export const documentCategories = pgTable("document_categories", {
+  id: serial("id").primaryKey(),
+  document_id: integer("document_id").notNull().references(() => trainingDocuments.id),
+  category_id: integer("category_id").notNull().references(() => trainingCategories.id),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertDocumentCategorySchema = createInsertSchema(documentCategories).pick({
+  document_id: true,
+  category_id: true,
+});
+
 // Export types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -171,6 +227,15 @@ export type UserSession = typeof usersSessions.$inferSelect;
 
 export type OtpToken = typeof otpTokens.$inferSelect;
 export type InsertOtpToken = z.infer<typeof insertOtpTokenSchema>;
+
+export type TrainingDocument = typeof trainingDocuments.$inferSelect;
+export type InsertTrainingDocument = z.infer<typeof insertTrainingDocumentSchema>;
+
+export type TrainingCategory = typeof trainingCategories.$inferSelect;
+export type InsertTrainingCategory = z.infer<typeof insertTrainingCategorySchema>;
+
+export type DocumentCategory = typeof documentCategories.$inferSelect;
+export type InsertDocumentCategory = z.infer<typeof insertDocumentCategorySchema>;
 
 // Login data
 export type LoginData = {
