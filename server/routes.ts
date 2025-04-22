@@ -476,6 +476,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(logs);
   });
   
+  // Endpoint para gerar logs de auditoria para exemplo
+  app.post("/api/admin/create-example-logs", isAuthenticated, checkRole("admin"), async (req, res) => {
+    // Cria logs de exemplo para visualização no painel administrativo
+    const actions = [
+      "user_login",
+      "user_registered", 
+      "llm_config_updated",
+      "avatar_updated",
+      "chat_session_started",
+      "subscription_activated"
+    ];
+    
+    const userId = req.user!.id;
+    
+    for (const action of actions) {
+      await logAction({
+        userId,
+        action,
+        details: { example: true, timestamp: new Date().toISOString() },
+        ipAddress: req.ip
+      });
+    }
+    
+    res.json({ success: true, count: actions.length });
+  });
+  
   // User management (admin)
   app.get("/api/admin/users", isAuthenticated, checkRole("admin"), async (req, res) => {
     // Get all users (in a real DB you'd want pagination)

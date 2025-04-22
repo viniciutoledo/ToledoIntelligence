@@ -1,5 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLanguage } from "@/hooks/use-language";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
   Table,
   TableBody,
@@ -8,7 +10,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Loader2, AlertTriangle, Info, AlertCircle, CheckCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Loader2, AlertTriangle, Info, AlertCircle, CheckCircle, Plus } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import { ptBR, enUS } from "date-fns/locale";
 
@@ -23,11 +26,34 @@ interface AuditLog {
 
 export function AuditLogs() {
   const { t, language } = useLanguage();
+  const { toast } = useToast();
 
   // Consulta os registros de auditoria
   const { data: logs, isLoading } = useQuery<AuditLog[]>({
     queryKey: ["/api/admin/logs"],
     staleTime: 30000, // 30 segundos
+  });
+  
+  // Mutação para criar logs de exemplo
+  const createExampleLogsMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/admin/create-example-logs");
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/logs"] });
+      toast({
+        title: t("common.success"),
+        description: "Logs de exemplo criados com sucesso.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: t("common.error"),
+        description: error.message,
+        variant: "destructive",
+      });
+    },
   });
 
   // Formata a data com base no idioma
@@ -91,6 +117,16 @@ export function AuditLogs() {
         <AlertTriangle className="h-8 w-8 text-yellow-500 mb-2 mx-auto" />
         <h3 className="text-lg font-medium">{t("admin.noLogsFound")}</h3>
         <p className="text-neutral-500 mt-1">{t("admin.noLogsFoundDesc")}</p>
+        <Button 
+          className="mt-4"
+          variant="outline"
+          onClick={() => createExampleLogsMutation.mutate()}
+          disabled={createExampleLogsMutation.isPending}
+        >
+          {createExampleLogsMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+          <Plus className="h-4 w-4 mr-2" />
+          Criar Logs de Exemplo
+        </Button>
       </div>
     );
   }
