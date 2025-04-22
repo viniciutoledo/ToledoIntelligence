@@ -123,7 +123,7 @@ export default function LandingPage() {
             {/* Botões de autenticação */}
             <div className="flex items-center gap-2">
               <Button
-                className="text-white border-white hover:bg-white hover:text-black"
+                className="text-white border-white bg-gray-800"
                 variant="outline"
                 onClick={() => {
                   setShowAuthForm(true);
@@ -266,26 +266,29 @@ export default function LandingPage() {
       {/* Planos de assinatura */}
       <section className="py-16 px-6">
         <div className="container mx-auto">
-          <h2 className="text-3xl font-bold text-center mb-4">
-            {t("landing.pricingTitle")}
+          <h2 className="text-3xl font-bold text-center mb-4 text-white">
+            Escolha o plano que melhor atende às suas necessidades
           </h2>
-          <p className="text-center text-gray-400 max-w-2xl mx-auto mb-12">
-            {t("landing.pricingSubtitle")}
+          <p className="text-center text-white text-lg max-w-2xl mx-auto mb-12">
+            Todos os planos incluem acesso completo à análise de placas com IA
           </p>
 
           <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             {plans.map((plan) => (
               <Card
                 key={plan.id}
-                className="border-0 relative overflow-hidden"
-                style={{ backgroundColor: colors.darkGray }}
+                className="border-0 relative overflow-hidden shadow-xl"
+                style={{ 
+                  backgroundColor: plan.popular ? "rgba(40, 40, 40, 0.95)" : "rgba(35, 35, 35, 0.95)",
+                  borderLeft: plan.popular ? `4px solid ${colors.primary}` : "none"
+                }}
               >
                 {plan.popular && (
                   <div
-                    className="absolute top-0 right-0 bg-gradient-to-r from-pink-500 to-purple-500 text-white px-4 py-1 text-sm font-medium"
+                    className="absolute top-0 right-0 bg-gradient-to-r from-pink-500 to-purple-500 text-white px-4 py-1 text-sm font-bold"
                     style={{ transform: "translateY(0) translateX(0)" }}
                   >
-                    {t("landing.mostPopular")}
+                    Mais Popular
                   </div>
                 )}
                 <div className="p-6">
@@ -316,11 +319,12 @@ export default function LandingPage() {
                     ))}
                   </ul>
                   <Button
-                    className={`w-full ${!plan.popular ? "text-white border-white hover:bg-white hover:text-black" : ""}`}
+                    className="w-full"
                     style={{
-                      backgroundColor: plan.popular ? colors.primary : undefined,
+                      backgroundColor: plan.popular ? colors.primary : "#444",
+                      color: "white",
+                      border: "none"
                     }}
-                    variant={plan.popular ? "default" : "outline"}
                     onClick={() => handleSelectPlan(plan.id)}
                   >
                     Selecionar Plano
