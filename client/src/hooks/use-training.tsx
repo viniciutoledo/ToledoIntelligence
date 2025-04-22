@@ -38,6 +38,7 @@ export type DocumentFormData = {
   file_url?: string | null;
   website_url?: string | null;
   categories?: number[];
+  file?: File;
 };
 
 export type CategoryFormData = {
@@ -80,6 +81,10 @@ export function useTraining() {
         formData.append('content', document.content);
       }
       
+      if (document.document_type === 'file' && document.file) {
+        formData.append('file', document.file);
+      }
+      
       if (document.document_type === 'website' && document.website_url) {
         formData.append('website_url', document.website_url);
       }
@@ -90,7 +95,7 @@ export function useTraining() {
         });
       }
       
-      // O quarto parâmetro indica que estamos usando FormData
+      // Usar fetch diretamente para upload de arquivos com FormData
       const res = await fetch("/api/training/documents", {
         method: "POST",
         body: formData,

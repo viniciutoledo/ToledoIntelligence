@@ -66,7 +66,7 @@ import { format } from "date-fns";
 
 const documentFormSchema = z.object({
   name: z.string().min(1, { message: "Name is required" }),
-  description: z.string().optional(),
+  description: z.string().nullable().optional(),
   document_type: z.enum(["text", "file", "website"]),
   content: z.string().optional(),
   website_url: z.string().url().optional(),
@@ -74,6 +74,11 @@ const documentFormSchema = z.object({
 });
 
 type DocumentFormValues = z.infer<typeof documentFormSchema>;
+
+// Estendendo o tipo para incluir o arquivo
+interface DocumentFormData extends DocumentFormValues {
+  file?: File;
+}
 
 export function TrainingDocuments() {
   const { t } = useLanguage();
@@ -95,7 +100,7 @@ export function TrainingDocuments() {
     resolver: zodResolver(documentFormSchema),
     defaultValues: {
       name: "",
-      description: "",
+      description: null,
       document_type: "text",
       content: "",
       categories: [],
@@ -106,7 +111,8 @@ export function TrainingDocuments() {
     resolver: zodResolver(documentFormSchema),
     defaultValues: {
       name: "",
-      description: "",
+      description: null,
+      document_type: "text", // necessário para evitar tipo indefinido
     },
   });
   
@@ -136,10 +142,11 @@ export function TrainingDocuments() {
   const onAddSubmit = (data: DocumentFormValues) => {
     // Handle file upload
     if (data.document_type === "file" && selectedFile) {
-      createDocumentMutation.mutate({
+      const documentData: DocumentFormData = {
         ...data,
         file: selectedFile,
-      });
+      };
+      createDocumentMutation.mutate(documentData);
     } else {
       createDocumentMutation.mutate(data);
     }
@@ -151,8 +158,10 @@ export function TrainingDocuments() {
     if (documentToEdit) {
       updateDocumentMutation.mutate({
         id: documentToEdit.id,
-        name: data.name,
-        description: data.description,
+        document: {
+          name: data.name,
+          description: data.description,
+        }
       });
     }
     
@@ -163,7 +172,8 @@ export function TrainingDocuments() {
     setDocumentToEdit(document);
     editForm.reset({
       name: document.name,
-      description: document.description || "",
+      description: document.description || null,
+      document_type: document.document_type || "text",
     });
     setIsEditDialogOpen(true);
   };
@@ -260,7 +270,11 @@ export function TrainingDocuments() {
                       <FormControl>
                         <Textarea
                           placeholder={t("admin.training.enterDocumentDescription")}
-                          {...field}
+                          value={field.value || ""}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                          name={field.name}
+                          ref={field.ref}
                         />
                       </FormControl>
                       <FormMessage />
