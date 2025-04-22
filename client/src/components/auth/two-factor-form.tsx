@@ -116,7 +116,16 @@ export function TwoFactorForm() {
               
               <div className="text-center text-sm text-neutral-500 mb-4">
                 <span>{t("auth.didntReceiveCode")}</span>
-                <Button variant="link" type="button" className="text-primary-600 font-medium ml-1">
+                <Button 
+                  variant="link" 
+                  type="button" 
+                  className="text-primary-600 font-medium ml-1"
+                  onClick={() => handleResendCode()}
+                  disabled={resendMutation.isPending}
+                >
+                  {resendMutation.isPending ? (
+                    <Loader2 className="mr-2 h-3 w-3 inline animate-spin" />
+                  ) : null}
                   {t("auth.resend")}
                 </Button>
               </div>

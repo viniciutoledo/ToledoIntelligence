@@ -12,6 +12,7 @@ import { z } from "zod";
 import nodemailer from "nodemailer";
 import speakeasy from "speakeasy";
 import qrcode from "qrcode";
+import { sendOtpEmail } from "./email";
 
 declare global {
   namespace Express {
@@ -320,6 +321,55 @@ export function setupAuth(app: Express) {
           }
         }
       })(req, res, next);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid request data" });
+    }
+  });
+
+  // Resend verification code
+  app.post("/api/resend-verification", async (req, res) => {
+    try {
+      const schema = z.object({
+        userId: z.number()
+      });
+      
+      const { userId } = schema.parse(req.body);
+      
+      // Get the user
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Check if account is blocked
+      if (user.is_blocked) {
+        return res.status(403).json({ 
+          message: user.language === "pt"
+            ? "Conta bloqueada devido a múltiplas sessões ativas. Contate o suporte."
+            : "Account blocked due to multiple active sessions. Contact support."
+        });
+      }
+      
+      try {
+        // Generate and send a new OTP
+        await generateEmailOtp(user);
+        
+        res.status(200).json({ 
+          success: true, 
+          message: user.language === "pt"
+            ? "Código de verificação reenviado"
+            : "Verification code resent",
+          emailHint: user.email.replace(/(.{2})(.*)@(.*)/, "$1***@$3")
+        });
+      } catch (error) {
+        console.error("Failed to resend verification code:", error);
+        res.status(500).json({ 
+          message: user.language === "pt"
+            ? "Erro ao reenviar código de verificação"
+            : "Failed to resend verification code"
+        });
+      }
     } catch (error) {
       res.status(400).json({ message: "Invalid request data" });
     }
