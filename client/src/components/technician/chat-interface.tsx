@@ -39,6 +39,7 @@ export function ChatInterface() {
   
   // Scroll to bottom when messages change
   useEffect(() => {
+    console.log("Mensagens atualizadas:", messages);
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
   

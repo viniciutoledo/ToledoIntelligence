@@ -60,6 +60,15 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     refetch: refetchMessages,
   } = useQuery<ChatMessage[]>({
     queryKey: ["/api/chat/sessions", currentSession?.id, "messages"],
+    queryFn: () => {
+      if (!currentSession) return Promise.resolve([]);
+      return fetch(`/api/chat/sessions/${currentSession.id}/messages`, {
+        credentials: "include",
+      }).then(res => {
+        if (!res.ok) throw new Error("Failed to fetch messages");
+        return res.json();
+      });
+    },
     enabled: !!currentSession,
     refetchOnWindowFocus: false,
   });
