@@ -1,0 +1,12 @@
+Estou desenvolvendo o ToledoIA SaaS MVP e notei que a interface do usuário (UI) da seção de treinamento do painel de administração (como mostrado na primeira imagem) está completamente desorganizada. As caixas de texto, os rótulos e a aparência geral não combinam com o design limpo e profissional que pretendo. Forneci um modelo de interface do usuário (UI) na segunda imagem (da seção de treinamento do GPT Maker), que tem um layout bem organizado com seções claras para entradas de texto, web, vídeo e documentos, além de uma maneira estruturada de adicionar novos dados de treinamento.
+
+A seção de treinamento no painel administrativo do ToledoIA permite que os administradores carreguem arquivos (PNG, JPG, PDF, TXT), insiram texto ou forneçam URLs para treinar o agente LLM, conforme especificado no PRD. A interface do usuário deve ser intuitiva, com caixas de texto, rótulos e botões devidamente alinhados, com suporte para português e inglês (com alternância de idioma). A implementação atual (primeira imagem) apresenta caixas de texto desalinhadas, espaçamento inconsistente e texto de espaço reservado que não reflete o requisito bilíngue (por exemplo, "admin.training.title" em vez de uma string traduzida).
+
+Reformule a seção de treinamento do painel administrativo para corresponder ao estilo limpo e organizado da segunda imagem. Certifique-se do seguinte:
+
+Limpe seções para upload de arquivos, inserção de texto e adição de URLs, com rótulos no idioma selecionado pelo administrador (português ou inglês).
+Caixas de texto e botões alinhados corretamente com espaçamento e preenchimento consistentes.
+Uma aparência profissional com uma barra de navegação lateral (como na primeira imagem), mas com uma área de conteúdo principal que reflete o layout estruturado da segunda imagem.
+Suporte para texto bilíngue (ex.: “Novo treinamento via texto” em português ou “New text training” em inglês).
+Um botão para enviar os dados de treinamento, estilizados de forma consistente com o restante da interface do usuário.
+Use o PRD como guia de funcionalidade e baseie o design visual na segunda imagem para uma experiência mais refinada e intuitiva. Entre em contato se precisar de algum esclarecimento!

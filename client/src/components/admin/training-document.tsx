@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { FileText, UploadCloud, MoreVertical, Check, X } from "lucide-react";
+import { FileText, UploadCloud, MoreVertical, Check, X, Download, FileIcon } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
+import { ptBR, enUS } from "date-fns/locale";
 
 interface DocumentFormData {
   name: string;
@@ -22,7 +23,7 @@ interface DocumentFormData {
 }
 
 export function TrainingDocument() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const {
     documents,
     documentsLoading,
@@ -86,152 +87,204 @@ export function TrainingDocument() {
     }
   };
 
+  const formatDate = (date: string) => {
+    const dateObj = new Date(date);
+    return format(
+      dateObj,
+      "d MMM yyyy, HH:mm",
+      { locale: i18n.language === 'pt' ? ptBR : enUS }
+    );
+  };
+
+  const getFileIcon = (fileName: string) => {
+    const extension = fileName.split('.').pop()?.toLowerCase();
+    
+    if (extension === 'pdf') {
+      return <FileText className="h-4 w-4 text-red-500" />;
+    } else if (['doc', 'docx'].includes(extension || '')) {
+      return <FileText className="h-4 w-4 text-blue-500" />;
+    } else if (['txt'].includes(extension || '')) {
+      return <FileText className="h-4 w-4 text-gray-500" />;
+    } else {
+      return <FileIcon className="h-4 w-4 text-gray-500" />;
+    }
+  };
+
   return (
-    <div className="space-y-6">
-      <div className="mb-8">
-        <h3 className="text-sm font-medium mb-2 text-neutral-500">
-          {t("admin.training.newDocumentTraining")} <span className="text-xs">via documento</span>
-        </h3>
-        <div className="bg-white rounded-md border">
-          <div className="p-3">
-            <div className="space-y-3">
-              <div className="relative">
-                <Label htmlFor="document_file" className="text-xs text-neutral-500">
-                  {t("admin.training.documentFileLabel")}
-                </Label>
-                <div className="mt-1 flex items-center justify-center border-2 border-dashed border-neutral-200 rounded-md py-6 px-4">
-                  {selectedFile ? (
-                    <div className="text-center">
-                      <FileText className="mx-auto h-10 w-10 text-neutral-400" />
-                      <div className="mt-2 text-sm text-neutral-600">{selectedFile.name}</div>
-                      <div className="mt-1 text-xs text-neutral-500">{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedFile(null);
-                          if (fileInputRef.current) {
-                            fileInputRef.current.value = "";
-                          }
-                        }}
-                        className="mt-2 text-xs text-red-500 hover:text-red-600"
-                      >
-                        <X className="h-3 w-3 mr-1" /> {t("common.remove")}
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="text-center">
-                      <UploadCloud className="mx-auto h-10 w-10 text-neutral-400" />
-                      <div className="mt-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => fileInputRef.current?.click()}
-                          disabled={isSubmitting}
-                          className="text-xs"
-                        >
-                          {t("admin.training.selectDocumentFile")}
-                        </Button>
-                      </div>
-                      <div className="mt-1 text-xs text-neutral-500">
-                        {t("admin.training.documentSizeLimit")}
-                      </div>
-                    </div>
-                  )}
-                  <input
-                    id="document_file"
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".pdf,.doc,.docx,.txt"
-                    onChange={handleFileChange}
-                    className="hidden"
-                    disabled={isSubmitting}
-                  />
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="document_description" className="text-xs text-neutral-500">
-                  {t("admin.training.descriptionLabel")}
-                </Label>
-                <Textarea
-                  id="document_description"
-                  placeholder={t("admin.training.documentDescriptionPlaceholder")}
-                  value={documentDescription}
-                  onChange={(e) => setDocumentDescription(e.target.value)}
-                  className="mt-1 resize-none text-sm min-h-[80px]"
-                  disabled={isSubmitting}
-                />
-              </div>
-            </div>
-          </div>
-          <div className="border-t p-3 flex justify-between items-center">
-            <div className="flex items-center">
-              <FileText className="h-5 w-5 mr-2 text-neutral-500" />
-              <span className="text-xs text-neutral-500">{t("admin.training.supportedDocumentFormats")}</span>
-            </div>
-            <Button
-              size="sm"
-              type="button"
-              onClick={handleDocumentSubmit}
-              disabled={isSubmitting || !selectedFile}
-              className="bg-primary hover:bg-primary/90 text-white text-xs py-1 px-3 h-8"
-            >
-              {isSubmitting ? (
-                <span className="flex items-center">
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  {t("common.processing")}
-                </span>
-              ) : (
-                t("admin.training.submitDocument")
-              )}
-            </Button>
-          </div>
+    <div>
+      {/* Cabeçalho do novo treinamento */}
+      <div className="flex items-center mb-4">
+        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+          <FileText className="h-4 w-4 text-primary" />
         </div>
+        <h3 className="ml-2 text-base font-medium">{t("admin.training.newDocumentTraining")}</h3>
       </div>
 
-      <div>
-        <div className="space-y-4">
-          {documentsLoading ? (
-            <div className="text-center py-4">{t("common.loading")}</div>
-          ) : fileDocuments.length === 0 ? (
-            <div className="text-center py-8 bg-neutral-50 rounded-lg border border-dashed">
-              <FileText className="h-12 w-12 text-neutral-300 mx-auto mb-3" />
-              <p className="text-neutral-500">
-                {t("admin.training.noDocumentTrainings")}
-              </p>
-              <p className="text-sm text-neutral-400 mt-1">
-                {t("admin.training.uploadDocumentToTrain")}
-              </p>
+      {/* Área de upload de documento */}
+      <div className="mb-6 rounded-lg border bg-card">
+        <div className="p-4 space-y-4">
+          <div>
+            <Label htmlFor="document_file" className="text-sm text-muted-foreground mb-1 block">
+              {t("admin.training.documentFileLabel")}
+            </Label>
+            
+            <div className="mt-1 flex items-center justify-center border-2 border-dashed rounded-lg py-6 px-4 transition-colors hover:border-primary/50 cursor-pointer">
+              {selectedFile ? (
+                <div className="text-center">
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+                    {getFileIcon(selectedFile.name)}
+                  </div>
+                  <div className="mt-2 text-sm font-medium">{selectedFile.name}</div>
+                  <div className="mt-1 text-xs text-muted-foreground">{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedFile(null);
+                      if (fileInputRef.current) {
+                        fileInputRef.current.value = "";
+                      }
+                    }}
+                    className="mt-3 text-xs"
+                  >
+                    <X className="h-3 w-3 mr-1" /> {t("common.remove")}
+                  </Button>
+                </div>
+              ) : (
+                <div 
+                  className="text-center" 
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                    <UploadCloud className="h-6 w-6 text-muted-foreground" />
+                  </div>
+                  <div className="mt-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={isSubmitting}
+                      className="text-xs"
+                    >
+                      {t("admin.training.selectDocumentFile")}
+                    </Button>
+                  </div>
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    {t("admin.training.documentSizeLimit")}
+                  </div>
+                </div>
+              )}
+              <input
+                id="document_file"
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,.doc,.docx,.txt"
+                onChange={handleFileChange}
+                className="hidden"
+                disabled={isSubmitting}
+              />
             </div>
-          ) : (
-            <div className="space-y-2">
+          </div>
+          
+          <div>
+            <Label htmlFor="document_description" className="text-sm text-muted-foreground mb-1 block">
+              {t("admin.training.descriptionLabel")} <span className="text-xs text-muted-foreground">{t("common.optional")}</span>
+            </Label>
+            <Textarea
+              id="document_description"
+              placeholder={t("admin.training.documentDescriptionPlaceholder")}
+              value={documentDescription}
+              onChange={(e) => setDocumentDescription(e.target.value)}
+              className="resize-none text-sm min-h-[80px]"
+              disabled={isSubmitting}
+            />
+          </div>
+        </div>
+        
+        <div className="flex items-center justify-between border-t bg-muted/20 px-4 py-2">
+          <div className="text-xs text-muted-foreground">
+            {t("admin.training.supportedDocumentFormats")}: PDF, DOC, DOCX, TXT
+          </div>
+          <Button
+            type="button" 
+            onClick={handleDocumentSubmit}
+            disabled={isSubmitting || !selectedFile}
+            size="sm"
+            className="h-8"
+          >
+            {isSubmitting ? (
+              <span className="flex items-center">
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                {t("common.processing")}
+              </span>
+            ) : (
+              t("admin.training.submitDocument")
+            )}
+          </Button>
+        </div>
+      </div>
+      
+      {/* Lista de documentos */}
+      <div className="space-y-2">
+        {documentsLoading ? (
+          <div className="flex justify-center py-8">
+            <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full"></div>
+          </div>
+        ) : fileDocuments.length === 0 ? (
+          <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-12">
+            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted">
+              <FileText className="h-10 w-10 text-muted-foreground/60" />
+            </div>
+            <h3 className="mt-4 text-lg font-medium">{t("admin.training.noDocumentTrainings")}</h3>
+            <p className="mt-2 text-sm text-muted-foreground text-center max-w-sm">
+              {t("admin.training.uploadDocumentToTrain")}
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="text-sm font-medium text-muted-foreground mb-2">
+              {fileDocuments.length} {fileDocuments.length === 1 ? t("admin.training.trainingItem") : t("admin.training.trainingItems")}
+            </div>
+            <div className="grid gap-2">
               {fileDocuments.map((doc) => (
-                <div key={doc.id} className="bg-white border rounded-md hover:border-neutral-300 transition-colors">
-                  <div className="px-4 py-3 flex items-center justify-between">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-neutral-700 truncate">
-                        {doc.name}
-                      </p>
-                      <p className="text-xs text-neutral-500 mt-1 truncate">
-                        {doc.description || t("admin.training.noDescription")}
-                      </p>
+                <div key={doc.id} className="rounded-lg border bg-card p-4 transition-all hover:shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 mr-4">
+                      <div className="flex items-center">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/5 mr-3">
+                          {getFileIcon(doc.name || "document.pdf")}
+                        </div>
+                        <div>
+                          <div className="font-medium text-sm">
+                            {doc.name}
+                          </div>
+                          {doc.description && (
+                            <div className="text-xs text-muted-foreground mt-1 line-clamp-1">
+                              {doc.description}
+                            </div>
+                          )}
+                          <div className="text-xs text-muted-foreground mt-1">
+                            {formatDate(doc.created_at)}
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex items-center ml-4 space-x-2">
-                      <Badge className={`text-xs px-2 py-0.5 ${
+                    <div className="flex items-center space-x-2">
+                      <Badge className={`px-2 py-0.5 text-xs ${
                         doc.status === 'completed' 
-                          ? 'bg-green-50 text-green-700 border border-green-200' 
+                          ? 'bg-green-100 text-green-800 border border-green-200' 
                           : doc.status === 'processing'
-                          ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                          ? 'bg-blue-100 text-blue-800 border border-blue-200'
                           : doc.status === 'error'
-                          ? 'bg-red-50 text-red-700 border border-red-200'
-                          : 'bg-yellow-50 text-yellow-700 border border-yellow-200'
+                          ? 'bg-red-100 text-red-800 border border-red-200'
+                          : 'bg-amber-100 text-amber-800 border border-amber-200'
                       }`}>
-                        {doc.status === 'completed' && <Check className="h-3 w-3 mr-1" />}
+                        {doc.status === 'completed' && <Check className="mr-1 h-3 w-3" />}
                         {t(`admin.training.statusTypes.${doc.status}`)}
                       </Badge>
                       <DropdownMenu>
@@ -241,12 +294,21 @@ export function TrainingDocument() {
                             <span className="sr-only">{t("common.actions")}</span>
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-[160px]">
+                        <DropdownMenuContent align="end">
+                          {doc.file_path && (
+                            <DropdownMenuItem
+                              className="flex cursor-pointer items-center"
+                              onClick={() => window.open(`/api/training/documents/${doc.id}/download`, '_blank')}
+                            >
+                              <Download className="mr-2 h-4 w-4" />
+                              <span>{t("common.download")}</span>
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuItem 
-                            className="text-red-600 cursor-pointer focus:text-red-600" 
+                            className="flex cursor-pointer items-center text-red-600 focus:text-red-600"
                             onClick={() => handleDeleteDocument(doc.id)}
                           >
-                            {t("common.delete")}
+                            <span>{t("common.delete")}</span>
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -255,8 +317,8 @@ export function TrainingDocument() {
                 </div>
               ))}
             </div>
-          )}
-        </div>
+          </>
+        )}
       </div>
     </div>
   );

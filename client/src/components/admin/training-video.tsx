@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { FileVideo, UploadCloud, MoreVertical, Check, X } from "lucide-react";
+import { FileVideo, UploadCloud, MoreVertical, Check, X, Link2, ClipboardIcon, ExternalLink } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,6 +14,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
+import { ptBR, enUS } from "date-fns/locale";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface VideoFormData {
   name: string;
@@ -23,7 +25,7 @@ interface VideoFormData {
 }
 
 export function TrainingVideo() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const {
     documents,
     documentsLoading,
@@ -36,6 +38,7 @@ export function TrainingVideo() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [videoDescription, setVideoDescription] = useState("");
+  const [activeTab, setActiveTab] = useState("url");
 
   const videoDocuments = documents?.filter(doc => doc.document_type === "video") || [];
 
@@ -105,70 +108,133 @@ export function TrainingVideo() {
     }
   };
 
+  const formatDate = (date: string) => {
+    const dateObj = new Date(date);
+    return format(
+      dateObj,
+      "d MMM yyyy, HH:mm",
+      { locale: i18n.language === 'pt' ? ptBR : enUS }
+    );
+  };
+
+  const getVideoThumbnail = (url: string) => {
+    if (url?.includes('youtube.com') || url?.includes('youtu.be')) {
+      const videoId = url.includes('youtube.com') 
+        ? url.split('v=')[1]?.split('&')[0] 
+        : url.split('youtu.be/')[1]?.split('?')[0];
+        
+      if (videoId) {
+        return `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
+      }
+    }
+    
+    return null;
+  };
+
   return (
-    <div className="space-y-6">
-      <div className="mb-8">
-        <h3 className="text-sm font-medium mb-2 text-neutral-500">
-          {t("admin.training.newVideoTraining")} <span className="text-xs">via vídeo</span>
-        </h3>
-        <div className="bg-white rounded-md border">
-          <div className="p-3">
-            <div className="space-y-3">
+    <div>
+      {/* Cabeçalho do novo treinamento */}
+      <div className="flex items-center mb-4">
+        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+          <FileVideo className="h-4 w-4 text-primary" />
+        </div>
+        <h3 className="ml-2 text-base font-medium">{t("admin.training.newVideoTraining")}</h3>
+      </div>
+
+      {/* Área de upload de vídeo */}
+      <div className="mb-6 rounded-lg border bg-card">
+        <Tabs
+          value={activeTab}
+          onValueChange={setActiveTab}
+          className="w-full"
+        >
+          <div className="border-b">
+            <TabsList className="flex h-10 w-full rounded-none border-b bg-transparent p-0">
+              <TabsTrigger
+                value="url"
+                className="flex-1 rounded-none border-b-2 border-transparent px-3 py-2 data-[state=active]:border-primary data-[state=active]:text-primary"
+              >
+                {t("admin.training.videoUrlTab")}
+              </TabsTrigger>
+              <TabsTrigger
+                value="upload"
+                className="flex-1 rounded-none border-b-2 border-transparent px-3 py-2 data-[state=active]:border-primary data-[state=active]:text-primary"
+              >
+                {t("admin.training.videoFileTab")}
+              </TabsTrigger>
+            </TabsList>
+          </div>
+          
+          <div className="p-4 space-y-4">
+            <TabsContent value="url" className="m-0">
               <div>
-                <Label htmlFor="video_url" className="text-xs text-neutral-500">
+                <Label htmlFor="video_url" className="text-sm text-muted-foreground mb-1 block">
                   {t("admin.training.videoUrlLabel")}
                 </Label>
-                <Input
-                  id="video_url"
-                  type="url"
-                  placeholder="https://www.youtube.com/watch?v=..."
-                  value={videoUrl}
-                  onChange={handleUrlChange}
-                  className="mt-1 text-sm"
-                  disabled={!!selectedFile || isSubmitting}
-                />
+                <div className="flex items-center">
+                  <Link2 className="h-4 w-4 text-muted-foreground mr-2" />
+                  <Input
+                    id="video_url"
+                    type="url"
+                    placeholder="https://www.youtube.com/watch?v=..."
+                    value={videoUrl}
+                    onChange={handleUrlChange}
+                    className="border-0 px-0 text-sm focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
+                  />
+                </div>
               </div>
-              <div className="relative">
-                <Label htmlFor="video_file" className="text-xs text-neutral-500">
+            </TabsContent>
+            
+            <TabsContent value="upload" className="m-0">
+              <div>
+                <Label htmlFor="video_file" className="text-sm text-muted-foreground mb-1 block">
                   {t("admin.training.videoFileLabel")}
                 </Label>
-                <div className="mt-1 flex items-center justify-center border-2 border-dashed border-neutral-200 rounded-md py-6 px-4">
+                
+                <div className="mt-1 flex items-center justify-center border-2 border-dashed rounded-lg py-6 px-4 transition-colors hover:border-primary/50 cursor-pointer">
                   {selectedFile ? (
                     <div className="text-center">
-                      <FileVideo className="mx-auto h-10 w-10 text-neutral-400" />
-                      <div className="mt-2 text-sm text-neutral-600">{selectedFile.name}</div>
-                      <div className="mt-1 text-xs text-neutral-500">{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</div>
+                      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+                        <FileVideo className="h-6 w-6 text-primary" />
+                      </div>
+                      <div className="mt-2 text-sm font-medium">{selectedFile.name}</div>
+                      <div className="mt-1 text-xs text-muted-foreground">{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</div>
                       <Button
                         type="button"
-                        variant="ghost"
+                        variant="outline"
                         size="sm"
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setSelectedFile(null);
                           if (fileInputRef.current) {
                             fileInputRef.current.value = "";
                           }
                         }}
-                        className="mt-2 text-xs text-red-500 hover:text-red-600"
+                        className="mt-3 text-xs"
                       >
                         <X className="h-3 w-3 mr-1" /> {t("common.remove")}
                       </Button>
                     </div>
                   ) : (
-                    <div className="text-center">
-                      <UploadCloud className="mx-auto h-10 w-10 text-neutral-400" />
+                    <div 
+                      className="text-center" 
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                        <UploadCloud className="h-6 w-6 text-muted-foreground" />
+                      </div>
                       <div className="mt-2">
                         <Button
                           type="button"
                           variant="outline"
                           size="sm"
-                          onClick={() => fileInputRef.current?.click()}
-                          disabled={!!videoUrl || isSubmitting}
+                          disabled={isSubmitting}
                           className="text-xs"
                         >
                           {t("admin.training.selectVideoFile")}
                         </Button>
                       </div>
-                      <div className="mt-1 text-xs text-neutral-500">
+                      <div className="mt-1 text-xs text-muted-foreground">
                         {t("admin.training.videoSizeLimit")}
                       </div>
                     </div>
@@ -180,36 +246,39 @@ export function TrainingVideo() {
                     accept="video/*"
                     onChange={handleFileChange}
                     className="hidden"
-                    disabled={!!videoUrl || isSubmitting}
+                    disabled={isSubmitting}
                   />
                 </div>
               </div>
-              <div>
-                <Label htmlFor="video_description" className="text-xs text-neutral-500">
-                  {t("admin.training.descriptionLabel")}
-                </Label>
-                <Textarea
-                  id="video_description"
-                  placeholder={t("admin.training.videoDescriptionPlaceholder")}
-                  value={videoDescription}
-                  onChange={(e) => setVideoDescription(e.target.value)}
-                  className="mt-1 resize-none text-sm min-h-[80px]"
-                  disabled={isSubmitting}
-                />
-              </div>
+            </TabsContent>
+            
+            <div>
+              <Label htmlFor="video_description" className="text-sm text-muted-foreground mb-1 block">
+                {t("admin.training.descriptionLabel")} <span className="text-xs text-muted-foreground">{t("common.optional")}</span>
+              </Label>
+              <Textarea
+                id="video_description"
+                placeholder={t("admin.training.videoDescriptionPlaceholder")}
+                value={videoDescription}
+                onChange={(e) => setVideoDescription(e.target.value)}
+                className="resize-none text-sm min-h-[80px]"
+                disabled={isSubmitting}
+              />
             </div>
           </div>
-          <div className="border-t p-3 flex justify-between items-center">
-            <div className="flex items-center">
-              <FileVideo className="h-5 w-5 mr-2 text-neutral-500" />
-              <span className="text-xs text-neutral-500">{t("admin.training.supportedVideoFormats")}</span>
+          
+          <div className="flex items-center justify-between border-t bg-muted/20 px-4 py-2">
+            <div className="text-xs text-muted-foreground">
+              {activeTab === 'url' 
+                ? t("admin.training.supportedVideoServices") 
+                : t("admin.training.supportedVideoFormats")}
             </div>
             <Button
-              size="sm"
-              type="button"
+              type="button" 
               onClick={handleVideoSubmit}
-              disabled={isSubmitting || (!videoUrl && !selectedFile)}
-              className="bg-primary hover:bg-primary/90 text-white text-xs py-1 px-3 h-8"
+              disabled={isSubmitting || (activeTab === 'url' ? !videoUrl : !selectedFile)}
+              size="sm"
+              className="h-8"
             >
               {isSubmitting ? (
                 <span className="flex items-center">
@@ -224,47 +293,88 @@ export function TrainingVideo() {
               )}
             </Button>
           </div>
-        </div>
+        </Tabs>
       </div>
-
-      <div>
-        <div className="space-y-4">
-          {documentsLoading ? (
-            <div className="text-center py-4">{t("common.loading")}</div>
-          ) : videoDocuments.length === 0 ? (
-            <div className="text-center py-8 bg-neutral-50 rounded-lg border border-dashed">
-              <FileVideo className="h-12 w-12 text-neutral-300 mx-auto mb-3" />
-              <p className="text-neutral-500">
-                {t("admin.training.noVideoTrainings")}
-              </p>
-              <p className="text-sm text-neutral-400 mt-1">
-                {t("admin.training.uploadVideoToTrain")}
-              </p>
+      
+      {/* Lista de vídeos */}
+      <div className="space-y-2">
+        {documentsLoading ? (
+          <div className="flex justify-center py-8">
+            <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full"></div>
+          </div>
+        ) : videoDocuments.length === 0 ? (
+          <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-12">
+            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted">
+              <FileVideo className="h-10 w-10 text-muted-foreground/60" />
             </div>
-          ) : (
-            <div className="space-y-2">
+            <h3 className="mt-4 text-lg font-medium">{t("admin.training.noVideoTrainings")}</h3>
+            <p className="mt-2 text-sm text-muted-foreground text-center max-w-sm">
+              {t("admin.training.uploadVideoToTrain")}
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="text-sm font-medium text-muted-foreground mb-2">
+              {videoDocuments.length} {videoDocuments.length === 1 ? t("admin.training.trainingItem") : t("admin.training.trainingItems")}
+            </div>
+            <div className="grid gap-2">
               {videoDocuments.map((doc) => (
-                <div key={doc.id} className="bg-white border rounded-md hover:border-neutral-300 transition-colors">
-                  <div className="px-4 py-3 flex items-center justify-between">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-neutral-700 truncate">
-                        {doc.name}
-                      </p>
-                      <p className="text-xs text-neutral-500 mt-1 truncate">
-                        {doc.description || t("admin.training.noDescription")}
-                      </p>
+                <div key={doc.id} className="rounded-lg border bg-card p-4 transition-all hover:shadow-sm">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 mr-4">
+                      <div className="flex">
+                        {doc.website_url && getVideoThumbnail(doc.website_url) ? (
+                          <div className="w-20 h-14 rounded-md overflow-hidden mr-3 flex-shrink-0 bg-muted">
+                            <img 
+                              src={getVideoThumbnail(doc.website_url)} 
+                              alt={doc.name} 
+                              className="w-full h-full object-cover" 
+                            />
+                          </div>
+                        ) : (
+                          <div className="flex h-14 w-20 items-center justify-center rounded-md bg-primary/5 mr-3 flex-shrink-0">
+                            <FileVideo className="h-6 w-6 text-primary/80" />
+                          </div>
+                        )}
+                        <div>
+                          <div className="font-medium text-sm">
+                            {doc.name}
+                          </div>
+                          {doc.website_url && (
+                            <div className="flex items-center text-xs text-muted-foreground mt-1">
+                              <span className="truncate max-w-[200px]">{doc.website_url}</span>
+                              <a 
+                                href={doc.website_url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="ml-1 text-muted-foreground hover:text-primary"
+                              >
+                                <ExternalLink className="h-3 w-3" />
+                              </a>
+                            </div>
+                          )}
+                          {doc.description && (
+                            <div className="text-xs text-muted-foreground mt-1 line-clamp-1">
+                              {doc.description}
+                            </div>
+                          )}
+                          <div className="text-xs text-muted-foreground mt-1">
+                            {formatDate(doc.created_at)}
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex items-center ml-4 space-x-2">
-                      <Badge className={`text-xs px-2 py-0.5 ${
+                    <div className="flex items-center space-x-2">
+                      <Badge className={`px-2 py-0.5 text-xs ${
                         doc.status === 'completed' 
-                          ? 'bg-green-50 text-green-700 border border-green-200' 
+                          ? 'bg-green-100 text-green-800 border border-green-200' 
                           : doc.status === 'processing'
-                          ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                          ? 'bg-blue-100 text-blue-800 border border-blue-200'
                           : doc.status === 'error'
-                          ? 'bg-red-50 text-red-700 border border-red-200'
-                          : 'bg-yellow-50 text-yellow-700 border border-yellow-200'
+                          ? 'bg-red-100 text-red-800 border border-red-200'
+                          : 'bg-amber-100 text-amber-800 border border-amber-200'
                       }`}>
-                        {doc.status === 'completed' && <Check className="h-3 w-3 mr-1" />}
+                        {doc.status === 'completed' && <Check className="mr-1 h-3 w-3" />}
                         {t(`admin.training.statusTypes.${doc.status}`)}
                       </Badge>
                       <DropdownMenu>
@@ -274,12 +384,21 @@ export function TrainingVideo() {
                             <span className="sr-only">{t("common.actions")}</span>
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-[160px]">
+                        <DropdownMenuContent align="end">
+                          {doc.website_url && (
+                            <DropdownMenuItem
+                              className="flex cursor-pointer items-center"
+                              onClick={() => navigator.clipboard.writeText(doc.website_url || '')}
+                            >
+                              <ClipboardIcon className="mr-2 h-4 w-4" />
+                              <span>{t("common.copyLink")}</span>
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuItem 
-                            className="text-red-600 cursor-pointer focus:text-red-600" 
+                            className="flex cursor-pointer items-center text-red-600 focus:text-red-600" 
                             onClick={() => handleDeleteDocument(doc.id)}
                           >
-                            {t("common.delete")}
+                            <span>{t("common.delete")}</span>
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -288,8 +407,8 @@ export function TrainingVideo() {
                 </div>
               ))}
             </div>
-          )}
-        </div>
+          </>
+        )}
       </div>
     </div>
   );
