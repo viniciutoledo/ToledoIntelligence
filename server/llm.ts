@@ -139,11 +139,7 @@ export async function analyzeImage(imagePath: string, language: string): Promise
       // Claude apenas suporta formatos específicos de imagem
       const supportedFormats = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
       // Se o formato não for suportado, vamos usar jpeg como padrão
-      let actualMediaType = 'image/jpeg';
-      
-      if (supportedFormats.includes(mediaType)) {
-        actualMediaType = mediaType;
-      }
+      const actualMediaType = supportedFormats.includes(mediaType) ? mediaType : 'image/jpeg';
       
       console.log(`Tipo de mídia original: ${mediaType}, tipo a ser usado: ${actualMediaType}`);
       
@@ -163,7 +159,7 @@ export async function analyzeImage(imagePath: string, language: string): Promise
                 type: 'image',
                 source: {
                   type: 'base64',
-                  media_type: supportedFormats.includes(actualMediaType) ? actualMediaType : 'image/jpeg',
+                  media_type: "image/jpeg" as "image/jpeg", // Tipo literal aceito pelo Claude
                   data: base64Image
                 }
               }
@@ -296,10 +292,63 @@ export async function processTextMessage(message: string, language: string): Pro
   }
 }
 
+// Função auxiliar para truncar texto para ficar dentro dos limites
+function truncateText(text: string, maxLength: number = 10000): string {
+  if (text.length <= maxLength) {
+    return text;
+  }
+  
+  // Se o texto for maior que o tamanho máximo, truncamos e adicionamos uma nota
+  const truncatedText = text.substring(0, maxLength);
+  const truncationNote = "\n\n[Nota: O conteúdo foi truncado devido ao tamanho do arquivo. Esta é apenas a primeira parte do documento.]";
+  
+  return truncatedText + truncationNote;
+}
+
+// Estimativa aproximada de tokens baseada em caracteres (2-4 caracteres = ~1 token)
+function estimateTokens(text: string): number {
+  // Estimativa conservadora: 1 token a cada 3 caracteres
+  return Math.ceil(text.length / 3);
+}
+
 export async function analyzeFile(filePath: string, language: string): Promise<string> {
   try {
+    // Verificar se é um arquivo PDF
+    const extension = path.extname(filePath).toLowerCase();
+    if (extension === '.pdf') {
+      // Para arquivos PDF, envie uma mensagem explicativa
+      return language === 'pt'
+        ? 'Arquivos PDF são muito complexos para análise direta. Por favor, considere extrair o texto relevante e enviá-lo como arquivo de texto, ou enviar imagens da placa de circuito para análise visual.'
+        : 'PDF files are too complex for direct analysis. Please consider extracting the relevant text and sending it as a text file, or send circuit board images for visual analysis.';
+    }
+    
     // Read file content
-    const fileContent = await readFile(filePath, 'utf-8');
+    let fileContent = '';
+    
+    try {
+      fileContent = await readFile(filePath, 'utf-8');
+    } catch (error) {
+      console.error('Erro ao ler arquivo como texto:', error);
+      
+      // Se falhar como UTF-8, pode ser um arquivo binário
+      return language === 'pt'
+        ? 'Este arquivo não pode ser analisado como texto. Por favor, envie um arquivo de texto (.txt) ou imagem (.jpg, .png).'
+        : 'This file cannot be analyzed as text. Please upload a text file (.txt) or image (.jpg, .png).';
+    }
+
+    // Verificar o tamanho do arquivo (em tokens)
+    const estimatedTokens = estimateTokens(fileContent);
+    console.log(`Tamanho estimado do arquivo em tokens: ${estimatedTokens}`);
+    
+    // Limitar o tamanho do arquivo para evitar erros de limite de taxa
+    // Deixamos margem para o sistema prompt e a resposta (10000 tokens)
+    const MAX_CONTENT_TOKENS = 8000;
+    
+    if (estimatedTokens > MAX_CONTENT_TOKENS) {
+      console.log(`Arquivo muito grande (${estimatedTokens} tokens). Truncando para ${MAX_CONTENT_TOKENS} tokens`);
+      fileContent = truncateText(fileContent, MAX_CONTENT_TOKENS * 3); // aproximadamente
+    }
+    
     const { provider, modelName, apiKey } = await getActiveLlmInfo();
     
     // Common prompts for both providers
