@@ -177,25 +177,25 @@ export function TrainingDocuments() {
       case "pending":
         return (
           <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">
-            <Clock className="h-3 w-3 mr-1" /> {t("admin.training.status.pending")}
+            <Clock className="h-3 w-3 mr-1" /> {t("admin.training.statusTypes.pending")}
           </Badge>
         );
       case "processing":
         return (
           <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">
-            <CircleDashed className="h-3 w-3 mr-1" /> {t("admin.training.status.processing")}
+            <CircleDashed className="h-3 w-3 mr-1" /> {t("admin.training.statusTypes.processing")}
           </Badge>
         );
       case "completed":
         return (
           <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
-            <CircleCheck className="h-3 w-3 mr-1" /> {t("admin.training.status.completed")}
+            <CircleCheck className="h-3 w-3 mr-1" /> {t("admin.training.statusTypes.completed")}
           </Badge>
         );
       case "error":
         return (
           <Badge className="bg-red-100 text-red-800 hover:bg-red-100">
-            <CircleX className="h-3 w-3 mr-1" /> {t("admin.training.status.error")}
+            <CircleX className="h-3 w-3 mr-1" /> {t("admin.training.statusTypes.error")}
           </Badge>
         );
       default:
@@ -396,7 +396,7 @@ export function TrainingDocuments() {
             <TableRow>
               <TableHead>{t("admin.training.name")}</TableHead>
               <TableHead>{t("admin.training.type")}</TableHead>
-              <TableHead>{t("admin.training.status")}</TableHead>
+              <TableHead>{t("admin.training.statusLabel")}</TableHead>
               <TableHead>{t("admin.training.created")}</TableHead>
               <TableHead className="text-right">{t("common.actions")}</TableHead>
             </TableRow>
