@@ -288,16 +288,18 @@ export function setupAuth(app: Express) {
           return res.status(401).json({ message: info?.message || "Invalid credentials" });
         }
         
-        // Verificação de role temporariamente desativada para testes
-        // Isso permite que admins se autentiquem via interface de técnico e vice-versa
+        // Verificação de role para garantir que o usuário está usando a interface correta
         console.log(`Login: user role ${user.role}, requested role ${loginData.role}`);
-        // if (user.role !== loginData.role) {
-        //   return res.status(403).json({ 
-        //     message: user.language === "pt"
-        //       ? "Função de usuário incorreta"
-        //       : "Incorrect user role"
-        //   });
-        // }
+        if (user.role !== loginData.role) {
+          // Se o usuário está tentando acessar a interface errada, redirecionamos para a correta
+          return res.status(200).json({
+            redirect: user.role === "admin" ? "/admin" : "/technician",
+            role: user.role,
+            message: user.language === "pt"
+              ? "Redirecionando para a interface correta de acordo com seu perfil"
+              : "Redirecting to the correct interface based on your role"
+          });
+        }
         
         // Check if account is blocked
         if (user.is_blocked) {

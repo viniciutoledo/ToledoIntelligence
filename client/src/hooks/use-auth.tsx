@@ -105,6 +105,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const res = await apiRequest("POST", "/api/login", credentials);
       const data = await res.json();
       console.log("Login mutation - resposta:", data);
+      
+      // Verificar se o servidor está nos enviando um redirecionamento
+      if (data.redirect) {
+        console.log(`Login mutation - redirecionamento detectado: ${data.redirect}`);
+        // Redirecionar imediatamente para a interface correta
+        window.location.href = data.redirect;
+        // Retornamos os dados mesmo assim para que o cliente possa exibir a mensagem
+        return data;
+      }
+      
       return data;
     },
     onSuccess: (data) => {
