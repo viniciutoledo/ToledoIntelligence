@@ -20,6 +20,7 @@ export interface IStorage {
   getUsers(): Promise<User[]>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, data: Partial<User>): Promise<User | undefined>;
+  updateLastLogin(id: number): Promise<User | undefined>;
   blockUser(id: number): Promise<User | undefined>;
   unblockUser(id: number): Promise<User | undefined>;
   deleteUser(id: number): Promise<void>;
