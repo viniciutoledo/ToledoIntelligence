@@ -928,11 +928,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Process with LLM if file uploaded
       if (req.file) {
         let botResponse;
+        let filePath = req.file.path;
+        
+        // Verificar se o arquivo existe
+        if (!fs.existsSync(filePath)) {
+          console.error(`Arquivo não encontrado: ${filePath}`);
+          // Tentar construir o caminho correto
+          filePath = path.join(process.cwd(), 'uploads', 'files', path.basename(req.file.path));
+          console.log(`Tentando caminho alternativo: ${filePath}`);
+        }
         
         if (messageType === "image") {
-          botResponse = await analyzeImage(req.file.path, session.language);
+          botResponse = await analyzeImage(filePath, session.language);
         } else {
-          botResponse = await analyzeFile(req.file.path, session.language);
+          botResponse = await analyzeFile(filePath, session.language);
         }
         
         // Create bot response message
@@ -947,12 +956,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.status(201).json(userMessage);
     } catch (error) {
+      console.error("Erro ao processar upload:", error);
+      
       // Delete uploaded file if it exists and there was an error
       if (req.file) {
-        fs.unlink(req.file.path, () => {});
+        try {
+          if (fs.existsSync(req.file.path)) {
+            fs.unlink(req.file.path, () => {
+              console.log(`Arquivo excluído após erro: ${req.file.path}`);
+            });
+          }
+        } catch (unlinkError) {
+          console.error("Erro ao tentar excluir arquivo:", unlinkError);
+        }
       }
       
-      res.status(400).json({ message: error instanceof Error ? error.message : "Invalid request" });
+      res.status(400).json({ 
+        message: error instanceof Error ? error.message : "Invalid request",
+        errorDetails: error instanceof Error ? error.stack : null
+      });
     }
   });
   
@@ -1192,6 +1214,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Serve uploaded files
   app.use("/uploads", express.static(UPLOADS_DIR));
+  console.log(`Servindo arquivos estáticos de ${UPLOADS_DIR} na rota /uploads`);
   
   // Error handling middleware
   app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
