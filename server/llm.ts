@@ -213,12 +213,15 @@ export async function processTextMessage(message: string, language: string): Pro
     
     // Prompts para os diferentes provedores
     const systemPrompt = language === 'pt' 
-      ? `Você é um assistente especializado em manutenção de placas de circuito. 
-         Forneça respostas técnicas precisas e úteis relacionadas à manutenção, 
-         diagnóstico e reparo de placas de circuito. Responda em Português.`
-      : `You are an assistant specialized in circuit board maintenance. 
-         Provide accurate and helpful technical responses related to maintenance, 
-         diagnosis, and repair of circuit boards. Respond in English.`;
+      ? `Você é um assistente técnico especializado em manutenção de placas de circuito. 
+         Forneça respostas precisas, úteis e CONCISAS (máximo 3-4 frases) relacionadas à manutenção, 
+         diagnóstico e reparo de placas de circuito. Use linguagem simples e direta, como 
+         se estivesse conversando com um colega técnico. Evite explicações muito longas e 
+         acadêmicas. Responda em Português.`
+      : `You are a technical assistant specialized in circuit board maintenance. 
+         Provide accurate, helpful and CONCISE (maximum 3-4 sentences) responses related to maintenance, 
+         diagnosis, and repair of circuit boards. Use simple and direct language, as if you were
+         talking to a fellow technician. Avoid overly lengthy and academic explanations. Respond in English.`;
     
     // Process with appropriate provider
     if (provider === 'anthropic') {
@@ -289,8 +292,16 @@ export async function analyzeFile(filePath: string, language: string): Promise<s
     
     // Common prompts for both providers
     const systemPrompt = language === 'pt' 
-      ? `Você é um assistente especializado em manutenção de placas de circuito. Analise o arquivo fornecido e extraia informações relevantes como códigos de erro, especificações técnicas, ou instruções de manutenção. Forneça insights técnicos precisos baseados no conteúdo. Responda em Português.`
-      : `You are an assistant specialized in circuit board maintenance. Analyze the provided file and extract relevant information such as error codes, technical specifications, or maintenance instructions. Provide accurate technical insights based on the content. Respond in English.`;
+      ? `Você é um técnico especializado em manutenção de placas de circuito. 
+         Analise o arquivo fornecido e extraia as 3-4 informações MAIS importantes, como códigos de erro, 
+         especificações técnicas ou instruções de manutenção. Mantenha a resposta CONCISA (máximo 
+         3-4 frases) e em linguagem técnica direta. Evite explicações longas e teóricas. 
+         Responda como um técnico falaria com outro técnico. Responda em Português.`
+      : `You are a technician specialized in circuit board maintenance. 
+         Analyze the provided file and extract the 3-4 MOST important pieces of information, such as error codes, 
+         technical specifications, or maintenance instructions. Keep your response CONCISE (maximum 
+         3-4 sentences) and in direct technical language. Avoid lengthy theoretical explanations.
+         Respond as one technician would talk to another. Respond in English.`;
 
     const userPrompt = language === 'pt'
       ? `Por favor, analise o conteúdo deste arquivo e extraia informações técnicas relevantes para manutenção de placas de circuito. O conteúdo do arquivo é:\n\n${fileContent}`

@@ -6,7 +6,6 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Paperclip, Image, Send, Loader2 } from "lucide-react";
-import { format } from "date-fns";
 
 export function ChatInterface() {
   const { t } = useLanguage();
@@ -26,6 +25,7 @@ export function ChatInterface() {
   
   const [message, setMessage] = useState("");
   const [fileSelected, setFileSelected] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -43,39 +43,50 @@ export function ChatInterface() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
   
-  const handleSendMessage = () => {
-    if (!message.trim() || !currentSession) return;
-    
-    sendMessageMutation.mutate({
-      sessionId: currentSession.id,
-      content: message,
-    });
-    
-    setMessage("");
-  };
-  
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || !currentSession) return;
     
     const file = e.target.files[0];
     if (!file) {
       setFileSelected(false);
+      setSelectedFile(null);
       return;
     }
     
-    console.log("Enviando arquivo:", file.name, file.type, file.size);
+    console.log("Arquivo selecionado:", file.name, file.type, file.size);
     setFileSelected(true);
+    setSelectedFile(file);
     
-    uploadFileMutation.mutate({
-      sessionId: currentSession.id,
-      file,
-    });
+    // Não enviamos o arquivo automaticamente, apenas armazenamos para envio posterior
+    // O usuário precisa clicar no botão de enviar
+  };
+  
+  const handleSendMessage = () => {
+    if ((!message.trim() && !selectedFile) || !currentSession) return;
     
-    // Reset the file input
-    e.target.value = "";
+    if (selectedFile) {
+      uploadFileMutation.mutate({
+        sessionId: currentSession.id,
+        file: selectedFile,
+      });
+      
+      // Limpar arquivo selecionado após envio
+      setSelectedFile(null);
+      setFileSelected(false);
+      
+      // Reset do input de arquivo
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      if (imageInputRef.current) imageInputRef.current.value = "";
+    }
     
-    // Reset o fileSelected após o upload
-    uploadFileMutation.isSuccess && setTimeout(() => setFileSelected(false), 1000);
+    if (message.trim()) {
+      sendMessageMutation.mutate({
+        sessionId: currentSession.id,
+        content: message,
+      });
+      
+      setMessage("");
+    }
   };
   
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -274,15 +285,23 @@ export function ChatInterface() {
             size="icon"
             className="p-2 rounded-full bg-primary text-white hover:bg-primary-600"
             onClick={handleSendMessage}
-            disabled={(!message.trim() && !fileSelected) || !currentSession || isLoading}
+            disabled={(!message.trim() && !selectedFile) || !currentSession || isLoading}
           >
-            {sendMessageMutation.isPending ? (
+            {sendMessageMutation.isPending || uploadFileMutation.isPending ? (
               <Loader2 className="h-5 w-5 animate-spin" />
             ) : (
               <Send className="h-5 w-5" />
             )}
           </Button>
         </div>
+        
+        {selectedFile && (
+          <div className="mt-2 ml-1 text-xs bg-primary-50 p-2 rounded-md flex items-center">
+            <Paperclip className="h-3 w-3 mr-1 text-primary" />
+            <span className="text-neutral-700">{selectedFile.name}</span>
+          </div>
+        )}
+        
         <div className="text-xs text-neutral-500 mt-2 ml-1">
           {t("technician.supportedFormats")}
         </div>
