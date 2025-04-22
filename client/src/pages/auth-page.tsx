@@ -1,87 +1,102 @@
-import { useState } from "react";
+import { useEffect } from "react";
+import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { useLanguage } from "@/hooks/use-language";
+import { TechnicianAuthForm } from "@/components/auth";
 import { LanguageToggle } from "@/components/language-toggle";
-import { LoginForm } from "@/components/auth/login-form";
-import { RegisterForm } from "@/components/auth/register-form";
-import { TwoFactorForm } from "@/components/auth/two-factor-form";
-import { BlockedAccount } from "@/components/auth/blocked-account";
-import { Card } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Redirect } from "wouter";
 
 export default function AuthPage() {
-  const { user, twoFactorState } = useAuth();
   const { t } = useLanguage();
-  const [activeRole, setActiveRole] = useState<"technician" | "admin">("technician");
-  const [showBlockedAccount, setShowBlockedAccount] = useState(false);
+  const [, setLocation] = useLocation();
+  const { user, isLoading } = useAuth();
+  
+  // Redirecionar para a página técnico se já estiver logado como técnico
+  useEffect(() => {
+    if (!isLoading && user && user.role === "technician") {
+      setLocation("/technician");
+    }
+    // Se estiver logado como admin, redirecionar para a página admin
+    else if (!isLoading && user && user.role === "admin") {
+      setLocation("/admin");
+    }
+  }, [user, isLoading, setLocation]);
 
-  // Redirect to the appropriate page if the user is already logged in
-  if (user) {
-    return <Redirect to={user.role === "admin" ? "/admin" : "/technician"} />;
-  }
+  const handleLoginSuccess = () => {
+    setLocation("/technician");
+  };
 
-  // Show the two-factor form if there's an active two-factor challenge
-  if (twoFactorState && !showBlockedAccount) {
-    return (
-      <div className="min-h-screen flex flex-col justify-center items-center px-4 py-12 bg-neutral-50">
-        <LanguageToggle className="fixed top-4 right-4 z-50" />
-        <Card className="max-w-md w-full space-y-8 bg-white p-8 rounded-lg shadow-lg">
-          <TwoFactorForm />
-        </Card>
-      </div>
-    );
-  }
-
-  // Show the blocked account screen
-  if (showBlockedAccount) {
-    return (
-      <div className="min-h-screen flex flex-col justify-center items-center px-4 py-12 bg-neutral-50">
-        <LanguageToggle className="fixed top-4 right-4 z-50" />
-        <Card className="max-w-md w-full space-y-8 bg-white p-8 rounded-lg shadow-lg">
-          <BlockedAccount onBackToLogin={() => setShowBlockedAccount(false)} />
-        </Card>
-      </div>
-    );
-  }
-
-  // Main login/register screen
   return (
-    <div className="min-h-screen flex flex-col justify-center items-center px-4 py-12 bg-neutral-50">
-      <LanguageToggle className="fixed top-4 right-4 z-50" />
-      <Card className="max-w-md w-full space-y-8 bg-white p-8 rounded-lg shadow-lg">
-        <div className="text-center">
-          <h2 className="text-3xl font-extrabold text-neutral-800">
-            <span className="text-primary-600">Toledo</span>
-            <span className="text-accent-500">IA</span>
-          </h2>
-          <p className="mt-2 text-sm text-neutral-600">
-            {t("auth.loginSubtitle")}
-          </p>
+    <div className="min-h-screen flex flex-col bg-gray-950">
+      {/* Cabeçalho */}
+      <header className="py-4 px-6 border-b border-gray-800">
+        <div className="container mx-auto">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center space-x-2">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-pink-600 to-purple-600 flex items-center justify-center text-white font-bold text-xl">
+                T
+              </div>
+              <span className="text-white text-xl font-bold">ToledoIA</span>
+            </div>
+            <div className="flex items-center">
+              <LanguageToggle />
+            </div>
+          </div>
         </div>
+      </header>
 
-        <Tabs defaultValue="login">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="login">{t("common.login")}</TabsTrigger>
-            <TabsTrigger value="register">{t("common.register")}</TabsTrigger>
-          </TabsList>
-          <TabsContent value="login" className="mt-6">
-            <LoginForm
-              activeRole={activeRole}
-              setActiveRole={setActiveRole}
-              onSuccess={() => {
-                // If account is blocked, show the blocked account screen
-                if (twoFactorState?.twoFactorType === "blocked") {
-                  setShowBlockedAccount(true);
-                }
-              }}
-            />
-          </TabsContent>
-          <TabsContent value="register" className="mt-6">
-            <RegisterForm onSuccess={() => {}} />
-          </TabsContent>
-        </Tabs>
-      </Card>
+      {/* Conteúdo principal */}
+      <main className="flex-1 flex items-center justify-center lg:grid lg:grid-cols-2 p-6">
+        {/* Formulário de autenticação */}
+        <div className="w-full max-w-md mx-auto">
+          <div 
+            className="bg-gray-900 rounded-lg shadow-xl p-6"
+            style={{ borderTop: "4px solid #6d28d9" }}
+          >
+            <TechnicianAuthForm onSuccess={handleLoginSuccess} />
+          </div>
+        </div>
+        
+        {/* Hero section */}
+        <div className="hidden lg:flex lg:flex-col lg:items-center lg:justify-center lg:p-10">
+          <div className="max-w-md text-center">
+            <h1 className="text-3xl font-bold mb-6 bg-gradient-to-r from-purple-400 to-pink-600 bg-clip-text text-transparent">
+              {t("landing.heroTitle")}
+            </h1>
+            <p className="text-gray-300 mb-6 text-lg">
+              {t("landing.heroSubtitle")}
+            </p>
+            <div className="grid grid-cols-2 gap-4 mt-8">
+              <div className="bg-gray-800 p-4 rounded-lg">
+                <h3 className="text-lg font-medium text-purple-400 mb-2">
+                  {t("landing.featureOneTitle")}
+                </h3>
+                <p className="text-gray-400 text-sm">
+                  {t("landing.featureOneDescription")}
+                </p>
+              </div>
+              <div className="bg-gray-800 p-4 rounded-lg">
+                <h3 className="text-lg font-medium text-purple-400 mb-2">
+                  {t("landing.featureTwoTitle")}
+                </h3>
+                <p className="text-gray-400 text-sm">
+                  {t("landing.featureTwoDescription")}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      {/* Rodapé */}
+      <footer className="py-4 px-6 border-t border-gray-800">
+        <div className="container mx-auto">
+          <div className="flex justify-center items-center">
+            <p className="text-gray-500 text-sm">
+              &copy; {new Date().getFullYear()} ToledoIA. Todos os direitos reservados ao Prof. Vinícius Toledo
+            </p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

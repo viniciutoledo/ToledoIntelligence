@@ -30,7 +30,12 @@ const registerSchema = z.object({
   email: z.string().email().min(1, "Email é obrigatório"),
   username: z.string().min(3, "Nome de usuário deve ter pelo menos 3 caracteres"),
   password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
+  confirmPassword: z.string().min(1, "Confirmação de senha é obrigatória"),
   role: z.literal("technician").default("technician"),
+  language: z.enum(["pt", "en"]).default("pt"),
+}).refine(data => data.password === data.confirmPassword, {
+  message: "As senhas não conferem",
+  path: ["confirmPassword"],
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
@@ -64,7 +69,9 @@ export function TechnicianAuthForm({ onSuccess }: TechnicianAuthFormProps) {
       email: "",
       username: "",
       password: "",
+      confirmPassword: "",
       role: "technician",
+      language: "pt",
     },
   });
   
@@ -209,8 +216,23 @@ export function TechnicianAuthForm({ onSuccess }: TechnicianAuthFormProps) {
                 )}
               />
               
-              {/* Role oculto como technician */}
+              <FormField
+                control={registerForm.control}
+                name="confirmPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t("common.confirmPassword")}</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder={t("auth.passwordPlaceholder")} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              {/* Campos ocultos */}
               <input type="hidden" {...registerForm.register("role")} value="technician" />
+              <input type="hidden" {...registerForm.register("language")} value="pt" />
               
               <Button 
                 type="submit" 
