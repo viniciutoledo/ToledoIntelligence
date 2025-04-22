@@ -50,7 +50,7 @@ const enTranslations = {
     backToLogin: 'Back to Login',
     invalidCredentials: 'Invalid email or password',
     incorrectCode: 'Incorrect verification code',
-    incorrectRole: 'Incorrect user role',
+    incorrectRole: 'Incorrect user role. Please select your correct role (technician or admin).',
     loginError: 'Login error. Please try again.',
     emailAlreadyRegistered: 'This email is already registered',
     registrationSuccess: 'Registration successful',
