@@ -141,24 +141,35 @@ export function ChatInterface() {
             }`}>
               {msg.message_type === "text" ? (
                 <p className="text-sm">{msg.content}</p>
-              ) : (
+              ) : msg.message_type === "image" && msg.file_url ? (
                 <div>
                   <div className="flex items-center mb-2">
-                    {msg.message_type === "image" ? (
-                      <Image className="h-4 w-4 mr-2" />
-                    ) : (
-                      <Paperclip className="h-4 w-4 mr-2" />
-                    )}
-                    <span className="text-sm">{msg.content}</span>
+                    <Image className="h-4 w-4 mr-2" />
+                    <span className="text-sm">{msg.content || "Imagem"}</span>
                   </div>
-                  {msg.message_type === "image" && msg.file_url && (
-                    <img
-                      src={msg.file_url}
-                      alt="Uploaded file"
-                      className="rounded-md max-h-48 w-auto"
-                    />
-                  )}
+                  <img
+                    src={msg.file_url}
+                    alt="Uploaded file"
+                    className="rounded-md max-h-48 w-auto"
+                  />
                 </div>
+              ) : msg.message_type === "file" && msg.file_url ? (
+                <div>
+                  <div className="flex items-center">
+                    <Paperclip className="h-4 w-4 mr-2" />
+                    <span className="text-sm">{msg.content || "Arquivo"}</span>
+                  </div>
+                  <a 
+                    href={msg.file_url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="mt-2 inline-block text-xs text-primary hover:underline"
+                  >
+                    {t("technician.downloadFile")}
+                  </a>
+                </div>
+              ) : (
+                <p className="text-sm text-neutral-500">{t("technician.messageUnavailable")}</p>
               )}
             </div>
           </div>
@@ -169,39 +180,43 @@ export function ChatInterface() {
       {/* Chat Input */}
       <div className="p-4 border-t">
         <div className="flex items-center">
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            className="hidden" 
-            onChange={handleFileUpload}
-            accept=".pdf,.txt"
-          />
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            type="button"
-            className="p-2 rounded-full text-neutral-500 hover:text-primary hover:bg-primary-50"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <Paperclip className="h-5 w-5" />
-          </Button>
+          <div className="relative">
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              className="hidden" 
+              onChange={handleFileUpload}
+              accept=".pdf,.txt"
+            />
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              type="button"
+              className="p-2 rounded-full text-neutral-500 hover:text-primary hover:bg-primary-50"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Paperclip className="h-5 w-5" />
+            </Button>
+          </div>
           
-          <input 
-            type="file" 
-            ref={imageInputRef} 
-            className="hidden" 
-            onChange={handleFileUpload}
-            accept=".png,.jpg,.jpeg"
-          />
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            type="button"
-            className="p-2 rounded-full text-neutral-500 hover:text-primary hover:bg-primary-50"
-            onClick={() => imageInputRef.current?.click()}
-          >
-            <Image className="h-5 w-5" />
-          </Button>
+          <div className="relative ml-1">
+            <input 
+              type="file" 
+              ref={imageInputRef} 
+              className="hidden" 
+              onChange={handleFileUpload}
+              accept=".png,.jpg,.jpeg"
+            />
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              type="button"
+              className="p-2 rounded-full text-neutral-500 hover:text-primary hover:bg-primary-50"
+              onClick={() => imageInputRef.current?.click()}
+            >
+              <Image className="h-5 w-5" />
+            </Button>
+          </div>
           
           <Input
             placeholder={t("technician.typeMessage")}

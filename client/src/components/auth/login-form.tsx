@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/hooks/use-auth";
 import { useLanguage } from "@/hooks/use-language";
 import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Form,
   FormControl,
@@ -14,7 +15,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
 
 export function LoginForm({
   activeRole,
@@ -27,6 +28,7 @@ export function LoginForm({
 }) {
   const { loginMutation } = useAuth();
   const { t } = useLanguage();
+  const [loginError, setLoginError] = useState<string | null>(null);
   
   const formSchema = z.object({
     email: z.string().email(t("errors.validation")),
@@ -42,14 +44,28 @@ export function LoginForm({
   });
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    // Limpa mensagens de erro anteriores
+    setLoginError(null);
+    
     try {
       await loginMutation.mutateAsync({
         ...values,
         role: activeRole,
       });
       onSuccess();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login error:", error);
+      
+      // Exibe mensagem de erro específica
+      if (error.message?.includes("Incorrect user role") || error.message?.includes("Função de usuário incorreta")) {
+        setLoginError(t("auth.incorrectRole"));
+      } else if (error.message?.includes("Invalid credentials") || error.message?.includes("Credenciais inválidas")) {
+        setLoginError(t("auth.invalidCredentials"));
+      } else if (error.message?.includes("Account blocked") || error.message?.includes("Conta bloqueada")) {
+        setLoginError(t("auth.accountBlocked"));
+      } else {
+        setLoginError(t("auth.loginError"));
+      }
     }
   };
 
@@ -65,6 +81,7 @@ export function LoginForm({
               ? "bg-primary text-white"
               : "bg-neutral-200 text-neutral-700"
           } rounded-md focus:outline-none`}
+          variant={activeRole === "technician" ? "default" : "outline"}
         >
           {t("auth.technician")}
         </Button>
@@ -76,12 +93,26 @@ export function LoginForm({
               ? "bg-primary text-white"
               : "bg-neutral-200 text-neutral-700"
           } rounded-md focus:outline-none`}
+          variant={activeRole === "admin" ? "default" : "outline"}
         >
           {t("auth.admin")}
         </Button>
       </div>
+      
+      {/* Role Indicator - Para destacar melhor qual função está selecionada */}
+      <div className="text-center mb-4 text-sm font-medium text-primary">
+        {activeRole === "admin" ? t("auth.loggingAsAdmin") : t("auth.loggingAsTechnician")}
+      </div>
 
       {/* Login Form */}
+      {/* Mensagem de erro */}
+      {loginError && (
+        <Alert className="mb-4 bg-destructive/10 text-destructive border-destructive">
+          <AlertCircle className="h-4 w-4 mr-2" />
+          <AlertDescription>{loginError}</AlertDescription>
+        </Alert>
+      )}
+      
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <FormField
