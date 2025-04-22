@@ -90,6 +90,17 @@ export interface IStorage {
 }
 
 export class MemStorage implements IStorage {
+  // Implementação do método deleteUser para MemStorage
+  async deleteUser(id: number): Promise<void> {
+    // Remover o usuário
+    this.users.delete(id);
+    
+    // Limpar a sessão ativa do usuário
+    this.removeUserActiveSession(id);
+    
+    // Em uma implementação real, você também removeria ou anonimizaria 
+    // todos os dados associados ao usuário, como mensagens, logs, etc.
+  }
   private users: Map<number, User>;
   private llmConfigs: Map<number, LlmConfig>;
   private avatars: Map<number, Avatar>;
@@ -660,6 +671,17 @@ const PostgresSessionStore = connectPg(session);
 
 export class DatabaseStorage implements IStorage {
   sessionStore: session.Store;
+  
+  async deleteUser(id: number): Promise<void> {
+    // Primeiro, exclui o usuário do banco de dados
+    await db.delete(users).where(eq(users.id, id));
+    
+    // Remove a sessão ativa do usuário
+    await this.removeUserActiveSession(id);
+    
+    // Na implementação real, seria necessário lidar com as relações 
+    // e potencialmente anonimizar dados ao invés de excluí-los completamente
+  }
 
   constructor() {
     this.sessionStore = new PostgresSessionStore({ 
