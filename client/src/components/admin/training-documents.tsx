@@ -519,7 +519,13 @@ export function TrainingDocuments() {
                   <FormItem>
                     <FormLabel>{t("admin.training.documentDescription")}</FormLabel>
                     <FormControl>
-                      <Textarea {...field} />
+                      <Textarea 
+                        value={field.value || ""}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        name={field.name}
+                        ref={field.ref}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
