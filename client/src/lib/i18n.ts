@@ -50,7 +50,8 @@ const enTranslations = {
     incorrectCode: 'Incorrect verification code',
     emailAlreadyRegistered: 'This email is already registered',
     registrationSuccess: 'Registration successful',
-    registrationError: 'Error during registration'
+    registrationError: 'Error during registration',
+    verificationCodeResent: 'Verification code resent'
   },
   technician: {
     title: 'Technician Interface',
@@ -247,7 +248,8 @@ const ptTranslations = {
     incorrectCode: 'Código de verificação incorreto',
     emailAlreadyRegistered: 'Este email já está registrado',
     registrationSuccess: 'Registro realizado com sucesso',
-    registrationError: 'Erro durante o registro'
+    registrationError: 'Erro durante o registro',
+    verificationCodeResent: 'Código de verificação reenviado'
   },
   technician: {
     title: 'Interface do Técnico',
