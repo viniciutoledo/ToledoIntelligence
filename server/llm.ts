@@ -65,152 +65,282 @@ function getAnthropicClient(apiKey: string) {
   return new Anthropic({ apiKey });
 }
 
-// Convert image to base64
+// Verifica se um buffer contém uma imagem válida
+function isValidImageBuffer(buffer: Buffer): boolean {
+  // Assinaturas de arquivo comuns para formatos de imagem
+  const jpegSignature = Buffer.from([0xFF, 0xD8, 0xFF]);
+  const pngSignature = Buffer.from([0x89, 0x50, 0x4E, 0x47]);
+  const gifSignature = Buffer.from('GIF8', 'ascii');
+  const webpSignature = Buffer.from('RIFF', 'ascii');
+
+  // Verifica as assinaturas no início do buffer
+  if (buffer.length < 8) return false;
+  
+  return (
+    buffer.subarray(0, 3).equals(jpegSignature) || 
+    buffer.subarray(0, 4).equals(pngSignature) || 
+    buffer.subarray(0, 4).equals(gifSignature) ||
+    buffer.subarray(0, 4).equals(webpSignature)
+  );
+}
+
+// Lista de caminhos alternativos possíveis para encontrar a imagem
+function generateAlternativePaths(originalPath: string): string[] {
+  const filename = path.basename(originalPath);
+  
+  return [
+    originalPath,
+    path.join(process.cwd(), 'uploads', 'files', filename),
+    path.join('/home/runner/workspace/uploads/files', filename),
+    path.join('/uploads/files', filename),
+    path.join('./uploads/files', filename),
+    path.join('../uploads/files', filename)
+  ];
+}
+
+// Convert image to base64 with improved handling
 async function imageToBase64(imagePath: string): Promise<string> {
   try {
     console.log(`Tentando ler arquivo de imagem: ${imagePath}`);
     
-    if (!fs.existsSync(imagePath)) {
-      console.error(`Arquivo não encontrado: ${imagePath}`);
-      
-      // Tentar construir caminhos alternativos
-      const alternativePath1 = path.join(process.cwd(), 'uploads', 'files', path.basename(imagePath));
-      const alternativePath2 = path.join('/home/runner/workspace/uploads/files', path.basename(imagePath));
-      
-      console.log(`Tentando caminhos alternativos: 
-        1. ${alternativePath1} (existe: ${fs.existsSync(alternativePath1)})
-        2. ${alternativePath2} (existe: ${fs.existsSync(alternativePath2)})`);
-      
-      // Se encontrarmos o arquivo em um dos caminhos alternativos, usamos ele
-      if (fs.existsSync(alternativePath1)) {
-        console.log(`Usando caminho alternativo 1: ${alternativePath1}`);
-        const imageBuffer = await readFile(alternativePath1);
-        return imageBuffer.toString('base64');
-      } else if (fs.existsSync(alternativePath2)) {
-        console.log(`Usando caminho alternativo 2: ${alternativePath2}`);
-        const imageBuffer = await readFile(alternativePath2);
-        return imageBuffer.toString('base64');
+    // Gera uma lista de caminhos alternativos para procurar a imagem
+    const possiblePaths = generateAlternativePaths(imagePath);
+    
+    // Tenta encontrar a imagem em cada um dos caminhos possíveis
+    let imageBuffer: Buffer | null = null;
+    let successPath = '';
+    
+    for (const testPath of possiblePaths) {
+      try {
+        if (fs.existsSync(testPath)) {
+          const buffer = await readFile(testPath);
+          
+          // Verifica se o buffer parece ser uma imagem válida
+          if (isValidImageBuffer(buffer)) {
+            imageBuffer = buffer;
+            successPath = testPath;
+            break;
+          } else {
+            console.log(`Arquivo encontrado em ${testPath}, mas não parece ser uma imagem válida`);
+          }
+        }
+      } catch (err) {
+        console.log(`Não foi possível ler ${testPath}: ${err instanceof Error ? err.message : err}`);
       }
-      
-      throw new Error(`Arquivo não encontrado: ${imagePath}`);
     }
     
-    const imageBuffer = await readFile(imagePath);
-    console.log(`Arquivo lido com sucesso: ${imagePath}, tamanho: ${imageBuffer.length} bytes`);
+    if (!imageBuffer) {
+      // Se chegamos aqui, não conseguimos encontrar um arquivo válido
+      throw new Error(`Não foi possível encontrar uma imagem válida em nenhum dos caminhos testados para: ${imagePath}`);
+    }
+    
+    console.log(`Arquivo de imagem lido com sucesso de: ${successPath}, tamanho: ${imageBuffer.length} bytes`);
+    
+    // Verifica se a imagem é muito grande (maior que 10MB)
+    const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
+    if (imageBuffer.length > MAX_IMAGE_SIZE) {
+      console.log(`Imagem muito grande: ${imageBuffer.length} bytes. Tentando reduzir...`);
+      // Aqui poderíamos implementar uma redução de tamanho, mas por ora apenas alertamos
+    }
+    
     return imageBuffer.toString('base64');
   } catch (error) {
-    console.error(`Erro ao converter imagem para base64: ${error instanceof Error ? error.message : error}`);
+    console.error(`Erro ao processar imagem: ${error instanceof Error ? error.message : error}`);
     throw error;
   }
 }
 
-// Analyze image with either Anthropic or OpenAI
+// Determina o formato de imagem a partir dos primeiros bytes
+function detectImageFormat(buffer: Buffer): string {
+  // JPEG: começa com FF D8 FF
+  if (buffer.length >= 3 && buffer[0] === 0xFF && buffer[1] === 0xD8 && buffer[2] === 0xFF) {
+    return 'image/jpeg';
+  }
+  
+  // PNG: começa com 89 50 4E 47 (hexadecimal para .PNG)
+  if (buffer.length >= 4 && buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4E && buffer[3] === 0x47) {
+    return 'image/png';
+  }
+  
+  // GIF: começa com "GIF8"
+  if (buffer.length >= 4 && buffer[0] === 0x47 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x38) {
+    return 'image/gif';
+  }
+  
+  // WEBP: começa com "RIFF" e tem "WEBP" no offset 8
+  if (buffer.length >= 12 && 
+      buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46 &&
+      buffer[8] === 0x57 && buffer[9] === 0x45 && buffer[10] === 0x42 && buffer[11] === 0x50) {
+    return 'image/webp';
+  }
+  
+  // Formato não detectado, retornamos JPEG como padrão
+  return 'image/jpeg';
+}
+
+// Analyze image with either Anthropic or OpenAI with enhanced error handling
 export async function analyzeImage(imagePath: string, language: string): Promise<string> {
   try {
-    const base64Image = await imageToBase64(imagePath);
-    const { provider, modelName, apiKey } = await getActiveLlmInfo();
-    
-    // Common prompts for both providers
-    const systemPrompt = language === 'pt' 
-      ? `Você é um técnico especializado em manutenção de placas de circuito.
-         Analise a imagem e identifique os 2-3 problemas ou componentes MAIS críticos.
-         Seja EXTREMAMENTE CONCISO (máximo 3-4 frases) e use linguagem técnica direta,
-         como se estivesse falando com um colega técnico. 
-         EVITE longas explicações, descrições detalhadas ou introduções teóricas.
-         Concentre-se apenas nos problemas mais graves e nas soluções mais práticas.
-         Seja direto e objetivo. Responda em Português.`
-      : `You are a technician specialized in circuit board maintenance.
-         Analyze the image and identify the 2-3 MOST critical issues or components.
-         Be EXTREMELY CONCISE (maximum 3-4 sentences) and use direct technical language,
-         as if you were talking to a fellow technician.
-         AVOID lengthy explanations, detailed descriptions, or theoretical introductions.
-         Focus only on the most serious problems and the most practical solutions.
-         Be direct and to the point. Respond in English.`;
+    // Declarações de erros e mensagens
+    const errorMessages = {
+      imageNotFound: language === 'pt'
+        ? 'Não foi possível encontrar a imagem. Por favor, verifique se o arquivo existe e tente novamente.'
+        : 'Could not find the image. Please check if the file exists and try again.',
+      invalidImage: language === 'pt'
+        ? 'O arquivo não parece ser uma imagem válida. Por favor, envie uma imagem em formato JPG, PNG ou GIF.'
+        : 'The file does not appear to be a valid image. Please upload an image in JPG, PNG, or GIF format.',
+      modelError: language === 'pt'
+        ? 'Ocorreu um erro no processamento da imagem pelo modelo. Por favor, tente com outra imagem ou mais tarde.'
+        : 'An error occurred while processing the image. Please try with another image or try again later.',
+      generalError: language === 'pt'
+        ? 'Ocorreu um erro ao analisar a imagem. Por favor, tente novamente mais tarde.'
+        : 'An error occurred while analyzing the image. Please try again later.'
+    };
 
-    const userPrompt = language === 'pt'
-      ? 'Analise rapidamente esta placa de circuito. Identifique apenas os problemas mais críticos (se houver) e sugira soluções práticas. Seja extremamente conciso.'
-      : 'Quickly analyze this circuit board. Identify only the most critical issues (if any) and suggest practical solutions. Be extremely concise.';
-
-    // Process with appropriate provider
-    if (provider === 'anthropic') {
-      // Use Anthropic Claude
-      const anthropic = getAnthropicClient(apiKey);
-      const mediaType = getMediaType(imagePath);
+    // Tentar carregar a imagem com tratamento avançado de erros
+    let base64Image: string;
+    try {
+      base64Image = await imageToBase64(imagePath);
       
-      // Claude apenas suporta formatos específicos de imagem
-      const supportedFormats = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-      // Se o formato não for suportado, vamos usar jpeg como padrão
-      const actualMediaType = supportedFormats.includes(mediaType) ? mediaType : 'image/jpeg';
-      
-      console.log(`Tipo de mídia original: ${mediaType}, tipo a ser usado: ${actualMediaType}`);
-      
-      const response = await anthropic.messages.create({
-        model: modelName,
-        max_tokens: 1024,
-        system: systemPrompt,
-        messages: [
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: userPrompt
-              },
-              {
-                type: 'image',
-                source: {
-                  type: 'base64',
-                  media_type: "image/jpeg" as "image/jpeg", // Tipo literal aceito pelo Claude
-                  data: base64Image
-                }
-              }
-            ]
-          }
-        ]
-      });
-
-      if (response.content[0].type === 'text') {
-        return response.content[0].text;
-      } else {
-        return 'Erro no formato da resposta do modelo.';
+      // Validação básica de dados base64
+      if (!base64Image || base64Image.length < 100) {
+        console.error('Imagem inválida ou muito pequena');
+        return errorMessages.invalidImage;
       }
-    } else {
-      // Use OpenAI
-      const openai = getOpenAIClient(apiKey);
+    } catch (imageError) {
+      console.error('Erro ao carregar imagem:', imageError);
+      return errorMessages.imageNotFound;
+    }
+    
+    try {
+      const { provider, modelName, apiKey } = await getActiveLlmInfo();
       
-      const response = await openai.chat.completions.create({
-        model: modelName, 
-        max_tokens: 1024,
-        messages: [
-          {
-            role: "system",
-            content: systemPrompt
-          },
-          {
-            role: "user",
-            content: [
+      // Obter conteúdo do buffer novamente para detectar formato real
+      const imageBuffer = Buffer.from(base64Image, 'base64');
+      // Detectar formato baseado no conteúdo real
+      const detectedFormat = detectImageFormat(imageBuffer);
+      console.log(`Formato de imagem detectado: ${detectedFormat}`);
+      
+      // Common prompts for both providers with enhanced specificity
+      const systemPrompt = language === 'pt' 
+        ? `Você é um técnico especializado em manutenção de placas de circuito.
+           Analise a imagem da placa de circuito e identifique os 2-3 problemas ou componentes MAIS críticos.
+           Seja EXTREMAMENTE CONCISO (máximo 3-4 frases) e use linguagem técnica direta,
+           como se estivesse falando com um colega técnico. 
+           EVITE longas explicações, descrições detalhadas ou introduções teóricas.
+           Concentre-se apenas nos problemas mais graves e nas soluções mais práticas.
+           Seja direto e objetivo. Responda em Português.`
+        : `You are a technician specialized in circuit board maintenance.
+           Analyze the circuit board image and identify the 2-3 MOST critical issues or components.
+           Be EXTREMELY CONCISE (maximum 3-4 sentences) and use direct technical language,
+           as if you were talking to a fellow technician.
+           AVOID lengthy explanations, detailed descriptions, or theoretical introductions.
+           Focus only on the most serious problems and the most practical solutions.
+           Be direct and to the point. Respond in English.`;
+
+      const userPrompt = language === 'pt'
+        ? 'Analise rapidamente esta placa de circuito. Identifique apenas os problemas mais críticos (se houver) e sugira soluções práticas. Seja extremamente conciso.'
+        : 'Quickly analyze this circuit board. Identify only the most critical issues (if any) and suggest practical solutions. Be extremely concise.';
+
+      // Process with appropriate provider with enhanced error handling
+      if (provider === 'anthropic') {
+        // Use Anthropic Claude
+        try {
+          const anthropic = getAnthropicClient(apiKey);
+          
+          // Claude apenas suporta formatos específicos de imagem
+          const supportedFormats = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+          
+          // Para Claude, sempre usar image/jpeg como é mais universalmente compatível
+          console.log(`Usando formato image/jpeg para o Claude independente do formato original`);
+          
+          const response = await anthropic.messages.create({
+            model: modelName,
+            max_tokens: 1024,
+            system: systemPrompt,
+            messages: [
               {
-                type: "text",
-                text: userPrompt
-              },
-              {
-                type: "image_url",
-                image_url: {
-                  url: `data:${getMediaType(imagePath)};base64,${base64Image}`
-                }
+                role: 'user',
+                content: [
+                  {
+                    type: 'text',
+                    text: userPrompt
+                  },
+                  {
+                    type: 'image',
+                    source: {
+                      type: 'base64',
+                      media_type: "image/jpeg" as "image/jpeg", // Sempre usando JPEG para Claude
+                      data: base64Image
+                    }
+                  }
+                ]
               }
             ]
-          }
-        ]
-      });
+          });
 
-      return response.choices[0].message.content || 'Sem resposta do modelo.';
+          if (response.content[0].type === 'text') {
+            return response.content[0].text;
+          } else {
+            console.error('Resposta do Claude em formato inesperado');
+            return errorMessages.modelError;
+          }
+        } catch (claudeError) {
+          console.error('Erro específico do Claude:', claudeError);
+          return errorMessages.modelError;
+        }
+      } else {
+        // Use OpenAI com tratamento de erros avançado
+        try {
+          const openai = getOpenAIClient(apiKey);
+          
+          const response = await openai.chat.completions.create({
+            model: modelName, 
+            max_tokens: 1024,
+            messages: [
+              {
+                role: "system",
+                content: systemPrompt
+              },
+              {
+                role: "user",
+                content: [
+                  {
+                    type: "text",
+                    text: userPrompt
+                  },
+                  {
+                    type: "image_url",
+                    image_url: {
+                      url: `data:${detectedFormat};base64,${base64Image}`
+                    }
+                  }
+                ]
+              }
+            ]
+          });
+
+          if (!response.choices[0].message.content) {
+            console.error('Resposta vazia do OpenAI');
+            return errorMessages.modelError;
+          }
+          
+          return response.choices[0].message.content;
+        } catch (openaiError) {
+          console.error('Erro específico do OpenAI:', openaiError);
+          return errorMessages.modelError;
+        }
+      }
+    } catch (error) {
+      console.error('Erro geral na análise de imagem:', error);
+      return errorMessages.generalError;
     }
-  } catch (error) {
-    console.error('Error analyzing image:', error);
+  } catch (criticalError) {
+    // Se chegamos aqui, é um erro verdadeiramente inesperado
+    console.error('Erro crítico na análise de imagem:', criticalError);
     return language === 'pt'
-      ? 'Ocorreu um erro ao analisar a imagem. Por favor, tente novamente mais tarde.'
-      : 'An error occurred while analyzing the image. Please try again later.';
+      ? 'Ocorreu um erro crítico inesperado. Por favor, informe o administrador do sistema.'
+      : 'A critical unexpected error occurred. Please inform the system administrator.';
   }
 }
 
