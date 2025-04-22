@@ -51,6 +51,7 @@ export const avatars = pgTable("avatars", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   image_url: text("image_url").notNull(),
+  welcome_message: text("welcome_message"),
   is_active: boolean("is_active").notNull().default(true),
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
@@ -60,6 +61,7 @@ export const avatars = pgTable("avatars", {
 export const insertAvatarSchema = createInsertSchema(avatars).pick({
   name: true,
   image_url: true,
+  welcome_message: true,
   created_by: true,
 });
 

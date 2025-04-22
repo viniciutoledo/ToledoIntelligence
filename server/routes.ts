@@ -307,10 +307,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const schema = z.object({
-        name: z.string().max(50)
+        name: z.string().max(50),
+        welcomeMessage: z.string().max(200).optional(),
       });
       
-      const { name } = schema.parse(req.body);
+      const { name, welcomeMessage } = schema.parse(req.body);
       
       // Get file URL
       const fileUrl = `/uploads/avatars/${path.basename(req.file.path)}`;
@@ -318,6 +319,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const avatarData = {
         name,
         image_url: fileUrl,
+        welcome_message: welcomeMessage,
         created_by: req.user!.id
       };
       
@@ -354,10 +356,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     try {
       const schema = z.object({
-        name: z.string().max(50)
+        name: z.string().max(50),
+        welcomeMessage: z.string().max(200).optional(),
       });
       
-      const { name } = schema.parse(req.body);
+      const { name, welcomeMessage } = schema.parse(req.body);
       
       // Check if avatar exists
       const avatar = await storage.getAvatar(id);
@@ -367,7 +370,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Update data
-      let updateData: Partial<typeof avatar> = { name };
+      let updateData: Partial<typeof avatar> = { 
+        name,
+        welcome_message: welcomeMessage
+      };
       
       // If new image uploaded, update image_url
       if (req.file) {
@@ -433,6 +439,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const defaultAvatar = {
       name: "Bot ToledoIA",
       image_url: "/default-avatar.svg",
+      welcome_message: "Olá! Eu sou o assistente de IA que irá ajudar você a analisar placas de circuito.",
       created_by: req.user!.id
     };
     

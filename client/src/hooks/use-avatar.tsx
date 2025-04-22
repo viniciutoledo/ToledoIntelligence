@@ -8,6 +8,7 @@ interface Avatar {
   id: number;
   name: string;
   image_url: string;
+  welcome_message?: string;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -17,6 +18,7 @@ interface Avatar {
 interface SaveAvatarParams {
   name: string;
   image?: File;
+  welcomeMessage?: string;
 }
 
 type AvatarContextType = {
@@ -51,6 +53,10 @@ export function AvatarProvider({ children }: { children: ReactNode }) {
       
       if (params.image) {
         formData.append("image", params.image);
+      }
+      
+      if (params.welcomeMessage) {
+        formData.append("welcomeMessage", params.welcomeMessage);
       }
 
       const url = avatar?.id 
