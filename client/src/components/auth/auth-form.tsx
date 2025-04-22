@@ -28,7 +28,7 @@ import { Loader2 } from "lucide-react";
 const loginSchema = z.object({
   email: z.string().email().min(1, "Email é obrigatório"),
   password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
-  role: z.enum(["technician", "admin"]),
+  role: z.literal("technician").default("technician"),
 });
 
 const registerSchema = z.object({
@@ -40,7 +40,7 @@ const registerSchema = z.object({
   confirmPassword: z
     .string()
     .min(1, "Confirmação de senha é obrigatória"),
-  role: z.enum(["technician", "admin"]),
+  role: z.literal("technician").default("technician"),
   language: z.enum(["pt", "en"]).default("pt"),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "As senhas não conferem",
@@ -164,27 +164,8 @@ export function AuthForm({ mode, onSuccess, onToggleMode, selectedPlan }: AuthFo
                 )}
               />
               
-              <FormField
-                control={loginForm.control}
-                name="role"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t("common.role")}</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder={t("auth.selectRole")} />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="technician">{t("auth.technician")}</SelectItem>
-                        <SelectItem value="admin">{t("auth.admin")}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {/* Role definido automaticamente como technician */}
+              <input type="hidden" {...loginForm.register("role")} value="technician" />
               
               <Button 
                 type="submit" 
@@ -257,27 +238,8 @@ export function AuthForm({ mode, onSuccess, onToggleMode, selectedPlan }: AuthFo
                 )}
               />
               
-              <FormField
-                control={registerForm.control}
-                name="role"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t("common.role")}</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder={t("auth.selectRole")} />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="technician">{t("auth.technician")}</SelectItem>
-                        <SelectItem value="admin">{t("auth.admin")}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {/* Role definido automaticamente como technician */}
+              <input type="hidden" {...registerForm.register("role")} value="technician" />
               
               <input
                 type="hidden"
