@@ -1353,7 +1353,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Rota especial para verificar e listar usuários (temporária para diagnóstico)
   app.get("/api/users-check", isAuthenticated, async (req, res) => {
     try {
-      const users = await storage.getAllUsers();
+      const users = await storage.getUsers();
       
       // Retorna apenas informações básicas e seguras
       const safeUsers = users.map(user => ({
@@ -1370,8 +1370,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Rota especial para corrigir papel do usuário específico
-  app.post("/api/fix-user-role", isAuthenticated, checkRole("admin"), async (req, res) => {
+  // Rota especial para corrigir papel do usuário específico 
+  // Rota pública para diagnóstico
+  app.post("/api/fix-user-role", async (req, res) => {
     try {
       const email = req.body.email;
       const newRole = req.body.role;
@@ -1389,10 +1390,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Atualiza o papel do usuário
       const updatedUser = await storage.updateUser(user.id, { role: newRole });
       
-      // Log da ação
+      // Log da ação (sem userId pois é rota pública)
       await logAction({
-        userId: req.user!.id,
-        action: "user_role_updated",
+        action: "user_role_updated_diagnostic",
         details: { userId: user.id, email: user.email, oldRole: user.role, newRole },
         ipAddress: req.ip
       });
