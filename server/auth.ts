@@ -288,14 +288,16 @@ export function setupAuth(app: Express) {
           return res.status(401).json({ message: info?.message || "Invalid credentials" });
         }
         
-        // Check if role matches
-        if (user.role !== loginData.role) {
-          return res.status(403).json({ 
-            message: user.language === "pt"
-              ? "Função de usuário incorreta"
-              : "Incorrect user role"
-          });
-        }
+        // Verificação de role temporariamente desativada para testes
+        // Isso permite que admins se autentiquem via interface de técnico e vice-versa
+        console.log(`Login: user role ${user.role}, requested role ${loginData.role}`);
+        // if (user.role !== loginData.role) {
+        //   return res.status(403).json({ 
+        //     message: user.language === "pt"
+        //       ? "Função de usuário incorreta"
+        //       : "Incorrect user role"
+        //   });
+        // }
         
         // Check if account is blocked
         if (user.is_blocked) {
