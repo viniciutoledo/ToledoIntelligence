@@ -1130,6 +1130,10 @@ export class DatabaseStorage implements IStorage {
         )
       );
   }
+
+  async updateLastLogin(id: number): Promise<User | undefined> {
+    return this.updateUser(id, { last_login: new Date() });
+  }
 }
 
 // Use DatabaseStorage em vez de MemStorage
