@@ -22,6 +22,7 @@ export interface IStorage {
   updateUser(id: number, data: Partial<User>): Promise<User | undefined>;
   blockUser(id: number): Promise<User | undefined>;
   unblockUser(id: number): Promise<User | undefined>;
+  deleteUser(id: number): Promise<void>;
   
   // LLM configuration
   getLlmConfig(id: number): Promise<LlmConfig | undefined>;

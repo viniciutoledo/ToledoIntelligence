@@ -551,6 +551,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(safeUser);
   });
   
+  // Atualização de usuário pelo administrador
+  app.put("/api/admin/users/:id", isAuthenticated, checkRole("admin"), async (req, res) => {
+    const id = parseInt(req.params.id);
+    
+    if (isNaN(id)) {
+      return res.status(400).json({ message: "Invalid ID" });
+    }
+    
+    try {
+      const schema = z.object({
+        email: z.string().email().optional(),
+        role: z.enum(["technician", "admin"]).optional(),
+        language: z.enum(["pt", "en"]).optional(),
+        subscription_tier: z.enum(["none", "basic", "intermediate"]).optional(),
+        max_messages: z.number().optional(),
+        message_count: z.number().optional(),
+      });
+      
+      const data = schema.parse(req.body);
+      const user = await storage.getUser(id);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Evitar que o usuário bloqueie a si mesmo
+      if (id === req.user!.id && data.role && data.role !== user.role) {
+        return res.status(400).json({ message: "Cannot change your own role" });
+      }
+      
+      const updatedUser = await storage.updateUser(id, data);
+      
+      // Log da ação
+      await logAction({
+        userId: req.user!.id,
+        action: "user_updated",
+        details: { targetUserId: id, email: user.email, changes: data },
+        ipAddress: req.ip
+      });
+      
+      // Retornar usuário sem dados sensíveis
+      const { password, twofa_secret, ...safeUser } = updatedUser;
+      res.json(safeUser);
+    } catch (error) {
+      return res.status(400).json({ message: error instanceof Error ? error.message : "Invalid data" });
+    }
+  });
+  
+  // Deletar usuário (apenas admin pode fazer isso)
+  app.delete("/api/admin/users/:id", isAuthenticated, checkRole("admin"), async (req, res) => {
+    const id = parseInt(req.params.id);
+    
+    if (isNaN(id)) {
+      return res.status(400).json({ message: "Invalid ID" });
+    }
+    
+    // Evitar que o admin exclua a si mesmo
+    if (id === req.user!.id) {
+      return res.status(400).json({ message: "Cannot delete your own account" });
+    }
+    
+    const user = await storage.getUser(id);
+    
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    
+    await storage.deleteUser(id);
+    
+    // Log da ação
+    await logAction({
+      userId: req.user!.id,
+      action: "user_deleted",
+      details: { targetUserId: id, email: user.email },
+      ipAddress: req.ip
+    });
+    
+    res.status(200).json({ success: true });
+  });
+  
   // Rotas de assinatura
   
   // Endpoint para criar uma sessão de checkout do Stripe
