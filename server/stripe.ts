@@ -120,20 +120,33 @@ export async function cancelSubscription(subscriptionId: string) {
 // Função para atualizar o plano de um usuário no banco de dados
 export async function updateUserSubscriptionTier(
   userId: string,
-  tier: 'basic' | 'intermediate',
-  subscriptionId: string
+  customerIdOrTier: string,
+  subscriptionId: string,
+  tier?: 'basic' | 'intermediate'
 ) {
+  // Se o terceiro parâmetro é um tier (chamado da rota de sucesso do checkout), usar esse valor
+  // Caso contrário, usar o tier passado como quarto parâmetro (chamado da API create-subscription)
+  const finalTier = typeof tier === 'undefined' ? customerIdOrTier as 'basic' | 'intermediate' : tier;
+  
   // Determinar o limite máximo de mensagens com base no plano
-  const maxMessages = tier === 'basic' ? MESSAGE_LIMITS.BASIC : MESSAGE_LIMITS.INTERMEDIATE;
+  const maxMessages = finalTier === 'basic' ? MESSAGE_LIMITS.BASIC : MESSAGE_LIMITS.INTERMEDIATE;
+
+  // Verificar se temos um customerId ou um tier
+  const updateData: Record<string, any> = {
+    subscription_tier: finalTier,
+    stripe_subscription_id: subscriptionId,
+    max_messages: maxMessages,
+  };
+
+  // Se o customerIdOrTier não é um tier, então é um customerId
+  if (finalTier !== customerIdOrTier) {
+    updateData.stripe_customer_id = customerIdOrTier;
+  }
 
   // Atualizar o usuário no banco de dados
   const { error } = await supabase
     .from('users')
-    .update({
-      subscription_tier: tier,
-      stripe_subscription_id: subscriptionId,
-      max_messages: maxMessages,
-    })
+    .update(updateData)
     .eq('id', userId);
 
   if (error) {
