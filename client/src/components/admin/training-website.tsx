@@ -88,7 +88,7 @@ export function TrainingWebsite() {
         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
           <Globe className="h-4 w-4 text-primary" />
         </div>
-        <h3 className="ml-2 text-base font-medium">{t("admin.training.newWebsiteTraining")}</h3>
+        <h3 className="ml-2 text-base font-medium">admin.training.newWebsiteTraining</h3>
       </div>
 
       {/* Formulário de website */}
@@ -96,7 +96,7 @@ export function TrainingWebsite() {
         <div className="p-4 space-y-3">
           <div>
             <Label htmlFor="website_url" className="text-sm text-muted-foreground mb-1 block">
-              {t("admin.training.websiteUrlLabel")}
+              admin.training.websiteUrlLabel
             </Label>
             <div className="flex items-center">
               <LinkIcon className="h-4 w-4 text-muted-foreground mr-2" />
@@ -113,12 +113,12 @@ export function TrainingWebsite() {
           
           <div>
             <Label htmlFor="website_name" className="text-sm text-muted-foreground mb-1 block">
-              {t("admin.training.nameLabel")} <span className="text-xs text-muted-foreground">{t("common.optional")}</span>
+              admin.training.nameLabel <span className="text-xs text-muted-foreground">common.optional</span>
             </Label>
             <Input
               id="website_name"
               type="text"
-              placeholder={t("admin.training.websiteNamePlaceholder")}
+              placeholder="admin.training.websiteNamePlaceholder"
               value={websiteName}
               onChange={(e) => setWebsiteName(e.target.value)}
               className="text-sm"
@@ -128,11 +128,11 @@ export function TrainingWebsite() {
           
           <div>
             <Label htmlFor="website_description" className="text-sm text-muted-foreground mb-1 block">
-              {t("admin.training.descriptionLabel")} <span className="text-xs text-muted-foreground">{t("common.optional")}</span>
+              admin.training.descriptionLabel <span className="text-xs text-muted-foreground">common.optional</span>
             </Label>
             <Textarea
               id="website_description"
-              placeholder={t("admin.training.websiteDescriptionPlaceholder")}
+              placeholder="admin.training.websiteDescriptionPlaceholder"
               value={websiteDescription}
               onChange={(e) => setWebsiteDescription(e.target.value)}
               className="resize-none text-sm min-h-[80px]"
@@ -143,7 +143,7 @@ export function TrainingWebsite() {
         
         <div className="flex items-center justify-between border-t bg-muted/20 px-4 py-2">
           <div className="text-xs text-muted-foreground">
-            {t("admin.training.websiteInfo")}
+            admin.training.websiteInfo
           </div>
           <Button
             type="button" 
@@ -158,10 +158,10 @@ export function TrainingWebsite() {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                {t("common.processing")}
+                admin.training.submitWebsite
               </span>
             ) : (
-              t("admin.training.submitWebsite")
+              "admin.training.submitWebsite"
             )}
           </Button>
         </div>

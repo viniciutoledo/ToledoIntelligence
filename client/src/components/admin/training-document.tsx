@@ -117,7 +117,7 @@ export function TrainingDocument() {
         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
           <FileText className="h-4 w-4 text-primary" />
         </div>
-        <h3 className="ml-2 text-base font-medium">{t("admin.training.newDocumentTraining")}</h3>
+        <h3 className="ml-2 text-base font-medium">admin.training.newDocumentTraining</h3>
       </div>
 
       {/* Área de upload de documento */}
@@ -125,7 +125,7 @@ export function TrainingDocument() {
         <div className="p-4 space-y-4">
           <div>
             <Label htmlFor="document_file" className="text-sm text-muted-foreground mb-1 block">
-              {t("admin.training.documentFileLabel")}
+              admin.training.documentFileLabel
             </Label>
             
             <div className="mt-1 flex items-center justify-center border-2 border-dashed rounded-lg py-6 px-4 transition-colors hover:border-primary/50 cursor-pointer">
@@ -149,7 +149,7 @@ export function TrainingDocument() {
                     }}
                     className="mt-3 text-xs"
                   >
-                    <X className="h-3 w-3 mr-1" /> {t("common.remove")}
+                    <X className="h-3 w-3 mr-1" /> common.remove
                   </Button>
                 </div>
               ) : (
@@ -168,11 +168,11 @@ export function TrainingDocument() {
                       disabled={isSubmitting}
                       className="text-xs"
                     >
-                      {t("admin.training.selectDocumentFile")}
+                      admin.training.selectDocumentFile
                     </Button>
                   </div>
                   <div className="mt-1 text-xs text-muted-foreground">
-                    {t("admin.training.documentSizeLimit")}
+                    admin.training.documentSizeLimit
                   </div>
                 </div>
               )}
@@ -190,11 +190,11 @@ export function TrainingDocument() {
           
           <div>
             <Label htmlFor="document_description" className="text-sm text-muted-foreground mb-1 block">
-              {t("admin.training.descriptionLabel")} <span className="text-xs text-muted-foreground">{t("common.optional")}</span>
+              admin.training.descriptionLabel <span className="text-xs text-muted-foreground">common.optional</span>
             </Label>
             <Textarea
               id="document_description"
-              placeholder={t("admin.training.documentDescriptionPlaceholder")}
+              placeholder="admin.training.documentDescriptionPlaceholder"
               value={documentDescription}
               onChange={(e) => setDocumentDescription(e.target.value)}
               className="resize-none text-sm min-h-[80px]"
@@ -205,7 +205,7 @@ export function TrainingDocument() {
         
         <div className="flex items-center justify-between border-t bg-muted/20 px-4 py-2">
           <div className="text-xs text-muted-foreground">
-            {t("admin.training.supportedDocumentFormats")}: PDF, DOC, DOCX, TXT
+            admin.training.supportedDocumentFormats: PDF, DOC, DOCX, TXT
           </div>
           <Button
             type="button" 
@@ -220,10 +220,10 @@ export function TrainingDocument() {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                {t("common.processing")}
+                admin.training.submitDocument
               </span>
             ) : (
-              t("admin.training.submitDocument")
+              "admin.training.submitDocument"
             )}
           </Button>
         </div>
