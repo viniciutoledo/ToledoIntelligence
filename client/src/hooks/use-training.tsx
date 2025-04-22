@@ -90,7 +90,11 @@ export function useTraining() {
         });
       }
       
-      const res = await apiRequest("POST", "/api/training/documents", formData, true);
+      // O quarto parâmetro indica que estamos usando FormData
+      const res = await fetch("/api/training/documents", {
+        method: "POST",
+        body: formData,
+      });
       return await res.json();
     },
     onSuccess: () => {
