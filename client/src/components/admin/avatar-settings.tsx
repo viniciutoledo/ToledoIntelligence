@@ -93,8 +93,11 @@ export function AvatarSettings() {
     
     // Create a preview
     const reader = new FileReader();
-    reader.onload = () => {
-      setPreviewImage(reader.result as string);
+    reader.onload = (event) => {
+      if (event.target && typeof event.target.result === 'string') {
+        setPreviewImage(event.target.result);
+        console.log("Preview image set:", event.target.result.substring(0, 50) + "...");
+      }
     };
     reader.readAsDataURL(file);
   };

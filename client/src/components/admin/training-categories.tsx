@@ -112,62 +112,76 @@ export function TrainingCategories() {
         
         <Dialog open={isAddDialogOpen} onOpenChange={handleAddDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button variant="default" className="bg-blue-500 hover:bg-blue-600 text-white">
               <PlusCircle className="h-4 w-4 mr-2" />
               {t("admin.training.addCategory")}
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent className="sm:max-w-[500px]">
             <DialogHeader>
-              <DialogTitle>{t("admin.training.newCategory")}</DialogTitle>
+              <DialogTitle className="text-xl font-medium">{t("admin.training.newCategory")}</DialogTitle>
             </DialogHeader>
             
-            <Form {...addForm}>
-              <form onSubmit={addForm.handleSubmit(onAddSubmit)} className="space-y-4">
-                <FormField
-                  control={addForm.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t("admin.training.categoryName")}</FormLabel>
-                      <FormControl>
-                        <Input placeholder={t("admin.training.enterCategoryName")} {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={addForm.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t("admin.training.categoryDescription")}</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder={t("admin.training.enterCategoryDescription")}
-                          {...field}
-                          value={field.value || ""}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <DialogFooter>
-                  <DialogClose asChild>
-                    <Button type="button" variant="outline">
-                      {t("common.cancel")}
+            <div className="py-4">
+              <Form {...addForm}>
+                <form onSubmit={addForm.handleSubmit(onAddSubmit)} className="space-y-4">
+                  <FormField
+                    control={addForm.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium">{t("admin.training.categoryName")}</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder={t("admin.training.enterCategoryName")} 
+                            className="h-10 px-3 py-2 text-sm"
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={addForm.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium">{t("admin.training.categoryDescription")}</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder={t("admin.training.enterCategoryDescription")}
+                            className="min-h-[80px] text-sm px-3 py-2"
+                            value={field.value || ""}
+                            onChange={field.onChange}
+                            onBlur={field.onBlur}
+                            name={field.name}
+                            ref={field.ref}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <div className="flex justify-end gap-2 mt-6 pt-4 border-t">
+                    <DialogClose asChild>
+                      <Button type="button" variant="outline" className="px-4">
+                        {t("common.cancel")}
+                      </Button>
+                    </DialogClose>
+                    <Button 
+                      type="submit" 
+                      disabled={createCategoryMutation.isPending}
+                      className="bg-blue-500 hover:bg-blue-600 text-white px-4"
+                    >
+                      {createCategoryMutation.isPending ? t("common.creating") : t("common.create")}
                     </Button>
-                  </DialogClose>
-                  <Button type="submit" disabled={createCategoryMutation.isPending}>
-                    {createCategoryMutation.isPending ? t("admin.training.creating") : t("admin.training.create")}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </Form>
+                  </div>
+                </form>
+              </Form>
+            </div>
           </DialogContent>
         </Dialog>
       </div>
@@ -252,55 +266,71 @@ export function TrainingCategories() {
       
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={handleEditDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>{t("admin.training.editCategory")}</DialogTitle>
+            <DialogTitle className="text-xl font-medium">{t("admin.training.editCategory")}</DialogTitle>
           </DialogHeader>
           
-          <Form {...editForm}>
-            <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-4">
-              <FormField
-                control={editForm.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t("admin.training.categoryName")}</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={editForm.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t("admin.training.categoryDescription")}</FormLabel>
-                    <FormControl>
-                      <Textarea {...field} value={field.value || ""} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <DialogFooter>
-                <DialogClose asChild>
-                  <Button type="button" variant="outline">
-                    {t("common.cancel")}
+          <div className="py-4">
+            <Form {...editForm}>
+              <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-4">
+                <FormField
+                  control={editForm.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium">{t("admin.training.categoryName")}</FormLabel>
+                      <FormControl>
+                        <Input 
+                          className="h-10 px-3 py-2 text-sm"
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={editForm.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium">{t("admin.training.categoryDescription")}</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          className="min-h-[80px] text-sm px-3 py-2"
+                          value={field.value || ""}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                          name={field.name}
+                          ref={field.ref}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <div className="flex justify-end gap-2 mt-6 pt-4 border-t">
+                  <DialogClose asChild>
+                    <Button type="button" variant="outline" className="px-4">
+                      {t("common.cancel")}
+                    </Button>
+                  </DialogClose>
+                  <Button 
+                    type="submit" 
+                    disabled={updateCategoryMutation.isPending}
+                    className="bg-blue-500 hover:bg-blue-600 text-white px-4"
+                  >
+                    {updateCategoryMutation.isPending
+                      ? t("common.saving")
+                      : t("common.save")}
                   </Button>
-                </DialogClose>
-                <Button type="submit" disabled={updateCategoryMutation.isPending}>
-                  {updateCategoryMutation.isPending
-                    ? t("common.saving")
-                    : t("common.save")}
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
+                </div>
+              </form>
+            </Form>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
