@@ -52,6 +52,11 @@ export function AvatarSettings() {
       });
     }
   });
+  
+  // Fix to properly update form values when avatar data changes
+  if (avatar && avatar.name !== form.getValues().name) {
+    form.setValue('name', avatar.name);
+  }
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     const fileInput = fileInputRef.current;
@@ -122,37 +127,39 @@ export function AvatarSettings() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t("admin.avatarSettings")}</CardTitle>
+    <Card className="shadow-md">
+      <CardHeader className="bg-gradient-to-r from-primary-50 to-accent-50 border-b">
+        <CardTitle className="flex items-center text-xl">
+          <span className="text-primary">{t("admin.avatarSettings")}</span>
+        </CardTitle>
         <CardDescription>{t("admin.avatarSettingsSubtitle")}</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-6">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <div className="flex flex-col md:flex-row gap-6">
+            <div className="flex flex-col md:flex-row gap-8">
               <div className="md:w-1/3">
-                <FormLabel>{t("admin.avatarImage")}</FormLabel>
-                <div className="bg-neutral-100 border border-dashed border-neutral-300 rounded-lg p-4 text-center mt-3">
-                  <div className="mb-3">
+                <div className="bg-white border border-dashed border-neutral-300 rounded-lg p-6 text-center shadow-sm">
+                  <div className="mb-5">
                     {previewImage ? (
                       <img
                         src={previewImage}
                         alt="Avatar Preview"
-                        className="w-24 h-24 rounded-full mx-auto object-cover"
+                        className="w-32 h-32 rounded-full mx-auto object-cover border-4 border-primary-100 shadow-md"
                       />
                     ) : avatar?.image_url ? (
                       <img
                         src={avatar.image_url}
                         alt={avatar.name}
-                        className="w-24 h-24 rounded-full mx-auto object-cover"
+                        className="w-32 h-32 rounded-full mx-auto object-cover border-4 border-primary-100 shadow-md"
                       />
                     ) : (
-                      <div className="w-24 h-24 rounded-full bg-primary-100 mx-auto flex items-center justify-center text-primary-600">
-                        <span className="text-2xl font-bold">T</span>
+                      <div className="w-32 h-32 rounded-full bg-gradient-to-r from-primary-100 to-accent-100 mx-auto flex items-center justify-center text-primary-600 shadow-md">
+                        <span className="text-3xl font-bold">T</span>
                       </div>
                     )}
                   </div>
+                  <h3 className="text-lg font-medium mb-3">{t("admin.avatarImage")}</h3>
                   <FormField
                     control={form.control}
                     name="image"
@@ -172,72 +179,82 @@ export function AvatarSettings() {
                           type="button"
                           variant="outline"
                           onClick={() => fileInputRef.current?.click()}
-                          className="px-4 py-2 bg-neutral-200 text-neutral-700 rounded-md hover:bg-neutral-300 inline-block"
+                          className="px-4 py-2 bg-primary-100 text-primary-700 rounded-md hover:bg-primary-200 transition-colors duration-200 inline-block"
                         >
                           {t("admin.changeImage")}
                         </Button>
-                        <p className="mt-2 text-xs text-neutral-500">
+                        <p className="mt-3 text-xs text-neutral-500">
                           {t("admin.avatarImageRequirements")}
                         </p>
-                        <FormMessage />
+                        <FormMessage className="text-red-500" />
                       </FormItem>
                     )}
                   />
                 </div>
               </div>
               <div className="md:w-2/3">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t("admin.avatarName")}</FormLabel>
-                      <FormControl>
-                        <Input {...field} maxLength={50} />
-                      </FormControl>
-                      <p className="mt-1 text-xs text-neutral-500">
-                        {t("admin.maxCharacters")}
-                      </p>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <div className="mt-6">
-                  <FormLabel>{t("admin.avatarPreview")}</FormLabel>
-                  <div className="bg-neutral-50 p-4 border rounded-md mt-1">
-                    <div className="flex items-start">
-                      <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 mr-3">
-                        {previewImage ? (
-                          <img
-                            src={previewImage}
-                            alt="Avatar Preview"
-                            className="h-10 w-10 rounded-full object-cover"
+                <div className="bg-white p-6 rounded-lg border shadow-sm">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem className="mb-6">
+                        <FormLabel className="text-lg font-medium">{t("admin.avatarName")}</FormLabel>
+                        <FormControl>
+                          <Input 
+                            {...field} 
+                            maxLength={50} 
+                            className="text-lg border-neutral-300"
+                            placeholder="Ex: Bot ToledoIA"
                           />
-                        ) : avatar?.image_url ? (
-                          <img
-                            src={avatar.image_url}
-                            alt={avatar.name}
-                            className="h-10 w-10 rounded-full object-cover"
-                          />
-                        ) : (
-                          <span className="text-lg font-bold">T</span>
-                        )}
-                      </div>
-                      <div className="bg-neutral-100 rounded-lg rounded-tl-none py-2 px-3 max-w-[80%]">
-                        <p className="text-neutral-800 text-sm">
-                          {t("technician.botWelcome")}
+                        </FormControl>
+                        <p className="mt-2 text-sm text-neutral-500">
+                          {t("admin.maxCharacters")}
                         </p>
+                        <FormMessage className="text-red-500" />
+                      </FormItem>
+                    )}
+                  />
+                  <div className="mt-8">
+                    <h3 className="text-lg font-medium mb-3">{t("admin.avatarPreview")}</h3>
+                    <div className="bg-gradient-to-r from-neutral-50 to-white p-6 border rounded-md shadow-inner">
+                      <div className="flex items-start">
+                        <div className="h-12 w-12 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 mr-3 shadow-sm">
+                          {previewImage ? (
+                            <img
+                              src={previewImage}
+                              alt="Avatar Preview"
+                              className="h-12 w-12 rounded-full object-cover"
+                            />
+                          ) : avatar?.image_url ? (
+                            <img
+                              src={avatar.image_url}
+                              alt={avatar.name}
+                              className="h-12 w-12 rounded-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-lg font-bold">T</span>
+                          )}
+                        </div>
+                        <div className="relative bg-white rounded-lg rounded-tl-none py-3 px-4 max-w-[80%] shadow-sm border border-neutral-200">
+                          <div className="text-sm font-semibold mb-1 text-neutral-700">
+                            {form.watch('name') || avatar?.name || "Bot ToledoIA"}
+                          </div>
+                          <p className="text-neutral-800 text-sm">
+                            {t("technician.botWelcome")}
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-            <div className="flex justify-end mt-4">
+            <div className="flex justify-end mt-6 border-t pt-6">
               <Button
                 type="button"
                 variant="outline"
-                className="mr-2"
+                className="mr-4"
                 onClick={handleResetAvatar}
                 disabled={resetAvatarMutation.isPending}
               >
@@ -248,6 +265,7 @@ export function AvatarSettings() {
               </Button>
               <Button
                 type="submit"
+                className="bg-primary hover:bg-primary/90"
                 disabled={saveAvatarMutation.isPending}
               >
                 {saveAvatarMutation.isPending && (
