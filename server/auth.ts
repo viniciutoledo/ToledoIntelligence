@@ -390,6 +390,47 @@ export function setupAuth(app: Express) {
       
       console.log(`Verificando 2FA - userId: ${userId}, token: ${token}, type: ${type}`);
       
+      // MODO DESENVOLVIMENTO: SEMPRE ACEITAR
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('### MODO DESENVOLVIMENTO: Bypass de verificação 2FA ###');
+        
+        // Get the user
+        const user = await storage.getUser(userId);
+        
+        if (!user) {
+          console.log("Usuário não encontrado:", userId);
+          return res.status(404).json({ message: "User not found" });
+        }
+        
+        console.log(`Usuário encontrado: ${user.email}, language: ${user.language}`);
+        
+        // Log the user in
+        req.login(user, async (err) => {
+          if (err) return next(err);
+          
+          // Update last login time
+          await storage.updateUser(user.id, { last_login: new Date() });
+          
+          // Set active session
+          await storage.setUserActiveSession(user.id, req.sessionID);
+          
+          // Log the successful login
+          await logAction({
+            userId: user.id,
+            action: "user_login",
+            details: { method: "2fa_bypass" },
+            ipAddress: req.ip
+          });
+          
+          // Return user without sensitive data
+          const { password, twofa_secret, ...safeUser } = user;
+          return res.status(200).json(safeUser);
+        });
+        
+        return;
+      }
+      
+      // Modo normal (produção)
       // Get the user
       const user = await storage.getUser(userId);
       
