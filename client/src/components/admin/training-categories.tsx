@@ -1,60 +1,29 @@
 import { useState } from "react";
-import { useTraining } from "@/hooks/use-training";
-import { useLanguage } from "@/hooks/use-language";
+import { useTranslation } from "react-i18next";
+import { useTraining, type CategoryFormData } from "@/hooks/use-training";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter,
-  DialogClose,
-} from "@/components/ui/dialog";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogTrigger } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Pen, PlusCircle, Trash2 } from "lucide-react";
-import { format } from "date-fns";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
+// Form validation schema
 const categoryFormSchema = z.object({
-  name: z.string().min(1, { message: "Name is required" }),
-  description: z.string().optional(),
+  name: z.string().min(2, 'admin.training.nameValidation'),
+  description: z.string().nullable().optional(),
 });
 
 type CategoryFormValues = z.infer<typeof categoryFormSchema>;
 
 export function TrainingCategories() {
-  const { t } = useLanguage();
+  const { t } = useTranslation();
   const {
     categories,
     categoriesLoading,
@@ -62,11 +31,12 @@ export function TrainingCategories() {
     updateCategoryMutation,
     deleteCategoryMutation,
   } = useTraining();
-  
+
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [categoryToEdit, setCategoryToEdit] = useState<any | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  
+  const [currentCategory, setCurrentCategory] = useState<CategoryFormData | null>(null);
+
+  // Add form
   const addForm = useForm<CategoryFormValues>({
     resolver: zodResolver(categoryFormSchema),
     defaultValues: {
@@ -74,7 +44,8 @@ export function TrainingCategories() {
       description: "",
     },
   });
-  
+
+  // Edit form
   const editForm = useForm<CategoryFormValues>({
     resolver: zodResolver(categoryFormSchema),
     defaultValues: {
@@ -82,53 +53,56 @@ export function TrainingCategories() {
       description: "",
     },
   });
-  
-  // Reset form when opening the add dialog
+
   const handleAddDialogOpen = (open: boolean) => {
+    setIsAddDialogOpen(open);
     if (!open) {
       addForm.reset();
     }
-    setIsAddDialogOpen(open);
   };
-  
-  // Reset form when opening the edit dialog
+
   const handleEditDialogOpen = (open: boolean) => {
+    setIsEditDialogOpen(open);
     if (!open) {
       editForm.reset();
+      setCurrentCategory(null);
     }
-    setIsEditDialogOpen(open);
   };
-  
+
   const onAddSubmit = (data: CategoryFormValues) => {
-    createCategoryMutation.mutate(data);
-    setIsAddDialogOpen(false);
+    createCategoryMutation.mutate(data, {
+      onSuccess: () => {
+        handleAddDialogOpen(false);
+      },
+    });
   };
-  
+
   const onEditSubmit = (data: CategoryFormValues) => {
-    if (categoryToEdit) {
+    if (currentCategory?.id) {
       updateCategoryMutation.mutate({
-        id: categoryToEdit.id,
-        name: data.name,
-        description: data.description,
+        id: currentCategory.id,
+        category: data,
+      }, {
+        onSuccess: () => {
+          handleEditDialogOpen(false);
+        },
       });
     }
-    
-    setIsEditDialogOpen(false);
   };
-  
+
   const handleEditCategory = (category: any) => {
-    setCategoryToEdit(category);
+    setCurrentCategory(category);
     editForm.reset({
       name: category.name,
       description: category.description || "",
     });
     setIsEditDialogOpen(true);
   };
-  
+
   const handleDeleteCategory = (categoryId: number) => {
     deleteCategoryMutation.mutate(categoryId);
   };
-  
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -174,6 +148,7 @@ export function TrainingCategories() {
                         <Textarea
                           placeholder={t("admin.training.enterCategoryDescription")}
                           {...field}
+                          value={field.value || ""}
                         />
                       </FormControl>
                       <FormMessage />
@@ -188,7 +163,7 @@ export function TrainingCategories() {
                     </Button>
                   </DialogClose>
                   <Button type="submit" disabled={createCategoryMutation.isPending}>
-                    {createCategoryMutation.isPending ? t("common.creating") : t("common.create")}
+                    {createCategoryMutation.isPending ? t("admin.training.creating") : t("admin.training.create")}
                   </Button>
                 </DialogFooter>
               </form>
@@ -305,7 +280,7 @@ export function TrainingCategories() {
                   <FormItem>
                     <FormLabel>{t("admin.training.categoryDescription")}</FormLabel>
                     <FormControl>
-                      <Textarea {...field} />
+                      <Textarea {...field} value={field.value || ""} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

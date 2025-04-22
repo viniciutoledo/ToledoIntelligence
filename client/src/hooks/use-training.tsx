@@ -1,14 +1,10 @@
-import { createContext, ReactNode, useContext } from "react";
-import {
-  useQuery,
-  useMutation,
-  useQueryClient,
-  UseMutationResult,
-} from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useTranslation } from "react-i18next";
 
-type TrainingDocument = {
+// Types
+type Document = {
   id: number;
   name: string;
   description: string | null;
@@ -16,15 +12,15 @@ type TrainingDocument = {
   content: string | null;
   file_url: string | null;
   website_url: string | null;
+  status: "pending" | "processing" | "completed" | "error";
+  error_message: string | null;
   created_at: string;
   updated_at: string;
   created_by: number;
-  status: "pending" | "processing" | "completed" | "error";
   is_active: boolean;
-  error_message: string | null;
 };
 
-type TrainingCategory = {
+type Category = {
   id: number;
   name: string;
   description: string | null;
@@ -33,305 +29,248 @@ type TrainingCategory = {
   created_by: number;
 };
 
-type DocumentCategory = {
-  id: number;
-  document_id: number;
-  category_id: number;
-  created_at: string;
-};
-
-type CreateDocumentData = {
+// Form data types
+export type DocumentFormData = {
   name: string;
-  description?: string;
+  description: string | null;
   document_type: "text" | "file" | "website";
-  content?: string;
-  file?: File;
-  website_url?: string;
+  content?: string | null;
+  file_url?: string | null;
+  website_url?: string | null;
   categories?: number[];
 };
 
-type CreateCategoryData = {
+export type CategoryFormData = {
   name: string;
-  description?: string;
+  description: string | null;
 };
 
-type UpdateDocumentData = {
-  id: number;
-  name?: string;
-  description?: string;
-};
-
-type UpdateCategoryData = {
-  id: number;
-  name?: string;
-  description?: string;
-};
-
-interface TrainingContextType {
-  documents: TrainingDocument[] | undefined;
-  documentsLoading: boolean;
-  categories: TrainingCategory[] | undefined;
-  categoriesLoading: boolean;
-  createDocumentMutation: UseMutationResult<TrainingDocument, Error, CreateDocumentData>;
-  updateDocumentMutation: UseMutationResult<TrainingDocument, Error, UpdateDocumentData>;
-  deleteDocumentMutation: UseMutationResult<void, Error, number>;
-  createCategoryMutation: UseMutationResult<TrainingCategory, Error, CreateCategoryData>;
-  updateCategoryMutation: UseMutationResult<TrainingCategory, Error, UpdateCategoryData>;
-  deleteCategoryMutation: UseMutationResult<void, Error, number>;
-  addDocumentToCategoryMutation: UseMutationResult<DocumentCategory, Error, { documentId: number; categoryId: number }>;
-  removeDocumentFromCategoryMutation: UseMutationResult<void, Error, { documentId: number; categoryId: number }>;
-  getDocumentCategories: (documentId: number) => Promise<TrainingCategory[]>;
-  getCategoryDocuments: (categoryId: number) => Promise<TrainingDocument[]>;
-}
-
-export const TrainingContext = createContext<TrainingContextType | null>(null);
-
-export function TrainingProvider({ children }: { children: ReactNode }) {
+// Training hook
+export function useTraining() {
   const { toast } = useToast();
-  const queryClient = useQueryClient();
+  const { t } = useTranslation();
 
-  const {
+  // Documents
+  const { 
     data: documents,
     isLoading: documentsLoading,
-  } = useQuery<TrainingDocument[]>({
+    isError: documentsError,
+    refetch: refetchDocuments
+  } = useQuery({
     queryKey: ["/api/training/documents"],
-    staleTime: 30000,
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/training/documents");
+      const data = await res.json();
+      return data as Document[];
+    }
   });
 
+  const createDocumentMutation = useMutation({
+    mutationFn: async (document: DocumentFormData) => {
+      const formData = new FormData();
+      formData.append('name', document.name);
+      
+      if (document.description) {
+        formData.append('description', document.description);
+      }
+      
+      formData.append('document_type', document.document_type);
+      
+      if (document.document_type === 'text' && document.content) {
+        formData.append('content', document.content);
+      }
+      
+      if (document.document_type === 'website' && document.website_url) {
+        formData.append('website_url', document.website_url);
+      }
+      
+      if (document.categories && document.categories.length > 0) {
+        document.categories.forEach(categoryId => {
+          formData.append('categories[]', categoryId.toString());
+        });
+      }
+      
+      const res = await apiRequest("POST", "/api/training/documents", formData, true);
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: t("common.success"),
+        description: t("admin.training.documentCreated"),
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/training/documents"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: t("common.error"),
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+
+  const updateDocumentMutation = useMutation({
+    mutationFn: async (data: { id: number; document: Partial<DocumentFormData> }) => {
+      const res = await apiRequest("PATCH", `/api/training/documents/${data.id}`, data.document);
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: t("common.success"),
+        description: t("admin.training.documentUpdated"),
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/training/documents"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: t("common.error"),
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+
+  const deleteDocumentMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await apiRequest("DELETE", `/api/training/documents/${id}`);
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: t("common.success"),
+        description: t("admin.training.documentDeleted"),
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/training/documents"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: t("common.error"),
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Categories
   const {
     data: categories,
     isLoading: categoriesLoading,
-  } = useQuery<TrainingCategory[]>({
+    isError: categoriesError,
+    refetch: refetchCategories
+  } = useQuery({
     queryKey: ["/api/training/categories"],
-    staleTime: 30000,
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/training/categories");
+      const data = await res.json();
+      return data as Category[];
+    }
   });
 
-  const createDocumentMutation = useMutation<TrainingDocument, Error, CreateDocumentData>({
-    mutationFn: async (data) => {
-      const formData = new FormData();
-      formData.append("name", data.name);
-      if (data.description) formData.append("description", data.description);
-      formData.append("document_type", data.document_type);
-      
-      if (data.document_type === "text" && data.content) {
-        formData.append("content", data.content);
-      } else if (data.document_type === "file" && data.file) {
-        formData.append("file", data.file);
-      } else if (data.document_type === "website" && data.website_url) {
-        formData.append("website_url", data.website_url);
-      }
-      
-      if (data.categories && data.categories.length > 0) {
-        formData.append("categories", JSON.stringify(data.categories));
-      }
-      
-      const res = await fetch("/api/training/documents", {
-        method: "POST",
-        body: formData,
-      });
-      
-      if (!res.ok) {
-        throw new Error(`Error creating document: ${res.statusText}`);
-      }
-      
+  const createCategoryMutation = useMutation({
+    mutationFn: async (category: CategoryFormData) => {
+      const res = await apiRequest("POST", "/api/training/categories", category);
       return await res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/training/documents"] });
       toast({
-        title: "Document created",
-        description: "The document was created successfully",
+        title: t("common.success"),
+        description: t("admin.training.categoryCreated"),
       });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const updateDocumentMutation = useMutation<TrainingDocument, Error, UpdateDocumentData>({
-    mutationFn: async ({ id, ...data }) => {
-      const res = await apiRequest("PUT", `/api/training/documents/${id}`, data);
-      return await res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/training/documents"] });
-      toast({
-        title: "Document updated",
-        description: "The document was updated successfully",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const deleteDocumentMutation = useMutation<void, Error, number>({
-    mutationFn: async (id) => {
-      await apiRequest("DELETE", `/api/training/documents/${id}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/training/documents"] });
-      toast({
-        title: "Document deleted",
-        description: "The document was deleted successfully",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const createCategoryMutation = useMutation<TrainingCategory, Error, CreateCategoryData>({
-    mutationFn: async (data) => {
-      const res = await apiRequest("POST", "/api/training/categories", data);
-      return await res.json();
-    },
-    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/training/categories"] });
-      toast({
-        title: "Category created",
-        description: "The category was created successfully",
-      });
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast({
-        title: "Error",
+        title: t("common.error"),
         description: error.message,
         variant: "destructive",
       });
-    },
+    }
   });
 
-  const updateCategoryMutation = useMutation<TrainingCategory, Error, UpdateCategoryData>({
-    mutationFn: async ({ id, ...data }) => {
-      const res = await apiRequest("PUT", `/api/training/categories/${id}`, data);
-      return await res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/training/categories"] });
-      toast({
-        title: "Category updated",
-        description: "The category was updated successfully",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const deleteCategoryMutation = useMutation<void, Error, number>({
-    mutationFn: async (id) => {
-      await apiRequest("DELETE", `/api/training/categories/${id}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/training/categories"] });
-      toast({
-        title: "Category deleted",
-        description: "The category was deleted successfully",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const addDocumentToCategoryMutation = useMutation<DocumentCategory, Error, { documentId: number; categoryId: number }>({
-    mutationFn: async ({ documentId, categoryId }) => {
-      const res = await apiRequest("POST", `/api/training/documents/${documentId}/categories/${categoryId}`);
+  const updateCategoryMutation = useMutation({
+    mutationFn: async (data: { id: number; category: Partial<CategoryFormData> }) => {
+      const res = await apiRequest("PATCH", `/api/training/categories/${data.id}`, data.category);
       return await res.json();
     },
     onSuccess: () => {
       toast({
-        title: "Success",
-        description: "The document was added to the category",
+        title: t("common.success"),
+        description: t("admin.training.categoryUpdated"),
       });
+      queryClient.invalidateQueries({ queryKey: ["/api/training/categories"] });
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast({
-        title: "Error",
+        title: t("common.error"),
         description: error.message,
         variant: "destructive",
       });
-    },
+    }
   });
 
-  const removeDocumentFromCategoryMutation = useMutation<void, Error, { documentId: number; categoryId: number }>({
-    mutationFn: async ({ documentId, categoryId }) => {
-      await apiRequest("DELETE", `/api/training/documents/${documentId}/categories/${categoryId}`);
+  const deleteCategoryMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await apiRequest("DELETE", `/api/training/categories/${id}`);
+      return await res.json();
     },
     onSuccess: () => {
       toast({
-        title: "Success",
-        description: "The document was removed from the category",
+        title: t("common.success"),
+        description: t("admin.training.categoryDeleted"),
       });
+      queryClient.invalidateQueries({ queryKey: ["/api/training/categories"] });
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast({
-        title: "Error",
+        title: t("common.error"),
         description: error.message,
         variant: "destructive",
       });
-    },
+    }
   });
 
-  const getDocumentCategories = async (documentId: number): Promise<TrainingCategory[]> => {
+  // Document Categories
+  const getDocumentCategories = async (documentId: number) => {
     const res = await apiRequest("GET", `/api/training/documents/${documentId}/categories`);
+    return await res.json() as Category[];
+  };
+
+  const addDocumentToCategory = async (documentId: number, categoryId: number) => {
+    const res = await apiRequest("POST", `/api/training/documents/${documentId}/categories/${categoryId}`);
+    queryClient.invalidateQueries({ queryKey: ["/api/training/documents"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/training/categories"] });
     return await res.json();
   };
 
-  const getCategoryDocuments = async (categoryId: number): Promise<TrainingDocument[]> => {
-    const res = await apiRequest("GET", `/api/training/categories/${categoryId}/documents`);
+  const removeDocumentFromCategory = async (documentId: number, categoryId: number) => {
+    const res = await apiRequest("DELETE", `/api/training/documents/${documentId}/categories/${categoryId}`);
+    queryClient.invalidateQueries({ queryKey: ["/api/training/documents"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/training/categories"] });
     return await res.json();
   };
 
-  return (
-    <TrainingContext.Provider
-      value={{
-        documents,
-        documentsLoading,
-        categories,
-        categoriesLoading,
-        createDocumentMutation,
-        updateDocumentMutation,
-        deleteDocumentMutation,
-        createCategoryMutation,
-        updateCategoryMutation,
-        deleteCategoryMutation,
-        addDocumentToCategoryMutation,
-        removeDocumentFromCategoryMutation,
-        getDocumentCategories,
-        getCategoryDocuments,
-      }}
-    >
-      {children}
-    </TrainingContext.Provider>
-  );
-}
-
-export function useTraining() {
-  const context = useContext(TrainingContext);
-  if (!context) {
-    throw new Error("useTraining must be used within a TrainingProvider");
-  }
-  return context;
+  return {
+    // Documents
+    documents,
+    documentsLoading,
+    documentsError,
+    refetchDocuments,
+    createDocumentMutation,
+    updateDocumentMutation,
+    deleteDocumentMutation,
+    
+    // Categories
+    categories,
+    categoriesLoading,
+    categoriesError,
+    refetchCategories,
+    createCategoryMutation,
+    updateCategoryMutation,
+    deleteCategoryMutation,
+    
+    // Document Categories
+    getDocumentCategories,
+    addDocumentToCategory,
+    removeDocumentFromCategory
+  };
 }
