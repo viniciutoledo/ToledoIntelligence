@@ -86,13 +86,30 @@ async function generateEmailOtp(user: User): Promise<string> {
 
 // Check if a user has an active session
 async function hasActiveSession(userId: number, currentSessionId: string): Promise<boolean> {
-  const activeSession = await storage.getUserActiveSession(userId);
-  
-  if (!activeSession) {
+  try {
+    console.log(`Verificando sessão ativa para usuário ID ${userId}, sessão atual: ${currentSessionId}`);
+    const activeSession = await storage.getUserActiveSession(userId);
+    
+    if (!activeSession) {
+      console.log(`Nenhuma sessão ativa encontrada para o usuário ID ${userId}`);
+      return false;
+    }
+    
+    console.log(`Sessão ativa encontrada para o usuário ID ${userId}: ${activeSession.sessionId}`);
+    const hasDifferentSession = activeSession.sessionId !== currentSessionId;
+    
+    if (hasDifferentSession) {
+      console.log(`Sessão diferente detectada: ${activeSession.sessionId} !== ${currentSessionId}`);
+    } else {
+      console.log(`Sessão atual reconhecida, sem bloqueio necessário`);
+    }
+    
+    return hasDifferentSession;
+  } catch (error) {
+    console.error(`Erro ao verificar sessão ativa:`, error);
+    // Em caso de erro, permitir login para evitar bloqueio indevido
     return false;
   }
-  
-  return activeSession.sessionId !== currentSessionId;
 }
 
 // Middleware to check user role
@@ -293,22 +310,21 @@ export function setupAuth(app: Express) {
         const hasOtherSession = await hasActiveSession(user.id, req.sessionID);
         
         if (hasOtherSession) {
-          // Block the account
-          await storage.blockUser(user.id);
+          // Em vez de bloquear a conta, vamos apenas substituir a sessão
+          // Removemos a sessão antiga
+          console.log(`Removendo sessão antiga para o usuário ID ${user.id}`);
+          await storage.removeUserActiveSession(user.id);
           
-          // Log the blocking
+          // Log a tentativa
           await logAction({
             userId: user.id,
-            action: "account_blocked",
-            details: { reason: "multiple_sessions" },
+            action: "session_replaced",
+            details: { reason: "multiple_login_attempt" },
             ipAddress: req.ip
           });
           
-          return res.status(403).json({
-            message: user.language === "pt"
-              ? "Conta bloqueada devido a múltiplas sessões ativas. Contate o suporte."
-              : "Account blocked due to multiple active sessions. Contact support."
-          });
+          // Continuamos o fluxo de login normalmente - não bloqueamos mais
+          console.log(`Permitindo login mesmo com sessão ativa anterior`);
         }
         
         // Generate 2FA challenge
@@ -516,22 +532,20 @@ export function setupAuth(app: Express) {
       const hasOtherSession = await hasActiveSession(user.id, req.sessionID);
       
       if (hasOtherSession) {
-        // Block the account
-        await storage.blockUser(user.id);
+        // Em vez de bloquear a conta, vamos apenas substituir a sessão
+        console.log(`Removendo sessão antiga para o usuário ID ${user.id} na etapa de verificação 2FA`);
+        await storage.removeUserActiveSession(user.id);
         
-        // Log the blocking
+        // Log a substituição
         await logAction({
           userId: user.id,
-          action: "account_blocked",
-          details: { reason: "multiple_sessions" },
+          action: "session_replaced_2fa",
+          details: { reason: "multiple_login_attempt_2fa" },
           ipAddress: req.ip
         });
         
-        return res.status(403).json({
-          message: user.language === "pt"
-            ? "Conta bloqueada devido a múltiplas sessões ativas. Contate o suporte."
-            : "Account blocked due to multiple active sessions. Contact support."
-        });
+        // Continuamos o fluxo de login normalmente
+        console.log(`Permitindo login 2FA mesmo com sessão ativa anterior`);
       }
       
       // Log the user in
