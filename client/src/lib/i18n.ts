@@ -149,10 +149,10 @@ const enTranslations = {
     categoryDescription: 'Category Description',
     enterDocumentName: 'Enter document name',
     modelDescription: 'AI model trained with your own data for circuit board analysis',
-    currentModel: 'Current Model',
+    modelTitle: 'Current Model',
     searchTraining: 'Search training materials...',
     newTextTraining: 'New Text Training',
-    enterTextContent: 'Enter text content to train the AI model...',
+    trainingContent: 'Enter text content to train the AI model...',
     typeOrPaste: 'Type or paste text content',
     processing: 'Processing...',
     submitText: 'Submit Text',
@@ -474,13 +474,7 @@ const ptTranslations = {
     deleteWarning: 'Tem certeza que deseja excluir este documento? Esta ação não pode ser desfeita.',
     deleteCategoryWarning: 'Tem certeza que deseja excluir esta categoria? Esta ação não pode ser desfeita e removerá todas as associações de documentos.',
     noDocuments: 'Nenhum documento encontrado',
-    noCategories: 'Nenhuma categoria encontrada',
-    statusTypes: {
-      pending: 'Pendente',
-      processing: 'Processando',
-      completed: 'Concluído',
-      error: 'Erro'
-    }
+    noCategories: 'Nenhuma categoria encontrada'
   },
   errors: {
     sessionExpired: 'Sua sessão expirou. Por favor, faça login novamente.',
