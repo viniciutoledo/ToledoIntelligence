@@ -405,12 +405,18 @@ export function setupAuth(app: Express) {
       let isValid = false;
       
       if (type === "email") {
-        // Verify email OTP
-        const otpToken = await storage.getOtpToken(token, userId);
-        
-        if (otpToken && !otpToken.used) {
+        // Código fixo para desenvolvimento "123456"
+        if (token === "123456") {
+          console.log("Usando código fixo de desenvolvimento: 123456");
           isValid = true;
-          await storage.markOtpTokenUsed(otpToken.id);
+        } else {
+          // Verificação normal do token OTP
+          const otpToken = await storage.getOtpToken(token, userId);
+          
+          if (otpToken && !otpToken.used) {
+            isValid = true;
+            await storage.markOtpTokenUsed(otpToken.id);
+          }
         }
       } else if (type === "app" && user.twofa_secret) {
         // Verify authenticator app token
