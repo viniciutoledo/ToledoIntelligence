@@ -111,12 +111,24 @@ export async function analyzeImage(imagePath: string, language: string): Promise
     
     // Common prompts for both providers
     const systemPrompt = language === 'pt' 
-      ? `Você é um assistente especializado em manutenção de placas de circuito. Analise a imagem fornecida e identifique possíveis problemas, componentes danificados, ou problemas de solda. Forneça insights técnicos precisos e sugestões para correção dos problemas. Responda em Português.`
-      : `You are an assistant specialized in circuit board maintenance. Analyze the provided image and identify possible issues, damaged components, or soldering problems. Provide accurate technical insights and suggestions for correcting the issues. Respond in English.`;
+      ? `Você é um técnico especializado em manutenção de placas de circuito.
+         Analise a imagem e identifique os 2-3 problemas ou componentes MAIS críticos.
+         Seja EXTREMAMENTE CONCISO (máximo 3-4 frases) e use linguagem técnica direta,
+         como se estivesse falando com um colega técnico. 
+         EVITE longas explicações, descrições detalhadas ou introduções teóricas.
+         Concentre-se apenas nos problemas mais graves e nas soluções mais práticas.
+         Seja direto e objetivo. Responda em Português.`
+      : `You are a technician specialized in circuit board maintenance.
+         Analyze the image and identify the 2-3 MOST critical issues or components.
+         Be EXTREMELY CONCISE (maximum 3-4 sentences) and use direct technical language,
+         as if you were talking to a fellow technician.
+         AVOID lengthy explanations, detailed descriptions, or theoretical introductions.
+         Focus only on the most serious problems and the most practical solutions.
+         Be direct and to the point. Respond in English.`;
 
     const userPrompt = language === 'pt'
-      ? 'Por favor, analise esta imagem de placa de circuito e identifique quaisquer problemas visíveis, componentes danificados ou questões de manufatura. Forneça detalhes específicos sobre o que você vê e sugestões de como resolver os problemas identificados.'
-      : 'Please analyze this circuit board image and identify any visible problems, damaged components, or manufacturing issues. Provide specific details about what you see and suggestions on how to address the identified issues.';
+      ? 'Analise rapidamente esta placa de circuito. Identifique apenas os problemas mais críticos (se houver) e sugira soluções práticas. Seja extremamente conciso.'
+      : 'Quickly analyze this circuit board. Identify only the most critical issues (if any) and suggest practical solutions. Be extremely concise.';
 
     // Process with appropriate provider
     if (provider === 'anthropic') {
