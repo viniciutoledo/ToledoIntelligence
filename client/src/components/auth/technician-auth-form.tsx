@@ -79,8 +79,14 @@ export function TechnicianAuthForm({ onSuccess }: TechnicianAuthFormProps) {
   const onLoginSubmit = (values: LoginFormValues) => {
     setError(null);
     loginMutation.mutate(values, {
-      onSuccess: () => {
-        if (onSuccess) onSuccess();
+      onSuccess: (user) => {
+        // Redirecionar com base no papel do usuário
+        if (user.role === "admin") {
+          window.location.href = "/admin"; // Redirecionar administradores para o painel admin
+        } else {
+          // Técnicos seguem o fluxo normal
+          if (onSuccess) onSuccess();
+        }
       },
       onError: (error) => {
         setError(error.message || t("auth.genericError"));

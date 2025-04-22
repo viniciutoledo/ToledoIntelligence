@@ -50,8 +50,16 @@ export function AdminAuthForm({ onSuccess }: AdminAuthFormProps) {
   const onLoginSubmit = (values: LoginFormValues) => {
     setError(null);
     loginMutation.mutate(values, {
-      onSuccess: () => {
-        if (onSuccess) onSuccess();
+      onSuccess: (user) => {
+        // Aqui garantimos que os administradores vão para o painel administrativo,
+        // mesmo se algo mudar na interface de autenticação
+        if (user.role === "admin") {
+          if (onSuccess) onSuccess(); // Isso vai redirecionar para /admin
+        } else {
+          // Caso de emergência: se um técnico usou esta página, 
+          // redirecionamos para a interface de técnico
+          window.location.href = "/technician";
+        }
       },
       onError: (error) => {
         setError(error.message || t("auth.genericError"));
