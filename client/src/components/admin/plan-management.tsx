@@ -497,12 +497,12 @@ export default function PlanManagement() {
                   {addFeatureMutation.isPending ? (
                     <div className="flex items-center">
                       <div className="animate-spin mr-2 h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
-                      <span>{t("admin.adding")}</span>
+                      <span>Adicionando...</span>
                     </div>
                   ) : (
                     <div className="flex items-center">
                       <Plus className="mr-2 h-4 w-4" />
-                      <span>{t("admin.addFeature")}</span>
+                      <span>Adicionar recurso</span>
                     </div>
                   )}
                 </Button>
