@@ -114,6 +114,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return data;
       }
       
+      // Se temos uma resposta de sessão bloqueada
+      if (data.sessionBlocked) {
+        console.log(`Login mutation - sessão bloqueada detectada: ${data.message}`);
+        // Vamos tentar fazer logout e login novamente automaticamente
+        try {
+          // Tentativa de logout
+          await apiRequest("POST", "/api/logout");
+          console.log("Login mutation - logout realizado com sucesso após sessão bloqueada");
+          
+          // Login novamente
+          const retryRes = await apiRequest("POST", "/api/login", credentials);
+          const retryData = await retryRes.json();
+          console.log("Login mutation - re-login após sessão bloqueada:", retryData);
+          
+          return retryData;
+        } catch (retryError) {
+          console.error("Login mutation - erro ao tentar re-login após sessão bloqueada:", retryError);
+          return data; // Retornar a resposta original em caso de erro
+        }
+      }
+      
       return data;
     },
     onSuccess: (data) => {
