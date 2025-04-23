@@ -355,9 +355,6 @@ export default function LandingPage() {
               <a href="#" className="text-gray-500 hover:text-white">
                 Política de Privacidade
               </a>
-              <a href="/admin-login" className="text-gray-500 text-opacity-60 hover:text-amber-500 transition-colors duration-200 text-sm">
-                Admin
-              </a>
             </div>
           </div>
         </div>
