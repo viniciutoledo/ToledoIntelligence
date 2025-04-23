@@ -1878,6 +1878,61 @@ export class DatabaseStorage implements IStorage {
     }
   }
   
+  // Plan pricing functionality
+  async getPlanPricing(id: number): Promise<PlanPricing | undefined> {
+    try {
+      const [pricing] = await db.select().from(planPricing).where(eq(planPricing.id, id));
+      return pricing;
+    } catch (error) {
+      console.error("Error getting plan pricing:", error);
+      return undefined;
+    }
+  }
+  
+  async getPlanPricingByTier(subscriptionTier: string): Promise<PlanPricing | undefined> {
+    try {
+      const [pricing] = await db.select().from(planPricing).where(eq(planPricing.subscription_tier, subscriptionTier));
+      return pricing;
+    } catch (error) {
+      console.error("Error getting plan pricing by tier:", error);
+      return undefined;
+    }
+  }
+  
+  async getAllPlanPricing(): Promise<PlanPricing[]> {
+    try {
+      return await db.select().from(planPricing).orderBy(asc(planPricing.id));
+    } catch (error) {
+      console.error("Error getting all plan pricing:", error);
+      return [];
+    }
+  }
+  
+  async createPlanPricing(pricing: InsertPlanPricing): Promise<PlanPricing> {
+    try {
+      const [newPricing] = await db.insert(planPricing).values(pricing).returning();
+      return newPricing;
+    } catch (error) {
+      console.error("Error creating plan pricing:", error);
+      throw error;
+    }
+  }
+  
+  async updatePlanPricing(id: number, data: Partial<PlanPricing>): Promise<PlanPricing | undefined> {
+    try {
+      const [updatedPricing] = await db
+        .update(planPricing)
+        .set({ ...data, updated_at: new Date() })
+        .where(eq(planPricing.id, id))
+        .returning();
+      
+      return updatedPricing;
+    } catch (error) {
+      console.error("Error updating plan pricing:", error);
+      return undefined;
+    }
+  }
+  
   // Usage tracking
   async incrementMessageCount(userId: number): Promise<User | undefined> {
     try {

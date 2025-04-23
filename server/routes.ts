@@ -13,7 +13,9 @@ import {
   insertLlmConfigSchema,
   insertAvatarSchema,
   insertChatSessionSchema,
-  insertChatMessageSchema
+  insertChatMessageSchema,
+  insertPlanFeatureSchema,
+  insertPlanPricingSchema
 } from "@shared/schema";
 
 // Importações para o Stripe e Supabase
@@ -231,6 +233,122 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Erro ao excluir recurso do plano:", error);
       res.status(500).json({ message: "Erro ao excluir recurso do plano" });
+    }
+  });
+  
+  // Rotas para gerenciamento de preços de planos
+  app.get("/api/plans/pricing", async (req, res) => {
+    try {
+      const subscriptionTier = req.query.tier as string;
+      
+      if (subscriptionTier) {
+        const pricing = await storage.getPlanPricingByTier(subscriptionTier);
+        if (!pricing) {
+          return res.status(404).json({ message: "Preço para o plano especificado não encontrado" });
+        }
+        return res.json(pricing);
+      } else {
+        const allPricing = await storage.getAllPlanPricing();
+        return res.json(allPricing);
+      }
+    } catch (error) {
+      console.error("Erro ao obter preços dos planos:", error);
+      res.status(500).json({ message: "Erro ao obter preços dos planos" });
+    }
+  });
+  
+  app.post("/api/admin/plans/pricing", isAuthenticated, checkRole("admin"), async (req, res) => {
+    try {
+      const schema = insertPlanPricingSchema.extend({
+        subscription_tier: z.enum(["none", "basic", "intermediate"]),
+        price: z.number().int().min(0),
+        currency: z.enum(["USD", "BRL"]),
+      });
+      
+      const pricingData = schema.parse(req.body);
+      
+      // Verificar se já existe um preço para este plano
+      const existingPricing = await storage.getPlanPricingByTier(pricingData.subscription_tier);
+      if (existingPricing) {
+        return res.status(409).json({ 
+          message: "Já existe um preço configurado para este plano. Use o método PUT para atualizar." 
+        });
+      }
+      
+      const newPricing = await storage.createPlanPricing({
+        ...pricingData,
+        description: pricingData.description || null
+      });
+      
+      // Log da ação
+      await logAction({
+        userId: req.user!.id,
+        action: "plan_pricing_created",
+        details: { 
+          tier: pricingData.subscription_tier, 
+          price: pricingData.price,
+          currency: pricingData.currency 
+        },
+        ipAddress: req.ip
+      });
+      
+      res.status(201).json(newPricing);
+    } catch (error) {
+      console.error("Erro ao criar preço do plano:", error);
+      res.status(400).json({ message: error instanceof Error ? error.message : "Dados inválidos" });
+    }
+  });
+  
+  app.put("/api/admin/plans/pricing/:id", isAuthenticated, checkRole("admin"), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID inválido" });
+      }
+      
+      const schema = z.object({
+        subscription_tier: z.enum(["none", "basic", "intermediate"]).optional(),
+        name: z.string().min(1).optional(),
+        price: z.number().int().min(0).optional(),
+        currency: z.enum(["USD", "BRL"]).optional(),
+        description: z.string().nullable().optional()
+      });
+      
+      const updateData = schema.parse(req.body);
+      
+      // Verificar se o preço existe
+      const pricing = await storage.getPlanPricing(id);
+      if (!pricing) {
+        return res.status(404).json({ message: "Preço não encontrado" });
+      }
+      
+      // Se estiver alterando o tier, verificar se já existe outro para o mesmo tier
+      if (updateData.subscription_tier && updateData.subscription_tier !== pricing.subscription_tier) {
+        const existingPricing = await storage.getPlanPricingByTier(updateData.subscription_tier);
+        if (existingPricing && existingPricing.id !== id) {
+          return res.status(409).json({ 
+            message: "Já existe um preço configurado para este plano." 
+          });
+        }
+      }
+      
+      const updatedPricing = await storage.updatePlanPricing(id, updateData);
+      
+      // Log da ação
+      await logAction({
+        userId: req.user!.id,
+        action: "plan_pricing_updated",
+        details: { 
+          pricing_id: id, 
+          updates: updateData 
+        },
+        ipAddress: req.ip
+      });
+      
+      res.json(updatedPricing);
+    } catch (error) {
+      console.error("Erro ao atualizar preço do plano:", error);
+      res.status(400).json({ message: error instanceof Error ? error.message : "Dados inválidos" });
     }
   });
   
