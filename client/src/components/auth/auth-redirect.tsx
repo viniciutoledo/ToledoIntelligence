@@ -52,10 +52,15 @@ export function AuthRedirect({
           window.location.href = "/technician";
         }
       } else {
-        // Para todas as outras páginas públicas, redirecionar sempre para a área de técnico
-        // Isso atende ao requisito de que administradores também possam acessar a interface de técnico
-        console.log("AuthRedirect - Redirecionando para interface do técnico");
-        window.location.href = "/technician";
+        // Para todas as outras páginas públicas, redirecionar com base no papel do usuário
+        if (user.role === "admin") {
+          console.log("AuthRedirect - Redirecionando administrador para interface administrativa");
+          window.location.href = "/admin";
+        } else {
+          // Usuários técnicos são sempre direcionados para a interface de técnico
+          console.log("AuthRedirect - Redirecionando técnico para interface do técnico");
+          window.location.href = "/technician";
+        }
       }
     } else {
       console.log("AuthRedirect - Usuário não autenticado, permanecendo na página atual");
