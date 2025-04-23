@@ -118,6 +118,98 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(safeUser);
   });
   
+  // Rotas para gerenciamento de planos e recursos
+  app.get("/api/plans/features", async (req, res) => {
+    try {
+      const subscriptionTier = req.query.tier as string || 'none';
+      const features = await storage.getPlanFeatures(subscriptionTier);
+      res.json(features);
+    } catch (error) {
+      console.error("Erro ao obter recursos dos planos:", error);
+      res.status(500).json({ message: "Erro ao obter recursos dos planos" });
+    }
+  });
+  
+  app.get("/api/user/check-feature-access/:featureKey", isAuthenticated, async (req, res) => {
+    try {
+      const { featureKey } = req.params;
+      const user = await storage.getUser(req.user!.id);
+      if (!user) {
+        return res.status(404).json({ message: "Usuário não encontrado" });
+      }
+      
+      // Verificar se o usuário tem acesso a esta funcionalidade
+      const hasAccess = await storage.checkFeatureAccess(user.id, featureKey);
+      res.json({ hasAccess });
+    } catch (error) {
+      console.error("Erro ao verificar acesso a recurso:", error);
+      res.status(500).json({ message: "Erro ao verificar acesso a recurso" });
+    }
+  });
+  
+  // Verificação de limite de mensagens
+  app.get("/api/user/check-message-limit", isAuthenticated, async (req, res) => {
+    try {
+      const user = await storage.getUser(req.user!.id);
+      if (!user) {
+        return res.status(404).json({ message: "Usuário não encontrado" });
+      }
+      
+      const hasReachedLimit = user.message_count >= user.max_messages;
+      
+      res.json({
+        hasReachedLimit,
+        messageCount: user.message_count,
+        maxMessages: user.max_messages,
+        remainingMessages: Math.max(0, user.max_messages - user.message_count)
+      });
+    } catch (error) {
+      console.error("Erro ao verificar limite de mensagens:", error);
+      res.status(500).json({ message: "Erro ao verificar limite de mensagens" });
+    }
+  });
+  
+  // Incrementar contador de mensagens
+  app.post("/api/user/increment-message-count", isAuthenticated, async (req, res) => {
+    try {
+      const user = await storage.getUser(req.user!.id);
+      if (!user) {
+        return res.status(404).json({ message: "Usuário não encontrado" });
+      }
+      
+      // Verificar se o usuário já atingiu o limite
+      if (user.message_count >= user.max_messages) {
+        return res.status(403).json({ 
+          message: "Limite de mensagens atingido",
+          messageCount: user.message_count,
+          maxMessages: user.max_messages,
+          hasReachedLimit: true
+        });
+      }
+      
+      // Incrementar o contador de mensagens
+      const updatedUser = await storage.updateUser(user.id, {
+        message_count: user.message_count + 1
+      });
+      
+      if (!updatedUser) {
+        return res.status(500).json({ message: "Erro ao atualizar contador de mensagens" });
+      }
+      
+      const hasReachedLimit = updatedUser.message_count >= updatedUser.max_messages;
+      
+      res.json({
+        messageCount: updatedUser.message_count,
+        maxMessages: updatedUser.max_messages,
+        hasReachedLimit,
+        remainingMessages: Math.max(0, updatedUser.max_messages - updatedUser.message_count)
+      });
+    } catch (error) {
+      console.error("Erro ao incrementar contador de mensagens:", error);
+      res.status(500).json({ message: "Erro ao incrementar contador de mensagens" });
+    }
+  });
+  
   // Informações de assinatura do usuário
   app.get("/api/user/subscription", isAuthenticated, async (req, res) => {
     try {
@@ -1386,6 +1478,187 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(documents);
     } catch (error) {
       res.status(500).json({ message: "Error fetching category documents" });
+    }
+  });
+  
+  // Rotas para relatórios de análise (exclusivos do plano intermediário)
+  app.get("/api/reports", isAuthenticated, async (req, res) => {
+    try {
+      const user = await storage.getUser(req.user!.id);
+      if (!user) {
+        return res.status(404).json({ message: "Usuário não encontrado" });
+      }
+      
+      // Verificar se o usuário tem acesso a relatórios avançados
+      const hasAccessToReports = await storage.checkFeatureAccess(user.subscription_tier, "reports");
+      if (!hasAccessToReports) {
+        return res.status(403).json({ 
+          message: "Esta funcionalidade não está disponível no seu plano atual"
+        });
+      }
+      
+      // Buscar relatórios do usuário
+      const reports = await storage.getUserReports(user.id);
+      res.json(reports);
+    } catch (error) {
+      console.error("Erro ao buscar relatórios:", error);
+      res.status(500).json({ message: "Erro ao buscar relatórios" });
+    }
+  });
+  
+  app.post("/api/reports", isAuthenticated, async (req, res) => {
+    try {
+      const user = await storage.getUser(req.user!.id);
+      if (!user) {
+        return res.status(404).json({ message: "Usuário não encontrado" });
+      }
+      
+      // Verificar se o usuário tem acesso a relatórios avançados
+      const hasAccessToReports = await storage.checkFeatureAccess(user.subscription_tier, "reports");
+      if (!hasAccessToReports) {
+        return res.status(403).json({ 
+          message: "Esta funcionalidade não está disponível no seu plano atual"
+        });
+      }
+      
+      const schema = z.object({
+        title: z.string().min(1).max(100),
+        content: z.string().min(1),
+        report_type: z.enum(["basic", "advanced"]),
+        message_id: z.number().optional(),
+        image_url: z.string().optional()
+      });
+      
+      const reportData = schema.parse(req.body);
+      
+      // Criar relatório
+      const newReport = await storage.createReport({
+        ...reportData,
+        user_id: user.id
+      });
+      
+      // Log da ação
+      await logAction({
+        userId: user.id,
+        action: "report_created",
+        details: { report_id: newReport.id, report_type: reportData.report_type },
+        ipAddress: req.ip
+      });
+      
+      res.status(201).json(newReport);
+    } catch (error) {
+      console.error("Erro ao criar relatório:", error);
+      res.status(500).json({ message: "Erro ao criar relatório" });
+    }
+  });
+  
+  app.post("/api/reports/:id/export", isAuthenticated, async (req, res) => {
+    try {
+      const reportId = parseInt(req.params.id);
+      if (isNaN(reportId)) {
+        return res.status(400).json({ message: "ID de relatório inválido" });
+      }
+      
+      const user = await storage.getUser(req.user!.id);
+      if (!user) {
+        return res.status(404).json({ message: "Usuário não encontrado" });
+      }
+      
+      // Verificar se o usuário tem acesso a exportação de relatórios
+      const hasAccessToExports = await storage.checkFeatureAccess(user.subscription_tier, "report_exports");
+      if (!hasAccessToExports) {
+        return res.status(403).json({ 
+          message: "Esta funcionalidade não está disponível no seu plano atual"
+        });
+      }
+      
+      const schema = z.object({
+        format: z.enum(["pdf", "html", "docx"])
+      });
+      
+      const { format } = schema.parse(req.body);
+      
+      // Verificar se o relatório existe e pertence ao usuário
+      const report = await storage.getReport(reportId);
+      if (!report || report.user_id !== user.id) {
+        return res.status(404).json({ message: "Relatório não encontrado" });
+      }
+      
+      // Exportar relatório (simulado por enquanto)
+      const exportUrl = `/exports/reports/${reportId}_${Date.now()}.${format}`;
+      
+      // Atualizar relatório com informações de exportação
+      const updatedReport = await storage.updateReport(reportId, {
+        is_exported: true,
+        export_format: format,
+        exported_at: new Date(),
+        exported_url: exportUrl
+      });
+      
+      // Log da ação
+      await logAction({
+        userId: user.id,
+        action: "report_exported",
+        details: { report_id: reportId, format },
+        ipAddress: req.ip
+      });
+      
+      res.json({
+        success: true,
+        report: updatedReport,
+        export_url: exportUrl
+      });
+    } catch (error) {
+      console.error("Erro ao exportar relatório:", error);
+      res.status(500).json({ message: "Erro ao exportar relatório" });
+    }
+  });
+  
+  // Suporte prioritário (exclusivo do plano intermediário)
+  app.post("/api/support/tickets", isAuthenticated, async (req, res) => {
+    try {
+      const user = await storage.getUser(req.user!.id);
+      if (!user) {
+        return res.status(404).json({ message: "Usuário não encontrado" });
+      }
+      
+      const schema = z.object({
+        subject: z.string().min(1).max(100),
+        message: z.string().min(1).max(1000),
+        priority: z.enum(["normal", "high"]).optional()
+      });
+      
+      const ticketData = schema.parse(req.body);
+      
+      // Se solicitou alta prioridade, verificar acesso premium
+      if (ticketData.priority === "high") {
+        const hasPrioritySupport = await storage.checkFeatureAccess(user.subscription_tier, "priority_support");
+        if (!hasPrioritySupport) {
+          // Permitir o ticket, mas forçar prioridade normal
+          ticketData.priority = "normal";
+        }
+      }
+      
+      // Criar ticket
+      const newTicket = await storage.createSupportTicket({
+        ...ticketData,
+        priority: ticketData.priority || "normal",
+        user_id: user.id,
+        status: "pending"
+      });
+      
+      // Log da ação
+      await logAction({
+        userId: user.id,
+        action: "support_ticket_created",
+        details: { ticket_id: newTicket.id, priority: newTicket.priority },
+        ipAddress: req.ip
+      });
+      
+      res.status(201).json(newTicket);
+    } catch (error) {
+      console.error("Erro ao criar ticket de suporte:", error);
+      res.status(500).json({ message: "Erro ao criar ticket de suporte" });
     }
   });
   
