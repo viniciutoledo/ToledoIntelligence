@@ -196,7 +196,7 @@ export default function PlanManagement() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-semibold text-primary-800">
-          {t("admin.plans")}
+          Planos e Assinaturas
         </h2>
       </div>
       
@@ -204,8 +204,8 @@ export default function PlanManagement() {
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">{t("admin.freePlan")}</CardTitle>
-            <CardDescription>{t("admin.usersWithoutSubscription")}</CardDescription>
+            <CardTitle className="text-sm font-medium">Plano Gratuito</CardTitle>
+            <CardDescription>Usuários sem assinatura</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -223,22 +223,22 @@ export default function PlanManagement() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">
-              {t("admin.basicPlan")}
+              Plano Básico
               <Badge className="ml-2 bg-blue-100 text-blue-800 hover:bg-blue-100">
                 R$29,90
               </Badge>
             </CardTitle>
-            <CardDescription>2.500 {t("admin.messagesPerMonth")}</CardDescription>
+            <CardDescription>2.500 mensagens por mês</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {statsLoading ? "..." : formatUserCount(planStats?.basic_users || 0)}
               <span className="text-xs font-normal text-muted-foreground ml-2">
-                {t("admin.users").toLowerCase()}
+                usuários
               </span>
             </div>
             <div className="text-xs text-muted-foreground mt-1">
-              {statsLoading ? "..." : (planStats?.basic_percent || 0).toFixed(1)}% {t("admin.ofTotal")}
+              {statsLoading ? "..." : (planStats?.basic_percent || 0).toFixed(1)}% do total
             </div>
           </CardContent>
         </Card>
@@ -246,18 +246,18 @@ export default function PlanManagement() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">
-              {t("admin.intermediatePlan")}
+              Plano Intermediário
               <Badge className="ml-2 bg-amber-100 text-amber-800 hover:bg-amber-100">
                 R$39,90
               </Badge>
             </CardTitle>
-            <CardDescription>5.000 {t("admin.messagesPerMonth")}</CardDescription>
+            <CardDescription>5.000 mensagens por mês</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {statsLoading ? "..." : formatUserCount(planStats?.intermediate_users || 0)}
               <span className="text-xs font-normal text-muted-foreground ml-2">
-                {t("admin.users").toLowerCase()}
+                usuários
               </span>
             </div>
             <div className="text-xs text-muted-foreground mt-1">
