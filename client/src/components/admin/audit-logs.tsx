@@ -73,18 +73,27 @@ export function AuditLogs() {
   // Traduz uma ação de log para um texto legível
   const getActionText = (action: string) => {
     const actionMap: Record<string, string> = {
-      user_login: t("admin.actionUserLogin"),
-      user_logout: t("admin.actionUserLogout"),
-      user_registered: t("admin.actionUserRegistered"),
-      user_blocked: t("admin.actionUserBlocked"),
-      user_unblocked: t("admin.actionUserUnblocked"),
-      llm_config_updated: t("admin.actionLlmConfigUpdated"),
-      avatar_updated: t("admin.actionAvatarUpdated"),
-      chat_session_started: t("admin.actionChatSessionStarted"),
-      chat_session_ended: t("admin.actionChatSessionEnded"),
-      subscription_checkout_started: t("admin.actionSubscriptionCheckoutStarted"),
-      subscription_activated: t("admin.actionSubscriptionActivated"),
-      subscription_cancelled: t("admin.actionSubscriptionCancelled"),
+      user_login: "Login de usuário",
+      user_logout: "Logout de usuário",
+      user_registered: "Usuário registrado",
+      user_blocked: "Usuário bloqueado",
+      user_unblocked: "Usuário desbloqueado",
+      llm_config_updated: "Configuração LLM atualizada",
+      avatar_updated: "Avatar atualizado",
+      chat_session_started: "Sessão de chat iniciada",
+      chat_session_ended: "Sessão de chat finalizada",
+      subscription_checkout_started: "Checkout de assinatura iniciado",
+      subscription_activated: "Assinatura ativada",
+      subscription_cancelled: "Assinatura cancelada",
+      account_blocked: "Conta bloqueada",
+      "2fa_enabled": "Autenticação de dois fatores ativada",
+      "2fa_disabled": "Autenticação de dois fatores desativada",
+      language_changed: "Idioma alterado",
+      llm_config_created: "Configuração LLM criada",
+      llm_config_activated: "Configuração LLM ativada",
+      avatar_created: "Avatar criado",
+      avatar_activated: "Avatar ativado",
+      avatar_reset: "Avatar redefinido para o padrão",
     };
 
     return actionMap[action] || action;
@@ -169,8 +178,8 @@ export function AuditLogs() {
     return (
       <div className="p-8 text-center border rounded-lg bg-neutral-50">
         <AlertTriangle className="h-8 w-8 text-yellow-500 mb-2 mx-auto" />
-        <h3 className="text-lg font-medium">{t("admin.noLogsFound")}</h3>
-        <p className="text-neutral-500 mt-1">{t("admin.noLogsFoundDesc")}</p>
+        <h3 className="text-lg font-medium">Nenhum registro encontrado</h3>
+        <p className="text-neutral-500 mt-1">Não há registros de auditoria no sistema ainda.</p>
         <Button 
           className="mt-4"
           variant="outline"
@@ -190,11 +199,11 @@ export function AuditLogs() {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>{t("admin.logTime")}</TableHead>
-            <TableHead>{t("admin.logAction")}</TableHead>
-            <TableHead>{t("admin.logUser")}</TableHead>
-            <TableHead>{t("admin.logDetails")}</TableHead>
-            <TableHead>{t("admin.logIp")}</TableHead>
+            <TableHead>Hora</TableHead>
+            <TableHead>Ação</TableHead>
+            <TableHead>Usuário</TableHead>
+            <TableHead>Detalhes</TableHead>
+            <TableHead>Endereço IP</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -212,7 +221,7 @@ export function AuditLogs() {
                   </div>
                 </TableCell>
                 <TableCell>
-                  {log.user_id ? `ID: ${log.user_id}` : t("admin.system")}
+                  {log.user_id ? `ID: ${log.user_id}` : "Sistema"}
                 </TableCell>
                 <TableCell>
                   {log.details ? (
