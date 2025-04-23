@@ -723,6 +723,229 @@ export class MemStorage implements IStorage {
       .filter(doc => doc.is_active && documentIds.includes(doc.id))
       .sort((a, b) => a.name.localeCompare(b.name));
   }
+
+  // Plan features management
+  async getPlanFeature(id: number): Promise<PlanFeature | undefined> {
+    return this.planFeatures.get(id);
+  }
+  
+  async getPlanFeatures(subscriptionTier?: string): Promise<PlanFeature[]> {
+    const features = Array.from(this.planFeatures.values());
+    
+    if (subscriptionTier) {
+      return features.filter(feature => feature.subscription_tier === subscriptionTier);
+    }
+    
+    return features;
+  }
+  
+  async createPlanFeature(feature: InsertPlanFeature): Promise<PlanFeature> {
+    const id = this.currentIds.planFeatureId++;
+    const now = new Date();
+    
+    const planFeature: PlanFeature = {
+      ...feature,
+      id,
+      created_at: now,
+      updated_at: now
+    };
+    
+    this.planFeatures.set(id, planFeature);
+    return planFeature;
+  }
+  
+  async updatePlanFeature(id: number, data: Partial<PlanFeature>): Promise<PlanFeature | undefined> {
+    const feature = this.planFeatures.get(id);
+    if (!feature) return undefined;
+    
+    const updatedFeature = {
+      ...feature,
+      ...data,
+      updated_at: new Date()
+    };
+    
+    this.planFeatures.set(id, updatedFeature);
+    return updatedFeature;
+  }
+  
+  async deletePlanFeature(id: number): Promise<void> {
+    this.planFeatures.delete(id);
+  }
+  
+  async checkFeatureAccess(userId: number, featureKey: string): Promise<boolean> {
+    const user = await this.getUser(userId);
+    if (!user) return false;
+    
+    // Se o usuário for admin, sempre tem acesso a todas as funcionalidades
+    if (user.role === "admin") return true;
+    
+    // Se o usuário estiver bloqueado, não tem acesso a nenhuma funcionalidade
+    if (user.is_blocked) return false;
+    
+    // Usuários sem assinatura não têm acesso às funcionalidades premium
+    if (user.subscription_tier === "none") return false;
+    
+    // Obter todas as funcionalidades do plano do usuário
+    const features = await this.getPlanFeatures(user.subscription_tier);
+    
+    // Verificar se a funcionalidade específica está disponível para o plano
+    const feature = features.find(f => f.feature_key === featureKey);
+    
+    if (!feature) return false;
+    
+    return feature.is_enabled;
+  }
+  
+  // Analysis reports
+  async getAnalysisReport(id: number): Promise<AnalysisReport | undefined> {
+    return this.analysisReports.get(id);
+  }
+  
+  async getUserAnalysisReports(userId: number): Promise<AnalysisReport[]> {
+    return Array.from(this.analysisReports.values())
+      .filter(report => report.user_id === userId)
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  }
+  
+  async createAnalysisReport(report: InsertAnalysisReport): Promise<AnalysisReport> {
+    const id = this.currentIds.analysisReportId++;
+    const now = new Date();
+    
+    const analysisReport: AnalysisReport = {
+      ...report,
+      id,
+      created_at: now,
+      is_exported: false,
+      export_format: null,
+      exported_at: null,
+      exported_url: null
+    };
+    
+    this.analysisReports.set(id, analysisReport);
+    return analysisReport;
+  }
+  
+  async updateAnalysisReport(id: number, data: Partial<AnalysisReport>): Promise<AnalysisReport | undefined> {
+    const report = this.analysisReports.get(id);
+    if (!report) return undefined;
+    
+    const updatedReport = {
+      ...report,
+      ...data
+    };
+    
+    this.analysisReports.set(id, updatedReport);
+    return updatedReport;
+  }
+  
+  async exportAnalysisReport(id: number, format: string): Promise<AnalysisReport | undefined> {
+    const report = this.analysisReports.get(id);
+    if (!report) return undefined;
+    
+    const now = new Date();
+    const exportedUrl = `/exports/report-${id}.${format.toLowerCase()}`;
+    
+    const updatedReport = {
+      ...report,
+      is_exported: true,
+      export_format: format,
+      exported_at: now,
+      exported_url: exportedUrl
+    };
+    
+    this.analysisReports.set(id, updatedReport);
+    return updatedReport;
+  }
+  
+  // Support tickets
+  async getSupportTicket(id: number): Promise<SupportTicket | undefined> {
+    return this.supportTickets.get(id);
+  }
+  
+  async getUserSupportTickets(userId: number): Promise<SupportTicket[]> {
+    return Array.from(this.supportTickets.values())
+      .filter(ticket => ticket.user_id === userId)
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  }
+  
+  async createSupportTicket(ticket: InsertSupportTicket): Promise<SupportTicket> {
+    const id = this.currentIds.supportTicketId++;
+    const now = new Date();
+    
+    const supportTicket: SupportTicket = {
+      ...ticket,
+      id,
+      status: "pending",
+      created_at: now,
+      updated_at: now,
+      resolved_at: null,
+      assigned_to: null
+    };
+    
+    this.supportTickets.set(id, supportTicket);
+    return supportTicket;
+  }
+  
+  async updateSupportTicket(id: number, data: Partial<SupportTicket>): Promise<SupportTicket | undefined> {
+    const ticket = this.supportTickets.get(id);
+    if (!ticket) return undefined;
+    
+    const updatedTicket = {
+      ...ticket,
+      ...data,
+      updated_at: new Date()
+    };
+    
+    this.supportTickets.set(id, updatedTicket);
+    return updatedTicket;
+  }
+  
+  async assignSupportTicket(id: number, assignedTo: number): Promise<SupportTicket | undefined> {
+    return this.updateSupportTicket(id, { assigned_to: assignedTo, status: "in_progress" });
+  }
+  
+  async resolveSupportTicket(id: number): Promise<SupportTicket | undefined> {
+    const now = new Date();
+    return this.updateSupportTicket(id, { status: "resolved", resolved_at: now });
+  }
+  
+  // Usage tracking
+  async incrementMessageCount(userId: number): Promise<User | undefined> {
+    const user = await this.getUser(userId);
+    if (!user) return undefined;
+    
+    const newCount = (user.message_count || 0) + 1;
+    return this.updateUser(userId, { message_count: newCount });
+  }
+  
+  async checkMessageLimit(userId: number): Promise<boolean> {
+    const user = await this.getUser(userId);
+    if (!user) return false;
+    
+    // Admins não têm limite de mensagens
+    if (user.role === "admin") return true;
+    
+    // Usuários bloqueados não podem enviar mensagens
+    if (user.is_blocked) return false;
+    
+    // Usuários sem assinatura não podem enviar mensagens
+    if (user.subscription_tier === "none") return false;
+    
+    // Verificar se ainda há mensagens disponíveis
+    const messageCount = user.message_count || 0;
+    const maxMessages = user.max_messages || 0;
+    
+    return messageCount < maxMessages;
+  }
+  
+  async resetMessageCounts(): Promise<void> {
+    // Este método seria chamado por um job mensal para resetar contagens
+    for (const [userId, user] of this.users.entries()) {
+      if (user.subscription_tier !== "none") {
+        this.updateUser(userId, { message_count: 0 });
+      }
+    }
+  }
 }
 
 import { db, pool } from './db';
@@ -741,6 +964,105 @@ import {
 } from '@shared/schema';
 
 const PostgresSessionStore = connectPg(session);
+
+// Função de inicialização dos planos e recursos
+export const initializePlansAndFeatures = async (storage: IStorage) => {
+  try {
+    // Verificar se já existem recursos cadastrados para evitar duplicação
+    const existingFeatures = await storage.getPlanFeatures();
+    if (existingFeatures.length > 0) {
+      console.log('Planos e recursos já estão inicializados');
+      return;
+    }
+    
+    console.log('Inicializando planos e recursos...');
+    
+    // Plano Básico - 2.500 interações
+    const basicPlanFeatures = [
+      {
+        subscription_tier: "basic",
+        feature_key: "interaction_limit",
+        feature_name: "Limite de interações",
+        feature_description: "2.500 interações por mês",
+        is_enabled: true
+      },
+      {
+        subscription_tier: "basic",
+        feature_key: "upload_files",
+        feature_name: "Upload de imagens e documentos",
+        feature_description: "Envio de imagens de placas de circuito e documentos técnicos",
+        is_enabled: true
+      },
+      {
+        subscription_tier: "basic",
+        feature_key: "email_support",
+        feature_name: "Suporte por email",
+        feature_description: "Acesso ao suporte técnico por email",
+        is_enabled: true
+      },
+      {
+        subscription_tier: "basic",
+        feature_key: "basic_analysis",
+        feature_name: "Análise técnica de circuitos",
+        feature_description: "Análise básica de placas de circuito",
+        is_enabled: true
+      }
+    ];
+    
+    // Plano Intermediário - 5.000 interações
+    const intermediatePlanFeatures = [
+      {
+        subscription_tier: "intermediate",
+        feature_key: "interaction_limit",
+        feature_name: "Limite de interações",
+        feature_description: "5.000 interações por mês",
+        is_enabled: true
+      },
+      {
+        subscription_tier: "intermediate",
+        feature_key: "upload_files",
+        feature_name: "Upload de imagens e documentos",
+        feature_description: "Envio de imagens de placas de circuito e documentos técnicos",
+        is_enabled: true
+      },
+      {
+        subscription_tier: "intermediate",
+        feature_key: "priority_support",
+        feature_name: "Suporte prioritário",
+        feature_description: "Acesso prioritário à equipe de suporte",
+        is_enabled: true
+      },
+      {
+        subscription_tier: "intermediate",
+        feature_key: "advanced_analysis",
+        feature_name: "Análise técnica avançada",
+        feature_description: "Análise detalhada de placas de circuito com recomendações específicas",
+        is_enabled: true
+      },
+      {
+        subscription_tier: "intermediate",
+        feature_key: "export_reports",
+        feature_name: "Exportação de relatórios",
+        feature_description: "Exportação de relatórios de análise em vários formatos",
+        is_enabled: true
+      }
+    ];
+    
+    // Criar os recursos para o plano básico
+    for (const feature of basicPlanFeatures) {
+      await storage.createPlanFeature(feature);
+    }
+    
+    // Criar os recursos para o plano intermediário
+    for (const feature of intermediatePlanFeatures) {
+      await storage.createPlanFeature(feature);
+    }
+    
+    console.log('Planos e recursos inicializados com sucesso');
+  } catch (error) {
+    console.error('Erro ao inicializar planos e recursos:', error);
+  }
+};
 
 export class DatabaseStorage implements IStorage {
   sessionStore: session.Store;
@@ -1239,7 +1561,328 @@ export class DatabaseStorage implements IStorage {
   async updateLastLogin(id: number): Promise<User | undefined> {
     return this.updateUser(id, { last_login: new Date() });
   }
+  
+  // Plan features management
+  async getPlanFeature(id: number): Promise<PlanFeature | undefined> {
+    try {
+      const [feature] = await db.select().from(planFeatures).where(eq(planFeatures.id, id));
+      return feature;
+    } catch (error) {
+      console.error("Error getting plan feature:", error);
+      return undefined;
+    }
+  }
+  
+  async getPlanFeatures(subscriptionTier?: string): Promise<PlanFeature[]> {
+    try {
+      if (subscriptionTier) {
+        return await db.select().from(planFeatures).where(eq(planFeatures.subscription_tier, subscriptionTier));
+      }
+      return await db.select().from(planFeatures);
+    } catch (error) {
+      console.error("Error getting plan features:", error);
+      return [];
+    }
+  }
+  
+  async createPlanFeature(feature: InsertPlanFeature): Promise<PlanFeature> {
+    try {
+      const now = new Date();
+      const [newFeature] = await db
+        .insert(planFeatures)
+        .values({
+          ...feature,
+          created_at: now,
+          updated_at: now
+        })
+        .returning();
+      
+      return newFeature;
+    } catch (error) {
+      console.error("Error creating plan feature:", error);
+      throw error;
+    }
+  }
+  
+  async updatePlanFeature(id: number, data: Partial<PlanFeature>): Promise<PlanFeature | undefined> {
+    try {
+      const [updatedFeature] = await db
+        .update(planFeatures)
+        .set({ ...data, updated_at: new Date() })
+        .where(eq(planFeatures.id, id))
+        .returning();
+      
+      return updatedFeature;
+    } catch (error) {
+      console.error("Error updating plan feature:", error);
+      return undefined;
+    }
+  }
+  
+  async deletePlanFeature(id: number): Promise<void> {
+    try {
+      await db.delete(planFeatures).where(eq(planFeatures.id, id));
+    } catch (error) {
+      console.error("Error deleting plan feature:", error);
+    }
+  }
+  
+  async checkFeatureAccess(userId: number, featureKey: string): Promise<boolean> {
+    try {
+      const user = await this.getUser(userId);
+      if (!user) return false;
+      
+      // Se o usuário for admin, sempre tem acesso a todas as funcionalidades
+      if (user.role === "admin") return true;
+      
+      // Se o usuário estiver bloqueado, não tem acesso a nenhuma funcionalidade
+      if (user.is_blocked) return false;
+      
+      // Usuários sem assinatura não têm acesso às funcionalidades premium
+      if (user.subscription_tier === "none") return false;
+      
+      const [feature] = await db
+        .select()
+        .from(planFeatures)
+        .where(
+          and(
+            eq(planFeatures.subscription_tier, user.subscription_tier),
+            eq(planFeatures.feature_key, featureKey),
+            eq(planFeatures.is_enabled, true)
+          )
+        );
+      
+      return !!feature;
+    } catch (error) {
+      console.error("Error checking feature access:", error);
+      return false;
+    }
+  }
+  
+  // Analysis reports
+  async getAnalysisReport(id: number): Promise<AnalysisReport | undefined> {
+    try {
+      const [report] = await db.select().from(analysisReports).where(eq(analysisReports.id, id));
+      return report;
+    } catch (error) {
+      console.error("Error getting analysis report:", error);
+      return undefined;
+    }
+  }
+  
+  async getUserAnalysisReports(userId: number): Promise<AnalysisReport[]> {
+    try {
+      return await db
+        .select()
+        .from(analysisReports)
+        .where(eq(analysisReports.user_id, userId))
+        .orderBy(desc(analysisReports.created_at));
+    } catch (error) {
+      console.error("Error getting user analysis reports:", error);
+      return [];
+    }
+  }
+  
+  async createAnalysisReport(report: InsertAnalysisReport): Promise<AnalysisReport> {
+    try {
+      const [newReport] = await db
+        .insert(analysisReports)
+        .values({
+          ...report,
+          is_exported: false,
+          export_format: null,
+          exported_at: null,
+          exported_url: null
+        })
+        .returning();
+      
+      return newReport;
+    } catch (error) {
+      console.error("Error creating analysis report:", error);
+      throw error;
+    }
+  }
+  
+  async updateAnalysisReport(id: number, data: Partial<AnalysisReport>): Promise<AnalysisReport | undefined> {
+    try {
+      const [updatedReport] = await db
+        .update(analysisReports)
+        .set(data)
+        .where(eq(analysisReports.id, id))
+        .returning();
+      
+      return updatedReport;
+    } catch (error) {
+      console.error("Error updating analysis report:", error);
+      return undefined;
+    }
+  }
+  
+  async exportAnalysisReport(id: number, format: string): Promise<AnalysisReport | undefined> {
+    try {
+      const now = new Date();
+      const exportedUrl = `/exports/report-${id}.${format.toLowerCase()}`;
+      
+      const [exportedReport] = await db
+        .update(analysisReports)
+        .set({
+          is_exported: true,
+          export_format: format as any,
+          exported_at: now,
+          exported_url: exportedUrl
+        })
+        .where(eq(analysisReports.id, id))
+        .returning();
+      
+      return exportedReport;
+    } catch (error) {
+      console.error("Error exporting analysis report:", error);
+      return undefined;
+    }
+  }
+  
+  // Support tickets
+  async getSupportTicket(id: number): Promise<SupportTicket | undefined> {
+    try {
+      const [ticket] = await db.select().from(supportTickets).where(eq(supportTickets.id, id));
+      return ticket;
+    } catch (error) {
+      console.error("Error getting support ticket:", error);
+      return undefined;
+    }
+  }
+  
+  async getUserSupportTickets(userId: number): Promise<SupportTicket[]> {
+    try {
+      return await db
+        .select()
+        .from(supportTickets)
+        .where(eq(supportTickets.user_id, userId))
+        .orderBy(desc(supportTickets.created_at));
+    } catch (error) {
+      console.error("Error getting user support tickets:", error);
+      return [];
+    }
+  }
+  
+  async createSupportTicket(ticket: InsertSupportTicket): Promise<SupportTicket> {
+    try {
+      const now = new Date();
+      const [newTicket] = await db
+        .insert(supportTickets)
+        .values({
+          ...ticket,
+          status: "pending",
+          created_at: now,
+          updated_at: now,
+          resolved_at: null,
+          assigned_to: null
+        })
+        .returning();
+      
+      return newTicket;
+    } catch (error) {
+      console.error("Error creating support ticket:", error);
+      throw error;
+    }
+  }
+  
+  async updateSupportTicket(id: number, data: Partial<SupportTicket>): Promise<SupportTicket | undefined> {
+    try {
+      const [updatedTicket] = await db
+        .update(supportTickets)
+        .set({ ...data, updated_at: new Date() })
+        .where(eq(supportTickets.id, id))
+        .returning();
+      
+      return updatedTicket;
+    } catch (error) {
+      console.error("Error updating support ticket:", error);
+      return undefined;
+    }
+  }
+  
+  async assignSupportTicket(id: number, assignedTo: number): Promise<SupportTicket | undefined> {
+    try {
+      return await this.updateSupportTicket(id, { assigned_to: assignedTo, status: "in_progress" });
+    } catch (error) {
+      console.error("Error assigning support ticket:", error);
+      return undefined;
+    }
+  }
+  
+  async resolveSupportTicket(id: number): Promise<SupportTicket | undefined> {
+    try {
+      const now = new Date();
+      return await this.updateSupportTicket(id, { status: "resolved", resolved_at: now });
+    } catch (error) {
+      console.error("Error resolving support ticket:", error);
+      return undefined;
+    }
+  }
+  
+  // Usage tracking
+  async incrementMessageCount(userId: number): Promise<User | undefined> {
+    try {
+      const user = await this.getUser(userId);
+      if (!user) return undefined;
+      
+      const newCount = (user.message_count || 0) + 1;
+      return await this.updateUser(userId, { message_count: newCount });
+    } catch (error) {
+      console.error("Error incrementing message count:", error);
+      return undefined;
+    }
+  }
+  
+  async checkMessageLimit(userId: number): Promise<boolean> {
+    try {
+      const user = await this.getUser(userId);
+      if (!user) return false;
+      
+      // Admins não têm limite de mensagens
+      if (user.role === "admin") return true;
+      
+      // Usuários bloqueados não podem enviar mensagens
+      if (user.is_blocked) return false;
+      
+      // Usuários sem assinatura não podem enviar mensagens
+      if (user.subscription_tier === "none") return false;
+      
+      // Verificar se ainda há mensagens disponíveis
+      const messageCount = user.message_count || 0;
+      const maxMessages = user.max_messages || 0;
+      
+      return messageCount < maxMessages;
+    } catch (error) {
+      console.error("Error checking message limit:", error);
+      return false;
+    }
+  }
+  
+  async resetMessageCounts(): Promise<void> {
+    try {
+      // Resetar contagens de mensagens para todos os usuários com assinatura ativa
+      await db
+        .update(users)
+        .set({ message_count: 0 })
+        .where(and(
+          or(
+            eq(users.subscription_tier, "basic"),
+            eq(users.subscription_tier, "intermediate")
+          ),
+          eq(users.is_blocked, false)
+        ));
+    } catch (error) {
+      console.error("Error resetting message counts:", error);
+    }
+  }
 }
 
 // Use DatabaseStorage em vez de MemStorage
 export const storage = new DatabaseStorage();
+
+// Inicializar planos e recursos quando o aplicativo iniciar
+initializePlansAndFeatures(storage).catch(error => 
+  console.error("Erro ao inicializar planos e recursos:", error)
+);
