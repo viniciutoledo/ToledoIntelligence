@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { syncDatabaseSchema } from "./migrate";
 
 const app = express();
 app.use(express.json());
@@ -37,6 +38,15 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Sincronizar o esquema do banco de dados antes de iniciar o servidor
+  try {
+    console.log('Sincronizando o esquema do banco de dados...');
+    await syncDatabaseSchema();
+    console.log('Esquema do banco de dados sincronizado com sucesso');
+  } catch (error) {
+    console.error('Erro ao sincronizar o esquema do banco de dados:', error);
+  }
+  
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
