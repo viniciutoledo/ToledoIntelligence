@@ -882,10 +882,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const newSession = await storage.createChatSession(data);
       
+      // Obter o avatar ativo e usar sua mensagem de boas-vindas personalizada
+      const activeAvatar = await storage.getActiveAvatar();
+      
       // Add welcome message from bot
-      const welcomeMessage = req.user!.language === "pt" 
-        ? "Olá! Sou o Bot ToledoIA. Como posso ajudar com sua manutenção hoje? Você pode enviar imagens ou arquivos da placa de circuito para análise."
-        : "Hello! I'm the ToledoIA Bot. How can I help with your maintenance today? You can send images or files of the circuit board for analysis.";
+      let welcomeMessage = "";
+      
+      // Usar a mensagem de boas-vindas personalizada do avatar se estiver disponível
+      if (activeAvatar && activeAvatar.welcome_message) {
+        welcomeMessage = activeAvatar.welcome_message;
+      } else {
+        // Mensagem padrão como fallback
+        welcomeMessage = req.user!.language === "pt" 
+          ? "Olá! Sou o Bot ToledoIA. Como posso ajudar com sua manutenção hoje? Você pode enviar imagens ou arquivos da placa de circuito para análise."
+          : "Hello! I'm the ToledoIA Bot. How can I help with your maintenance today? You can send images or files of the circuit board for analysis.";
+      }
       
       await storage.createChatMessage({
         session_id: newSession.id,
