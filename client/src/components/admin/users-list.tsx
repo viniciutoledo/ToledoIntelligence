@@ -100,13 +100,13 @@ export function UsersList() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
       toast({
-        title: t("common.success"),
-        description: t("admin.userUnblocked"),
+        title: "Sucesso",
+        description: "Usuário desbloqueado com sucesso",
       });
     },
     onError: (error: Error) => {
       toast({
-        title: t("common.error"),
+        title: "Erro",
         description: error.message,
         variant: "destructive",
       });
@@ -124,13 +124,13 @@ export function UsersList() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
       toast({
-        title: t("common.success"),
-        description: t("admin.userBlocked"),
+        title: "Sucesso",
+        description: "Usuário bloqueado com sucesso",
       });
     },
     onError: (error: Error) => {
       toast({
-        title: t("common.error"),
+        title: "Erro",
         description: error.message,
         variant: "destructive",
       });
@@ -149,13 +149,13 @@ export function UsersList() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
       setIsEditOpen(false);
       toast({
-        title: t("common.success"),
-        description: t("admin.userUpdated"),
+        title: "Sucesso",
+        description: "Usuário atualizado com sucesso",
       });
     },
     onError: (error: Error) => {
       toast({
-        title: t("common.error"),
+        title: "Erro",
         description: error.message,
         variant: "destructive",
       });
@@ -174,13 +174,13 @@ export function UsersList() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
       setIsDeleteOpen(false);
       toast({
-        title: t("common.success"),
+        title: "Sucesso",
         description: t("admin.userDeleted"),
       });
     },
     onError: (error: Error) => {
       toast({
-        title: t("common.error"),
+        title: "Erro",
         description: error.message,
         variant: "destructive",
       });
