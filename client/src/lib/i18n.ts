@@ -177,8 +177,8 @@ const enTranslations = {
     adding: 'Adding...',
     addFeature: 'Add Feature',
     featureNamePlaceholder: 'Enter a name for this feature',
-    featureNamePlaceholderBasic: 'e.g., "Limite de interações" or "Circuit Image Analysis"',
-    featureNamePlaceholderPremium: 'e.g., "Suporte por email" or "Advanced Analysis Reports"',
+    featureNamePlaceholderBasic: 'e.g., "Message Limit" or "Circuit Image Analysis"',
+    featureNamePlaceholderPremium: 'e.g., "Email Support" or "Advanced Analysis Reports"',
     featureKeyPlaceholder: 'Enter a unique identifier for this feature',
     featureDescriptionPlaceholder: 'Describe what this feature provides to users',
     active: 'Active',
@@ -187,6 +187,7 @@ const enTranslations = {
     addNewBasicFeature: 'Add new feature to Basic plan',
     addNewPremiumFeature: 'Add new premium feature',
     premium: 'Premium',
+    remove: 'Remove',
     
     actionUserLogin: 'User login',
     actionUserLogout: 'User logout',
@@ -323,18 +324,7 @@ const enTranslations = {
     usersWithoutSubscription: 'Users without subscription',
     messagesPerMonth: 'messages/month',
     ofTotal: 'of total',
-    active: 'Active',
-    premium: 'Premium',
-    addNewBasicFeature: 'Add new feature to Basic plan',
-    addNewPremiumFeature: 'Add new premium feature',
-    technicalID: 'Technical ID',
-    technicalIDHelp: 'Used internally by the system to identify this feature',
-    featureDescription: 'Feature Description',
-    featureNameHelp: 'Enter the name of the feature as it will be displayed to users',
-    featureWillBeEnabled: 'Feature will be enabled immediately',
-    featureWillBeDisabled: 'Feature will be created but disabled',
-    featureNamePlaceholderBasic: 'e.g., "Limite de interações" or "Circuit Image Analysis"', 
-    featureNamePlaceholderPremium: 'e.g., "Suporte por email" or "Advanced Analysis Reports"'
+    // Leave empty since these keys are already defined above
   },
   errors: {
     sessionExpired: 'Your session has expired. Please login again.',
