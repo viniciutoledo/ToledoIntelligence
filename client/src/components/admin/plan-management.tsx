@@ -295,20 +295,23 @@ export default function PlanManagement() {
                   basicFeatures.map((feature) => (
                     <div
                       key={feature.id}
-                      className="flex items-center justify-between p-3 border rounded-md"
+                      className="flex flex-col md:flex-row items-start md:items-center justify-between p-4 border rounded-md hover:bg-gray-50/50 dark:hover:bg-gray-900/30 transition-colors"
                     >
-                      <div className="flex-1">
-                        <h4 className="font-medium">{feature.feature_name}</h4>
-                        <p className="text-sm text-muted-foreground">
+                      <div className="flex-1 w-full mb-3 md:mb-0">
+                        <div className="flex items-center">
+                          <h4 className="font-medium text-lg">{feature.feature_name}</h4>
+                          {feature.is_enabled && (
+                            <Badge className="ml-2 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
+                              <Check className="mr-1 h-3 w-3" />
+                              {t("admin.active")}
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-1 mb-2">
                           {feature.feature_description || t("admin.noDescription")}
                         </p>
-                        <div className="mt-1">
-                          <code className="bg-muted px-1.5 py-0.5 rounded text-xs">
-                            {feature.feature_key}
-                          </code>
-                        </div>
                       </div>
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center space-x-3 self-end md:self-auto w-full md:w-auto justify-end">
                         <div className="flex items-center space-x-2">
                           <Switch
                             id={`feature-${feature.id}`}
@@ -317,21 +320,22 @@ export default function PlanManagement() {
                               updateFeatureMutation.mutate({ id: feature.id, is_enabled: checked })
                             }
                           />
-                          <Label htmlFor={`feature-${feature.id}`} className="text-sm">
+                          <Label htmlFor={`feature-${feature.id}`} className="text-sm font-medium">
                             {feature.is_enabled ? t("admin.active") : t("admin.inactive")}
                           </Label>
                         </div>
                         <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-destructive"
+                          variant="outline"
+                          size="sm"
+                          className="text-destructive border-destructive/20 hover:bg-destructive/10"
                           onClick={() => {
                             if (window.confirm(t("admin.confirmDeleteFeature"))) {
                               deleteFeatureMutation.mutate(feature.id);
                             }
                           }}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          {t("common.remove")}
                         </Button>
                       </div>
                     </div>
@@ -353,22 +357,25 @@ export default function PlanManagement() {
                     <div
                       key={feature.id}
                       className={cn(
-                        "flex items-center justify-between p-3 border rounded-md",
-                        feature.is_enabled && "border-amber-200 bg-amber-50/30 dark:bg-amber-950/10 dark:border-amber-800/30"
+                        "flex flex-col md:flex-row items-start md:items-center justify-between p-4 border rounded-md hover:bg-amber-50/30 dark:hover:bg-amber-900/20 transition-colors",
+                        feature.is_enabled && "border-amber-200 bg-amber-50/30 dark:bg-amber-900/10 dark:border-amber-700/40"
                       )}
                     >
-                      <div className="flex-1">
-                        <h4 className="font-medium">{feature.feature_name}</h4>
-                        <p className="text-sm text-muted-foreground">
+                      <div className="flex-1 w-full mb-3 md:mb-0">
+                        <div className="flex items-center">
+                          <h4 className="font-medium text-lg">{feature.feature_name}</h4>
+                          {feature.is_enabled && (
+                            <Badge className="ml-2 bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100">
+                              <Crown className="mr-1 h-3 w-3" />
+                              {t("admin.premium")}
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-1 mb-2">
                           {feature.feature_description || t("admin.noDescription")}
                         </p>
-                        <div className="mt-1">
-                          <code className="bg-muted px-1.5 py-0.5 rounded text-xs">
-                            {feature.feature_key}
-                          </code>
-                        </div>
                       </div>
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center space-x-3 self-end md:self-auto w-full md:w-auto justify-end">
                         <div className="flex items-center space-x-2">
                           <Switch
                             id={`feature-${feature.id}`}
@@ -377,21 +384,22 @@ export default function PlanManagement() {
                               updateFeatureMutation.mutate({ id: feature.id, is_enabled: checked })
                             }
                           />
-                          <Label htmlFor={`feature-${feature.id}`} className="text-sm">
+                          <Label htmlFor={`feature-${feature.id}`} className="text-sm font-medium">
                             {feature.is_enabled ? t("admin.active") : t("admin.inactive")}
                           </Label>
                         </div>
                         <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-destructive"
+                          variant="outline"
+                          size="sm"
+                          className="text-destructive border-destructive/20 hover:bg-destructive/10"
                           onClick={() => {
                             if (window.confirm(t("admin.confirmDeleteFeature"))) {
                               deleteFeatureMutation.mutate(feature.id);
                             }
                           }}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          {t("common.remove")}
                         </Button>
                       </div>
                     </div>
@@ -405,38 +413,36 @@ export default function PlanManagement() {
             </TabsContent>
           </Tabs>
           
-          {/* Formulário para adicionar novo recurso */}
+          {/* Formulário para adicionar novo recurso - simplificado */}
           <div className="mt-8 border-t pt-6">
-            <h3 className="text-base font-medium mb-4">
-              {t("admin.addNewFeatureToPlan", { plan: activeTab === "basic" ? t("admin.basic") : t("admin.intermediate") })}
+            <h3 className="text-lg font-medium mb-4 flex items-center">
+              <Plus className="mr-2 h-5 w-5 text-primary" />
+              {activeTab === "basic" 
+                ? t("admin.addNewBasicFeature") 
+                : t("admin.addNewPremiumFeature")}
             </h3>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="feature_key">{t("admin.featureKey")}</Label>
-                  <Input
-                    id="feature_key"
-                    placeholder={t("admin.featureKeyPlaceholder")}
-                    value={newFeature.feature_key}
-                    onChange={(e) =>
-                      setNewFeature({ ...newFeature, feature_key: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="feature_name">{t("admin.featureName")}</Label>
-                  <Input
-                    id="feature_name"
-                    placeholder={t("admin.featureNamePlaceholder")}
-                    value={newFeature.feature_name}
-                    onChange={(e) =>
-                      setNewFeature({ ...newFeature, feature_name: e.target.value })
-                    }
-                  />
-                </div>
+            
+            <form onSubmit={handleSubmit} className="space-y-5 bg-gray-50 dark:bg-gray-900/40 p-5 rounded-lg border">
+              <div className="space-y-3">
+                <Label htmlFor="feature_name" className="text-base font-medium">{t("admin.featureName")}</Label>
+                <Input
+                  id="feature_name"
+                  placeholder={activeTab === "basic" 
+                    ? t("admin.featureNamePlaceholderBasic") 
+                    : t("admin.featureNamePlaceholderPremium")}
+                  value={newFeature.feature_name}
+                  onChange={(e) =>
+                    setNewFeature({ ...newFeature, feature_name: e.target.value })
+                  }
+                  className="text-base"
+                />
+                <p className="text-sm text-muted-foreground">{t("admin.featureNameHelp")}</p>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="feature_description">{t("admin.description")} ({t("common.optional")})</Label>
+              
+              <div className="space-y-3">
+                <Label htmlFor="feature_description" className="text-base font-medium">
+                  {t("admin.featureDescription")} <span className="text-sm font-normal text-muted-foreground">({t("common.optional")})</span>
+                </Label>
                 <Textarea
                   id="feature_description"
                   placeholder={t("admin.featureDescriptionPlaceholder")}
@@ -444,10 +450,26 @@ export default function PlanManagement() {
                   onChange={(e) =>
                     setNewFeature({ ...newFeature, feature_description: e.target.value })
                   }
-                  rows={3}
+                  rows={2}
+                  className="text-base"
                 />
               </div>
-              <div className="flex items-center space-x-2">
+              
+              <div className="space-y-3">
+                <Label htmlFor="feature_key" className="text-base font-medium">{t("admin.technicalID")}</Label>
+                <Input
+                  id="feature_key"
+                  placeholder={activeTab === "basic" ? "interaction_limit" : "priority_support"}
+                  value={newFeature.feature_key}
+                  onChange={(e) =>
+                    setNewFeature({ ...newFeature, feature_key: e.target.value })
+                  }
+                  className="font-mono text-sm"
+                />
+                <p className="text-sm text-muted-foreground">{t("admin.technicalIDHelp")}</p>
+              </div>
+              
+              <div className="flex items-center space-x-2 p-3 bg-white dark:bg-gray-900 rounded border">
                 <Switch
                   id="is_enabled"
                   checked={newFeature.is_enabled}
@@ -455,14 +477,22 @@ export default function PlanManagement() {
                     setNewFeature({ ...newFeature, is_enabled: checked })
                   }
                 />
-                <Label htmlFor="is_enabled">{t("admin.enableFeatureImmediately")}</Label>
+                <Label htmlFor="is_enabled" className="font-medium">
+                  {newFeature.is_enabled 
+                    ? t("admin.featureWillBeEnabled") 
+                    : t("admin.featureWillBeDisabled")}
+                </Label>
               </div>
               
-              <div className="pt-2">
+              <div className="pt-2 flex justify-end">
                 <Button 
                   type="submit" 
                   disabled={addFeatureMutation.isPending}
-                  className="w-full md:w-auto"
+                  size="lg"
+                  className={cn(
+                    "px-8",
+                    activeTab === "intermediate" && "bg-amber-600 hover:bg-amber-700"
+                  )}
                 >
                   {addFeatureMutation.isPending ? (
                     <div className="flex items-center">
