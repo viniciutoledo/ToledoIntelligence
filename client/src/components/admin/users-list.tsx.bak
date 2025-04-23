@@ -512,31 +512,17 @@ export function UsersList() {
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center space-x-2">
-                    {user.is_blocked ? (
+                    {user.is_blocked && (
                       <Button
                         variant="outline"
                         size="sm"
                         disabled={isLoading}
                         onClick={() => unblockUserMutation.mutate(user.id)}
-                        className="bg-green-50 hover:bg-green-100 text-green-600 border-green-200"
                       >
                         {unblockUserMutation.isPending ? (
                           <Loader2 className="h-4 w-4 animate-spin mr-1" />
                         ) : null}
                         {t("admin.unblock")}
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={isLoading}
-                        onClick={() => blockUserMutation.mutate(user.id)}
-                        className="bg-red-50 hover:bg-red-100 text-red-600 border-red-200"
-                      >
-                        {blockUserMutation.isPending ? (
-                          <Loader2 className="h-4 w-4 animate-spin mr-1" />
-                        ) : null}
-                        Bloquear
                       </Button>
                     )}
                     

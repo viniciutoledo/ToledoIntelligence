@@ -102,6 +102,60 @@ export function AuditLogs() {
       return <Info className="h-4 w-4 text-neutral-500" />;
     }
   };
+  
+  // Formata os detalhes do log de uma forma mais amigável
+  const formatLogDetails = (action: string, details: any) => {
+    try {
+      // Converte detalhes do formato JSON para um objeto se for uma string
+      const detailsObj = typeof details === 'string' ? JSON.parse(details) : details;
+      
+      // Formação amigável para diferentes tipos de ações
+      if (action === 'user_login') {
+        return `Usuário fez login ${detailsObj.ip ? `do IP ${detailsObj.ip}` : ''}`;
+      } 
+      else if (action === 'user_logout') {
+        return 'Usuário saiu do sistema';
+      } 
+      else if (action === 'user_registered') {
+        return `Nova conta criada com email: ${detailsObj.email || 'não informado'}`;
+      } 
+      else if (action === 'user_blocked') {
+        return `Usuário bloqueado por ${detailsObj.reason || 'razões de segurança'}`;
+      } 
+      else if (action === 'user_unblocked') {
+        return 'Acesso do usuário restaurado';
+      } 
+      else if (action === 'llm_config_updated') {
+        return `Configuração do modelo IA atualizada para ${detailsObj.model || 'novo modelo'}`;
+      } 
+      else if (action === 'avatar_updated') {
+        return 'Imagem ou configuração do avatar foi alterada';
+      } 
+      else if (action === 'chat_session_started') {
+        return 'Nova conversa de chat iniciada';
+      } 
+      else if (action === 'chat_session_ended') {
+        return `Conversa de chat finalizada após ${detailsObj.duration || 'algum tempo'}`;
+      } 
+      else if (action === 'subscription_checkout_started') {
+        return `Iniciou assinatura do plano ${detailsObj.plan || ''}`;
+      } 
+      else if (action === 'subscription_activated') {
+        return `Assinatura do plano ${detailsObj.plan || ''} foi ativada`;
+      } 
+      else if (action === 'subscription_cancelled') {
+        return 'Assinatura foi cancelada';
+      } 
+      else {
+        // Para ações não mapeadas, retorna uma versão simplificada do JSON
+        const keysToShow = Object.keys(detailsObj).slice(0, 3);
+        return keysToShow.map(key => `${key}: ${detailsObj[key]}`).join(', ');
+      }
+    } catch (error) {
+      // Em caso de erro ao processar, retorna os detalhes originais
+      return typeof details === 'string' ? details : JSON.stringify(details, null, 2);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -162,9 +216,9 @@ export function AuditLogs() {
                 </TableCell>
                 <TableCell>
                   {log.details ? (
-                    <pre className="text-xs bg-neutral-50 p-2 rounded whitespace-pre-wrap max-w-xs overflow-auto">
-                      {JSON.stringify(log.details, null, 2)}
-                    </pre>
+                    <div className="text-sm p-2 rounded max-w-xs">
+                      {formatLogDetails(log.action, log.details)}
+                    </div>
                   ) : (
                     "-"
                   )}
