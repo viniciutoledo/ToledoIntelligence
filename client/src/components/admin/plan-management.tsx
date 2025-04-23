@@ -321,7 +321,7 @@ export default function PlanManagement() {
                             }
                           />
                           <Label htmlFor={`feature-${feature.id}`} className="text-sm font-medium">
-                            {feature.is_enabled ? t("admin.active") : t("admin.inactive")}
+                            {feature.is_enabled ? "Ativo" : "Inativo"}
                           </Label>
                         </div>
                         <Button
@@ -335,7 +335,7 @@ export default function PlanManagement() {
                           }}
                         >
                           <Trash2 className="h-4 w-4 mr-1" />
-                          {t("common.remove")}
+                          Remover
                         </Button>
                       </div>
                     </div>
@@ -385,7 +385,7 @@ export default function PlanManagement() {
                             }
                           />
                           <Label htmlFor={`feature-${feature.id}`} className="text-sm font-medium">
-                            {feature.is_enabled ? t("admin.active") : t("admin.inactive")}
+                            {feature.is_enabled ? "Ativo" : "Inativo"}
                           </Label>
                         </div>
                         <Button
@@ -399,7 +399,7 @@ export default function PlanManagement() {
                           }}
                         >
                           <Trash2 className="h-4 w-4 mr-1" />
-                          {t("common.remove")}
+                          Remover
                         </Button>
                       </div>
                     </div>
