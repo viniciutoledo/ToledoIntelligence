@@ -210,6 +210,72 @@ export const insertDocumentCategorySchema = createInsertSchema(documentCategorie
   category_id: true,
 });
 
+// Plan features table
+export const planFeatures = pgTable("plan_features", {
+  id: serial("id").primaryKey(),
+  subscription_tier: text("subscription_tier", { enum: ["none", "basic", "intermediate"] }).notNull(),
+  feature_key: text("feature_key").notNull(),
+  feature_name: text("feature_name").notNull(),
+  feature_description: text("feature_description"),
+  is_enabled: boolean("is_enabled").notNull().default(true),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+  updated_at: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertPlanFeatureSchema = createInsertSchema(planFeatures).pick({
+  subscription_tier: true,
+  feature_key: true,
+  feature_name: true,
+  feature_description: true,
+  is_enabled: true,
+});
+
+// Circuit analysis reports table
+export const analysisReports = pgTable("analysis_reports", {
+  id: serial("id").primaryKey(),
+  user_id: integer("user_id").notNull().references(() => users.id),
+  message_id: integer("message_id").references(() => chatMessages.id),
+  title: text("title").notNull(),
+  content: text("content").notNull(),
+  image_url: text("image_url"),
+  report_type: text("report_type", { enum: ["basic", "advanced"] }).notNull(),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+  is_exported: boolean("is_exported").notNull().default(false),
+  export_format: text("export_format", { enum: ["pdf", "docx", "html"] }),
+  exported_at: timestamp("exported_at"),
+  exported_url: text("exported_url"),
+});
+
+export const insertAnalysisReportSchema = createInsertSchema(analysisReports).pick({
+  user_id: true,
+  message_id: true,
+  title: true,
+  content: true,
+  image_url: true,
+  report_type: true,
+});
+
+// Support tickets table
+export const supportTickets = pgTable("support_tickets", {
+  id: serial("id").primaryKey(),
+  user_id: integer("user_id").notNull().references(() => users.id),
+  subject: text("subject").notNull(),
+  message: text("message").notNull(),
+  status: text("status", { enum: ["pending", "in_progress", "resolved", "closed"] }).notNull().default("pending"),
+  priority: text("priority", { enum: ["normal", "high"] }).notNull().default("normal"),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+  updated_at: timestamp("updated_at").defaultNow().notNull(),
+  resolved_at: timestamp("resolved_at"),
+  assigned_to: integer("assigned_to").references(() => users.id),
+});
+
+export const insertSupportTicketSchema = createInsertSchema(supportTickets).pick({
+  user_id: true,
+  subject: true,
+  message: true,
+  priority: true,
+});
+
 // Export types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -242,6 +308,15 @@ export type InsertTrainingCategory = z.infer<typeof insertTrainingCategorySchema
 
 export type DocumentCategory = typeof documentCategories.$inferSelect;
 export type InsertDocumentCategory = z.infer<typeof insertDocumentCategorySchema>;
+
+export type PlanFeature = typeof planFeatures.$inferSelect;
+export type InsertPlanFeature = z.infer<typeof insertPlanFeatureSchema>;
+
+export type AnalysisReport = typeof analysisReports.$inferSelect;
+export type InsertAnalysisReport = z.infer<typeof insertAnalysisReportSchema>;
+
+export type SupportTicket = typeof supportTickets.$inferSelect;
+export type InsertSupportTicket = z.infer<typeof insertSupportTicketSchema>;
 
 // Login data
 export type LoginData = {

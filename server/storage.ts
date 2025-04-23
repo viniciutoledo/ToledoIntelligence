@@ -5,7 +5,10 @@ import {
   chatSessions, ChatSession, InsertChatSession,
   chatMessages, ChatMessage, InsertChatMessage,
   auditLogs, AuditLog, InsertAuditLog,
-  otpTokens, OtpToken, InsertOtpToken
+  otpTokens, OtpToken, InsertOtpToken,
+  planFeatures, PlanFeature, InsertPlanFeature,
+  analysisReports, AnalysisReport, InsertAnalysisReport,
+  supportTickets, SupportTicket, InsertSupportTicket
 } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
@@ -92,6 +95,34 @@ export interface IStorage {
   removeDocumentFromCategory(documentId: number, categoryId: number): Promise<void>;
   getDocumentCategories(documentId: number): Promise<TrainingCategory[]>;
   getCategoryDocuments(categoryId: number): Promise<TrainingDocument[]>;
+  
+  // Plan features management
+  getPlanFeature(id: number): Promise<PlanFeature | undefined>;
+  getPlanFeatures(subscriptionTier?: string): Promise<PlanFeature[]>;
+  createPlanFeature(feature: InsertPlanFeature): Promise<PlanFeature>;
+  updatePlanFeature(id: number, data: Partial<PlanFeature>): Promise<PlanFeature | undefined>;
+  deletePlanFeature(id: number): Promise<void>;
+  checkFeatureAccess(userId: number, featureKey: string): Promise<boolean>;
+  
+  // Analysis reports
+  getAnalysisReport(id: number): Promise<AnalysisReport | undefined>;
+  getUserAnalysisReports(userId: number): Promise<AnalysisReport[]>;
+  createAnalysisReport(report: InsertAnalysisReport): Promise<AnalysisReport>;
+  updateAnalysisReport(id: number, data: Partial<AnalysisReport>): Promise<AnalysisReport | undefined>;
+  exportAnalysisReport(id: number, format: string): Promise<AnalysisReport | undefined>;
+  
+  // Support tickets
+  getSupportTicket(id: number): Promise<SupportTicket | undefined>;
+  getUserSupportTickets(userId: number): Promise<SupportTicket[]>;
+  createSupportTicket(ticket: InsertSupportTicket): Promise<SupportTicket>;
+  updateSupportTicket(id: number, data: Partial<SupportTicket>): Promise<SupportTicket | undefined>;
+  assignSupportTicket(id: number, assignedTo: number): Promise<SupportTicket | undefined>;
+  resolveSupportTicket(id: number): Promise<SupportTicket | undefined>;
+  
+  // Usage tracking
+  incrementMessageCount(userId: number): Promise<User | undefined>;
+  checkMessageLimit(userId: number): Promise<boolean>;
+  resetMessageCounts(): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -142,6 +173,9 @@ export class MemStorage implements IStorage {
   private trainingDocuments: Map<number, TrainingDocument>;
   private trainingCategories: Map<number, TrainingCategory>;
   private documentCategories: Map<number, DocumentCategory>;
+  private planFeatures: Map<number, PlanFeature>;
+  private analysisReports: Map<number, AnalysisReport>;
+  private supportTickets: Map<number, SupportTicket>;
   
   sessionStore: session.Store;
   
@@ -156,6 +190,9 @@ export class MemStorage implements IStorage {
     trainingDocumentId: number;
     trainingCategoryId: number;
     documentCategoryId: number;
+    planFeatureId: number;
+    analysisReportId: number;
+    supportTicketId: number;
   };
 
   constructor() {
@@ -170,6 +207,9 @@ export class MemStorage implements IStorage {
     this.trainingDocuments = new Map();
     this.trainingCategories = new Map();
     this.documentCategories = new Map();
+    this.planFeatures = new Map();
+    this.analysisReports = new Map();
+    this.supportTickets = new Map();
     
     this.currentIds = {
       userId: 1,
@@ -181,7 +221,10 @@ export class MemStorage implements IStorage {
       otpTokenId: 1,
       trainingDocumentId: 1,
       trainingCategoryId: 1,
-      documentCategoryId: 1
+      documentCategoryId: 1,
+      planFeatureId: 1,
+      analysisReportId: 1,
+      supportTicketId: 1
     };
     
     this.sessionStore = new MemoryStore({
