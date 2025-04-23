@@ -130,6 +130,201 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Rota de admin para gerenciar recursos dos planos
+  app.post("/api/admin/plans/features", isAuthenticated, checkRole("admin"), async (req, res) => {
+    try {
+      const schema = z.object({
+        subscription_tier: z.enum(["none", "basic", "intermediate"]),
+        feature_key: z.string().min(1),
+        feature_name: z.string().min(1),
+        feature_description: z.string().nullable().optional(),
+        is_enabled: z.boolean().optional()
+      });
+      
+      const featureData = schema.parse(req.body);
+      
+      const newFeature = await storage.createPlanFeature({
+        ...featureData,
+        feature_description: featureData.feature_description || null,
+        is_enabled: featureData.is_enabled ?? true
+      });
+      
+      // Log da ação
+      await logAction({
+        userId: req.user!.id,
+        action: "plan_feature_created",
+        details: { feature_key: featureData.feature_key, tier: featureData.subscription_tier },
+        ipAddress: req.ip
+      });
+      
+      res.status(201).json(newFeature);
+    } catch (error) {
+      console.error("Erro ao criar recurso do plano:", error);
+      res.status(400).json({ message: error instanceof Error ? error.message : "Dados inválidos" });
+    }
+  });
+  
+  app.put("/api/admin/plans/features/:id", isAuthenticated, checkRole("admin"), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID inválido" });
+      }
+      
+      const schema = z.object({
+        subscription_tier: z.enum(["none", "basic", "intermediate"]).optional(),
+        feature_key: z.string().min(1).optional(),
+        feature_name: z.string().min(1).optional(),
+        feature_description: z.string().nullable().optional(),
+        is_enabled: z.boolean().optional()
+      });
+      
+      const updateData = schema.parse(req.body);
+      
+      // Verificar se o recurso existe
+      const feature = await storage.getPlanFeatureById(id);
+      if (!feature) {
+        return res.status(404).json({ message: "Recurso não encontrado" });
+      }
+      
+      const updatedFeature = await storage.updatePlanFeature(id, updateData);
+      
+      // Log da ação
+      await logAction({
+        userId: req.user!.id,
+        action: "plan_feature_updated",
+        details: { id, ...updateData },
+        ipAddress: req.ip
+      });
+      
+      res.json(updatedFeature);
+    } catch (error) {
+      console.error("Erro ao atualizar recurso do plano:", error);
+      res.status(400).json({ message: error instanceof Error ? error.message : "Dados inválidos" });
+    }
+  });
+  
+  app.delete("/api/admin/plans/features/:id", isAuthenticated, checkRole("admin"), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID inválido" });
+      }
+      
+      // Verificar se o recurso existe
+      const feature = await storage.getPlanFeatureById(id);
+      if (!feature) {
+        return res.status(404).json({ message: "Recurso não encontrado" });
+      }
+      
+      await storage.deletePlanFeature(id);
+      
+      // Log da ação
+      await logAction({
+        userId: req.user!.id,
+        action: "plan_feature_deleted",
+        details: { id, feature_key: feature.feature_key },
+        ipAddress: req.ip
+      });
+      
+      res.status(204).send();
+    } catch (error) {
+      console.error("Erro ao excluir recurso do plano:", error);
+      res.status(500).json({ message: "Erro ao excluir recurso do plano" });
+    }
+  });
+  
+  // Resetar contador de mensagens
+  app.post("/api/admin/users/:id/reset-message-count", isAuthenticated, checkRole("admin"), async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "ID de usuário inválido" });
+      }
+      
+      // Verificar se o usuário existe
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "Usuário não encontrado" });
+      }
+      
+      const updatedUser = await storage.updateUser(userId, { message_count: 0 });
+      
+      // Log da ação
+      await logAction({
+        userId: req.user!.id,
+        action: "user_message_count_reset",
+        details: { target_user_id: userId, email: user.email },
+        ipAddress: req.ip
+      });
+      
+      // Remove dados sensíveis
+      const { password, twofa_secret, ...safeUser } = updatedUser!;
+      
+      res.json(safeUser);
+    } catch (error) {
+      console.error("Erro ao resetar contador de mensagens:", error);
+      res.status(500).json({ message: "Erro ao resetar contador de mensagens" });
+    }
+  });
+  
+  // Atualizar plano do usuário
+  app.put("/api/admin/users/:id/subscription", isAuthenticated, checkRole("admin"), async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "ID de usuário inválido" });
+      }
+      
+      const schema = z.object({
+        subscription_tier: z.enum(["none", "basic", "intermediate"])
+      });
+      
+      const { subscription_tier } = schema.parse(req.body);
+      
+      // Verificar se o usuário existe
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "Usuário não encontrado" });
+      }
+      
+      // Determinar o novo limite de mensagens com base no plano
+      let max_messages = 50; // plano gratuito
+      
+      if (subscription_tier === "basic") {
+        max_messages = 2500;
+      } else if (subscription_tier === "intermediate") {
+        max_messages = 5000;
+      }
+      
+      const updatedUser = await storage.updateUser(userId, { 
+        subscription_tier,
+        max_messages
+      });
+      
+      // Log da ação
+      await logAction({
+        userId: req.user!.id,
+        action: "user_subscription_updated",
+        details: { 
+          target_user_id: userId, 
+          email: user.email, 
+          old_tier: user.subscription_tier, 
+          new_tier: subscription_tier 
+        },
+        ipAddress: req.ip
+      });
+      
+      // Remove dados sensíveis
+      const { password, twofa_secret, ...safeUser } = updatedUser!;
+      
+      res.json(safeUser);
+    } catch (error) {
+      console.error("Erro ao atualizar plano do usuário:", error);
+      res.status(400).json({ message: error instanceof Error ? error.message : "Dados inválidos" });
+    }
+  });
+  
   app.get("/api/user/check-feature-access/:featureKey", isAuthenticated, async (req, res) => {
     try {
       const { featureKey } = req.params;

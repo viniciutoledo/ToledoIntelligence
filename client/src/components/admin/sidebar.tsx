@@ -11,7 +11,8 @@ import {
   Menu,
   X,
   LogOut,
-  BookOpen
+  BookOpen,
+  CreditCard
 } from "lucide-react";
 import { LanguageToggle } from "@/components/language-toggle";
 
