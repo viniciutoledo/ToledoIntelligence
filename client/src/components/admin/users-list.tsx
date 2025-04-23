@@ -229,12 +229,12 @@ export function UsersList() {
     return isBlocked ? (
       <span className="inline-flex items-center text-red-500">
         <XCircle className="w-4 h-4 mr-1" />
-        {t("admin.blocked")}
+        Bloqueado
       </span>
     ) : (
       <span className="inline-flex items-center text-green-500">
         <CheckCircle className="w-4 h-4 mr-1" />
-        {t("admin.active")}
+        Ativo
       </span>
     );
   };
@@ -280,8 +280,8 @@ export function UsersList() {
     return (
       <div className="p-8 text-center border rounded-lg bg-neutral-50">
         <AlertTriangle className="h-8 w-8 text-yellow-500 mb-2 mx-auto" />
-        <h3 className="text-lg font-medium">{t("admin.noUsersFound")}</h3>
-        <p className="text-neutral-500 mt-1">{t("admin.noUsersFoundDesc")}</p>
+        <h3 className="text-lg font-medium">Nenhum usuário encontrado</h3>
+        <p className="text-neutral-500 mt-1">Não há usuários registrados no sistema ainda.</p>
       </div>
     );
   }
@@ -484,14 +484,14 @@ export function UsersList() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>{t("admin.userEmail")}</TableHead>
-              <TableHead>{t("admin.userRole")}</TableHead>
-              <TableHead>{t("admin.userStatus")}</TableHead>
-              <TableHead>{t("admin.userLastLogin")}</TableHead>
-              <TableHead>{t("admin.userLanguage")}</TableHead>
-              <TableHead>{t("admin.subscription")}</TableHead>
-              <TableHead>{t("admin.messageUsage")}</TableHead>
-              <TableHead>{t("admin.userActions")}</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>Função</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Último Login</TableHead>
+              <TableHead>Idioma</TableHead>
+              <TableHead>Assinatura</TableHead>
+              <TableHead>Uso de Mensagens</TableHead>
+              <TableHead>Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -523,7 +523,7 @@ export function UsersList() {
                         {unblockUserMutation.isPending ? (
                           <Loader2 className="h-4 w-4 animate-spin mr-1" />
                         ) : null}
-                        {t("admin.unblock")}
+                        Desbloquear
                       </Button>
                     ) : (
                       <Button
@@ -536,7 +536,7 @@ export function UsersList() {
                         {blockUserMutation.isPending ? (
                           <Loader2 className="h-4 w-4 animate-spin mr-1" />
                         ) : null}
-                        {t("admin.block")}
+                        Bloquear
                       </Button>
                     )}
                     
@@ -547,7 +547,7 @@ export function UsersList() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>{t("admin.userActions")}</DropdownMenuLabel>
+                        <DropdownMenuLabel>Ações</DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem 
                           onClick={() => {
@@ -556,7 +556,7 @@ export function UsersList() {
                           }}
                         >
                           <Edit className="mr-2 h-4 w-4" />
-                          {t("admin.editUser")}
+                          Editar Usuário
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           className="text-red-600"
@@ -566,7 +566,7 @@ export function UsersList() {
                           }}
                         >
                           <Trash2 className="mr-2 h-4 w-4" />
-                          {t("admin.deleteUser")}
+                          Excluir Usuário
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
