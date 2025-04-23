@@ -73,7 +73,7 @@ interface User {
 }
 
 export function UsersList() {
-  const { t, language } = useLanguage();
+  const { language } = useLanguage();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -175,7 +175,7 @@ export function UsersList() {
       setIsDeleteOpen(false);
       toast({
         title: "Sucesso",
-        description: t("admin.userDeleted"),
+        description: "Usuário excluído com sucesso",
       });
     },
     onError: (error: Error) => {
@@ -189,7 +189,7 @@ export function UsersList() {
 
   // Formata a data com base no idioma
   const formatDate = (dateString: string | null) => {
-    if (!dateString) return t("admin.never");
+    if (!dateString) return "Nunca";
     
     const date = new Date(dateString);
     const locale = language === "pt" ? ptBR : enUS;
