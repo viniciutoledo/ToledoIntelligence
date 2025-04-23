@@ -424,24 +424,24 @@ export default function PlanManagement() {
             
             <form onSubmit={handleSubmit} className="space-y-5 bg-gray-50 dark:bg-gray-900/40 p-5 rounded-lg border">
               <div className="space-y-3">
-                <Label htmlFor="feature_name" className="text-base font-medium">{t("admin.featureName")}</Label>
+                <Label htmlFor="feature_name" className="text-base font-medium">Nome do recurso</Label>
                 <Input
                   id="feature_name"
                   placeholder={activeTab === "basic" 
-                    ? t("admin.featureNamePlaceholderBasic") 
-                    : t("admin.featureNamePlaceholderPremium")}
+                    ? "ex: Limite de interações ou Análise de Placas" 
+                    : "ex: Suporte por email ou Relatórios Avançados"}
                   value={newFeature.feature_name}
                   onChange={(e) =>
                     setNewFeature({ ...newFeature, feature_name: e.target.value })
                   }
                   className="text-base"
                 />
-                <p className="text-sm text-muted-foreground">{t("admin.featureNameHelp")}</p>
+                <p className="text-sm text-muted-foreground">Digite o nome do recurso como será exibido aos usuários</p>
               </div>
               
               <div className="space-y-3">
                 <Label htmlFor="feature_description" className="text-base font-medium">
-                  {t("admin.featureDescription")} <span className="text-sm font-normal text-muted-foreground">({t("common.optional")})</span>
+                  Descrição do recurso <span className="text-sm font-normal text-muted-foreground">(opcional)</span>
                 </Label>
                 <Textarea
                   id="feature_description"
@@ -456,17 +456,17 @@ export default function PlanManagement() {
               </div>
               
               <div className="space-y-3">
-                <Label htmlFor="feature_key" className="text-base font-medium">{t("admin.technicalID")}</Label>
+                <Label htmlFor="feature_key" className="text-base font-medium">ID Técnico</Label>
                 <Input
                   id="feature_key"
-                  placeholder={activeTab === "basic" ? "interaction_limit" : "priority_support"}
+                  placeholder={activeTab === "basic" ? "limite_interacoes" : "suporte_prioritario"}
                   value={newFeature.feature_key}
                   onChange={(e) =>
                     setNewFeature({ ...newFeature, feature_key: e.target.value })
                   }
                   className="font-mono text-sm"
                 />
-                <p className="text-sm text-muted-foreground">{t("admin.technicalIDHelp")}</p>
+                <p className="text-sm text-muted-foreground">Usado internamente pelo sistema para identificar este recurso</p>
               </div>
               
               <div className="flex items-center space-x-2 p-3 bg-white dark:bg-gray-900 rounded border">
@@ -479,8 +479,8 @@ export default function PlanManagement() {
                 />
                 <Label htmlFor="is_enabled" className="font-medium">
                   {newFeature.is_enabled 
-                    ? t("admin.featureWillBeEnabled") 
-                    : t("admin.featureWillBeDisabled")}
+                    ? "O recurso será habilitado imediatamente" 
+                    : "O recurso será criado mas desabilitado"}
                 </Label>
               </div>
               
