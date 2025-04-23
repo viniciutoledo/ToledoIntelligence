@@ -33,6 +33,18 @@ export async function syncDatabaseSchema() {
         is_enabled BOOLEAN NOT NULL DEFAULT TRUE
       );
       
+      -- Criar tabela plan_pricing se não existir
+      CREATE TABLE IF NOT EXISTS plan_pricing (
+        id SERIAL PRIMARY KEY,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        subscription_tier TEXT NOT NULL UNIQUE,
+        name TEXT NOT NULL,
+        price INTEGER NOT NULL,
+        currency TEXT NOT NULL DEFAULT 'BRL',
+        description TEXT
+      );
+      
       -- Criar tabela analysis_reports se não existir
       CREATE TABLE IF NOT EXISTS analysis_reports (
         id SERIAL PRIMARY KEY,
