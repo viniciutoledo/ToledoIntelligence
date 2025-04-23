@@ -30,7 +30,8 @@ const enTranslations = {
     switchLanguage: 'Switch language',
     month: 'month',
     role: 'Access Profile',
-    username: 'Username'
+    username: 'Username',
+    optional: 'optional'
   },
   landing: {
     heroTitle: 'AI-Powered Circuit Board Analysis',
@@ -154,6 +155,7 @@ const enTranslations = {
     logDetails: 'Details',
     logIp: 'IP Address',
     system: 'System',
+    plans: 'Plans',
     actionUserLogin: 'User login',
     actionUserLogout: 'User logout',
     actionUserRegistered: 'User registered',
@@ -280,7 +282,34 @@ const enTranslations = {
     deleteWarning: 'Are you sure you want to delete this document? This action cannot be undone.',
     deleteCategoryWarning: 'Are you sure you want to delete this category? This action cannot be undone and will remove all document associations.',
     noDocuments: 'No documents found',
-    noCategories: 'No categories found'
+    noCategories: 'No categories found',
+    
+    // Plan Management
+    freePlan: 'Free Plan',
+    basicPlan: 'Basic Plan',
+    intermediatePlan: 'Intermediate Plan',
+    usersWithoutSubscription: 'Users without subscription',
+    messagesPerMonth: 'messages/month',
+    ofTotal: 'of total',
+    planFeatures: 'Plan Features',
+    managePlanFeatures: 'Manage available features for each subscription plan',
+    basic: 'Basic',
+    intermediate: 'Intermediate',
+    loadingFeatures: 'Loading features...',
+    noDescription: 'No description',
+    inactive: 'Inactive',
+    confirmDeleteFeature: 'Are you sure you want to remove this feature?',
+    noBasicPlanFeatures: 'No features defined for the basic plan.',
+    noIntermediatePlanFeatures: 'No features defined for the intermediate plan.',
+    addNewFeatureToPlan: 'Add new feature to {{plan}} plan',
+    featureKey: 'Feature key (code)',
+    featureKeyPlaceholder: 'e.g: advanced_analysis',
+    featureName: 'Feature name',
+    featureNamePlaceholder: 'e.g: Advanced Analysis',
+    featureDescriptionPlaceholder: 'Describe the feature clearly...',
+    enableFeatureImmediately: 'Enable feature immediately',
+    adding: 'Adding...',
+    addFeature: 'Add Feature'
   },
   errors: {
     sessionExpired: 'Your session has expired. Please login again.',
@@ -326,7 +355,8 @@ const ptTranslations = {
     switchLanguage: 'Mudar idioma',
     month: 'mês',
     role: 'Perfil de Acesso',
-    username: 'Nome de Usuário'
+    username: 'Nome de Usuário',
+    optional: 'opcional'
   },
   landing: {
     heroTitle: 'Análise de Placas de Circuito com IA',
@@ -404,6 +434,7 @@ const ptTranslations = {
     settings: 'Configurações',
     users: 'Usuários',
     logs: 'Registros',
+    plans: 'Planos',
     llmSettings: 'Configuração do Modelo LLM',
     llmSettingsSubtitle: 'Gerencie o modelo de IA utilizado pelo sistema',
     llmModel: 'Modelo LLM',
@@ -575,7 +606,35 @@ const ptTranslations = {
     deleteWarning: 'Tem certeza que deseja excluir este documento? Esta ação não pode ser desfeita.',
     deleteCategoryWarning: 'Tem certeza que deseja excluir esta categoria? Esta ação não pode ser desfeita e removerá todas as associações de documentos.',
     noDocuments: 'Nenhum documento encontrado',
-    noCategories: 'Nenhuma categoria encontrada'
+    noCategories: 'Nenhuma categoria encontrada',
+    
+    // Plan Management
+    freePlan: 'Plano Gratuito',
+    basicPlan: 'Plano Básico',
+    intermediatePlan: 'Plano Intermediário',
+    usersWithoutSubscription: 'Usuários sem assinatura',
+    messagesPerMonth: 'mensagens/mês',
+    ofTotal: 'do total',
+    planFeatures: 'Recursos dos Planos',
+    managePlanFeatures: 'Gerencie os recursos disponíveis para cada plano de assinatura',
+    basic: 'Básico',
+    intermediate: 'Intermediário',
+    loadingFeatures: 'Carregando recursos...',
+    noDescription: 'Sem descrição',
+    inactive: 'Inativo',
+    confirmDeleteFeature: 'Tem certeza que deseja remover este recurso?',
+    noBasicPlanFeatures: 'Não há recursos definidos para o plano básico.',
+    noIntermediatePlanFeatures: 'Não há recursos definidos para o plano intermediário.',
+    addNewFeatureToPlan: 'Adicionar novo recurso ao plano {{plan}}',
+    featureKey: 'Chave do recurso (code)',
+    featureKeyPlaceholder: 'ex: advanced_analysis',
+    featureName: 'Nome do recurso',
+    featureNamePlaceholder: 'ex: Análise Avançada',
+    featureDescriptionPlaceholder: 'Descreva o recurso de forma clara...',
+    enableFeatureImmediately: 'Ativar recurso imediatamente',
+    adding: 'Adicionando...',
+    addFeature: 'Adicionar Recurso',
+    optional: 'opcional'
   },
   errors: {
     sessionExpired: 'Sua sessão expirou. Por favor, faça login novamente.',

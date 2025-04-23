@@ -196,7 +196,7 @@ export default function PlanManagement() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-semibold text-primary-800">
-          Gerenciamento de Planos
+          {t("admin.plans")}
         </h2>
       </div>
       
@@ -204,18 +204,18 @@ export default function PlanManagement() {
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Plano Gratuito</CardTitle>
-            <CardDescription>Usuários sem assinatura</CardDescription>
+            <CardTitle className="text-sm font-medium">{t("admin.freePlan")}</CardTitle>
+            <CardDescription>{t("admin.usersWithoutSubscription")}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {statsLoading ? "..." : formatUserCount(planStats?.none_users || 0)}
               <span className="text-xs font-normal text-muted-foreground ml-2">
-                usuários
+                {t("admin.users").toLowerCase()}
               </span>
             </div>
             <div className="text-xs text-muted-foreground mt-1">
-              {statsLoading ? "..." : (planStats?.none_percent || 0).toFixed(1)}% do total
+              {statsLoading ? "..." : (planStats?.none_percent || 0).toFixed(1)}% {t("admin.ofTotal")}
             </div>
           </CardContent>
         </Card>
@@ -223,22 +223,22 @@ export default function PlanManagement() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">
-              Plano Básico
+              {t("admin.basicPlan")}
               <Badge className="ml-2 bg-blue-100 text-blue-800 hover:bg-blue-100">
                 R$29,90
               </Badge>
             </CardTitle>
-            <CardDescription>2.500 mensagens/mês</CardDescription>
+            <CardDescription>2.500 {t("admin.messagesPerMonth")}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {statsLoading ? "..." : formatUserCount(planStats?.basic_users || 0)}
               <span className="text-xs font-normal text-muted-foreground ml-2">
-                usuários
+                {t("admin.users").toLowerCase()}
               </span>
             </div>
             <div className="text-xs text-muted-foreground mt-1">
-              {statsLoading ? "..." : (planStats?.basic_percent || 0).toFixed(1)}% do total
+              {statsLoading ? "..." : (planStats?.basic_percent || 0).toFixed(1)}% {t("admin.ofTotal")}
             </div>
           </CardContent>
         </Card>
@@ -246,22 +246,22 @@ export default function PlanManagement() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">
-              Plano Intermediário
+              {t("admin.intermediatePlan")}
               <Badge className="ml-2 bg-amber-100 text-amber-800 hover:bg-amber-100">
                 R$39,90
               </Badge>
             </CardTitle>
-            <CardDescription>5.000 mensagens/mês</CardDescription>
+            <CardDescription>5.000 {t("admin.messagesPerMonth")}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {statsLoading ? "..." : formatUserCount(planStats?.intermediate_users || 0)}
               <span className="text-xs font-normal text-muted-foreground ml-2">
-                usuários
+                {t("admin.users").toLowerCase()}
               </span>
             </div>
             <div className="text-xs text-muted-foreground mt-1">
-              {statsLoading ? "..." : (planStats?.intermediate_percent || 0).toFixed(1)}% do total
+              {statsLoading ? "..." : (planStats?.intermediate_percent || 0).toFixed(1)}% {t("admin.ofTotal")}
             </div>
           </CardContent>
         </Card>
@@ -270,19 +270,19 @@ export default function PlanManagement() {
       {/* Gerenciamento de recursos dos planos */}
       <Card className="mt-8">
         <CardHeader>
-          <CardTitle>Recursos dos Planos</CardTitle>
+          <CardTitle>{t("admin.planFeatures")}</CardTitle>
           <CardDescription>
-            Gerencie os recursos disponíveis para cada plano de assinatura
+            {t("admin.managePlanFeatures")}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="basic">
-                Básico
+                {t("admin.basic")}
               </TabsTrigger>
               <TabsTrigger value="intermediate">
-                Intermediário 
+                {t("admin.intermediate")}
                 <Crown className="ml-1 h-3.5 w-3.5 text-amber-500" />
               </TabsTrigger>
             </TabsList>
@@ -290,7 +290,7 @@ export default function PlanManagement() {
             <TabsContent value="basic" className="space-y-4 mt-4">
               <div className="space-y-4">
                 {basicLoading ? (
-                  <p className="text-center py-4 text-muted-foreground">Carregando recursos...</p>
+                  <p className="text-center py-4 text-muted-foreground">{t("admin.loadingFeatures")}</p>
                 ) : basicFeatures && basicFeatures.length > 0 ? (
                   basicFeatures.map((feature) => (
                     <div
@@ -300,7 +300,7 @@ export default function PlanManagement() {
                       <div className="flex-1">
                         <h4 className="font-medium">{feature.feature_name}</h4>
                         <p className="text-sm text-muted-foreground">
-                          {feature.feature_description || "Sem descrição"}
+                          {feature.feature_description || t("admin.noDescription")}
                         </p>
                         <div className="mt-1">
                           <code className="bg-muted px-1.5 py-0.5 rounded text-xs">
@@ -318,7 +318,7 @@ export default function PlanManagement() {
                             }
                           />
                           <Label htmlFor={`feature-${feature.id}`} className="text-sm">
-                            {feature.is_enabled ? "Ativo" : "Inativo"}
+                            {feature.is_enabled ? t("admin.active") : t("admin.inactive")}
                           </Label>
                         </div>
                         <Button
@@ -326,7 +326,7 @@ export default function PlanManagement() {
                           size="icon"
                           className="text-destructive"
                           onClick={() => {
-                            if (window.confirm("Tem certeza que deseja remover este recurso?")) {
+                            if (window.confirm(t("admin.confirmDeleteFeature"))) {
                               deleteFeatureMutation.mutate(feature.id);
                             }
                           }}
@@ -338,7 +338,7 @@ export default function PlanManagement() {
                   ))
                 ) : (
                   <p className="text-center py-4 text-muted-foreground">
-                    Não há recursos definidos para o plano básico.
+                    {t("admin.noBasicPlanFeatures")}
                   </p>
                 )}
               </div>
@@ -347,7 +347,7 @@ export default function PlanManagement() {
             <TabsContent value="intermediate" className="space-y-4 mt-4">
               <div className="space-y-4">
                 {intermediateLoading ? (
-                  <p className="text-center py-4 text-muted-foreground">Carregando recursos...</p>
+                  <p className="text-center py-4 text-muted-foreground">{t("admin.loadingFeatures")}</p>
                 ) : intermediateFeatures && intermediateFeatures.length > 0 ? (
                   intermediateFeatures.map((feature) => (
                     <div
@@ -360,7 +360,7 @@ export default function PlanManagement() {
                       <div className="flex-1">
                         <h4 className="font-medium">{feature.feature_name}</h4>
                         <p className="text-sm text-muted-foreground">
-                          {feature.feature_description || "Sem descrição"}
+                          {feature.feature_description || t("admin.noDescription")}
                         </p>
                         <div className="mt-1">
                           <code className="bg-muted px-1.5 py-0.5 rounded text-xs">
@@ -378,7 +378,7 @@ export default function PlanManagement() {
                             }
                           />
                           <Label htmlFor={`feature-${feature.id}`} className="text-sm">
-                            {feature.is_enabled ? "Ativo" : "Inativo"}
+                            {feature.is_enabled ? t("admin.active") : t("admin.inactive")}
                           </Label>
                         </div>
                         <Button
@@ -386,7 +386,7 @@ export default function PlanManagement() {
                           size="icon"
                           className="text-destructive"
                           onClick={() => {
-                            if (window.confirm("Tem certeza que deseja remover este recurso?")) {
+                            if (window.confirm(t("admin.confirmDeleteFeature"))) {
                               deleteFeatureMutation.mutate(feature.id);
                             }
                           }}
@@ -398,7 +398,7 @@ export default function PlanManagement() {
                   ))
                 ) : (
                   <p className="text-center py-4 text-muted-foreground">
-                    Não há recursos definidos para o plano intermediário.
+                    {t("admin.noIntermediatePlanFeatures")}
                   </p>
                 )}
               </div>
@@ -408,15 +408,15 @@ export default function PlanManagement() {
           {/* Formulário para adicionar novo recurso */}
           <div className="mt-8 border-t pt-6">
             <h3 className="text-base font-medium mb-4">
-              {`Adicionar novo recurso ao plano ${activeTab === "basic" ? "Básico" : "Intermediário"}`}
+              {t("admin.addNewFeatureToPlan", { plan: activeTab === "basic" ? t("admin.basic") : t("admin.intermediate") })}
             </h3>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="feature_key">Chave do recurso (code)</Label>
+                  <Label htmlFor="feature_key">{t("admin.featureKey")}</Label>
                   <Input
                     id="feature_key"
-                    placeholder="ex: advanced_analysis"
+                    placeholder={t("admin.featureKeyPlaceholder")}
                     value={newFeature.feature_key}
                     onChange={(e) =>
                       setNewFeature({ ...newFeature, feature_key: e.target.value })
@@ -424,10 +424,10 @@ export default function PlanManagement() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="feature_name">Nome do recurso</Label>
+                  <Label htmlFor="feature_name">{t("admin.featureName")}</Label>
                   <Input
                     id="feature_name"
-                    placeholder="ex: Análise Avançada"
+                    placeholder={t("admin.featureNamePlaceholder")}
                     value={newFeature.feature_name}
                     onChange={(e) =>
                       setNewFeature({ ...newFeature, feature_name: e.target.value })
@@ -436,10 +436,10 @@ export default function PlanManagement() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="feature_description">Descrição (opcional)</Label>
+                <Label htmlFor="feature_description">{t("admin.description")} ({t("common.optional")})</Label>
                 <Textarea
                   id="feature_description"
-                  placeholder="Descreva o recurso de forma clara..."
+                  placeholder={t("admin.featureDescriptionPlaceholder")}
                   value={newFeature.feature_description}
                   onChange={(e) =>
                     setNewFeature({ ...newFeature, feature_description: e.target.value })
@@ -455,7 +455,7 @@ export default function PlanManagement() {
                     setNewFeature({ ...newFeature, is_enabled: checked })
                   }
                 />
-                <Label htmlFor="is_enabled">Ativar recurso imediatamente</Label>
+                <Label htmlFor="is_enabled">{t("admin.enableFeatureImmediately")}</Label>
               </div>
               
               <div className="pt-2">
@@ -467,12 +467,12 @@ export default function PlanManagement() {
                   {addFeatureMutation.isPending ? (
                     <div className="flex items-center">
                       <div className="animate-spin mr-2 h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
-                      <span>Adicionando...</span>
+                      <span>{t("admin.adding")}</span>
                     </div>
                   ) : (
                     <div className="flex items-center">
                       <Plus className="mr-2 h-4 w-4" />
-                      <span>Adicionar Recurso</span>
+                      <span>{t("admin.addFeature")}</span>
                     </div>
                   )}
                 </Button>
