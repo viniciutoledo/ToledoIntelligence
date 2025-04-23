@@ -279,10 +279,10 @@ export default function PlanManagement() {
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="basic">
-                {t("admin.basic")}
+                Básico
               </TabsTrigger>
               <TabsTrigger value="intermediate">
-                {t("admin.intermediate")}
+                Intermediário
                 <Crown className="ml-1 h-3.5 w-3.5 text-amber-500" />
               </TabsTrigger>
             </TabsList>
@@ -303,7 +303,7 @@ export default function PlanManagement() {
                           {feature.is_enabled && (
                             <Badge className="ml-2 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
                               <Check className="mr-1 h-3 w-3" />
-                              {t("admin.active")}
+                              Ativo
                             </Badge>
                           )}
                         </div>
@@ -367,7 +367,7 @@ export default function PlanManagement() {
                           {feature.is_enabled && (
                             <Badge className="ml-2 bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100">
                               <Crown className="mr-1 h-3 w-3" />
-                              {t("admin.premium")}
+                              Premium
                             </Badge>
                           )}
                         </div>
