@@ -211,11 +211,11 @@ export default function PlanManagement() {
             <div className="text-2xl font-bold">
               {statsLoading ? "..." : formatUserCount(planStats?.none_users || 0)}
               <span className="text-xs font-normal text-muted-foreground ml-2">
-                {t("admin.users").toLowerCase()}
+                usuários
               </span>
             </div>
             <div className="text-xs text-muted-foreground mt-1">
-              {statsLoading ? "..." : (planStats?.none_percent || 0).toFixed(1)}% {t("admin.ofTotal")}
+              {statsLoading ? "..." : (planStats?.none_percent || 0).toFixed(1)}% do total
             </div>
           </CardContent>
         </Card>
@@ -261,7 +261,7 @@ export default function PlanManagement() {
               </span>
             </div>
             <div className="text-xs text-muted-foreground mt-1">
-              {statsLoading ? "..." : (planStats?.intermediate_percent || 0).toFixed(1)}% {t("admin.ofTotal")}
+              {statsLoading ? "..." : (planStats?.intermediate_percent || 0).toFixed(1)}% do total
             </div>
           </CardContent>
         </Card>
