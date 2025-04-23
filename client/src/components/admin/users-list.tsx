@@ -113,6 +113,30 @@ export function UsersList() {
     },
   });
   
+  // Mutação para bloquear usuários
+  const blockUserMutation = useMutation({
+    mutationFn: async (userId: number) => {
+      setIsLoading(true);
+      const res = await apiRequest("PUT", `/api/admin/users/${userId}/block`);
+      setIsLoading(false);
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      toast({
+        title: t("common.success"),
+        description: t("admin.userBlocked"),
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: t("common.error"),
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+  
   // Mutação para atualizar usuários
   const updateUserMutation = useMutation({
     mutationFn: async (data: { id: number, userData: Partial<User> }) => {
