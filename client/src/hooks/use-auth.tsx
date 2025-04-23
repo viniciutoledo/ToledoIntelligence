@@ -246,6 +246,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     onSuccess: () => {
       queryClient.setQueryData(["/api/user"], null);
       setTwoFactorState(null);
+      
+      // Redirecionar para a landing page após logout
+      window.location.href = "/";
     },
     onError: (error: Error) => {
       toast({
