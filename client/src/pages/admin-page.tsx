@@ -8,6 +8,7 @@ import { AuditLogs } from "@/components/admin/audit-logs";
 import { AdminDashboard } from "@/components/admin/dashboard"; 
 import { TrainingPanel } from "@/components/admin/training-panel";
 import PlanManagement from "@/components/admin/plan-management";
+import PlanPricing from "@/components/admin/plan-pricing";
 import { LlmProvider } from "@/hooks/use-llm";
 import { AvatarProvider } from "@/hooks/use-avatar";
 import { useLanguage } from "@/hooks/use-language";

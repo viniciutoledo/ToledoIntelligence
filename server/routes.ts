@@ -184,7 +184,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updateData = schema.parse(req.body);
       
       // Verificar se o recurso existe
-      const feature = await storage.getPlanFeatureById(id);
+      const feature = await storage.getPlanFeature(id);
       if (!feature) {
         return res.status(404).json({ message: "Recurso não encontrado" });
       }
@@ -214,7 +214,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Verificar se o recurso existe
-      const feature = await storage.getPlanFeatureById(id);
+      const feature = await storage.getPlanFeature(id);
       if (!feature) {
         return res.status(404).json({ message: "Recurso não encontrado" });
       }
