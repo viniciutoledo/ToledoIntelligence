@@ -206,19 +206,19 @@ export function UsersList() {
       case "basic":
         return (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-            Basic
+            Básico
           </span>
         );
       case "intermediate":
         return (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-            Intermediate
+            Intermediário
           </span>
         );
       default:
         return (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-            {t("admin.noSubscription")}
+            Sem Assinatura
           </span>
         );
     }
@@ -398,9 +398,9 @@ export function UsersList() {
                     });
                   }}
                 >
-                  <option value="none">{t("admin.noSubscription")}</option>
-                  <option value="basic">Basic</option>
-                  <option value="intermediate">Intermediate</option>
+                  <option value="none">Sem Assinatura</option>
+                  <option value="basic">Básico</option>
+                  <option value="intermediate">Intermediário</option>
                 </select>
               </div>
             </div>
@@ -499,12 +499,12 @@ export function UsersList() {
               <TableRow key={user.id}>
                 <TableCell className="font-medium">{user.email}</TableCell>
                 <TableCell>
-                  {user.role === "admin" ? t("auth.admin") : t("auth.technician")}
+                  {user.role === "admin" ? "Administrador" : "Técnico"}
                 </TableCell>
                 <TableCell>{renderStatus(user.is_blocked)}</TableCell>
                 <TableCell>{formatDate(user.last_login)}</TableCell>
                 <TableCell>
-                  {user.language === "pt" ? t("common.portuguese") : t("common.english")}
+                  {user.language === "pt" ? "Português" : "Inglês"}
                 </TableCell>
                 <TableCell>{renderSubscriptionStatus(user.subscription_tier)}</TableCell>
                 <TableCell className="min-w-32">
