@@ -523,6 +523,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(safeUsers);
   });
   
+  app.put("/api/admin/users/:id/block", isAuthenticated, checkRole("admin"), async (req, res) => {
+    const id = parseInt(req.params.id);
+    
+    if (isNaN(id)) {
+      return res.status(400).json({ message: "Invalid ID" });
+    }
+    
+    const user = await storage.getUser(id);
+    
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    
+    const blockedUser = await storage.blockUser(id);
+    
+    // Log the action
+    await logAction({
+      userId: req.user!.id,
+      action: "user_blocked",
+      details: { targetUserId: id, email: user.email },
+      ipAddress: req.ip
+    });
+    
+    // Return safe user
+    const { password, twofa_secret, ...safeUser } = blockedUser!;
+    res.json(safeUser);
+  });
+
   app.put("/api/admin/users/:id/unblock", isAuthenticated, checkRole("admin"), async (req, res) => {
     const id = parseInt(req.params.id);
     
