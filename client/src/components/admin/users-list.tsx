@@ -311,9 +311,9 @@ export function UsersList() {
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>{t("admin.editUserTitle")}</DialogTitle>
+            <DialogTitle>Editar Usuário</DialogTitle>
             <DialogDescription>
-              {t("admin.editUserDesc")}
+              Edite as informações do usuário abaixo.
             </DialogDescription>
           </DialogHeader>
           
@@ -329,7 +329,7 @@ export function UsersList() {
             
             <div className="grid grid-cols-4 items-center gap-4">
               <label htmlFor="role" className="text-right text-sm font-medium">
-                {t("admin.userRole")}:
+                Função:
               </label>
               <div className="col-span-3">
                 <select
@@ -343,15 +343,15 @@ export function UsersList() {
                     })
                   }
                 >
-                  <option value="technician">{t("auth.technician")}</option>
-                  <option value="admin">{t("auth.admin")}</option>
+                  <option value="technician">Técnico</option>
+                  <option value="admin">Administrador</option>
                 </select>
               </div>
             </div>
             
             <div className="grid grid-cols-4 items-center gap-4">
               <label htmlFor="language" className="text-right text-sm font-medium">
-                {t("admin.userLanguage")}:
+                Idioma:
               </label>
               <div className="col-span-3">
                 <select
@@ -365,15 +365,15 @@ export function UsersList() {
                     })
                   }
                 >
-                  <option value="pt">{t("common.portuguese")}</option>
-                  <option value="en">{t("common.english")}</option>
+                  <option value="pt">Português</option>
+                  <option value="en">Inglês</option>
                 </select>
               </div>
             </div>
             
             <div className="grid grid-cols-4 items-center gap-4">
               <label htmlFor="subscription" className="text-right text-sm font-medium">
-                {t("admin.subscription")}:
+                Assinatura:
               </label>
               <div className="col-span-3">
                 <select
@@ -407,7 +407,7 @@ export function UsersList() {
             
             <div className="grid grid-cols-4 items-center gap-4">
               <label htmlFor="message_count" className="text-right text-sm font-medium">
-                {t("admin.messageCount")}:
+                Contagem de Mensagens:
               </label>
               <div className="col-span-3">
                 <input
@@ -430,7 +430,7 @@ export function UsersList() {
           
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditOpen(false)}>
-              {t("common.cancel")}
+              Cancelar
             </Button>
             <Button 
               onClick={handleEditUser} 
@@ -439,7 +439,7 @@ export function UsersList() {
               {updateUserMutation.isPending && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
-              {t("common.save")}
+              Salvar
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -455,13 +455,13 @@ export function UsersList() {
       <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t("admin.deleteUserTitle")}</AlertDialogTitle>
+            <AlertDialogTitle>Excluir Usuário</AlertDialogTitle>
             <AlertDialogDescription>
-              {t("admin.deleteUserDesc").replace("{email}", userToDelete.email)}
+              Tem certeza que deseja excluir permanentemente o usuário {userToDelete.email}? Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               className="bg-red-500 hover:bg-red-600"
               onClick={() => deleteUserMutation.mutate(userToDelete.id)}
@@ -470,7 +470,7 @@ export function UsersList() {
               {deleteUserMutation.isPending && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
-              {t("admin.deleteUser")}
+              Excluir Usuário
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
