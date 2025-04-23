@@ -270,9 +270,9 @@ export default function PlanManagement() {
       {/* Gerenciamento de recursos dos planos */}
       <Card className="mt-8">
         <CardHeader>
-          <CardTitle>{t("admin.planFeatures")}</CardTitle>
+          <CardTitle>Recursos dos Planos</CardTitle>
           <CardDescription>
-            {t("admin.managePlanFeatures")}
+            Gerencie os recursos disponíveis em cada plano de assinatura
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -290,7 +290,7 @@ export default function PlanManagement() {
             <TabsContent value="basic" className="space-y-4 mt-4">
               <div className="space-y-4">
                 {basicLoading ? (
-                  <p className="text-center py-4 text-muted-foreground">{t("admin.loadingFeatures")}</p>
+                  <p className="text-center py-4 text-muted-foreground">Carregando recursos...</p>
                 ) : basicFeatures && basicFeatures.length > 0 ? (
                   basicFeatures.map((feature) => (
                     <div
@@ -308,7 +308,7 @@ export default function PlanManagement() {
                           )}
                         </div>
                         <p className="text-sm text-muted-foreground mt-1 mb-2">
-                          {feature.feature_description || t("admin.noDescription")}
+                          {feature.feature_description || "Sem descrição"}
                         </p>
                       </div>
                       <div className="flex items-center space-x-3 self-end md:self-auto w-full md:w-auto justify-end">
@@ -329,7 +329,7 @@ export default function PlanManagement() {
                           size="sm"
                           className="text-destructive border-destructive/20 hover:bg-destructive/10"
                           onClick={() => {
-                            if (window.confirm(t("admin.confirmDeleteFeature"))) {
+                            if (window.confirm("Tem certeza que deseja excluir este recurso? Esta ação não pode ser desfeita.")) {
                               deleteFeatureMutation.mutate(feature.id);
                             }
                           }}
@@ -342,7 +342,7 @@ export default function PlanManagement() {
                   ))
                 ) : (
                   <p className="text-center py-4 text-muted-foreground">
-                    {t("admin.noBasicPlanFeatures")}
+                    Não há recursos para o plano Básico
                   </p>
                 )}
               </div>
@@ -351,7 +351,7 @@ export default function PlanManagement() {
             <TabsContent value="intermediate" className="space-y-4 mt-4">
               <div className="space-y-4">
                 {intermediateLoading ? (
-                  <p className="text-center py-4 text-muted-foreground">{t("admin.loadingFeatures")}</p>
+                  <p className="text-center py-4 text-muted-foreground">Carregando recursos...</p>
                 ) : intermediateFeatures && intermediateFeatures.length > 0 ? (
                   intermediateFeatures.map((feature) => (
                     <div
@@ -372,7 +372,7 @@ export default function PlanManagement() {
                           )}
                         </div>
                         <p className="text-sm text-muted-foreground mt-1 mb-2">
-                          {feature.feature_description || t("admin.noDescription")}
+                          {feature.feature_description || "Sem descrição"}
                         </p>
                       </div>
                       <div className="flex items-center space-x-3 self-end md:self-auto w-full md:w-auto justify-end">
@@ -393,7 +393,7 @@ export default function PlanManagement() {
                           size="sm"
                           className="text-destructive border-destructive/20 hover:bg-destructive/10"
                           onClick={() => {
-                            if (window.confirm(t("admin.confirmDeleteFeature"))) {
+                            if (window.confirm("Tem certeza que deseja excluir este recurso? Esta ação não pode ser desfeita.")) {
                               deleteFeatureMutation.mutate(feature.id);
                             }
                           }}
@@ -406,7 +406,7 @@ export default function PlanManagement() {
                   ))
                 ) : (
                   <p className="text-center py-4 text-muted-foreground">
-                    {t("admin.noIntermediatePlanFeatures")}
+                    Não há recursos para o plano Intermediário
                   </p>
                 )}
               </div>
@@ -418,8 +418,8 @@ export default function PlanManagement() {
             <h3 className="text-lg font-medium mb-4 flex items-center">
               <Plus className="mr-2 h-5 w-5 text-primary" />
               {activeTab === "basic" 
-                ? t("admin.addNewBasicFeature") 
-                : t("admin.addNewPremiumFeature")}
+                ? "Adicionar novo recurso ao plano Básico" 
+                : "Adicionar novo recurso ao plano Intermediário"}
             </h3>
             
             <form onSubmit={handleSubmit} className="space-y-5 bg-gray-50 dark:bg-gray-900/40 p-5 rounded-lg border">
@@ -445,7 +445,7 @@ export default function PlanManagement() {
                 </Label>
                 <Textarea
                   id="feature_description"
-                  placeholder={t("admin.featureDescriptionPlaceholder")}
+                  placeholder="Descreva o que este recurso oferece aos usuários"
                   value={newFeature.feature_description}
                   onChange={(e) =>
                     setNewFeature({ ...newFeature, feature_description: e.target.value })
