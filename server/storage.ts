@@ -7,6 +7,7 @@ import {
   auditLogs, AuditLog, InsertAuditLog,
   otpTokens, OtpToken, InsertOtpToken,
   planFeatures, PlanFeature, InsertPlanFeature,
+  planPricing, PlanPricing, InsertPlanPricing,
   analysisReports, AnalysisReport, InsertAnalysisReport,
   supportTickets, SupportTicket, InsertSupportTicket
 } from "@shared/schema";
@@ -233,6 +234,7 @@ export class MemStorage implements IStorage {
       trainingCategoryId: 1,
       documentCategoryId: 1,
       planFeatureId: 1,
+      planPricingId: 1,
       analysisReportId: 1,
       supportTicketId: 1
     };
@@ -917,6 +919,51 @@ export class MemStorage implements IStorage {
   async resolveSupportTicket(id: number): Promise<SupportTicket | undefined> {
     const now = new Date();
     return this.updateSupportTicket(id, { status: "resolved", resolved_at: now });
+  }
+  
+  // Plan pricing functionality
+  async getPlanPricing(id: number): Promise<PlanPricing | undefined> {
+    return this.planPricing.get(id);
+  }
+  
+  async getPlanPricingByTier(subscriptionTier: string): Promise<PlanPricing | undefined> {
+    return Array.from(this.planPricing.values()).find(
+      pricing => pricing.subscription_tier === subscriptionTier
+    );
+  }
+  
+  async getAllPlanPricing(): Promise<PlanPricing[]> {
+    return Array.from(this.planPricing.values())
+      .sort((a, b) => a.id - b.id);
+  }
+  
+  async createPlanPricing(pricing: InsertPlanPricing): Promise<PlanPricing> {
+    const id = this.currentIds.planPricingId++;
+    const now = new Date();
+    
+    const planPricing: PlanPricing = {
+      ...pricing,
+      id,
+      created_at: now,
+      updated_at: now
+    };
+    
+    this.planPricing.set(id, planPricing);
+    return planPricing;
+  }
+  
+  async updatePlanPricing(id: number, data: Partial<PlanPricing>): Promise<PlanPricing | undefined> {
+    const pricing = this.planPricing.get(id);
+    if (!pricing) return undefined;
+    
+    const updatedPricing = {
+      ...pricing,
+      ...data,
+      updated_at: new Date()
+    };
+    
+    this.planPricing.set(id, updatedPricing);
+    return updatedPricing;
   }
   
   // Usage tracking
