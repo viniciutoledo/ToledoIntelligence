@@ -536,7 +536,7 @@ export function UsersList() {
                         {blockUserMutation.isPending ? (
                           <Loader2 className="h-4 w-4 animate-spin mr-1" />
                         ) : null}
-                        Bloquear
+                        {t("admin.block")}
                       </Button>
                     )}
                     
