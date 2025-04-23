@@ -11,8 +11,53 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, Crown, Plus, Check } from "lucide-react";
+import { Trash2, Crown, Plus, Check, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+// Componente para exibir o preço do plano de forma dinâmica
+type PlanPriceBadgeProps = {
+  tier: "basic" | "intermediate";
+};
+
+function PlanPriceBadge({ tier }: PlanPriceBadgeProps) {
+  const { data: pricing, isLoading } = useQuery({
+    queryKey: ['/api/plans/pricing', tier],
+    queryFn: async () => {
+      const response = await apiRequest('GET', `/api/plans/pricing?tier=${tier}`);
+      return await response.json();
+    },
+  });
+
+  const getBadgeClasses = () => {
+    return tier === "basic" 
+      ? "bg-blue-100 text-blue-800 hover:bg-blue-100"
+      : "bg-amber-100 text-amber-800 hover:bg-amber-100";
+  };
+
+  if (isLoading) {
+    return (
+      <Badge className={`ml-2 ${getBadgeClasses()} animate-pulse`}>
+        <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+        Carregando...
+      </Badge>
+    );
+  }
+
+  if (!pricing) {
+    return null;
+  }
+
+  // Formatar preço de centavos para reais com o símbolo da moeda
+  const formattedPrice = pricing.currency === "BRL"
+    ? `R$${(pricing.price / 100).toFixed(2).replace('.', ',')}`
+    : `$${(pricing.price / 100).toFixed(2)}`;
+
+  return (
+    <Badge className={`ml-2 ${getBadgeClasses()}`}>
+      {formattedPrice}
+    </Badge>
+  );
+}
 
 type PlanFeature = {
   id: number;
@@ -224,9 +269,7 @@ export default function PlanManagement() {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">
               Plano Básico
-              <Badge className="ml-2 bg-blue-100 text-blue-800 hover:bg-blue-100">
-                R$29,90
-              </Badge>
+              <PlanPriceBadge tier="basic" />
             </CardTitle>
             <CardDescription>2.500 mensagens por mês</CardDescription>
           </CardHeader>

@@ -139,7 +139,10 @@ export default function AdminPage() {
                   <span>Admin Panel</span>
                 </div>
               </div>
-              <PlanManagement />
+              <div className="space-y-8">
+                <PlanPricing />
+                <PlanManagement />
+              </div>
             </>
           )}
         </div>
