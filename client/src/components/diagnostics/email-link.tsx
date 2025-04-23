@@ -13,12 +13,12 @@ export function EmailLink() {
   async function handleClearSessions() {
     try {
       setIsLoading(true);
-      const response = await fetch('/api/clear-sessions', {
+      const response = await fetch('/api/fix-user-role', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, role: 'technician' }),
       });
 
       const data = await response.json();
@@ -49,10 +49,10 @@ export function EmailLink() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Limpar Sessões Ativas</CardTitle>
+        <CardTitle>Atualizar Papel e Limpar Sessões</CardTitle>
         <CardDescription>
-          Se um usuário está tendo problemas para fazer login devido a sessões 
-          bloqueadas, use esta ferramenta para limpar suas sessões ativas.
+          Esta ferramenta atualiza o papel do usuário para técnico e limpa 
+          quaisquer sessões bloqueadas que possam estar impedindo o login.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -73,7 +73,7 @@ export function EmailLink() {
                 className="w-full" 
                 disabled={!email || isLoading}
               >
-                {isLoading ? "Limpando..." : "Limpar Sessões"}
+                {isLoading ? "Atualizando..." : "Atualizar para Técnico"}
               </Button>
             </div>
           </div>
