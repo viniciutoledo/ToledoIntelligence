@@ -83,7 +83,8 @@ const enTranslations = {
     loginError: 'Login error. Please try again.',
     emailAlreadyRegistered: 'This email is already registered',
     registrationError: 'Error during registration',
-    verificationCodeResent: 'Verification code resent'
+    verificationCodeResent: 'Verification code resent',
+    registeringWithPlan: 'Registering with subscription plan'
   },
   technician: {
     title: 'Technician Interface',
@@ -376,7 +377,8 @@ const ptTranslations = {
     loginError: 'Erro de login. Por favor, tente novamente.',
     emailAlreadyRegistered: 'Este email já está registrado',
     registrationError: 'Erro durante o registro',
-    verificationCodeResent: 'Código de verificação reenviado'
+    verificationCodeResent: 'Código de verificação reenviado',
+    registeringWithPlan: 'Registrando-se com plano de assinatura'
   },
   technician: {
     title: 'Interface do Técnico',
