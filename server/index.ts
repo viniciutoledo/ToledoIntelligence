@@ -46,6 +46,41 @@ app.use((req, res, next) => {
     console.log('Sincronizando o esquema do banco de dados...');
     await syncDatabaseSchema();
     console.log('Esquema do banco de dados sincronizado com sucesso');
+    
+    // Inicializar os preços dos planos se não existirem
+    try {
+      // Verificar se já existem preços para os planos
+      const basicPricing = await db.select().from(planPricing).where(eq(planPricing.subscription_tier, 'basic'));
+      const intermediatePricing = await db.select().from(planPricing).where(eq(planPricing.subscription_tier, 'intermediate'));
+      
+      // Se não existir preço para o plano básico, criar
+      if (basicPricing.length === 0) {
+        console.log('Criando preço padrão para o plano básico...');
+        await db.insert(planPricing).values({
+          subscription_tier: 'basic',
+          name: 'Plano Básico',
+          price: 2990, // R$ 29,90 em centavos
+          currency: 'BRL',
+          description: 'Acesso a 2.500 interações por mês',
+        });
+      }
+      
+      // Se não existir preço para o plano intermediário, criar
+      if (intermediatePricing.length === 0) {
+        console.log('Criando preço padrão para o plano intermediário...');
+        await db.insert(planPricing).values({
+          subscription_tier: 'intermediate',
+          name: 'Plano Intermediário',
+          price: 3990, // R$ 39,90 em centavos
+          currency: 'BRL',
+          description: 'Acesso a 5.000 interações por mês',
+        });
+      }
+      
+      console.log('Preços dos planos verificados/inicializados com sucesso');
+    } catch (error) {
+      console.error('Erro ao inicializar preços dos planos:', error);
+    }
   } catch (error) {
     console.error('Erro ao sincronizar o esquema do banco de dados:', error);
   }

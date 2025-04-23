@@ -43,7 +43,7 @@ export default function LandingPage() {
     {
       id: import.meta.env.VITE_STRIPE_PRICE_ID_BASIC || "price_basic",
       name: "Plano Básico",
-      price: "R$29,90",
+      tier: "basic" as const,
       features: [
         "2.500 interações por mês",
         "Upload de imagens e documentos",
@@ -55,7 +55,7 @@ export default function LandingPage() {
     {
       id: import.meta.env.VITE_STRIPE_PRICE_ID_INTERMEDIATE || "price_intermediate",
       name: "Plano Intermediário",
-      price: "R$39,90",
+      tier: "intermediate" as const,
       features: [
         "5.000 interações por mês",
         "Upload de imagens e documentos",

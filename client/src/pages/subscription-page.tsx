@@ -40,7 +40,7 @@ export default function SubscriptionPage() {
       description: isPortuguese 
         ? 'Ideal para técnicos com volume moderado de manutenções' 
         : 'Ideal for technicians with moderate maintenance volume',
-      price: isPortuguese ? 'R$ 29,90/mês' : 'R$ 29.90/month',
+      price: 'price_placeholder', // Será substituído pelo componente dinâmico PlanPriceDisplay
       features: isPortuguese
         ? [
             'Análise de placas de circuito',
@@ -62,7 +62,7 @@ export default function SubscriptionPage() {
       description: isPortuguese 
         ? 'Perfeito para técnicos com maior volume de trabalho' 
         : 'Perfect for technicians with higher workload',
-      price: isPortuguese ? 'R$ 39,90/mês' : 'R$ 39.90/month',
+      price: 'price_placeholder', // Será substituído pelo componente dinâmico PlanPriceDisplay
       features: isPortuguese
         ? [
             'Todas as funcionalidades do plano Básico',
@@ -220,7 +220,12 @@ export default function SubscriptionPage() {
               <CardDescription>{plan.description}</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold mb-4">{plan.price}</div>
+              <div className="text-3xl font-bold mb-4">
+                <PlanPriceDisplay 
+                  tier={plan.id as "basic" | "intermediate"} 
+                />
+                {isPortuguese ? '/mês' : '/month'}
+              </div>
               <ul className="space-y-2">
                 {plan.features.map((feature, index) => (
                   <li key={index} className="flex items-start">
