@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { AuthForm } from "@/components/auth";
 import { useAuth } from "@/hooks/use-auth";
+import { PlanPriceDisplay } from "@/components/plan/plan-price-display";
 
 // Cores do tema
 const colors = {
@@ -302,7 +303,12 @@ export default function LandingPage() {
                 <div className="p-6">
                   <h3 className="text-2xl font-bold mb-2 text-white">{plan.name}</h3>
                   <div className="flex items-baseline mb-4">
-                    <span className="text-4xl font-bold text-white">{plan.price}</span>
+                    <span className="text-4xl font-bold text-white">
+                      {plan.id.includes("basic") ? 
+                        <PlanPriceDisplay tier="basic" /> : 
+                        <PlanPriceDisplay tier="intermediate" />
+                      }
+                    </span>
                     <span className="text-white ml-2 opacity-70">/{t("common.month")}</span>
                   </div>
                   <ul className="space-y-4 mb-6">

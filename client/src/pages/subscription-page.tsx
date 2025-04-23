@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Check, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { PlanPriceDisplay } from "@/components/plan/plan-price-display";
 
 interface SubscriptionPlan {
   id: string;

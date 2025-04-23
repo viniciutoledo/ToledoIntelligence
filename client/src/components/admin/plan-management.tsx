@@ -290,9 +290,7 @@ export default function PlanManagement() {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">
               Plano Intermediário
-              <Badge className="ml-2 bg-amber-100 text-amber-800 hover:bg-amber-100">
-                R$39,90
-              </Badge>
+              <PlanPriceBadge tier="intermediate" />
             </CardTitle>
             <CardDescription>5.000 mensagens por mês</CardDescription>
           </CardHeader>
