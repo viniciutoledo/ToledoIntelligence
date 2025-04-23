@@ -39,10 +39,11 @@ export default function DiagnosticPage() {
         <div className="text-center p-4 border border-yellow-400 bg-yellow-50 dark:bg-yellow-950 dark:border-yellow-800 rounded-lg">
           <p className="font-medium text-yellow-800 dark:text-yellow-200">Instruções para resolver o problema</p>
           <ol className="text-left mt-2 text-sm list-decimal pl-5 text-yellow-700 dark:text-yellow-300 space-y-1">
-            <li>Use a ferramenta acima para atualizar o papel do usuário vinicius.mecatronico@gmail.com para técnico.</li>
-            <li>Faça logout (se já estiver logado como este usuário).</li>
-            <li>Faça login novamente com as credenciais deste usuário.</li>
-            <li>Agora o usuário será redirecionado corretamente para a interface de técnico, e não de administrador.</li>
+            <li>Primeiro, limpe as sessões ativas do usuário vinicius.mecatronico@gmail.com usando a ferramenta "Limpar Sessões Ativas" acima.</li>
+            <li>Em seguida, use a ferramenta "Mudar Papel do Usuário" para configurar o papel como 'technician'.</li>
+            <li>Faça logout (usando o botão acima) caso já esteja logado com esta conta.</li>
+            <li>Faça login novamente na página de autenticação com as credenciais do usuário.</li>
+            <li>Agora o usuário deverá ser redirecionado corretamente para a interface de técnico (chat).</li>
           </ol>
         </div>
       </div>
