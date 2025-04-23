@@ -119,6 +119,13 @@ export interface IStorage {
   assignSupportTicket(id: number, assignedTo: number): Promise<SupportTicket | undefined>;
   resolveSupportTicket(id: number): Promise<SupportTicket | undefined>;
   
+  // Plan pricing
+  getPlanPricing(id: number): Promise<PlanPricing | undefined>;
+  getPlanPricingByTier(subscriptionTier: string): Promise<PlanPricing | undefined>;
+  getAllPlanPricing(): Promise<PlanPricing[]>;
+  createPlanPricing(pricing: InsertPlanPricing): Promise<PlanPricing>;
+  updatePlanPricing(id: number, data: Partial<PlanPricing>): Promise<PlanPricing | undefined>;
+  
   // Usage tracking
   incrementMessageCount(userId: number): Promise<User | undefined>;
   checkMessageLimit(userId: number): Promise<boolean>;
@@ -174,6 +181,7 @@ export class MemStorage implements IStorage {
   private trainingCategories: Map<number, TrainingCategory>;
   private documentCategories: Map<number, DocumentCategory>;
   private planFeatures: Map<number, PlanFeature>;
+  private planPricing: Map<number, PlanPricing>;
   private analysisReports: Map<number, AnalysisReport>;
   private supportTickets: Map<number, SupportTicket>;
   
@@ -191,6 +199,7 @@ export class MemStorage implements IStorage {
     trainingCategoryId: number;
     documentCategoryId: number;
     planFeatureId: number;
+    planPricingId: number;
     analysisReportId: number;
     supportTicketId: number;
   };
@@ -208,6 +217,7 @@ export class MemStorage implements IStorage {
     this.trainingCategories = new Map();
     this.documentCategories = new Map();
     this.planFeatures = new Map();
+    this.planPricing = new Map();
     this.analysisReports = new Map();
     this.supportTickets = new Map();
     

@@ -222,12 +222,32 @@ export const planFeatures = pgTable("plan_features", {
   updated_at: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// Plan pricing table
+export const planPricing = pgTable("plan_pricing", {
+  id: serial("id").primaryKey(),
+  subscription_tier: text("subscription_tier", { enum: ["none", "basic", "intermediate"] }).notNull().unique(),
+  name: text("name").notNull(),
+  price: integer("price").notNull(), // Armazenado em centavos
+  currency: text("currency", { enum: ["USD", "BRL"] }).notNull().default("BRL"),
+  description: text("description"),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+  updated_at: timestamp("updated_at").defaultNow().notNull(),
+});
+
 export const insertPlanFeatureSchema = createInsertSchema(planFeatures).pick({
   subscription_tier: true,
   feature_key: true,
   feature_name: true,
   feature_description: true,
   is_enabled: true,
+});
+
+export const insertPlanPricingSchema = createInsertSchema(planPricing).pick({
+  subscription_tier: true,
+  name: true,
+  price: true,
+  currency: true,
+  description: true,
 });
 
 // Circuit analysis reports table
@@ -311,6 +331,9 @@ export type InsertDocumentCategory = z.infer<typeof insertDocumentCategorySchema
 
 export type PlanFeature = typeof planFeatures.$inferSelect;
 export type InsertPlanFeature = z.infer<typeof insertPlanFeatureSchema>;
+
+export type PlanPricing = typeof planPricing.$inferSelect;
+export type InsertPlanPricing = z.infer<typeof insertPlanPricingSchema>;
 
 export type AnalysisReport = typeof analysisReports.$inferSelect;
 export type InsertAnalysisReport = z.infer<typeof insertAnalysisReportSchema>;
