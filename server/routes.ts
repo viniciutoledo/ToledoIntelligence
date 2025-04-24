@@ -9,6 +9,16 @@ import crypto from "crypto";
 import path from "path";
 import fs from "fs";
 import { z } from "zod";
+
+// Função utilitária para converter URLs relativas para absolutas
+function ensureAbsoluteUrl(url: string, req: Request): string {
+  if (url && url.startsWith('/')) {
+    const protocol = req.secure ? 'https://' : 'http://';
+    const host = req.get('host') || 'localhost:5000';
+    return `${protocol}${host}${url}`;
+  }
+  return url;
+}
 import { 
   insertLlmConfigSchema,
   insertAvatarSchema,
@@ -2530,12 +2540,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Remover a API key da resposta
       const { api_key, ...safeWidget } = widget;
       
-      // Converter URLs relativas para absolutas
-      if (safeWidget.avatar_url && safeWidget.avatar_url.startsWith('/')) {
-        // Determinar o protocolo e o host para criar a URL absoluta
-        const protocol = req.secure ? 'https://' : 'http://';
-        const host = req.get('host') || 'localhost:5000';
-        safeWidget.avatar_url = `${protocol}${host}${safeWidget.avatar_url}`;
+      // Converter URLs relativas para absolutas usando a função utilitária
+      if (safeWidget.avatar_url) {
+        safeWidget.avatar_url = ensureAbsoluteUrl(safeWidget.avatar_url, req);
       }
       
       return res.json(safeWidget);
