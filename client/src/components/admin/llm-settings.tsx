@@ -35,7 +35,7 @@ import { formatDate } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { LlmSelectionDropdown } from "./llm-selection-dropdown";
-import ClaudeCompatibilityTester from "./claude-compatibility-tester";
+import UniversalModelTester from "./universal-model-tester";
 
 export function LlmSettings() {
   const { t } = useLanguage();
@@ -252,7 +252,10 @@ export function LlmSettings() {
               <h3 className="text-lg font-medium">Ferramentas de Diagnóstico</h3>
               <Separator />
               
-              <ClaudeCompatibilityTester />
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                <ClaudeCompatibilityTester />
+                <OpenAICompatibilityTester />
+              </div>
             </div>
 
             <div className="flex justify-end pt-4">
