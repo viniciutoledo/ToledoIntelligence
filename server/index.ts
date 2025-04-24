@@ -10,6 +10,32 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// Middleware para permitir incorporação em iframes (embeds)
+app.use((req, res, next) => {
+  // Remover X-Frame-Options para permitir que o site seja embutido em iframes
+  res.removeHeader('X-Frame-Options');
+  
+  // Definir Content-Security-Policy para permitir embedding de forma segura
+  res.setHeader(
+    'Content-Security-Policy',
+    "frame-ancestors 'self' *"
+  );
+  
+  // Permitir CORS para que o widget possa ser carregado em qualquer site
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+  res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type,Authorization');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  
+  // Se for uma requisição OPTIONS, retornar 200 imediatamente (pré-voo CORS)
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  
+  next();
+});
+
+// Middleware de logging
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;

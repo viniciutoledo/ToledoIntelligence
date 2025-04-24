@@ -119,6 +119,19 @@ const avatarUpload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Rota especial para permitir embedding do widget
+  app.get('/embed/*', (req, res, next) => {
+    // Remover X-Frame-Options para permitir embedding
+    res.removeHeader('X-Frame-Options');
+    
+    // Configurar Content-Security-Policy para permitir que o widget seja embedado
+    res.setHeader(
+      'Content-Security-Policy',
+      "frame-ancestors 'self' *"
+    );
+    
+    next();
+  });
   // Servir arquivos estáticos da pasta public
   app.use(express.static(path.join(process.cwd(), 'public')));
   
