@@ -123,11 +123,26 @@ function getOpenAIClient(apiKey: string) {
   
   // Criar o cliente com a chave limpa
   try {
-    openaiClient = new OpenAI({ 
-      apiKey: apiKey, 
+    // Verificando se a chave já está no formato correto para o OpenAI
+    if (apiKey.startsWith('sk-')) {
+      console.log('Chave OpenAI corretamente formatada');
+    } else {
+      console.log('AVISO: Chave OpenAI não começa com sk-, pode causar problemas');
+    }
+    
+    // Configuração básica do cliente
+    const config: any = { 
+      apiKey: apiKey,
       dangerouslyAllowBrowser: false,
       maxRetries: 3
-    });
+    };
+    
+    // Adicionando opção defaultHeaders para evitar adição automática do prefixo Bearer
+    config.defaultHeaders = {
+      "Authorization": `${apiKey}` // Sem Bearer
+    };
+    
+    openaiClient = new OpenAI(config);
     return openaiClient;
   } catch (err) {
     console.error('Erro ao criar cliente OpenAI:', err);
@@ -167,9 +182,25 @@ function getAnthropicClient(apiKey: string) {
   
   // Criar o cliente com a chave limpa
   try {
-    anthropicClient = new Anthropic({ 
+    // Verificando se a chave já está no formato correto para o Anthropic
+    if (apiKey.startsWith('sk-ant-')) {
+      console.log('Chave Anthropic corretamente formatada');
+    } else {
+      console.log('AVISO: Chave Anthropic não começa com sk-ant-, pode causar problemas');
+    }
+    
+    // Configuração básica do cliente
+    const config: any = { 
       apiKey: apiKey
-    });
+    };
+    
+    // Adicionando opção defaultHeaders para evitar adição automática do prefixo Bearer
+    config.defaultHeaders = {
+      "X-Api-Key": apiKey, // Formato alternativo para Anthropic
+      "Anthropic-Version": "2023-06-01" // Garantir que a versão da API está definida
+    };
+    
+    anthropicClient = new Anthropic(config);
     return anthropicClient;
   } catch (err) {
     console.error('Erro ao criar cliente Anthropic:', err);
