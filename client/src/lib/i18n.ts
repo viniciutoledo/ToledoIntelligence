@@ -500,6 +500,15 @@ const ptTranslations = {
     adminPanelAccess: 'Acesso ao Painel de Controle',
     accessAdminPanel: 'Acessar Painel Admin',
     adminAccessWarning: 'Esta área é restrita apenas para administradores. Você deve ter privilégios administrativos para acessar este painel.',
+    
+    // Dashboard Statistics
+    platformStats: 'Estatísticas da Plataforma',
+    widgetsStats: 'Estatísticas de Widgets',
+    widgetsTotal: 'Total de Widgets',
+    widgetSessions: 'Sessões de Widget',
+    widgetMessages: 'Mensagens de Widget',
+    widgetInteractions: 'Sessões interativas com visitantes',
+    uniqueVisitors: 'Visitantes únicos',
     dashboard: 'Dashboard',
     settings: 'Configurações',
     users: 'Usuários',
