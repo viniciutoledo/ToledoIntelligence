@@ -1137,7 +1137,7 @@ export default function WidgetsManagement() {
                   
                   <TabsContent value="embed" className="space-y-4 pt-4">
                     {selectedWidget && (
-                      <div className="space-y-4">
+                      <div className="space-y-6">
                         <div>
                           <h3 className="font-medium mb-2">{t("Código de incorporação")}</h3>
                           <p className="text-sm text-muted-foreground mb-4">
@@ -1165,12 +1165,82 @@ export default function WidgetsManagement() {
                           </div>
                         </div>
                         
-                        <div className="mt-6">
+                        <div className="border-t pt-6">
+                          <h3 className="font-medium mb-2">{t("Link direto para incorporação")}</h3>
+                          <p className="text-sm text-muted-foreground mb-4">
+                            {t("Use este link para incorporar o widget via iframe (compatível com GPT Maker).")}
+                          </p>
+                          
+                          <div className="flex items-center gap-2">
+                            <Input
+                              value={`${window.location.origin}/embed?url=${encodeURIComponent(`${window.location.origin}/embed/widget?key=${selectedWidget.api_key}`)}`}
+                              readOnly
+                              className="font-mono text-sm flex-1"
+                            />
+                            <Button
+                              size="sm"
+                              onClick={() => copyToClipboard(
+                                `${window.location.origin}/embed?url=${encodeURIComponent(`${window.location.origin}/embed/widget?key=${selectedWidget.api_key}`)}`,
+                                t("Link de incorporação copiado")
+                              )}
+                            >
+                              <Link className="h-4 w-4 mr-1" />
+                              {t("Copiar Link")}
+                            </Button>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-2">
+                            {t("Este link funciona de maneira idêntica ao formato utilizado pelo GPT Maker.")}
+                          </p>
+                        </div>
+                        
+                        <div className="border-t pt-6">
+                          <h3 className="font-medium mb-2">{t("Iframe HTML")}</h3>
+                          <p className="text-sm text-muted-foreground mb-4">
+                            {t("Código HTML para incorporar o widget diretamente como iframe.")}
+                          </p>
+                          
+                          <div className="relative">
+                            <Textarea 
+                              value={`<iframe 
+  src="${window.location.origin}/embed/widget?key=${selectedWidget.api_key}" 
+  width="350" 
+  height="600" 
+  frameborder="0" 
+  allow="microphone"
+  style="border: none; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);"
+></iframe>`}
+                              readOnly
+                              rows={6}
+                              className="font-mono text-sm"
+                            />
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="absolute top-2 right-2"
+                              onClick={() => copyToClipboard(
+                                `<iframe 
+  src="${window.location.origin}/embed/widget?key=${selectedWidget.api_key}" 
+  width="350" 
+  height="600" 
+  frameborder="0" 
+  allow="microphone"
+  style="border: none; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);"
+></iframe>`, 
+                                t("Código HTML copiado")
+                              )}
+                            >
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                        
+                        <div className="border-t pt-6">
                           <h3 className="font-medium mb-2">{t("Instruções")}</h3>
                           <ol className="list-decimal list-inside space-y-2 text-sm">
-                            <li>{t("Copie o código acima.")}</li>
-                            <li>{t("Cole-o no HTML do seu site, antes do fechamento da tag body.")}</li>
-                            <li>{t("O widget de chat aparecerá automaticamente em seu site.")}</li>
+                            <li>{t("Escolha um dos métodos de incorporação acima.")}</li>
+                            <li>{t("Para usar o código JavaScript, cole-o no HTML do seu site, antes do fechamento da tag body.")}</li>
+                            <li>{t("Para usar o iframe, cole o código HTML em qualquer lugar da sua página.")}</li>
+                            <li>{t("Para usar o link direto, use-o em um campo que aceite incorporação de URLs (como no GPT Maker).")}</li>
                           </ol>
                         </div>
                       </div>
