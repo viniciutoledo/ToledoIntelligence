@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -29,7 +29,7 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, MoreHorizontal, Plus, Edit, Trash2, Copy, Globe } from "lucide-react";
+import { Loader2, MoreHorizontal, Plus, Edit, Trash2, Copy, Globe, Upload } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { ChatWidget } from "@shared/schema";
 
@@ -38,6 +38,7 @@ const widgetFormSchema = z.object({
   name: z.string().min(3, "Nome deve ter pelo menos 3 caracteres").max(100, "Nome não pode ter mais de 100 caracteres"),
   greeting: z.string().min(1, "Mensagem de boas-vindas é obrigatória"),
   avatar_url: z.string().url("URL de avatar inválida").default("https://ui-avatars.com/api/?name=T&background=6366F1&color=fff"),
+  avatar_image: z.any().optional(),
   theme_color: z.string().regex(/^#[0-9A-F]{6}$/i, "Cor deve estar no formato hexadecimal (ex: #6366F1)").default("#6366F1"),
   allowed_domains: z.array(z.string()).optional()
 });
@@ -55,6 +56,10 @@ export default function WidgetsManagement() {
   const [showApiKey, setShowApiKey] = useState<string | null>(null);
   const [domainInput, setDomainInput] = useState("");
   const [allowedDomains, setAllowedDomains] = useState<string[]>([]);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [editPreviewImage, setEditPreviewImage] = useState<string | null>(null);
+  const createFileInputRef = useRef<HTMLInputElement>(null);
+  const editFileInputRef = useRef<HTMLInputElement>(null);
 
   // Consulta para obter a lista de widgets
   const { data: widgets, isLoading } = useQuery({
@@ -227,12 +232,150 @@ export default function WidgetsManagement() {
   }, [selectedWidget, editForm]);
 
   // Manipuladores de eventos
-  const handleCreateSubmit = (data: WidgetFormValues) => {
-    createWidgetMutation.mutate(data);
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>, isEdit: boolean) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    // Validar tamanho do arquivo (5MB máximo)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: t("Erro"),
+        description: t("A imagem deve ter no máximo 5MB"),
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Validar tipo de arquivo
+    if (!["image/jpeg", "image/png", "image/jpg"].includes(file.type)) {
+      toast({
+        title: t("Erro"),
+        description: t("Apenas imagens JPG e PNG são permitidas"),
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Criar prévia
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (event.target && typeof event.target.result === 'string') {
+        if (isEdit) {
+          setEditPreviewImage(event.target.result);
+        } else {
+          setPreviewImage(event.target.result);
+        }
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
-  const handleEditSubmit = (data: WidgetFormValues) => {
-    if (selectedWidgetId) {
+  const handleCreateSubmit = async (data: WidgetFormValues) => {
+    const fileInput = createFileInputRef.current;
+    const file = fileInput?.files?.[0];
+    
+    if (file) {
+      // Se tiver arquivo selecionado, enviar usando FormData
+      const formData = new FormData();
+      formData.append("name", data.name);
+      formData.append("greeting", data.greeting);
+      formData.append("theme_color", data.theme_color);
+      formData.append("avatar_image", file);
+      
+      if (allowedDomains.length > 0) {
+        formData.append("allowed_domains", JSON.stringify(allowedDomains));
+      }
+      
+      try {
+        const response = await fetch("/api/widgets", {
+          method: "POST",
+          body: formData,
+          credentials: "include",
+        });
+        
+        if (!response.ok) {
+          throw new Error(await response.text());
+        }
+        
+        queryClient.invalidateQueries({ queryKey: ["/api/widgets"] });
+        setIsCreateDialogOpen(false);
+        setAllowedDomains([]);
+        setPreviewImage(null);
+        
+        if (fileInput) {
+          fileInput.value = "";
+        }
+        
+        toast({
+          title: t("Widget criado com sucesso"),
+          description: t("O novo widget está pronto para ser usado"),
+          variant: "default",
+        });
+      } catch (error: any) {
+        toast({
+          title: t("Erro ao criar widget"),
+          description: error.message || t("Ocorreu um erro ao criar o widget"),
+          variant: "destructive",
+        });
+      }
+    } else {
+      // Se não tiver arquivo, usar a mutation normal
+      createWidgetMutation.mutate(data);
+    }
+  };
+
+  const handleEditSubmit = async (data: WidgetFormValues) => {
+    if (!selectedWidgetId) return;
+    
+    const fileInput = editFileInputRef.current;
+    const file = fileInput?.files?.[0];
+    
+    if (file) {
+      // Se tiver arquivo selecionado, enviar usando FormData
+      const formData = new FormData();
+      formData.append("name", data.name);
+      formData.append("greeting", data.greeting);
+      formData.append("theme_color", data.theme_color);
+      formData.append("avatar_image", file);
+      
+      if (allowedDomains.length > 0) {
+        formData.append("allowed_domains", JSON.stringify(allowedDomains));
+      }
+      
+      try {
+        const response = await fetch(`/api/widgets/${selectedWidgetId}`, {
+          method: "PUT",
+          body: formData,
+          credentials: "include",
+        });
+        
+        if (!response.ok) {
+          throw new Error(await response.text());
+        }
+        
+        queryClient.invalidateQueries({ queryKey: ["/api/widgets"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/widgets", selectedWidgetId] });
+        setIsEditDialogOpen(false);
+        setEditPreviewImage(null);
+        
+        if (fileInput) {
+          fileInput.value = "";
+        }
+        
+        toast({
+          title: t("Widget atualizado com sucesso"),
+          description: t("As alterações foram salvas"),
+          variant: "default",
+        });
+      } catch (error: any) {
+        toast({
+          title: t("Erro ao atualizar widget"),
+          description: error.message || t("Ocorreu um erro ao atualizar o widget"),
+          variant: "destructive",
+        });
+      }
+    } else {
+      // Se não tiver arquivo, usar a mutation normal
       updateWidgetMutation.mutate({ id: selectedWidgetId, data });
     }
   };
@@ -429,17 +572,87 @@ export default function WidgetsManagement() {
                     name="avatar_url"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t("URL do Avatar")}</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="https://ui-avatars.com/api/?name=T&background=6366F1&color=fff" 
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          {t("URL da imagem que será exibida como avatar do chat.")}
-                        </FormDescription>
-                        <FormMessage />
+                        <FormLabel>{t("Avatar do Chat")}</FormLabel>
+                        
+                        <div className="flex flex-col md:flex-row gap-8 mb-4">
+                          <div className="md:w-1/3">
+                            <div className="bg-white border border-dashed border-neutral-300 rounded-lg p-4 text-center shadow-sm">
+                              <div className="mb-3">
+                                {previewImage ? (
+                                  <img
+                                    src={previewImage}
+                                    alt="Avatar Preview"
+                                    className="w-24 h-24 rounded-full mx-auto object-cover border-4 border-primary-100 shadow-md"
+                                  />
+                                ) : (
+                                  <div className="w-24 h-24 rounded-full bg-gradient-to-r from-primary-100 to-accent-100 mx-auto flex items-center justify-center text-primary-600 shadow-md">
+                                    <span className="text-2xl font-bold">T</span>
+                                  </div>
+                                )}
+                              </div>
+                              
+                              <input
+                                type="file"
+                                ref={createFileInputRef}
+                                onChange={(e) => handleImageChange(e, false)}
+                                accept=".jpg,.jpeg,.png"
+                                className="hidden"
+                                aria-label="Upload avatar image"
+                              />
+                              
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => createFileInputRef.current?.click()}
+                                className="px-3 py-1 text-sm bg-primary-100 text-primary-700 rounded-md hover:bg-primary-200 transition-colors duration-200 inline-block"
+                              >
+                                <Upload className="h-3.5 w-3.5 mr-1" />
+                                {t("Carregar Imagem")}
+                              </Button>
+                              
+                              <p className="mt-2 text-xs text-neutral-500">
+                                {t("A imagem deve ter no máximo 5MB e estar nos formatos JPG ou PNG")}
+                              </p>
+                            </div>
+                          </div>
+                          
+                          <div className="md:w-2/3">
+                            <FormControl>
+                              <Input 
+                                placeholder="https://ui-avatars.com/api/?name=T&background=6366F1&color=fff" 
+                                {...field} 
+                              />
+                            </FormControl>
+                            <FormDescription className="mt-2">
+                              {t("URL da imagem que será exibida como avatar do chat. Caso prefira, carregue uma imagem usando o botão ao lado.")}
+                            </FormDescription>
+                            <FormMessage />
+                            
+                            <div className="mt-4 bg-gradient-to-r from-neutral-50 to-white p-4 border rounded-md">
+                              <div className="flex items-start">
+                                <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 mr-3 shadow-sm">
+                                  {previewImage ? (
+                                    <img
+                                      src={previewImage}
+                                      alt="Avatar Preview"
+                                      className="h-10 w-10 rounded-full object-cover"
+                                    />
+                                  ) : (
+                                    <span className="text-sm font-bold">T</span>
+                                  )}
+                                </div>
+                                <div className="relative bg-white rounded-lg rounded-tl-none py-2 px-3 max-w-[80%] shadow-sm border border-neutral-200">
+                                  <div className="text-xs font-semibold mb-1 text-neutral-700">
+                                    {createForm.watch('name') || "Widget de Chat"}
+                                  </div>
+                                  <p className="text-neutral-800 text-xs">
+                                    {createForm.watch('greeting') || "Olá! Como posso ajudar?"}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                       </FormItem>
                     )}
                   />
