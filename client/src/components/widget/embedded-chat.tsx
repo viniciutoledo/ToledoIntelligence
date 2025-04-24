@@ -65,7 +65,7 @@ export function EmbeddedChat({ apiKey, initialOpen = false }: EmbeddedChatProps)
     if (currentSession) {
       sessionCreationAttempted.current = true;
     }
-  }, [widget?.id, currentSession?.id]); // Apenas dependências essenciais para evitar reconexões
+  }, [widget, currentSession, createSessionMutation, isInitialized, language]); // Adicionando dependências completas
   
   // Finalizar sessão quando componente for desmontado
   useEffect(() => {

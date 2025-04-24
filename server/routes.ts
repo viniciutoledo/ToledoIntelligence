@@ -2743,7 +2743,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           content,
           messages.filter(m => m.id !== userMessage.id).map(m => ({
             content: m.content || "",
-            role: m.is_from_ai ? "assistant" : "user"
+            role: m.is_user ? "user" : "assistant"
           })),
           llmConfig
         );
