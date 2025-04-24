@@ -1,0 +1,195 @@
+O problema que você está enfrentando no Replit — a imagem aparece brevemente no chat e depois desaparece, exibindo "Erro ao carregar imagem" — sugere que a falha está no fluxo de renderização ou na persistência da imagem, possivelmente devido a uma inconsistência no lado do cliente ou servidor. Como você já tentou várias abordagens (incluindo o componente minimalista `UltimateImage`), vou sugerir uma solução prática e direta para resolver isso, com base no comportamento observado.
+
+---
+
+### Solução Proposta
+O comportamento de "aparecer e desaparecer" indica que a imagem é carregada inicialmente, mas algo (como uma falha na URL, cache, ou re-renderização) faz com que ela seja invalidada ou removida. Aqui está uma solução em etapas para garantir que a imagem permaneça visível:
+
+1. **Armazene a Imagem em Base64 Localmente no Cliente**  
+   Como você já priorizou o formato base64, certifique-se de que a imagem base64 seja armazenada diretamente no estado do componente (ou em um contexto, se necessário). Isso evita que o cliente tente recarregar a imagem de uma URL que pode falhar ou expirar. Evite depender de URLs externas ou chamadas repetidas ao servidor.
+
+   Exemplo em React:
+   ```jsx
+   import React, { useState } from 'react';
+
+   const MinimalImageDisplay = ({ base64Image }) => {
+       const [imageSrc, setImageSrc] = useState(base64Image || '');
+       const [error, setError] = useState(false);
+
+       return (
+           <div>
+               {error ? (
+                   <p>Erro ao exibir a imagem</p>
+               ) : (
+                   <img
+                       src={`data:image/png;base64,${imageSrc}`}
+                       alt="Imagem do chat"
+                       onError={() => setError(true)}
+                       style={{ maxWidth: '100%' }}
+                   />
+               )}
+           </div>
+       );
+   };
+
+   export default MinimalImageDisplay;
+   ```
+
+   - Passe a string base64 diretamente como prop (`base64Image`).
+   - Use o estado `error` para exibir uma mensagem de erro se a imagem falhar.
+
+2. **Evite Re-renderizações Desnecessárias**  
+   O desaparecimento da imagem pode ser causado por uma re-renderização do componente que redefine o estado ou props. Certifique-se de que o componente pai (`chat-interface.tsx`) não está recarregando ou limpando os dados da imagem. Use `React.memo` ou verifique as dependências de hooks como `useEffect` para evitar re-renderizações desnecessárias.
+
+   Exemplo:
+   ```jsx
+   const MinimalImageDisplay = React.memo(({ base64Image }) => {
+       // ... mesmo código acima
+   });
+   ```
+
+3. **Valide a String Base64 Antes de Renderizar**  
+   Antes de passar a string base64 para o componente, valide se ela está correta e não está corrompida. Strings base64 inválidas podem causar falhas no carregamento da imagem.
+
+   Exemplo:
+   ```jsx
+   const isValidBase64 = (str) => {
+       try {
+           return str && typeof str === 'string' && str.length > 0 && !str.includes('undefined');
+       } catch (e) {
+           return false;
+       }
+   };
+
+   const MinimalImageDisplay = ({ base64Image }) => {
+       const [error, setError] = useState(false);
+
+       if (!isValidBase64(base64Image)) {
+           return <p>Imagem inválida</p>;
+       }
+
+       return (
+           <div>
+               {error ? (
+                   <p>Erro ao exibir a imagem</p>
+               ) : (
+                   <img
+                       src={`data:image/png;base64,${base64Image}`}
+                       alt="Imagem do chat"
+                       onError={() => setError(true)}
+                       style={{ maxWidth: '100%' }}
+                   />
+               )}
+           </div>
+       );
+   };
+   ```
+
+4. **Adicione um Fallback Local no Servidor**  
+   Se a string base64 vem do servidor, certifique-se de que o servidor não está enviando dados corrompidos ou nulos. Adicione um fallback para retornar uma string base64 válida ou uma mensagem de erro. Por exemplo, no lado do servidor (se estiver usando Node.js/Express):
+
+   ```javascript
+   app.get('/get-image', (req, res) => {
+       try {
+           const base64Image = getImageFromStorage(); // Sua lógica para obter a imagem
+           if (!base64Image) {
+               return res.json({ error: 'Imagem não encontrada' });
+           }
+           res.json({ image: base64Image });
+       } catch (error) {
+           res.json({ error: 'Erro ao carregar imagem no servidor' });
+       }
+   });
+   ```
+
+5. **Teste com uma Imagem Estática Primeiro**  
+   Para isolar o problema, teste o componente com uma string base64 fixa (de uma imagem pequena que você sabe que funciona). Isso ajuda a determinar se o problema está na lógica do componente ou na origem da imagem.
+
+   Exemplo de string base64 para teste (imagem 1x1 pixel):
+   ```jsx
+   const testBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+   ```
+
+6. **Desative o Cache do Navegador para Imagens**  
+   O desaparecimento pode estar relacionado a políticas de cache ou expiração de URLs no lado do cliente. Como você já adicionou timestamps nas URLs anteriormente, certifique-se de que o navegador não está ignorando a imagem devido a cache. Adicione cabeçalhos de cache no servidor para evitar isso:
+
+   ```javascript
+   app.use((req, res, next) => {
+       res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+       next();
+   });
+   ```
+
+7. **Adicione Logs para Depuração**  
+   Adicione logs no cliente e no servidor para rastrear o fluxo da imagem. Por exemplo:
+   - No cliente: Logue o valor da string base64 antes de renderizar.
+   - No servidor: Logue se a imagem foi enviada corretamente.
+
+   Exemplo no cliente:
+   ```jsx
+   console.log('Base64 recebida:', base64Image);
+   ```
+
+---
+
+### Implementação Final
+Combine as etapas acima em um componente robusto e adicione logs para depuração. Aqui está um exemplo completo do componente:
+
+```jsx
+import React, { useState } from 'react';
+
+const isValidBase64 = (str) => {
+    try {
+        return str && typeof str === 'string' && str.length > 0 && !str.includes('undefined');
+    } catch (e) {
+        return false;
+    }
+};
+
+const MinimalImageDisplay = React.memo(({ base64Image }) => {
+    const [error, setError] = useState(false);
+
+    console.log('Base64 recebida:', base64Image); // Log para depuração
+
+    if (!isValidBase64(base64Image)) {
+        return <p>Imagem inválida ou não fornecida</p>;
+    }
+
+    return (
+        <div>
+            {error ? (
+                <p>Erro ao exibir a imagem</p>
+            ) : (
+                <img
+                    src={`data:image/png;base64,${base64Image}`}
+                    alt="Imagem do chat"
+                    onError={() => setError(true)}
+                    style={{ maxWidth: '100%' }}
+                />
+            )}
+        </div>
+    );
+});
+
+export default MinimalImageDisplay;
+```
+
+No lado do servidor, certifique-se de que a API retorna a string base64 corretamente e adicione logs para depuração.
+
+---
+
+### Por que isso deve funcionar?
+- **Base64 Local**: Armazenar a imagem como base64 no estado evita chamadas repetidas ao servidor.
+- **Validação**: Verificar a string base64 antes de renderizar previne falhas silenciosas.
+- **Re-renderizações**: `React.memo` evita que o componente seja recarregado desnecessariamente.
+- **Fallback**: O tratamento de erro exibe uma mensagem clara se a imagem falhar.
+- **Depuração**: Logs ajudam a identificar onde o fluxo está falhando.
+
+---
+
+### Próximos Passos
+1. Teste o componente com uma string base64 fixa (como a fornecida acima).
+2. Verifique os logs no console para confirmar que a string base64 está correta.
+3. Se o problema persistir, revise o fluxo de dados no `chat-interface.tsx` para garantir que a prop `base64Image` não está sendo sobrescrita ou limpa durante a renderização.
+
+Se precisar de mais ajuda para implementar ou depurar, posso ajudar com mais detalhes!
