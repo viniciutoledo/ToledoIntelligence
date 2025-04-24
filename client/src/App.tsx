@@ -18,6 +18,7 @@ import CheckoutSuccessPage from "@/pages/checkout-success-page";
 import CpanelLoginPage from "@/pages/cpanel-login-page";
 import DiagnosticPage from "@/pages/diagnostic-page";
 import WidgetEmbedPage from "@/pages/widget-embed";
+import EmbedPage from "@/pages/embed";
 
 function Router() {
   return (
@@ -27,8 +28,9 @@ function Router() {
       <Route path="/auth" component={AuthPage} />
       <Route path="/admin-login" component={CpanelLoginPage} />
       
-      {/* Widget embed route */}
-      <Route path="/widget-embed" component={WidgetEmbedPage} />
+      {/* Widget embed routes - atenção para os diferentes caminhos */}
+      <Route path="/embed/widget" component={WidgetEmbedPage} />
+      <Route path="/embed" component={EmbedPage} />
       
       {/* Checkout routes */}
       <ProtectedRoute path="/checkout" component={CheckoutPage} />

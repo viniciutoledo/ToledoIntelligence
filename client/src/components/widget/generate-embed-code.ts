@@ -7,19 +7,30 @@ export interface WidgetOptions {
   height?: number;
 }
 
+// Interface para o resultado de generateEmbedCode
+export interface EmbedCodeResult {
+  scriptCode: string;       // Código de script para incorporação via JavaScript
+  iframeCode: string;       // Código HTML para incorporação via iframe
+  directLink: string;       // Link direto para incorporação em um iframe
+  embedUrl: string;         // URL de embed para uso em links
+}
+
 // Função para gerar o código de embed para o widget
-export function generateEmbedCode(options: WidgetOptions): string {
+export function generateEmbedCode(options: WidgetOptions): string | EmbedCodeResult {
   const defaultOptions = {
     position: 'bottom-right',
     initialOpen: false,
     width: 350,
-    height: 500
+    height: 600
   };
   
   const mergedOptions = { ...defaultOptions, ...options };
   
+  // URL base da aplicação
+  const baseUrl = window.location.origin;
+  
   // Código HTML para incluir o script do widget
-  const scriptTag = `<script src="${window.location.origin}/widget.js"></script>`;
+  const scriptTag = `<script src="${baseUrl}/widget.js"></script>`;
   
   // Código JS para inicializar o widget
   const initScript = `<script>
@@ -35,6 +46,38 @@ export function generateEmbedCode(options: WidgetOptions): string {
   });
 </script>`;
 
-  // Retorna os dois scripts combinados
-  return `${scriptTag}\n${initScript}`;
+  // Código de script combinado 
+  const scriptCode = `${scriptTag}\n${initScript}`;
+  
+  // URL para embedar o widget diretamente via iframe
+  const embedUrl = `${baseUrl}/embed/widget?key=${mergedOptions.apiKey}`;
+  
+  // URL encodada para uso como parâmetro
+  const encodedUrl = encodeURIComponent(embedUrl);
+  
+  // Link direto para incorporação semelhante ao GPT Maker
+  const directLink = `${baseUrl}/embed?url=${encodedUrl}`;
+  
+  // Código HTML de iframe para incorporação direta
+  const iframeCode = `<iframe 
+  src="${embedUrl}" 
+  width="${mergedOptions.width}" 
+  height="${mergedOptions.height}" 
+  frameborder="0" 
+  allow="microphone"
+  style="border: none; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);"
+></iframe>`;
+
+  // Se o chamador espera apenas a string, mantém a compatibilidade retornando o scriptCode
+  if (typeof options === 'object' && 'returnFullObject' in options && options.returnFullObject) {
+    return {
+      scriptCode,
+      iframeCode,
+      directLink,
+      embedUrl
+    };
+  }
+  
+  // Para manter compatibilidade com código existente
+  return scriptCode;
 }
