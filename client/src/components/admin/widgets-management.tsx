@@ -822,18 +822,100 @@ export default function WidgetsManagement() {
                       name="avatar_url"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>{t("URL do Avatar")}</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="https://ui-avatars.com/api/?name=T&background=6366F1&color=fff" 
-                              {...field} 
-                              value={field.value || ""}
-                            />
-                          </FormControl>
-                          <FormDescription>
-                            {t("URL da imagem que será exibida como avatar do chat.")}
-                          </FormDescription>
-                          <FormMessage />
+                          <FormLabel>{t("Avatar do Chat")}</FormLabel>
+                          
+                          <div className="flex flex-col md:flex-row gap-8 mb-4">
+                            <div className="md:w-1/3">
+                              <div className="bg-white border border-dashed border-neutral-300 rounded-lg p-4 text-center shadow-sm">
+                                <div className="mb-3">
+                                  {editPreviewImage ? (
+                                    <img
+                                      src={editPreviewImage}
+                                      alt="Avatar Preview"
+                                      className="w-24 h-24 rounded-full mx-auto object-cover border-4 border-primary-100 shadow-md"
+                                    />
+                                  ) : selectedWidget?.avatar_url ? (
+                                    <img
+                                      src={selectedWidget.avatar_url}
+                                      alt="Avatar Preview"
+                                      className="w-24 h-24 rounded-full mx-auto object-cover border-4 border-primary-100 shadow-md"
+                                    />
+                                  ) : (
+                                    <div className="w-24 h-24 rounded-full bg-gradient-to-r from-primary-100 to-accent-100 mx-auto flex items-center justify-center text-primary-600 shadow-md">
+                                      <span className="text-2xl font-bold">T</span>
+                                    </div>
+                                  )}
+                                </div>
+                                
+                                <input
+                                  type="file"
+                                  ref={editFileInputRef}
+                                  onChange={(e) => handleImageChange(e, true)}
+                                  accept=".jpg,.jpeg,.png"
+                                  className="hidden"
+                                  aria-label="Upload avatar image"
+                                />
+                                
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  onClick={() => editFileInputRef.current?.click()}
+                                  className="px-3 py-1 text-sm bg-primary-100 text-primary-700 rounded-md hover:bg-primary-200 transition-colors duration-200 inline-block"
+                                >
+                                  <Upload className="h-3.5 w-3.5 mr-1" />
+                                  {t("Carregar Imagem")}
+                                </Button>
+                                
+                                <p className="mt-2 text-xs text-neutral-500">
+                                  {t("A imagem deve ter no máximo 5MB e estar nos formatos JPG ou PNG")}
+                                </p>
+                              </div>
+                            </div>
+                            
+                            <div className="md:w-2/3">
+                              <FormControl>
+                                <Input 
+                                  placeholder="https://ui-avatars.com/api/?name=T&background=6366F1&color=fff" 
+                                  {...field} 
+                                  value={field.value || ""}
+                                />
+                              </FormControl>
+                              <FormDescription className="mt-2">
+                                {t("URL da imagem que será exibida como avatar do chat. Caso prefira, carregue uma imagem usando o botão ao lado.")}
+                              </FormDescription>
+                              <FormMessage />
+                              
+                              <div className="mt-4 bg-gradient-to-r from-neutral-50 to-white p-4 border rounded-md">
+                                <div className="flex items-start">
+                                  <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 mr-3 shadow-sm">
+                                    {editPreviewImage ? (
+                                      <img
+                                        src={editPreviewImage}
+                                        alt="Avatar Preview"
+                                        className="h-10 w-10 rounded-full object-cover"
+                                      />
+                                    ) : selectedWidget?.avatar_url ? (
+                                      <img
+                                        src={selectedWidget.avatar_url}
+                                        alt="Avatar Preview"
+                                        className="h-10 w-10 rounded-full object-cover"
+                                      />
+                                    ) : (
+                                      <span className="text-sm font-bold">T</span>
+                                    )}
+                                  </div>
+                                  <div className="relative bg-white rounded-lg rounded-tl-none py-2 px-3 max-w-[80%] shadow-sm border border-neutral-200">
+                                    <div className="text-xs font-semibold mb-1 text-neutral-700">
+                                      {editForm.watch('name') || selectedWidget?.name || "Widget de Chat"}
+                                    </div>
+                                    <p className="text-neutral-800 text-xs">
+                                      {editForm.watch('greeting') || selectedWidget?.greeting || "Olá! Como posso ajudar?"}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
                         </FormItem>
                       )}
                     />
