@@ -74,6 +74,47 @@ export async function syncDatabaseSchema() {
         resolved_at TIMESTAMP,
         assigned_to INTEGER
       );
+      
+      -- Criar extensão UUID se não existir
+      CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+      
+      -- Criar tabela chat_widgets se não existir
+      CREATE TABLE IF NOT EXISTS chat_widgets (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        user_id INTEGER NOT NULL REFERENCES users(id),
+        name TEXT NOT NULL,
+        greeting TEXT NOT NULL,
+        avatar_url TEXT NOT NULL,
+        is_active BOOLEAN NOT NULL DEFAULT TRUE,
+        api_key UUID NOT NULL DEFAULT uuid_generate_v4(),
+        theme_color TEXT DEFAULT '#6366f1',
+        allowed_domains TEXT[],
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+      
+      -- Criar tabela widget_chat_sessions se não existir
+      CREATE TABLE IF NOT EXISTS widget_chat_sessions (
+        id SERIAL PRIMARY KEY,
+        widget_id UUID NOT NULL REFERENCES chat_widgets(id),
+        visitor_id TEXT NOT NULL,
+        started_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        ended_at TIMESTAMP,
+        language TEXT NOT NULL DEFAULT 'pt',
+        referrer_url TEXT,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+      
+      -- Criar tabela widget_chat_messages se não existir
+      CREATE TABLE IF NOT EXISTS widget_chat_messages (
+        id SERIAL PRIMARY KEY,
+        session_id INTEGER NOT NULL REFERENCES widget_chat_sessions(id),
+        message_type TEXT NOT NULL DEFAULT 'text',
+        content TEXT,
+        file_url TEXT,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        is_user BOOLEAN NOT NULL DEFAULT TRUE
+      );
     `);
     
     console.log('Esquema do banco de dados sincronizado com sucesso');

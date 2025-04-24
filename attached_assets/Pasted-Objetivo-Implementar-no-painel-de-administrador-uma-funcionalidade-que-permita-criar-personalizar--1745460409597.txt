@@ -1,0 +1,434 @@
+Objetivo: Implementar no painel de administrador uma funcionalidade que permita criar, personalizar e gerar códigos de embed para um widget de chat de suporte técnico, possibilitando sua integração segura em plataformas externas (ex.: sites de clientes). O widget deve ser gerenciado centralmente, com suporte a personalização e autenticação segura, similar a serviços como GPTMaker.
+
+Contexto:
+
+
+
+
+
+O sistema deve permitir que administradores configurem widgets de chat para suporte técnico, gerando códigos de embed (ex.: JavaScript ou iframe) que podem ser inseridos em sites externos.
+
+
+
+O widget deve se comunicar com o backend do sistema, que gerencia as interações do chat, possivelmente integrando com uma API de IA (ex.: GPTMaker ou similar).
+
+
+
+A funcionalidade deve ser segura, com autenticação para evitar uso não autorizado e proteção contra ataques como XSS ou CSRF.
+
+
+
+O painel de administrador deve oferecer uma interface intuitiva para gerenciar widgets e fornecer instruções claras para embedding.
+
+Requisitos:
+
+
+
+
+
+Backend (Node.js/Express com Supabase):
+
+
+
+
+
+Crie uma tabela no Supabase chamada widgets com os seguintes campos:
+
+
+
+
+
+id (UUID, chave primária).
+
+
+
+clientId (string, ID do cliente).
+
+
+
+name (string, nome do widget, ex.: "Chat Técnico").
+
+
+
+greeting (string, mensagem inicial do chat).
+
+
+
+avatarUrl (string, URL da imagem do avatar).
+
+
+
+isActive (boolean, indica se o widget está ativo).
+
+
+
+apiKey (string, chave única para autenticação do widget).
+
+
+
+embedCode (string, código de embed gerado).
+
+
+
+createdAt (timestamp).
+
+
+
+updatedAt (timestamp).
+
+
+
+Implemente endpoints na API:
+
+
+
+
+
+POST /api/widgets (autenticado, apenas admin): Crie um novo widget, gerando id, apiKey (UUID) e embedCode.
+
+
+
+GET /api/widgets/:clientId (autenticado): Liste todos os widgets de um cliente.
+
+
+
+PUT /api/widgets/:id (autenticado): Atualize configurações do widget (nome, saudação, avatar, status).
+
+
+
+GET /api/widgets/:id/embed (autenticado): Retorne o código de embed do widget.
+
+
+
+POST /api/chat/:widgetId (público, autenticado via apiKey): Endpoint para o widget enviar mensagens do usuário e receber respostas do backend (simule integração com uma API de IA).
+
+
+
+Use JWT para autenticação de endpoints admin e valide apiKey para chamadas do widget.
+
+
+
+Implemente sanitização de entradas e Content Security Policy (CSP) para prevenir XSS.
+
+
+
+Adicione CORS para restringir domínios autorizados a usar o widget.
+
+
+
+Frontend (React no Painel de Administrador):
+
+
+
+
+
+Crie um componente ChatWidgetManager no painel de administrador com as seguintes funcionalidades:
+
+
+
+
+
+Exibir uma lista de widgets por cliente, com nome, status (ativo/inativo) e botão para editar.
+
+
+
+Formulário para criar/editar widget, com campos para:
+
+
+
+
+
+Nome do widget.
+
+
+
+Mensagem de saudação.
+
+
+
+URL do avatar.
+
+
+
+Toggle para ativar/desativar.
+
+
+
+Botão para gerar e copiar o código de embed.
+
+
+
+Visualização de teste do widget (ex.: iframe com o chat).
+
+
+
+Exemplo de código de embed gerado:
+
+<script src="https://seuservidor.com/widgets/widget.js"></script>
+<div id="tech-chat" data-widget-id="WIDGET_ID" data-api-key="API_KEY"></div>
+
+
+
+Use Tailwind CSS para um design responsivo e intuitivo.
+
+
+
+Integre com a API usando Axios para criar, listar e atualizar widgets.
+
+
+
+Adicione feedback visual (ex.: toast notifications) para sucesso/erro.
+
+
+
+Widget de Chat (JavaScript):
+
+
+
+
+
+Crie um script widget.js servido pelo backend em /widgets/widget.js, que:
+
+
+
+
+
+Carrega dinamicamente o widget no elemento <div id="tech-chat">.
+
+
+
+Extrai widgetId e apiKey dos atributos data- do elemento.
+
+
+
+Valida widgetId e apiKey via chamada ao endpoint /api/chat/:widgetId.
+
+
+
+Exibe um ícone flutuante (canto inferior direito) que abre uma janela de chat ao ser clicado.
+
+
+
+Permite enviar mensagens do usuário e exibir respostas do backend (simule respostas de IA).
+
+
+
+Suporta personalização (nome, saudação, avatar) com base nas configurações do backend.
+
+
+
+Estrutura do widget:
+
+
+
+
+
+Janela de chat com histórico de mensagens.
+
+
+
+Campo de entrada de texto e botão de envio.
+
+
+
+Estilização com CSS embutido para corresponder ao branding.
+
+
+
+Garanta segurança:
+
+
+
+
+
+Use HTTPS para carregar o script.
+
+
+
+Sanitize mensagens do usuário para evitar XSS.
+
+
+
+Implemente rate limiting para prevenir abuso.
+
+
+
+Integração com Plataformas Externas:
+
+
+
+
+
+O código de embed deve ser compatível com qualquer site (ex.: WordPress, HTML estático, Wix).
+
+
+
+O backend deve atuar como proxy para chamadas à API de IA (ex.: GPTMaker), mantendo apiKey seguro.
+
+
+
+Forneça no painel de administrador instruções claras para copiar/colar o código de embed, com um botão "Copiar" e um link para um guia de integração.
+
+
+
+Boas Práticas de Segurança:
+
+
+
+
+
+Criptografe apiKey no Supabase usando uma biblioteca como crypto.
+
+
+
+Use um campo allowedDomains na tabela widgets para restringir onde o widget pode ser carregado.
+
+
+
+Implemente logging para monitorar interações do widget e detectar atividades suspeitas.
+
+
+
+Adicione um mecanismo de expiração/revogação de apiKey no painel.
+
+
+
+Instruções de Configuração e Deploy:
+
+
+
+
+
+Forneça um README com:
+
+
+
+
+
+Instruções para configurar o Supabase (tabela widgets, variáveis de ambiente).
+
+
+
+Configuração do Node.js/Express no Replit (incluindo .env para SUPABASE_URL, SUPABASE_KEY, JWT_SECRET).
+
+
+
+Passos para testar o widget em um site de teste (ex.: HTML estático).
+
+
+
+Guia para o admin: como criar um widget, copiar o código de embed e integrá-lo.
+
+
+
+Inclua um script de inicialização para criar a tabela widgets no Supabase.
+
+Saída Esperada:
+
+
+
+
+
+Backend:
+
+
+
+
+
+models/Widget.js (configuração do Supabase).
+
+
+
+routes/widgets.js (endpoints da API).
+
+
+
+routes/chat.js (endpoint para interação do chat).
+
+
+
+middleware/auth.js (autenticação JWT e validação de apiKey).
+
+
+
+Frontend:
+
+
+
+
+
+src/components/ChatWidgetManager.js (componente React para o painel).
+
+
+
+public/widget.js (script do widget).
+
+
+
+Configuração:
+
+
+
+
+
+.env.example (template para variáveis de ambiente).
+
+
+
+README.md (instruções de setup, deploy e uso).
+
+
+
+Teste:
+
+
+
+
+
+Uma página HTML de teste (test.html) com o widget embarcado para validar a integração.
+
+Notas Adicionais:
+
+
+
+
+
+Simule a integração com a API de IA (ex.: GPTMaker) usando um endpoint fictício que retorna respostas de chat.
+
+
+
+Se a API de IA exigir configurações específicas (ex.: modelo de linguagem, treinamento), adicione um campo no formulário do painel para o admin inserir essas opções.
+
+
+
+Teste a compatibilidade do widget em plataformas como WordPress e Wix.
+
+
+
+Forneça uma seção no painel com estatísticas básicas de uso do widget (ex.: número de mensagens enviadas).
+
+Exemplo de Fluxo:
+
+
+
+
+
+O admin acessa o painel, cria um widget para um cliente, define nome, saudação e avatar.
+
+
+
+O sistema gera widgetId, apiKey e o código de embed.
+
+
+
+O cliente copia o código e o insere no site externo.
+
+
+
+Usuários no site externo interagem com o chat, que se comunica com o backend.
+
+
+
+O admin pode desativar o widget ou atualizar configurações a qualquer momento.
+
+Crie o código completo, garantindo modularidade, segurança e uma experiência de usuário fluida. Forneça instruções detalhadas para deploy no Replit e teste a integração em um ambiente simulado.

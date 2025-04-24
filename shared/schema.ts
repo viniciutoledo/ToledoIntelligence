@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, varchar, json, foreignKey } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, varchar, json, foreignKey, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -296,6 +296,68 @@ export const insertSupportTicketSchema = createInsertSchema(supportTickets).pick
   priority: true,
 });
 
+// Chat widgets table
+export const chatWidgets = pgTable("chat_widgets", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  user_id: integer("user_id").notNull().references(() => users.id),
+  name: text("name").notNull(),
+  greeting: text("greeting").notNull(),
+  avatar_url: text("avatar_url").notNull(),
+  is_active: boolean("is_active").notNull().default(true),
+  api_key: uuid("api_key").defaultRandom().notNull(),
+  theme_color: text("theme_color").default("#6366f1"),
+  allowed_domains: text("allowed_domains").array(),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+  updated_at: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertChatWidgetSchema = createInsertSchema(chatWidgets).pick({
+  user_id: true,
+  name: true,
+  greeting: true,
+  avatar_url: true,
+  theme_color: true,
+  allowed_domains: true,
+});
+
+// Widget chat sessions table
+export const widgetChatSessions = pgTable("widget_chat_sessions", {
+  id: serial("id").primaryKey(),
+  widget_id: uuid("widget_id").notNull().references(() => chatWidgets.id),
+  visitor_id: text("visitor_id").notNull(),
+  started_at: timestamp("started_at").defaultNow().notNull(),
+  ended_at: timestamp("ended_at"),
+  language: text("language", { enum: ["pt", "en"] }).notNull().default("pt"),
+  referrer_url: text("referrer_url"),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertWidgetChatSessionSchema = createInsertSchema(widgetChatSessions).pick({
+  widget_id: true,
+  visitor_id: true,
+  language: true,
+  referrer_url: true,
+});
+
+// Widget chat messages table
+export const widgetChatMessages = pgTable("widget_chat_messages", {
+  id: serial("id").primaryKey(),
+  session_id: integer("session_id").notNull().references(() => widgetChatSessions.id),
+  message_type: text("message_type", { enum: ["text", "image", "file"] }).notNull().default("text"),
+  content: text("content"),
+  file_url: text("file_url"),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+  is_user: boolean("is_user").notNull().default(true),
+});
+
+export const insertWidgetChatMessageSchema = createInsertSchema(widgetChatMessages).pick({
+  session_id: true,
+  message_type: true,
+  content: true,
+  file_url: true,
+  is_user: true,
+});
+
 // Export types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -340,6 +402,15 @@ export type InsertAnalysisReport = z.infer<typeof insertAnalysisReportSchema>;
 
 export type SupportTicket = typeof supportTickets.$inferSelect;
 export type InsertSupportTicket = z.infer<typeof insertSupportTicketSchema>;
+
+export type ChatWidget = typeof chatWidgets.$inferSelect;
+export type InsertChatWidget = z.infer<typeof insertChatWidgetSchema>;
+
+export type WidgetChatSession = typeof widgetChatSessions.$inferSelect;
+export type InsertWidgetChatSession = z.infer<typeof insertWidgetChatSessionSchema>;
+
+export type WidgetChatMessage = typeof widgetChatMessages.$inferSelect;
+export type InsertWidgetChatMessage = z.infer<typeof insertWidgetChatMessageSchema>;
 
 // Login data
 export type LoginData = {
