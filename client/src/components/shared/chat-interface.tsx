@@ -239,7 +239,7 @@ export function ChatInterface({
                   </div>
                   <div className="image-container relative">
                     <img
-                      src={msg.file_url?.startsWith('/') ? `${window.location.origin}${msg.file_url}` : msg.file_url}
+                      src={getOptimizedFileUrl(msg.file_url)}
                       alt="Uploaded file"
                       loading="lazy"
                       decoding="async"
@@ -276,7 +276,7 @@ export function ChatInterface({
                     />
                   </div>
                   <a 
-                    href={msg.file_url?.startsWith('/') ? `${window.location.origin}${msg.file_url}` : msg.file_url} 
+                    href={getOptimizedFileUrl(msg.file_url)} 
                     target="_blank" 
                     rel="noopener noreferrer"
                     className="mt-2 inline-block text-xs text-primary hover:underline"
