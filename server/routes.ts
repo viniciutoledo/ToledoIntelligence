@@ -1774,10 +1774,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let fileUrl = null;
       
       // If file uploaded
+      let fileBase64 = null;
       if (req.file) {
-        messageType = req.file.mimetype.startsWith("image/") ? "image" : "file";
+        const isImage = req.file.mimetype.startsWith("image/");
+        messageType = isImage ? "image" : "file";
         fileUrl = `/uploads/files/${path.basename(req.file.path)}`;
         content = req.file.originalname;
+        
+        // Preparar dados para base64 (apenas para imagens como fallback)
+        if (isImage) {
+          try {
+            // Converter imagem para base64 como fallback
+            const fileData = fs.readFileSync(req.file.path);
+            fileBase64 = `data:${req.file.mimetype};base64,${fileData.toString('base64')}`;
+            console.log(`Imagem convertida para base64 (primeiros 50 caracteres): ${fileBase64.substring(0, 50)}...`);
+          } catch (error) {
+            console.error("Erro ao converter imagem para base64:", error);
+            // Continuar mesmo se falhar, já que é apenas um fallback
+          }
+        }
       }
       
       // Create user message
@@ -1883,7 +1898,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      res.status(201).json(userMessage);
+      // Se for uma imagem e temos base64, incluir na resposta
+      if (req.file && req.file.mimetype.startsWith("image/") && fileBase64) {
+        // Criar um objeto de resposta com o base64 incluído
+        const responseObj = {
+          ...userMessage,
+          fileBase64
+        };
+        res.status(201).json(responseObj);
+      } else {
+        // Resposta regular (sem base64)
+        res.status(201).json(userMessage);
+      }
     } catch (error) {
       console.error("Erro ao processar upload:", error);
       
