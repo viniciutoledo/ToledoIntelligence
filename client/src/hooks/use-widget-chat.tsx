@@ -1,10 +1,10 @@
-import { createContext, ReactNode, useContext, useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { queryClient } from "@/lib/queryClient";
+import { createContext, useState, useContext, ReactNode } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { useLanguage } from "@/hooks/use-language";
+import { v4 as uuidv4 } from 'uuid';
 
-// Tipos
+// Interfaces de dados
 interface WidgetChatSession {
   id: number;
   widget_id: string;
@@ -39,6 +39,7 @@ interface WidgetInfo {
   user_id: number;
 }
 
+// Interface do contexto
 interface WidgetChatContextType {
   widget: WidgetInfo | null;
   isLoadingWidget: boolean;
@@ -54,299 +55,238 @@ interface WidgetChatContextType {
   initializeWidget: (apiKey: string) => Promise<void>;
 }
 
+// Contexto
 export const WidgetChatContext = createContext<WidgetChatContextType | null>(null);
 
+// Provider
 export function WidgetChatProvider({ 
-  children,
-  apiKey,
-  autoInit = false
+  children 
 }: { 
   children: ReactNode,
-  apiKey?: string,
-  autoInit?: boolean
 }) {
   const { toast } = useToast();
-  const { t, language } = useLanguage();
-  const [currentSession, setCurrentSession] = useState<WidgetChatSession | null>(null);
+  const queryClient = useQueryClient();
+  
+  // Estado
+  const [apiKey, setApiKey] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [visitorId, setVisitorId] = useState<string>("");
   
-  // Função para gerar ID de visitante único
-  const generateVisitorId = () => {
-    // Verifica se já existe um ID armazenado no localStorage
-    const existingId = localStorage.getItem('widgetVisitorId');
-    if (existingId) return existingId;
-    
-    // Caso contrário, gera um novo ID aleatório
-    const newId = 'visitor_' + Math.random().toString(36).substring(2, 15);
-    localStorage.setItem('widgetVisitorId', newId);
-    return newId;
-  };
-  
-  // Consulta para obter informações do widget
-  const {
-    data: widget = null,
+  // Buscar informações do widget
+  const { 
+    data: widget,
     isLoading: isLoadingWidget,
-    refetch: refetchWidget,
-  } = useQuery<WidgetInfo | null>({
-    queryKey: ['/api/public/widgets'],
+    error: widgetError
+  } = useQuery({
+    queryKey: ["/api/widgets/public", apiKey],
     queryFn: async () => {
-      if (!apiKey) throw new Error('API key não fornecida');
-      
-      const response = await fetch('/api/public/widgets', {
-        headers: {
-          'X-API-Key': apiKey
-        }
-      });
-      
-      if (!response.ok) {
-        const error = await response.text();
-        throw new Error(error || 'Falha ao obter dados do widget');
+      if (!apiKey) return null;
+      const res = await fetch(`/api/widgets/public?api_key=${apiKey}`);
+      if (!res.ok) {
+        throw new Error("Widget não encontrado ou inativo");
       }
-      
-      return response.json();
+      return res.json();
     },
-    enabled: !!apiKey && autoInit,
-    retry: false,
+    enabled: !!apiKey,
+    retry: false
   });
   
-  // Obter mensagens para a sessão atual
+  // Buscar sessão atual do chat
+  const {
+    data: currentSession,
+    isLoading: isLoadingSessions
+  } = useQuery({
+    queryKey: ["/api/widgets/sessions", visitorId, widget?.id],
+    queryFn: async () => {
+      if (!widget || !visitorId) return null;
+      const res = await fetch(`/api/widgets/sessions/active?widget_id=${widget.id}&visitor_id=${visitorId}`);
+      if (!res.ok) {
+        if (res.status === 404) {
+          // Não tem sessão ativa, é normal
+          return null;
+        }
+        throw new Error("Erro ao buscar sessão");
+      }
+      return res.json();
+    },
+    enabled: !!widget && !!visitorId && isInitialized,
+  });
+  
+  // Buscar mensagens da sessão
   const {
     data: messages = [],
-    isLoading: isLoadingMessages,
-    refetch: refetchMessages,
-  } = useQuery<WidgetChatMessage[]>({
-    queryKey: ['/api/public/widgets/sessions', currentSession?.id, 'messages'],
+    isLoading: isLoadingMessages
+  } = useQuery({
+    queryKey: ["/api/widgets/messages", currentSession?.id],
     queryFn: async () => {
-      if (!currentSession || !apiKey) return [];
-      
-      const response = await fetch(`/api/public/widgets/sessions/${currentSession.id}/messages`, {
-        headers: {
-          'X-API-Key': apiKey
-        }
-      });
-      
-      if (!response.ok) {
-        const error = await response.text();
-        throw new Error(error || 'Falha ao obter mensagens');
+      if (!currentSession) return [];
+      const res = await fetch(`/api/widgets/messages?session_id=${currentSession.id}`);
+      if (!res.ok) {
+        throw new Error("Erro ao buscar mensagens");
       }
-      
-      return response.json();
+      return res.json();
     },
-    enabled: !!currentSession && !!apiKey,
-    refetchInterval: 3000, // Polling para novas mensagens a cada 3 segundos
+    enabled: !!currentSession,
+    refetchInterval: 5000 // Atualizar a cada 5 segundos
   });
   
-  // Mutation para criar sessão
+  // Mutations
+  
+  // Criar nova sessão
   const createSessionMutation = useMutation({
-    mutationFn: async () => {
-      if (!apiKey) throw new Error('API key não fornecida');
-      
-      const visitorId = generateVisitorId();
-      const referrerUrl = document.referrer || window.location.href;
-      
-      const response = await fetch('/api/public/widgets/sessions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-API-Key': apiKey
-        },
-        body: JSON.stringify({
-          visitor_id: visitorId,
-          language,
-          referrer_url: referrerUrl
-        })
+    mutationFn: async ({ widgetId, language, referrerUrl }: { 
+      widgetId: string; 
+      language: "pt" | "en"; 
+      referrerUrl?: string 
+    }) => {
+      const res = await apiRequest("POST", "/api/widgets/sessions", {
+        widget_id: widgetId,
+        visitor_id: visitorId,
+        language,
+        referrer_url: referrerUrl
       });
-      
-      if (!response.ok) {
-        const error = await response.text();
-        throw new Error(error || 'Falha ao criar sessão de chat');
-      }
-      
-      return response.json();
+      return res.json();
     },
     onSuccess: (newSession: WidgetChatSession) => {
-      setCurrentSession(newSession);
+      queryClient.setQueryData(["/api/widgets/sessions", visitorId, widget?.id], newSession);
+      
+      // Também podemos atualizar a lista de mensagens para um array vazio
+      queryClient.setQueryData(["/api/widgets/messages", newSession.id], []);
     },
     onError: (error: Error) => {
       toast({
-        title: t("common.error"),
+        title: "Erro ao iniciar sessão",
         description: error.message,
         variant: "destructive",
       });
     }
   });
   
-  // Mutation para encerrar sessão
+  // Finalizar sessão
   const endSessionMutation = useMutation({
     mutationFn: async (sessionId: number) => {
-      if (!apiKey) throw new Error('API key não fornecida');
-      
-      const response = await fetch(`/api/public/widgets/sessions/${sessionId}/end`, {
-        method: 'POST',
-        headers: {
-          'X-API-Key': apiKey
-        }
-      });
-      
-      if (!response.ok) {
-        const error = await response.text();
-        throw new Error(error || 'Falha ao encerrar sessão');
-      }
-      
-      return response.json();
+      const res = await apiRequest("PUT", `/api/widgets/sessions/${sessionId}/end`);
+      return res.json();
     },
     onSuccess: () => {
-      if (currentSession) {
-        setCurrentSession(null);
-      }
+      queryClient.invalidateQueries({
+        queryKey: ["/api/widgets/sessions", visitorId, widget?.id]
+      });
     },
     onError: (error: Error) => {
       toast({
-        title: t("common.error"),
+        title: "Erro ao finalizar sessão",
         description: error.message,
         variant: "destructive",
       });
     }
   });
   
-  // Mutation para enviar mensagem de texto
+  // Enviar mensagem
   const sendMessageMutation = useMutation({
-    mutationFn: async ({
-      sessionId,
-      content,
-    }: {
-      sessionId: number;
-      content: string;
+    mutationFn: async ({ 
+      sessionId, 
+      content, 
+      messageType = "text",
+      isUser = true
+    }: { 
+      sessionId: number; 
+      content: string; 
+      messageType?: "text" | "image" | "file";
+      isUser?: boolean;
     }) => {
-      if (!apiKey) throw new Error('API key não fornecida');
-      
-      const response = await fetch(`/api/public/widgets/sessions/${sessionId}/messages`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-API-Key': apiKey
-        },
-        body: JSON.stringify({ content })
+      const res = await apiRequest("POST", "/api/widgets/messages", {
+        session_id: sessionId,
+        content,
+        message_type: messageType,
+        is_user: isUser
       });
-      
-      if (!response.ok) {
-        const error = await response.text();
-        throw new Error(error || 'Falha ao enviar mensagem');
-      }
-      
-      return response.json();
+      return res.json();
     },
-    onSuccess: () => {
-      refetchMessages();
+    onSuccess: (newMessage) => {
+      // Adicionar a nova mensagem à lista
+      const currentMessages = queryClient.getQueryData<WidgetChatMessage[]>([
+        "/api/widgets/messages", 
+        currentSession?.id
+      ]) || [];
+      
+      queryClient.setQueryData(
+        ["/api/widgets/messages", currentSession?.id],
+        [...currentMessages, newMessage]
+      );
+      
+      // Invalidar a consulta para buscar novas mensagens (incluindo resposta do AI)
+      setTimeout(() => {
+        queryClient.invalidateQueries({
+          queryKey: ["/api/widgets/messages", currentSession?.id]
+        });
+      }, 1000);
     },
     onError: (error: Error) => {
       toast({
-        title: t("common.error"),
+        title: "Erro ao enviar mensagem",
         description: error.message,
         variant: "destructive",
       });
     }
   });
   
-  // Mutation para fazer upload de arquivo
+  // Upload de arquivo
   const uploadFileMutation = useMutation({
-    mutationFn: async ({
-      sessionId,
-      file,
-    }: {
-      sessionId: number;
-      file: File;
-    }) => {
-      if (!apiKey) throw new Error('API key não fornecida');
-      
-      const formData = new FormData();
-      formData.append('file', file);
-      
-      const response = await fetch(`/api/public/widgets/sessions/${sessionId}/messages`, {
-        method: 'POST',
-        headers: {
-          'X-API-Key': apiKey
-        },
-        body: formData
+    mutationFn: async (formData: FormData) => {
+      const res = await fetch("/api/widgets/upload", {
+        method: "POST",
+        body: formData,
+        credentials: "include"
       });
       
-      if (!response.ok) {
-        const error = await response.text();
-        throw new Error(error || 'Falha ao enviar arquivo');
+      if (!res.ok) {
+        throw new Error("Erro ao enviar arquivo");
       }
       
-      return response.json();
+      return res.json();
     },
     onSuccess: () => {
-      refetchMessages();
+      // Invalidar para obter as novas mensagens
+      setTimeout(() => {
+        queryClient.invalidateQueries({
+          queryKey: ["/api/widgets/messages", currentSession?.id]
+        });
+      }, 1000);
     },
     onError: (error: Error) => {
       toast({
-        title: t("common.error"),
+        title: "Erro ao enviar arquivo",
         description: error.message,
         variant: "destructive",
       });
     }
   });
   
-  // Função para inicializar o widget
-  const initializeWidget = async (key: string = apiKey || '') => {
-    if (!key) {
-      console.error('API key não fornecida para inicialização do widget');
-      return;
+  // Método para inicializar o widget
+  const initializeWidget = async (newApiKey: string): Promise<void> => {
+    if (!newApiKey) return;
+    
+    // Gerar ID de visitante único
+    let storedVisitorId = localStorage.getItem('toledoia_visitor_id');
+    if (!storedVisitorId) {
+      storedVisitorId = uuidv4();
+      localStorage.setItem('toledoia_visitor_id', storedVisitorId);
     }
     
-    try {
-      // Consulta o widget
-      const widgetResponse = await fetch('/api/public/widgets', {
-        headers: {
-          'X-API-Key': key
-        }
-      });
-      
-      if (!widgetResponse.ok) {
-        const error = await widgetResponse.text();
-        throw new Error(error || 'Falha ao obter dados do widget');
-      }
-      
-      const widgetData = await widgetResponse.json();
-      queryClient.setQueryData(['/api/public/widgets'], widgetData);
-      
-      // Cria uma nova sessão
-      const visitorId = generateVisitorId();
-      const referrerUrl = document.referrer || window.location.href;
-      
-      const sessionResponse = await fetch('/api/public/widgets/sessions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-API-Key': key
-        },
-        body: JSON.stringify({
-          visitor_id: visitorId,
-          language,
-          referrer_url: referrerUrl
-        })
-      });
-      
-      if (!sessionResponse.ok) {
-        const error = await sessionResponse.text();
-        throw new Error(error || 'Falha ao criar sessão de chat');
-      }
-      
-      const sessionData = await sessionResponse.json();
-      setCurrentSession(sessionData);
-      setIsInitialized(true);
-      
-    } catch (error: any) {
-      console.error('Erro ao inicializar widget:', error);
-      toast({
-        title: t("common.error"),
-        description: error.message,
-        variant: "destructive",
-      });
-    }
+    setVisitorId(storedVisitorId);
+    setApiKey(newApiKey);
+    setIsInitialized(true);
   };
+  
+  // Se houver erro no widget, não mostrar o contexto
+  if (widgetError && apiKey) {
+    toast({
+      title: "Erro ao carregar widget",
+      description: "Não foi possível carregar os dados do widget. Verifique a API key.",
+      variant: "destructive",
+    });
+  }
   
   return (
     <WidgetChatContext.Provider
@@ -355,7 +295,7 @@ export function WidgetChatProvider({
         isLoadingWidget,
         currentSession,
         messages,
-        isLoadingSessions: false,
+        isLoadingSessions,
         isLoadingMessages,
         isInitialized,
         createSessionMutation,
@@ -370,10 +310,11 @@ export function WidgetChatProvider({
   );
 }
 
+// Hook personalizado
 export function useWidgetChat() {
   const context = useContext(WidgetChatContext);
   if (!context) {
-    throw new Error("useWidgetChat must be used within a WidgetChatProvider");
+    throw new Error("useWidgetChat deve ser usado dentro de um WidgetChatProvider");
   }
   return context;
 }

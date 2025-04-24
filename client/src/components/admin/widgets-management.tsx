@@ -32,6 +32,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, MoreHorizontal, Plus, Edit, Trash2, Copy, Globe, Upload } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { ChatWidget } from "@shared/schema";
+import { generateEmbedCode } from "@/components/widget/generate-embed-code";
 
 // Schema para validação do formulário
 const widgetFormSchema = z.object({
@@ -416,9 +417,15 @@ export default function WidgetsManagement() {
     });
   };
 
-  // Código de exemplo para incorporação do widget
+  // Gerar código de incorporação para o widget
   const getEmbedCode = (widget: ChatWidget) => {
-    return `<script src="https://cdn.example.com/widget.js" id="toledoia-widget" data-api-key="${widget.api_key}"></script>`;
+    return generateEmbedCode({
+      apiKey: widget.api_key,
+      position: "bottom-right", // Posição padrão
+      initialOpen: false,
+      width: 350,
+      height: 600
+    });
   };
 
   if (isLoading) {
