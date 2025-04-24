@@ -115,6 +115,13 @@ function getOpenAIClient(apiKey: string) {
   // Primeiro aplicar a função de limpeza mais robusta
   apiKey = cleanApiKey(apiKey);
   
+  // Verificação de depuração para identificar problemas com a chave
+  if (apiKey.toLowerCase().includes('bearer')) {
+    console.error('ALERTA: Chave OpenAI ainda contém prefixo Bearer depois da limpeza!');
+    // Tentar limpar novamente, de forma mais agressiva
+    apiKey = apiKey.replace(/bearer\s+/gi, '').trim();
+  }
+  
   // Verificar se a apiKey é válida e está corretamente formatada
   if (!apiKey || typeof apiKey !== 'string' || apiKey.trim() === '') {
     throw new Error('API key inválida para OpenAI');
@@ -139,6 +146,13 @@ function getOpenAIClient(apiKey: string) {
 function getAnthropicClient(apiKey: string) {
   // Primeiro aplicar a função de limpeza mais robusta
   apiKey = cleanApiKey(apiKey);
+  
+  // Verificação de depuração para identificar problemas com a chave
+  if (apiKey.toLowerCase().includes('bearer')) {
+    console.error('ALERTA: Chave Anthropic ainda contém prefixo Bearer depois da limpeza!');
+    // Tentar limpar novamente, de forma mais agressiva
+    apiKey = apiKey.replace(/bearer\s+/gi, '').trim();
+  }
   
   // Verificar se a apiKey é válida e está corretamente formatada
   if (!apiKey || typeof apiKey !== 'string' || apiKey.trim() === '') {
