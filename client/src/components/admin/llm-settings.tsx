@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLanguage } from "@/hooks/use-language";
 import { useLlm } from "@/hooks/use-llm";
 import { useForm } from "react-hook-form";
@@ -19,6 +19,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import {
   Select,
@@ -28,8 +29,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { formatDate } from "@/lib/utils";
+import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 
 export function LlmSettings() {
   const { t } = useLanguage();
@@ -39,6 +43,9 @@ export function LlmSettings() {
   const formSchema = z.object({
     model_name: z.string().min(1, "Model is required"),
     api_key: z.string().min(1, "API key is required"),
+    tone: z.enum(["formal", "normal", "casual"]).default("normal"),
+    behavior_instructions: z.string().optional(),
+    should_use_training: z.boolean().default(true),
   });
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -46,18 +53,24 @@ export function LlmSettings() {
     defaultValues: {
       model_name: llmData?.config?.model_name || "claude-3-7-sonnet-20250219",
       api_key: llmData?.config?.api_key || "",
+      tone: llmData?.config?.tone || "normal",
+      behavior_instructions: llmData?.config?.behavior_instructions || "",
+      should_use_training: llmData?.config?.should_use_training !== false,
     },
   });
 
   // Update form when data is loaded
-  useState(() => {
+  useEffect(() => {
     if (llmData?.config) {
       form.reset({
         model_name: llmData.config.model_name,
         api_key: llmData.config.api_key || "",
+        tone: llmData.config.tone || "normal",
+        behavior_instructions: llmData.config.behavior_instructions || "",
+        should_use_training: llmData.config.should_use_training !== false,
       });
     }
-  });
+  }, [llmData, form]);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     await saveConfigMutation.mutateAsync(values);
@@ -91,72 +104,160 @@ export function LlmSettings() {
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <FormField
-              control={form.control}
-              name="model_name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t("admin.llmModel")}</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select model" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="claude-3-7-sonnet-20250219">Claude 3.7 Sonnet</SelectItem>
-                      <SelectItem value="claude-3-opus-20240229">Claude 3 Opus</SelectItem>
-                      <SelectItem value="claude-3-haiku-20240307">Claude 3 Haiku</SelectItem>
-                      <SelectItem value="gpt-4o">GPT-4o</SelectItem>
-                      <SelectItem value="gpt-4-turbo">GPT-4 Turbo</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {llmData?.config && (
-                    <p className="mt-1 text-xs text-neutral-500">
-                      {t("admin.currentModel")} {llmData.config.model_name}{" "}
-                      ({t("admin.updatedAt")} {formatDate(llmData.config.updated_at)})
-                    </p>
-                  )}
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium">Configurações do Modelo</h3>
+              <Separator />
+            
+              <FormField
+                control={form.control}
+                name="model_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Modelo de IA</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione um modelo" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="claude-3-7-sonnet-20250219">Claude 3.7 Sonnet</SelectItem>
+                        <SelectItem value="claude-3-opus-20240229">Claude 3 Opus</SelectItem>
+                        <SelectItem value="claude-3-haiku-20240307">Claude 3 Haiku</SelectItem>
+                        <SelectItem value="gpt-4o">GPT-4o</SelectItem>
+                        <SelectItem value="gpt-4-turbo">GPT-4 Turbo</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {llmData?.config && (
+                      <p className="mt-1 text-xs text-neutral-500">
+                        Modelo atual: {llmData.config.model_name}{" "}
+                        (Atualizado em: {formatDate(llmData.config.updated_at)})
+                      </p>
+                    )}
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <FormField
-              control={form.control}
-              name="api_key"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t("admin.apiKey")}</FormLabel>
-                  <div className="flex">
+              <FormField
+                control={form.control}
+                name="api_key"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Chave API</FormLabel>
+                    <div className="flex">
+                      <FormControl>
+                        <Input
+                          type={showApiKey ? "text" : "password"}
+                          className="flex-grow rounded-r-none"
+                          {...field}
+                        />
+                      </FormControl>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="rounded-l-none"
+                        onClick={() => setShowApiKey(!showApiKey)}
+                      >
+                        {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                    <p className="mt-1 text-xs text-neutral-500">
+                      Chave API (criptografada com AES-256)
+                    </p>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="space-y-4 pt-4">
+              <h3 className="text-lg font-medium">Personalização de Comportamento</h3>
+              <Separator />
+
+              <FormField
+                control={form.control}
+                name="tone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tom de Comunicação</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Escolha um tom" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="formal">Formal</SelectItem>
+                        <SelectItem value="normal">Normal</SelectItem>
+                        <SelectItem value="casual">Descontraído</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      Define como a IA se comunicará com os usuários.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="behavior_instructions"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Instruções de Comportamento</FormLabel>
                     <FormControl>
-                      <Input
-                        type={showApiKey ? "text" : "password"}
-                        className="flex-grow rounded-r-none"
-                        {...field}
+                      <Textarea 
+                        placeholder="Descreva como a IA deve se comportar durante as conversas..." 
+                        className="resize-y min-h-[120px]"
+                        {...field} 
                       />
                     </FormControl>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="rounded-l-none"
-                      onClick={() => setShowApiKey(!showApiKey)}
-                    >
-                      {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </Button>
-                  </div>
-                  <p className="mt-1 text-xs text-neutral-500">
-                    {t("admin.apiKey")} (AES-256 encrypted)
-                  </p>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                    <FormDescription>
+                      Forneça instruções detalhadas sobre a personalidade e comportamento da IA ao interagir com os usuários.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
-            <div className="flex justify-end">
+            <div className="space-y-4 pt-4">
+              <h3 className="text-lg font-medium">Configurações de Treinamento</h3>
+              <Separator />
+
+              <FormField
+                control={form.control}
+                name="should_use_training"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-base">
+                        Usar Documentos de Treinamento
+                      </FormLabel>
+                      <FormDescription>
+                        A IA usará conhecimentos dos documentos carregados no sistema para responder perguntas.
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="flex justify-end pt-4">
               <Button
                 type="button"
                 variant="outline"
@@ -167,7 +268,7 @@ export function LlmSettings() {
                 {testConnectionMutation.isPending && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                {t("admin.testConnection")}
+                Testar Conexão
               </Button>
               <Button
                 type="submit"
@@ -176,7 +277,7 @@ export function LlmSettings() {
                 {saveConfigMutation.isPending && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                {t("admin.saveSettings")}
+                Salvar Configurações
               </Button>
             </div>
           </form>

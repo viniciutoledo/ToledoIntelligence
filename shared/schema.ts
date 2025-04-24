@@ -34,6 +34,9 @@ export const llmConfigs = pgTable("llm_configs", {
   id: serial("id").primaryKey(),
   model_name: text("model_name").notNull(),
   api_key: text("api_key").notNull(),
+  tone: text("tone", { enum: ["formal", "normal", "casual"] }).default("normal").notNull(),
+  behavior_instructions: text("behavior_instructions"),
+  should_use_training: boolean("should_use_training").default(true).notNull(),
   is_active: boolean("is_active").notNull().default(true),
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
@@ -43,6 +46,9 @@ export const llmConfigs = pgTable("llm_configs", {
 export const insertLlmConfigSchema = createInsertSchema(llmConfigs).pick({
   model_name: true,
   api_key: true,
+  tone: true,
+  behavior_instructions: true,
+  should_use_training: true,
   created_by: true,
 });
 
