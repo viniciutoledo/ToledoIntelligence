@@ -2,7 +2,7 @@ import express, { type Express, Request, Response, NextFunction } from "express"
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated, checkRole } from "./auth";
-import { analyzeImage, analyzeFile, processTextMessage, testConnection, getActiveLlmInfo } from "./llm";
+import { analyzeImage, analyzeFile, processTextMessage, testConnection, getActiveLlmInfo, fetchOpenAIDirectly, fetchAnthropicDirectly } from "./llm";
 import { logAction } from "./audit";
 import multer from "multer";
 import crypto from "crypto";
@@ -744,7 +744,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         debugResult.active_config_error = configError instanceof Error ? configError.message : 'Unknown error';
       }
       
-      // Testar OpenAI diretamente
+      // Testar OpenAI diretamente - Versão detalhada com registro de headers
       try {
         if (process.env.OPENAI_API_KEY) {
           const openaiParams = {
@@ -753,27 +753,103 @@ export async function registerRoutes(app: Express): Promise<Server> {
             max_tokens: 5
           };
           
+          // Diagnóstico detalhado para OpenAI
+          // Verificar a chave - mascarar para debug
+          const openaiKey = process.env.OPENAI_API_KEY;
+          const cleanedOpenaiKey = openaiKey.replace(/^bearer\s+/i, '').replace(/["']/g, '').trim();
+          
+          debugResult.openai_diagnostic = {
+            key_original_length: openaiKey.length,
+            key_cleaned_length: cleanedOpenaiKey.length,
+            key_starts_with: cleanedOpenaiKey.substring(0, 3),
+            key_clean_diff: openaiKey.length - cleanedOpenaiKey.length,
+            key_valid_format: cleanedOpenaiKey.startsWith('sk-'),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + '•'.repeat(4) + '...' + '•'.repeat(4)
+            }
+          };
+          
+          // Tentar chamar a API
           await fetchOpenAIDirectly('chat/completions', openaiParams, process.env.OPENAI_API_KEY);
           debugResult.test_results.openai_direct = true;
         }
       } catch (openaiError) {
         debugResult.test_results.openai_error = openaiError instanceof Error ? openaiError.message : 'Unknown error';
+        // Adicionar stack trace para debug
+        if (openaiError instanceof Error && openaiError.stack) {
+          debugResult.test_results.openai_stack = openaiError.stack;
+        }
       }
       
-      // Testar Anthropic diretamente
+      // Testar Anthropic diretamente - Versão detalhada com diagnóstico para ambos os formatos de API
       try {
         if (process.env.ANTHROPIC_API_KEY) {
-          const anthropicParams = {
+          // Testar para Claude 2 (prompt format)
+          const anthropicParams2 = {
             model: "claude-2",
+            max_tokens: 5,
+            prompt: "\n\nHuman: Say hello for testing purposes only\n\nAssistant: "
+          };
+          
+          // Diagnóstico detalhado para Anthropic
+          const anthropicKey = process.env.ANTHROPIC_API_KEY;
+          const cleanedAnthropicKey = anthropicKey.replace(/^bearer\s+/i, '').replace(/["']/g, '').trim();
+          
+          debugResult.anthropic_diagnostic = {
+            key_original_length: anthropicKey.length,
+            key_cleaned_length: cleanedAnthropicKey.length,
+            key_starts_with: cleanedAnthropicKey.substring(0, 7),
+            key_clean_diff: anthropicKey.length - cleanedAnthropicKey.length,
+            key_valid_format: cleanedAnthropicKey.startsWith('sk-ant-'),
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': '•'.repeat(4) + '...' + '•'.repeat(4),
+              'anthropic-version': '2023-06-01'
+            }
+          };
+          
+          // Tentar o formato Claude 2
+          try {
+            const resultC2 = await fetchAnthropicDirectly('messages', anthropicParams2, process.env.ANTHROPIC_API_KEY);
+            debugResult.test_results.anthropic_direct_claude2 = true;
+            debugResult.test_results.anthropic_claude2_response = { 
+              has_completion: !!resultC2.completion,
+              completion_length: resultC2.completion ? resultC2.completion.length : 0
+            };
+          } catch (c2Error) {
+            debugResult.test_results.anthropic_claude2_error = c2Error instanceof Error ? c2Error.message : 'Unknown error';
+          }
+          
+          // Testar para Claude 3 (messages format)
+          const anthropicParams3 = {
+            model: "claude-3-opus-20240229",
             max_tokens: 5,
             messages: [{ role: "user", content: "Say hello for testing purposes only" }]
           };
           
-          await fetchAnthropicDirectly('messages', anthropicParams, process.env.ANTHROPIC_API_KEY);
-          debugResult.test_results.anthropic_direct = true;
+          try {
+            const resultC3 = await fetchAnthropicDirectly('messages', anthropicParams3, process.env.ANTHROPIC_API_KEY);
+            debugResult.test_results.anthropic_direct_claude3 = true;
+            debugResult.test_results.anthropic_claude3_response = { 
+              has_content: !!resultC3.content,
+              content_length: resultC3.content ? resultC3.content.length : 0
+            };
+          } catch (c3Error) {
+            debugResult.test_results.anthropic_claude3_error = c3Error instanceof Error ? c3Error.message : 'Unknown error';
+          }
+          
+          // Se algum dos formatos funcionou, considerar sucesso
+          debugResult.test_results.anthropic_direct = 
+            debugResult.test_results.anthropic_direct_claude2 || 
+            debugResult.test_results.anthropic_direct_claude3;
         }
       } catch (anthropicError) {
         debugResult.test_results.anthropic_error = anthropicError instanceof Error ? anthropicError.message : 'Unknown error';
+        // Adicionar stack trace para debug
+        if (anthropicError instanceof Error && anthropicError.stack) {
+          debugResult.test_results.anthropic_stack = anthropicError.stack;
+        }
       }
       
       return res.json({ success: true, debug: debugResult });

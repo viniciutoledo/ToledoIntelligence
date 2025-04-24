@@ -128,7 +128,7 @@ let openaiClient: OpenAI | null = null;
 // Create OpenAI client
 // Adaptador que usa chamadas fetch diretamente em vez de usar o cliente OpenAI
 // para evitar os problemas persistentes com headers HTTP
-async function fetchOpenAIDirectly(endpoint: string, data: any, apiKey: string) {
+export async function fetchOpenAIDirectly(endpoint: string, data: any, apiKey: string) {
   console.log('Chamando OpenAI diretamente via fetch: ' + endpoint);
   
   // Garantir que a chave está limpa
@@ -233,7 +233,7 @@ let anthropicClient: Anthropic | null = null;
 // Create Anthropic client
 // Adaptador que usa chamadas fetch diretamente em vez de usar o cliente Anthropic
 // para evitar os problemas persistentes com headers HTTP
-async function fetchAnthropicDirectly(endpoint: string, data: any, apiKey: string) {
+export async function fetchAnthropicDirectly(endpoint: string, data: any, apiKey: string) {
   console.log('Chamando Anthropic diretamente via fetch: ' + endpoint);
   
   // Garantir que a chave está limpa
