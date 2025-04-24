@@ -170,7 +170,9 @@ export function EmbeddedChat({ apiKey, initialOpen = false }: EmbeddedChatProps)
   
   // Format widget data for chat component
   const chatAvatar = {
-    image_url: widget.avatar_url,
+    image_url: widget.avatar_url && widget.avatar_url.startsWith('/') 
+      ? `${window.location.origin}${widget.avatar_url}` 
+      : widget.avatar_url,
     name: widget.name
   };
   
@@ -197,7 +199,7 @@ export function EmbeddedChat({ apiKey, initialOpen = false }: EmbeddedChatProps)
           <div className="h-8 w-8 rounded-full flex-shrink-0 overflow-hidden">
             {widget.avatar_url ? (
               <img 
-                src={widget.avatar_url} 
+                src={widget.avatar_url.startsWith('/') ? `${window.location.origin}${widget.avatar_url}` : widget.avatar_url} 
                 alt={widget.name} 
                 className="h-full w-full object-cover"
               />

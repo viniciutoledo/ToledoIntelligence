@@ -161,7 +161,7 @@ export function ChatInterface({
         <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 mr-3">
           {avatar?.image_url ? (
             <img
-              src={avatar.image_url}
+              src={avatar.image_url.startsWith('/') ? `${window.location.origin}${avatar.image_url}` : avatar.image_url}
               alt={avatar.name || "Avatar"}
               className="h-10 w-10 rounded-full object-cover"
             />
