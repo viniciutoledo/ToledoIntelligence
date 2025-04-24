@@ -6,6 +6,28 @@ import { useTranslation } from "react-i18next";
 import { useLanguage } from "@/hooks/use-language";
 import { ChatInterface as SharedChatInterface } from "@/components/shared/chat-interface";
 
+// Função utilitária para otimizar URLs de arquivos
+function getOptimizedFileUrl(fileUrl: string | null): string {
+  if (!fileUrl) return "";
+  
+  try {
+    // Limpa caracteres invisíveis ou especiais que possam estar causando problemas
+    const cleanUrl = fileUrl.replace(/[\u200B-\u200D\uFEFF\u0000-\u001F\u007F-\u009F]/g, '');
+    
+    // Se a URL já começa com http(s), retorna como está
+    if (cleanUrl.startsWith('http')) return cleanUrl;
+    
+    // Se a URL começa com /, adiciona a origem
+    if (cleanUrl.startsWith('/')) return `${window.location.origin}${cleanUrl}`;
+    
+    // Se não começa com / nem com http, adiciona / no início
+    return `/${cleanUrl}`;
+  } catch (error) {
+    console.error("Erro ao processar URL do arquivo:", error);
+    return fileUrl || ""; // Retorna a URL original em caso de erro
+  }
+}
+
 interface EmbeddedChatProps {
   apiKey: string;
   initialOpen?: boolean;
@@ -222,9 +244,11 @@ export function EmbeddedChat({ apiKey, initialOpen = false }: EmbeddedChatProps)
   // Detectar se estamos dentro de um iframe
   const isInIframe = useMemo(() => {
     try {
-      return window !== window.parent;
+      // Verificação melhorada para compatibilidade entre navegadores
+      return window.self !== window.top;
     } catch (e) {
       // Se houver erro de segurança de cross-origin, provavelmente estamos em um iframe
+      console.log("Erro ao detectar iframe:", e);
       return true;
     }
   }, []);
@@ -240,9 +264,7 @@ export function EmbeddedChat({ apiKey, initialOpen = false }: EmbeddedChatProps)
   
   // Format widget data for chat component
   const chatAvatar = {
-    image_url: widget.avatar_url && widget.avatar_url.startsWith('/') 
-      ? `${window.location.origin}${widget.avatar_url}` 
-      : widget.avatar_url,
+    image_url: widget.avatar_url ? getOptimizedFileUrl(widget.avatar_url) : null,
     name: widget.name
   };
   
@@ -269,8 +291,9 @@ export function EmbeddedChat({ apiKey, initialOpen = false }: EmbeddedChatProps)
           <div className="h-8 w-8 rounded-full flex-shrink-0 overflow-hidden">
             {widget.avatar_url ? (
               <img 
-                src={widget.avatar_url.startsWith('/') ? `${window.location.origin}${widget.avatar_url}` : widget.avatar_url} 
+                src={getOptimizedFileUrl(widget.avatar_url)} 
                 alt={widget.name} 
+                loading="lazy"
                 className="h-full w-full object-cover"
               />
             ) : (
