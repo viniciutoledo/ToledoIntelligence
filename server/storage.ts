@@ -138,6 +138,7 @@ export interface IStorage {
   // Chat widgets management
   getChatWidget(id: string): Promise<ChatWidget | undefined>;
   getUserChatWidgets(userId: number): Promise<ChatWidget[]>;
+  getAllChatWidgets(): Promise<ChatWidget[]>;
   createChatWidget(widget: InsertChatWidget): Promise<ChatWidget>;
   updateChatWidget(id: string, data: Partial<ChatWidget>): Promise<ChatWidget | undefined>;
   deleteChatWidget(id: string): Promise<void>;
@@ -147,12 +148,14 @@ export interface IStorage {
   // Widget chat sessions
   getWidgetChatSession(id: number): Promise<WidgetChatSession | undefined>;
   getWidgetChatSessions(widgetId: string): Promise<WidgetChatSession[]>;
+  getAllWidgetChatSessions(): Promise<WidgetChatSession[]>;
   createWidgetChatSession(session: InsertWidgetChatSession): Promise<WidgetChatSession>;
   endWidgetChatSession(id: number): Promise<WidgetChatSession | undefined>;
   
   // Widget chat messages
   getWidgetChatMessage(id: number): Promise<WidgetChatMessage | undefined>;
   getWidgetSessionMessages(sessionId: number): Promise<WidgetChatMessage[]>;
+  getAllWidgetChatMessages(): Promise<WidgetChatMessage[]>;
   createWidgetChatMessage(message: InsertWidgetChatMessage): Promise<WidgetChatMessage>;
 }
 
@@ -1010,6 +1013,10 @@ export class MemStorage implements IStorage {
       .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
   }
   
+  async getAllChatWidgets(): Promise<ChatWidget[]> {
+    return Array.from(this.chatWidgets.values());
+  }
+  
   async createChatWidget(widget: InsertChatWidget): Promise<ChatWidget> {
     const id = crypto.randomUUID();
     const apiKey = crypto.randomUUID();
@@ -1142,6 +1149,14 @@ export class MemStorage implements IStorage {
     return Array.from(this.widgetChatMessages.values())
       .filter(message => message.session_id === sessionId)
       .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+  }
+  
+  async getAllWidgetChatMessages(): Promise<WidgetChatMessage[]> {
+    return Array.from(this.widgetChatMessages.values());
+  }
+  
+  async getAllWidgetChatSessions(): Promise<WidgetChatSession[]> {
+    return Array.from(this.widgetChatSessions.values());
   }
   
   async createWidgetChatMessage(message: InsertWidgetChatMessage): Promise<WidgetChatMessage> {
@@ -1483,6 +1498,18 @@ export class DatabaseStorage implements IStorage {
       .from(widgetChatMessages)
       .where(eq(widgetChatMessages.session_id, sessionId))
       .orderBy(asc(widgetChatMessages.created_at));
+  }
+  
+  async getAllWidgetChatMessages(): Promise<WidgetChatMessage[]> {
+    return db.select().from(widgetChatMessages);
+  }
+  
+  async getAllWidgetChatSessions(): Promise<WidgetChatSession[]> {
+    return db.select().from(widgetChatSessions);
+  }
+  
+  async getAllChatWidgets(): Promise<ChatWidget[]> {
+    return db.select().from(chatWidgets);
   }
   
   async createWidgetChatMessage(message: InsertWidgetChatMessage): Promise<WidgetChatMessage> {
