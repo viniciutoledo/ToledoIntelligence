@@ -223,14 +223,20 @@ export function ChatInterface({
                     <Image className="h-4 w-4 mr-2" />
                     <span className="text-sm">{msg.content || "Imagem"}</span>
                   </div>
-                  <img
-                    src={msg.file_url?.startsWith('/') ? `${window.location.origin}${msg.file_url}` : msg.file_url}
-                    alt="Uploaded file"
-                    className="rounded-md max-h-48 w-auto"
-                    onError={(e) => {
-                      e.currentTarget.alt = "Erro ao carregar imagem";
-                    }}
-                  />
+                  <div className="image-container relative">
+                    <img
+                      src={msg.file_url?.startsWith('/') ? `${window.location.origin}${msg.file_url}` : msg.file_url}
+                      alt="Uploaded file"
+                      className="rounded-md max-h-60 max-w-full object-contain"
+                      onError={(e) => {
+                        console.error("Erro ao carregar imagem:", msg.file_url);
+                        e.currentTarget.src = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxMDAiIGZpbGw9IiNmMGYwZjAiLz4KPHRleHQgeD0iNTAiIHk9IjUwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTIiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGFsaWdubWVudC1iYXNlbGluZT0ibWlkZGxlIiBmaWxsPSIjOTk5Ij5FcnJvIGFvIGNhcnJlZ2FyIGltYWdlbTwvdGV4dD4KPC9zdmc+";
+                        e.currentTarget.alt = "Erro ao carregar imagem";
+                        e.currentTarget.style.width = "100%";
+                        e.currentTarget.style.height = "100px";
+                      }}
+                    />
+                  </div>
                   <a 
                     href={msg.file_url?.startsWith('/') ? `${window.location.origin}${msg.file_url}` : msg.file_url} 
                     target="_blank" 

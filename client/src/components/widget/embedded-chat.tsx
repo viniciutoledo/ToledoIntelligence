@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Loader2, MessageSquare, X, Minimize2 } from "lucide-react";
 import { useWidgetChat } from "@/hooks/use-widget-chat";
@@ -174,13 +174,23 @@ export function EmbeddedChat({ apiKey, initialOpen = false }: EmbeddedChatProps)
     );
   }
   
+  // Detectar se estamos dentro de um iframe
+  const isInIframe = useMemo(() => {
+    try {
+      return window !== window.parent;
+    } catch (e) {
+      // Se houver erro de segurança de cross-origin, provavelmente estamos em um iframe
+      return true;
+    }
+  }, []);
+  
   // Container
   const containerStyles = {
-    position: window.parent && window.parent !== window ? "absolute" : "fixed",
-    bottom: window.parent && window.parent !== window ? 0 : "1rem",
-    right: window.parent && window.parent !== window ? 0 : "1rem",
-    height: window.parent && window.parent !== window ? "100%" : "500px",
-    width: window.parent && window.parent !== window ? "100%" : "350px",
+    position: isInIframe ? "absolute" : "fixed",
+    bottom: isInIframe ? 0 : "1rem",
+    right: isInIframe ? 0 : "1rem",
+    height: isInIframe ? "100%" : "500px",
+    width: isInIframe ? "100%" : "350px",
   } as React.CSSProperties;
   
   // Format widget data for chat component
