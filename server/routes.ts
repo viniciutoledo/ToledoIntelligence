@@ -639,6 +639,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post("/api/admin/llm", isAuthenticated, checkRole("admin"), async (req, res) => {
     try {
+      // Limpar o prefixo "Bearer " da API key antes de salvar no banco
+      let apiKey = req.body.api_key;
+      if (apiKey && typeof apiKey === 'string' && apiKey.toLowerCase().startsWith('bearer ')) {
+        apiKey = apiKey.substring(7).trim();
+        req.body.api_key = apiKey;
+      }
+      
       const data = insertLlmConfigSchema.parse({
         ...req.body,
         created_by: req.user!.id
@@ -669,7 +676,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
     
     try {
-      const { model_name, api_key } = schema.parse(req.body);
+      let { model_name, api_key } = schema.parse(req.body);
+      
+      // Limpar o prefixo "Bearer " da API key antes de testar a conexão
+      if (api_key && typeof api_key === 'string' && api_key.toLowerCase().startsWith('bearer ')) {
+        api_key = api_key.substring(7).trim();
+      }
+      
+      console.log(`Testando conexão LLM com modelo ${model_name} (API key com comprimento ${api_key.length})`);
       
       // Test connection using both OpenAI and Anthropic APIs
       const isValid = await testConnection(api_key, model_name);

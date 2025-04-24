@@ -112,27 +112,23 @@ export async function getActiveLlmInfo(): Promise<LlmFullConfig> {
 
 // Create OpenAI client
 function getOpenAIClient(apiKey: string) {
+  // Primeiro aplicar a função de limpeza mais robusta
+  apiKey = cleanApiKey(apiKey);
+  
   // Verificar se a apiKey é válida e está corretamente formatada
   if (!apiKey || typeof apiKey !== 'string' || apiKey.trim() === '') {
     throw new Error('API key inválida para OpenAI');
   }
   
-  // Limpar e validar a chave da API
-  let cleanedApiKey = apiKey.trim();
-  
-  // Remover prefixos como "Bearer" ou "sk-" duplicados se existirem
-  if (cleanedApiKey.startsWith('Bearer ')) {
-    cleanedApiKey = cleanedApiKey.substring(7).trim();
-  }
-  
   // Verificar se a chave da OpenAI tem o formato correto
-  if (cleanedApiKey.startsWith('sk-') && cleanedApiKey.length >= 30) {
+  if (apiKey.startsWith('sk-') && apiKey.length >= 30) {
     // Parece uma chave válida, continue
-    return new OpenAI({ apiKey: cleanedApiKey });
-  } else if (cleanedApiKey.length >= 25) {
+    console.log('Usando chave OpenAI com formato correto (sk-)');
+    return new OpenAI({ apiKey });
+  } else if (apiKey.length >= 25) {
     // Não tem o prefixo 'sk-', mas parece longa o suficiente para ser uma chave, continue
     console.log('Aviso: A chave da API OpenAI não começa com "sk-", mas será usada mesmo assim');
-    return new OpenAI({ apiKey: cleanedApiKey });
+    return new OpenAI({ apiKey });
   } else {
     // Chave muito curta ou claramente inválida
     throw new Error('API key da OpenAI parece ser inválida (muito curta ou formato incorreto)');
@@ -141,22 +137,18 @@ function getOpenAIClient(apiKey: string) {
 
 // Create Anthropic client
 function getAnthropicClient(apiKey: string) {
+  // Primeiro aplicar a função de limpeza mais robusta
+  apiKey = cleanApiKey(apiKey);
+  
   // Verificar se a apiKey é válida e está corretamente formatada
   if (!apiKey || typeof apiKey !== 'string' || apiKey.trim() === '') {
     throw new Error('API key inválida para Anthropic');
   }
   
-  // Limpar e validar a chave da API
-  let cleanedApiKey = apiKey.trim();
-  
-  // Remover prefixos como "Bearer" se existirem
-  if (cleanedApiKey.startsWith('Bearer ')) {
-    cleanedApiKey = cleanedApiKey.substring(7).trim();
-  }
-  
   // Verificar se a chave da Anthropic tem comprimento razoável
-  if (cleanedApiKey.length >= 30) {
-    return new Anthropic({ apiKey: cleanedApiKey });
+  if (apiKey.length >= 30) {
+    console.log('Usando chave Anthropic com comprimento adequado');
+    return new Anthropic({ apiKey });
   } else {
     // Chave muito curta ou claramente inválida
     throw new Error('API key da Anthropic parece ser inválida (muito curta ou formato incorreto)');
