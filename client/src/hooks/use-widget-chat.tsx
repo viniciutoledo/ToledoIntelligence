@@ -120,10 +120,10 @@ export function WidgetChatProvider({
     data: messages = [],
     isLoading: isLoadingMessages
   } = useQuery({
-    queryKey: ["/api/widgets/messages", currentSession?.id],
+    queryKey: ["/api/widgets-messages", currentSession?.id],
     queryFn: async () => {
       if (!currentSession) return [];
-      const res = await fetch(`/api/widgets/messages?session_id=${currentSession.id}`);
+      const res = await fetch(`/api/widgets-messages?session_id=${currentSession.id}`);
       if (!res.ok) {
         throw new Error("Erro ao buscar mensagens");
       }
@@ -198,7 +198,7 @@ export function WidgetChatProvider({
       messageType?: "text" | "image" | "file";
       isUser?: boolean;
     }) => {
-      const res = await apiRequest("POST", "/api/widgets/messages", {
+      const res = await apiRequest("POST", "/api/widgets-messages", {
         session_id: sessionId,
         content,
         message_type: messageType,
@@ -209,19 +209,19 @@ export function WidgetChatProvider({
     onSuccess: (newMessage) => {
       // Adicionar a nova mensagem à lista
       const currentMessages = queryClient.getQueryData<WidgetChatMessage[]>([
-        "/api/widgets/messages", 
+        "/api/widgets-messages", 
         currentSession?.id
       ]) || [];
       
       queryClient.setQueryData(
-        ["/api/widgets/messages", currentSession?.id],
+        ["/api/widgets-messages", currentSession?.id],
         [...currentMessages, newMessage]
       );
       
       // Invalidar a consulta para buscar novas mensagens (incluindo resposta do AI)
       setTimeout(() => {
         queryClient.invalidateQueries({
-          queryKey: ["/api/widgets/messages", currentSession?.id]
+          queryKey: ["/api/widgets-messages", currentSession?.id]
         });
       }, 1000);
     },

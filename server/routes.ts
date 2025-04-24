@@ -2969,8 +2969,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // GET /api/widgets/messages - Obtém mensagens de uma sessão
-  app.get("/api/widgets/messages", async (req, res) => {
+  // GET /api/widgets-messages - Obtém mensagens de uma sessão (rota modificada para evitar conflito com /api/widgets/:id)
+  app.get("/api/widgets-messages", async (req, res) => {
     try {
       const { session_id } = req.query as { session_id: string };
       
@@ -2996,8 +2996,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // POST /api/widgets/messages - Envia uma mensagem para uma sessão
-  app.post("/api/widgets/messages", async (req, res) => {
+  // Manter a rota antiga por compatibilidade, mas retornando um erro claro
+  app.get("/api/widgets/messages", async (req, res) => {
+    return res.status(400).json({ 
+      message: "Esta rota foi depreciada. Por favor, use /api/widgets-messages em vez disso." 
+    });
+  });
+  
+  // POST /api/widgets-messages - Envia uma mensagem para uma sessão (rota modificada para evitar conflito)
+  app.post("/api/widgets-messages", async (req, res) => {
     try {
       const { session_id, content, message_type = "text", is_user = true } = req.body;
       
