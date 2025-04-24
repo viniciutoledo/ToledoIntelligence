@@ -2102,9 +2102,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const schema = insertChatWidgetSchema.extend({
         name: z.string().min(3).max(100),
-        description: z.string().nullable().optional(),
+        greeting: z.string().optional(),
+        avatar_url: z.string().url().optional(),
         theme_color: z.string().regex(/^#[0-9A-F]{6}$/i).optional(),
-        welcome_message: z.string().nullable().optional(),
       });
       
       const widgetData = schema.parse(req.body);
@@ -2121,8 +2121,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const newWidget = await storage.createChatWidget({
         ...widgetData,
         user_id: req.user!.id,
-        description: widgetData.description || null,
-        welcome_message: widgetData.welcome_message || "Olá! Como posso ajudar?",
+        greeting: widgetData.greeting || "Olá! Como posso ajudar?",
+        avatar_url: widgetData.avatar_url || "https://ui-avatars.com/api/?name=T&background=6366F1&color=fff",
         theme_color: widgetData.theme_color || "#6366f1",
         allowed_domains: widgetData.allowed_domains || []
       });
@@ -2166,9 +2166,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const schema = z.object({
         name: z.string().min(3).max(100).optional(),
-        description: z.string().nullable().optional(),
+        greeting: z.string().optional(),
+        avatar_url: z.string().url().optional(),
         theme_color: z.string().regex(/^#[0-9A-F]{6}$/i).optional(),
-        welcome_message: z.string().nullable().optional(),
         is_active: z.boolean().optional(),
         allowed_domains: z.array(z.string()).optional()
       });
@@ -2347,10 +2347,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       // Criar mensagem de boas-vindas
-      if (widget.welcome_message) {
+      if (widget.greeting) {
         await storage.createWidgetChatMessage({
           session_id: session.id,
-          content: widget.welcome_message,
+          content: widget.greeting,
           is_from_ai: true
         });
       }
