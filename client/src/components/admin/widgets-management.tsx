@@ -29,10 +29,10 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, MoreHorizontal, Plus, Edit, Trash2, Copy, Globe, Upload } from "lucide-react";
+import { Loader2, MoreHorizontal, Plus, Edit, Trash2, Copy, Globe, Upload, Link } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { ChatWidget } from "@shared/schema";
-import { generateEmbedCode } from "@/components/widget/generate-embed-code";
+import { generateEmbedCode, type EmbedCodeResult } from "@/components/widget/generate-embed-code";
 
 // Schema para validação do formulário
 const widgetFormSchema = z.object({
