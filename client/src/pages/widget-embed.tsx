@@ -1,34 +1,31 @@
-import { useEffect, useState } from "react";
-import { EmbeddedChat } from "@/components/widget/embedded-chat";
-import { useSearchParams } from "wouter/use-location";
+import { useEffect } from 'react';
+import { useLocation } from 'wouter';
+import { EmbeddedChat } from '@/components/widget/embedded-chat';
 
+/**
+ * Esta página é destinada a ser incorporada em um iframe em sites externos.
+ * Ela renderiza o widget de chat usando o API key fornecido na query string.
+ */
 export default function WidgetEmbedPage() {
-  const params = useSearchParams();
-  const apiKey = params.get("apiKey") || "";
-  const [initialized, setInitialized] = useState(false);
-
+  const [, setLocation] = useLocation();
+  
+  // Extrair o apiKey da url
+  const apiKey = new URLSearchParams(window.location.search).get('key');
+  
+  // Se não houver API key, redirecionar para a landing page
   useEffect(() => {
-    if (apiKey) {
-      setInitialized(true);
+    if (!apiKey) {
+      setLocation('/');
     }
-  }, [apiKey]);
-
+  }, [apiKey, setLocation]);
+  
   if (!apiKey) {
-    return (
-      <div className="h-full flex flex-col items-center justify-center p-4 bg-background text-foreground">
-        <div className="text-center">
-          <h3 className="font-bold text-lg mb-2">API Key não encontrada</h3>
-          <p className="text-sm text-muted-foreground">
-            É necessário fornecer uma API Key válida para inicializar o widget.
-          </p>
-        </div>
-      </div>
-    );
+    return null;
   }
-
+  
   return (
-    <div className="h-full bg-background text-foreground">
-      {initialized && <EmbeddedChat apiKey={apiKey} initialOpen={true} />}
+    <div className="h-screen w-screen overflow-hidden">
+      <EmbeddedChat apiKey={apiKey} initialOpen={true} />
     </div>
   );
 }

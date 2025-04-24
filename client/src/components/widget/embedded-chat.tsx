@@ -1,388 +1,235 @@
-import React, { useState, useEffect, useRef } from "react";
-import { useWidgetChat } from "@/hooks/use-widget-chat";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Loader2, PaperclipIcon, ArrowUp, X, MinusIcon } from "lucide-react";
+import { Loader2, MessageSquare, X, Minimize2 } from "lucide-react";
+import { useWidgetChat } from "@/hooks/use-widget-chat";
 import { useTranslation } from "react-i18next";
-import { I18nextProvider } from 'react-i18next';
-import i18n from "@/lib/i18n";
+import { useLanguage } from "@/hooks/use-language";
+import { ChatInterface as SharedChatInterface } from "@/components/shared/chat-interface";
 
 interface EmbeddedChatProps {
   apiKey: string;
   initialOpen?: boolean;
-  position?: "bottom-right" | "bottom-left" | "top-right" | "top-left";
-  width?: number;
-  height?: number;
 }
 
-export function EmbeddedChat({
-  apiKey,
-  initialOpen = false,
-  position = "bottom-right",
-  width = 350,
-  height = 600
-}: EmbeddedChatProps) {
+export function EmbeddedChat({ apiKey, initialOpen = false }: EmbeddedChatProps) {
+  const { t } = useTranslation();
+  const { language } = useLanguage();
+  const [isOpen, setIsOpen] = useState(initialOpen);
+  
   const {
     widget,
     isLoadingWidget,
-    messages,
     currentSession,
+    messages,
     isInitialized,
+    createSessionMutation,
+    endSessionMutation,
     sendMessageMutation,
     uploadFileMutation,
-    createSessionMutation,
-    initializeWidget
+    initializeWidget,
   } = useWidgetChat();
   
-  const [input, setInput] = useState("");
-  const [isOpen, setIsOpen] = useState(initialOpen);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isAttaching, setIsAttaching] = useState(false);
+  // Status de carregamento
+  const isLoading = isLoadingWidget || 
+                   createSessionMutation.isPending || 
+                   sendMessageMutation.isPending || 
+                   uploadFileMutation.isPending;
   
-  const { t, i18n } = useTranslation();
-  
-  // Inicializar o widget quando o componente for montado
+  // Inicializar widget quando o componente é montado
   useEffect(() => {
-    initializeWidget(apiKey);
+    if (apiKey) {
+      initializeWidget(apiKey);
+    }
   }, [apiKey, initializeWidget]);
   
-  // Scroll para o final das mensagens quando novas mensagens forem adicionadas
+  // Se não houver sessão ativa e o widget estiver carregado, inicie uma sessão
   useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [messages]);
-  
-  // Iniciar uma nova sessão quando o chat for aberto
-  useEffect(() => {
-    if (isOpen && widget && !currentSession && isInitialized) {
+    if (widget && !currentSession && !createSessionMutation.isPending) {
       createSessionMutation.mutate({
         widgetId: widget.id,
-        language: i18n.language as "pt" | "en",
+        language: language as "pt" | "en",
         referrerUrl: document.referrer || window.location.href
       });
     }
-  }, [isOpen, widget, currentSession, isInitialized, createSessionMutation, i18n.language]);
+  }, [widget, currentSession, createSessionMutation, language]);
   
-  // Manipuladores de eventos
-  const handleSendMessage = (e?: React.FormEvent) => {
-    e?.preventDefault();
-    
-    if (!input.trim() || !currentSession) return;
+  // Finalizar sessão quando componente for desmontado
+  useEffect(() => {
+    return () => {
+      if (currentSession && !currentSession.ended_at) {
+        endSessionMutation.mutate(currentSession.id);
+      }
+    };
+  }, [currentSession, endSessionMutation]);
+  
+  // Handler para enviar mensagens
+  const handleSendMessage = (content: string) => {
+    if (!currentSession) return;
     
     sendMessageMutation.mutate({
       sessionId: currentSession.id,
-      content: input,
-      messageType: "text",
+      content,
       isUser: true
     });
-    
-    setInput("");
   };
   
+  // Handler para upload de arquivos
   const handleFileUpload = (file: File) => {
     if (!currentSession) return;
     
-    // Verificar tipo e tamanho do arquivo
-    if (file.size > 10 * 1024 * 1024) { // 10MB
-      alert(t("O arquivo deve ter no máximo 10MB"));
-      return;
-    }
-    
-    // Tipos permitidos
-    const allowedTypes = [
-      "image/jpeg", 
-      "image/png", 
-      "image/gif", 
-      "application/pdf", 
-      "text/plain", 
-      "application/msword", 
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-    ];
-    
-    if (!allowedTypes.includes(file.type)) {
-      alert(t("Tipo de arquivo não suportado"));
-      return;
-    }
-    
-    setIsAttaching(true);
-    
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("sessionId", currentSession.id.toString());
+    formData.append("session_id", currentSession.id.toString());
     
-    uploadFileMutation.mutate(formData, {
-      onSettled: () => {
-        setIsAttaching(false);
-      }
-    });
+    uploadFileMutation.mutate(formData);
   };
   
-  // Notificar a página pai para fechar o widget
-  const closeWidget = () => {
+  // Função para enviar mensagem para a página pai para minimizar/fechar o widget
+  const handleMinimize = () => {
     setIsOpen(false);
-    window.parent.postMessage("toledoia-widget-close", "*");
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage("toledoia-widget-minimize", "*");
+    }
   };
   
+  // Função para enviar mensagem para a página pai para fechar o widget
+  const handleClose = () => {
+    setIsOpen(false);
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage("toledoia-widget-close", "*");
+    }
+  };
+  
+  // Botão de chat (quando está minimizado)
+  if (!isOpen) {
+    return (
+      <Button
+        onClick={() => setIsOpen(true)}
+        className="fixed bottom-4 right-4 rounded-full h-14 w-14 p-0 flex items-center justify-center"
+        style={{ backgroundColor: widget?.theme_color || "#6366F1" }}
+      >
+        <MessageSquare size={24} />
+      </Button>
+    );
+  }
+  
+  // Loading state
   if (!isInitialized || isLoadingWidget) {
     return (
-      <div className="flex flex-col h-full">
-        <div className="flex-1 flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="fixed bottom-4 right-4 h-[500px] w-[350px] rounded-lg bg-card border shadow-xl flex flex-col">
+        <div className="flex items-center justify-center h-full">
+          <Loader2 className="animate-spin h-8 w-8 text-primary" />
         </div>
       </div>
     );
   }
   
+  // Widget not found state
   if (!widget) {
     return (
-      <div className="flex flex-col h-full p-4">
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <p className="text-error mb-2">⚠️ {t("Widget não encontrado")}</p>
-            <p className="text-sm text-muted-foreground">{t("A API key fornecida é inválida ou o widget não está ativo.")}</p>
+      <div className="fixed bottom-4 right-4 h-[500px] w-[350px] rounded-lg bg-card border shadow-xl flex flex-col">
+        <div className="flex items-center justify-center h-full p-4 text-center">
+          <div>
+            <h3 className="font-semibold text-lg mb-2">
+              {t("widget.notFound")}
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              {t("widget.invalidKey")}
+            </p>
+            <Button onClick={handleClose} className="mt-4">
+              {t("common.close")}
+            </Button>
           </div>
         </div>
       </div>
     );
   }
   
-  const themeColor = widget.theme_color || "#6366F1";
+  // Container
+  const containerStyles = {
+    position: window.parent && window.parent !== window ? "absolute" : "fixed",
+    bottom: window.parent && window.parent !== window ? 0 : "1rem",
+    right: window.parent && window.parent !== window ? 0 : "1rem",
+    height: window.parent && window.parent !== window ? "100%" : "500px",
+    width: window.parent && window.parent !== window ? "100%" : "350px",
+  } as React.CSSProperties;
+  
+  // Format widget data for chat component
+  const chatAvatar = {
+    image_url: widget.avatar_url,
+    name: widget.name
+  };
+  
+  // Textos customizados
+  const customTexts = {
+    typeMessage: t("widget.typeMessage", "Digite sua mensagem..."),
+    online: t("widget.online", "Online"),
+    downloadFile: t("widget.downloadFile", "Baixar arquivo"),
+    messageUnavailable: t("widget.messageUnavailable", "Conteúdo não disponível"),
+    supportedFormats: t("widget.supportedFormats", "Formatos suportados: PNG, JPG, PDF (máx 50MB)")
+  };
   
   return (
-    <I18nextProvider i18n={i18n}>
+    <div 
+      className="rounded-lg bg-card border shadow-xl overflow-hidden flex flex-col"
+      style={containerStyles}
+    >
+      {/* Header */}
       <div 
-        className="flex flex-col h-full overflow-hidden bg-background border border-border rounded-lg shadow-lg"
-        style={{ width: "100%", height: "100%" }}
+        className="p-3 flex items-center justify-between border-b"
+        style={{ backgroundColor: widget.theme_color || "#6366F1", color: "white" }}
       >
-        {/* Cabeçalho */}
-        <div 
-          className="flex items-center justify-between px-4 py-3 border-b"
-          style={{ backgroundColor: themeColor, color: "#fff" }}
-        >
-          <div className="flex items-center">
-            <div className="w-8 h-8 rounded-full bg-white/20 mr-3 overflow-hidden">
-              {widget.avatar_url ? (
-                <img 
-                  src={widget.avatar_url} 
-                  alt={widget.name} 
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  T
-                </div>
-              )}
-            </div>
-            <div>
-              <h3 className="font-medium text-sm">{widget.name}</h3>
-            </div>
+        <div className="flex items-center">
+          <div className="h-8 w-8 rounded-full flex-shrink-0 overflow-hidden">
+            {widget.avatar_url ? (
+              <img 
+                src={widget.avatar_url} 
+                alt={widget.name} 
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <div className="h-full w-full bg-primary-100 flex items-center justify-center text-primary-600">
+                <span className="text-sm font-bold">T</span>
+              </div>
+            )}
           </div>
-          <div className="flex">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="h-8 w-8 p-0 text-white/80 hover:text-white hover:bg-white/10"
-              onClick={() => window.parent.postMessage("toledoia-widget-minimize", "*")}
-            >
-              <MinusIcon className="h-4 w-4" />
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="h-8 w-8 p-0 text-white/80 hover:text-white hover:bg-white/10"
-              onClick={closeWidget}
-            >
-              <X className="h-4 w-4" />
-            </Button>
+          <div className="ml-2">
+            <p className="font-medium text-sm text-white">{widget.name}</p>
           </div>
         </div>
-        
-        {/* Área de mensagens */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {/* Mensagem de boas-vindas */}
-          {messages.length === 0 && (
-            <div className="flex items-start mb-4">
-              <div 
-                className="w-8 h-8 rounded-full mr-2 overflow-hidden flex-shrink-0"
-                style={{ backgroundColor: themeColor }}
-              >
-                {widget.avatar_url ? (
-                  <img 
-                    src={widget.avatar_url} 
-                    alt={widget.name} 
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-white">
-                    T
-                  </div>
-                )}
-              </div>
-              <div className="bg-primary-50 rounded-lg rounded-tl-none py-2 px-3 max-w-[80%]">
-                <p className="text-sm">{widget.greeting || t("Olá! Como posso ajudar?")}</p>
-              </div>
-            </div>
-          )}
-          
-          {/* Lista de mensagens */}
-          {messages.map((message) => (
-            <div 
-              key={message.id} 
-              className={`flex items-start ${message.is_user ? 'justify-end' : ''}`}
-            >
-              {!message.is_user && (
-                <div 
-                  className="w-8 h-8 rounded-full mr-2 overflow-hidden flex-shrink-0"
-                  style={{ backgroundColor: themeColor }}
-                >
-                  {widget.avatar_url ? (
-                    <img 
-                      src={widget.avatar_url} 
-                      alt={widget.name} 
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-white">
-                      T
-                    </div>
-                  )}
-                </div>
-              )}
-              
-              <div 
-                className={`py-2 px-3 max-w-[80%] rounded-lg ${
-                  message.is_user 
-                    ? 'bg-primary text-primary-foreground rounded-br-none ml-auto' 
-                    : 'bg-muted rounded-tl-none'
-                }`}
-              >
-                {message.message_type === "text" && (
-                  <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                )}
-                
-                {message.message_type === "image" && message.file_url && (
-                  <img 
-                    src={message.file_url} 
-                    alt={t("Imagem")} 
-                    className="max-w-full rounded"
-                  />
-                )}
-                
-                {message.message_type === "file" && message.file_url && (
-                  <a 
-                    href={message.file_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm flex items-center underline"
-                  >
-                    <PaperclipIcon className="h-3 w-3 mr-1" />
-                    {t("Baixar arquivo")}
-                  </a>
-                )}
-              </div>
-            </div>
-          ))}
-          
-          {/* Indicador de carregamento durante a resposta */}
-          {sendMessageMutation.isPending && !sendMessageMutation.isIdle && (
-            <div className="flex items-start">
-              <div 
-                className="w-8 h-8 rounded-full mr-2 overflow-hidden flex-shrink-0"
-                style={{ backgroundColor: themeColor }}
-              >
-                {widget.avatar_url ? (
-                  <img 
-                    src={widget.avatar_url} 
-                    alt={widget.name} 
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-white">
-                    T
-                  </div>
-                )}
-              </div>
-              <div className="bg-muted rounded-lg rounded-tl-none py-2 px-3">
-                <div className="flex space-x-1">
-                  <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: "0ms" }}></div>
-                  <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: "300ms" }}></div>
-                  <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: "600ms" }}></div>
-                </div>
-              </div>
-            </div>
-          )}
-          
-          {/* Elemento para scroll automático */}
-          <div ref={messagesEndRef} />
-        </div>
-        
-        {/* Área de entrada */}
-        <div className="p-2 border-t">
-          <form onSubmit={handleSendMessage} className="flex items-center space-x-2">
-            <Button 
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="flex-shrink-0 text-muted-foreground hover:text-foreground"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isAttaching || !currentSession}
-            >
-              {isAttaching ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <PaperclipIcon className="h-5 w-5" />
-              )}
-              <span className="sr-only">{t("Anexar arquivo")}</span>
-            </Button>
-            
-            <Input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder={t("Digite sua mensagem...")}
-              className="flex-1"
-              disabled={sendMessageMutation.isPending || !currentSession}
-            />
-            
-            <Button 
-              type="submit"
-              size="icon"
-              className="flex-shrink-0"
-              style={{ backgroundColor: themeColor }}
-              disabled={sendMessageMutation.isPending || !input.trim() || !currentSession}
-            >
-              {sendMessageMutation.isPending ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <ArrowUp className="h-5 w-5" />
-              )}
-              <span className="sr-only">{t("Enviar mensagem")}</span>
-            </Button>
-            
-            <input 
-              type="file"
-              ref={fileInputRef}
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) {
-                  handleFileUpload(file);
-                  // Limpar o input para permitir selecionar o mesmo arquivo novamente
-                  e.target.value = '';
-                }
-              }}
-              className="hidden"
-              accept="image/*,.pdf,.doc,.docx,.txt"
-            />
-          </form>
-          
-          <div className="flex justify-center mt-2">
-            <p className="text-xs text-muted-foreground">
-              Powered by ToledoIA
-            </p>
-          </div>
+        <div className="flex space-x-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleMinimize}
+            className="hover:bg-white/20 text-white"
+          >
+            <Minimize2 size={18} />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleClose}
+            className="hover:bg-white/20 text-white"
+          >
+            <X size={18} />
+          </Button>
         </div>
       </div>
-    </I18nextProvider>
+      
+      {/* Chat Content */}
+      <div className="flex-1 overflow-hidden">
+        <SharedChatInterface
+          messages={messages}
+          currentSession={currentSession}
+          avatar={chatAvatar}
+          isWidget={true}
+          isLoading={isLoading}
+          onSendMessage={handleSendMessage}
+          onFileUpload={handleFileUpload}
+          customTexts={customTexts}
+        />
+      </div>
+    </div>
   );
 }

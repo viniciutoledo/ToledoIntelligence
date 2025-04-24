@@ -267,16 +267,24 @@ export function WidgetChatProvider({
   const initializeWidget = async (newApiKey: string): Promise<void> => {
     if (!newApiKey) return;
     
-    // Gerar ID de visitante único
-    let storedVisitorId = localStorage.getItem('toledoia_visitor_id');
-    if (!storedVisitorId) {
-      storedVisitorId = uuidv4();
-      localStorage.setItem('toledoia_visitor_id', storedVisitorId);
+    try {
+      // Gerar ID de visitante único
+      let storedVisitorId = localStorage.getItem('toledoia_visitor_id');
+      if (!storedVisitorId) {
+        storedVisitorId = uuidv4();
+        localStorage.setItem('toledoia_visitor_id', storedVisitorId);
+      }
+      
+      setVisitorId(storedVisitorId);
+      setApiKey(newApiKey);
+      setIsInitialized(true);
+    } catch (error) {
+      // Em caso de erro com localStorage (ex: iframe com restrições)
+      const randomId = Math.random().toString(36).substring(2, 15);
+      setVisitorId(randomId);
+      setApiKey(newApiKey);
+      setIsInitialized(true);
     }
-    
-    setVisitorId(storedVisitorId);
-    setApiKey(newApiKey);
-    setIsInitialized(true);
   };
   
   // Se houver erro no widget, não mostrar o contexto

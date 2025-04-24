@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { LanguageProvider } from "@/hooks/use-language";
 import { AuthProvider } from "@/hooks/use-auth";
+import { WidgetChatProvider } from "@/hooks/use-widget-chat";
 import { ProtectedRoute } from "@/lib/protected-route";
 import NotFound from "@/pages/not-found";
 import AuthPage from "@/pages/auth-page";
@@ -16,6 +17,7 @@ import CheckoutPage from "@/pages/checkout-page";
 import CheckoutSuccessPage from "@/pages/checkout-success-page";
 import CpanelLoginPage from "@/pages/cpanel-login-page";
 import DiagnosticPage from "@/pages/diagnostic-page";
+import WidgetEmbedPage from "@/pages/widget-embed";
 
 function Router() {
   return (
@@ -24,6 +26,9 @@ function Router() {
       <Route path="/" component={LandingPage} />
       <Route path="/auth" component={AuthPage} />
       <Route path="/admin-login" component={CpanelLoginPage} />
+      
+      {/* Widget embed route */}
+      <Route path="/widget-embed" component={WidgetEmbedPage} />
       
       {/* Checkout routes */}
       <ProtectedRoute path="/checkout" component={CheckoutPage} />
@@ -86,10 +91,12 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <LanguageProvider>
         <AuthProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Router />
-          </TooltipProvider>
+          <WidgetChatProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Router />
+            </TooltipProvider>
+          </WidgetChatProvider>
         </AuthProvider>
       </LanguageProvider>
     </QueryClientProvider>
