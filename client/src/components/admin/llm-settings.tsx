@@ -34,6 +34,7 @@ import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
+import { LlmSelectionDropdown } from "./llm-selection-dropdown";
 
 export function LlmSettings() {
   const { t } = useLanguage();
@@ -114,23 +115,12 @@ export function LlmSettings() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Modelo de IA</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione um modelo" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="claude-3-7-sonnet-20250219">Claude 3.7 Sonnet</SelectItem>
-                        <SelectItem value="claude-3-opus-20240229">Claude 3 Opus</SelectItem>
-                        <SelectItem value="claude-3-haiku-20240307">Claude 3 Haiku</SelectItem>
-                        <SelectItem value="gpt-4o">GPT-4o</SelectItem>
-                        <SelectItem value="gpt-4-turbo">GPT-4 Turbo</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <FormControl>
+                      <LlmSelectionDropdown
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      />
+                    </FormControl>
                     {llmData?.config && (
                       <p className="mt-1 text-xs text-neutral-500">
                         Modelo atual: {llmData.config.model_name}{" "}
