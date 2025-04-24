@@ -217,27 +217,75 @@ export function WidgetChatProvider({
       messageType?: "text" | "image" | "file";
       isUser?: boolean;
     }) => {
-      const res = await apiRequest("POST", "/api/widgets-messages", {
-        session_id: sessionId,
-        content,
-        message_type: messageType,
-        is_user: isUser
-      });
-      return res.json();
+      try {
+        console.log("Enviando mensagem para sessão:", sessionId, "conteúdo:", content);
+        // Verificar se a sessão está ativa antes de tentar enviar a mensagem
+        const sessionCheckRes = await fetch(`/api/widgets/sessions/active?widget_id=${widget?.id}&visitor_id=${visitorId}`);
+        
+        if (!sessionCheckRes.ok) {
+          if (sessionCheckRes.status === 404) {
+            throw new Error("Sessão não encontrada ou expirada. Tente reiniciar o chat.");
+          }
+          throw new Error("Erro ao verificar sessão");
+        }
+        
+        const activeSession = await sessionCheckRes.json();
+        
+        // Se a sessão está encerrada, criar uma nova
+        if (activeSession.ended_at) {
+          throw new Error("Sessão encerrada. Tente reiniciar o chat.");
+        }
+        
+        // Enviar a mensagem
+        const res = await apiRequest("POST", "/api/widgets-messages", {
+          session_id: sessionId,
+          content,
+          message_type: messageType,
+          is_user: isUser
+        });
+        
+        if (!res.ok) {
+          if (res.status === 403) {
+            const errorData = await res.json();
+            throw new Error(errorData.message || "Erro ao enviar mensagem");
+          }
+        }
+        
+        return res.json();
+      } catch (error) {
+        console.error("Erro ao enviar mensagem:", error);
+        throw error;
+      }
     },
-    onSuccess: (newMessage) => {
-      // Adicionar a nova mensagem à lista
+    onSuccess: (data) => {
+      // As mensagens (usuário e IA) vêm juntas na resposta
+      const { userMessage, aiMessage } = data;
+      
+      // Adicionar ambas as mensagens à lista
       const currentMessages = queryClient.getQueryData<WidgetChatMessage[]>([
         "/api/widgets-messages", 
         currentSession?.id
       ]) || [];
       
+      const newMessages = [...currentMessages];
+      
+      // Adicionar mensagem do usuário se presente na resposta
+      if (userMessage) {
+        newMessages.push(userMessage);
+      }
+      
+      // Adicionar mensagem da IA se presente na resposta  
+      if (aiMessage) {
+        newMessages.push(aiMessage);
+      }
+      
+      // Atualizar o cache com as novas mensagens
       queryClient.setQueryData(
         ["/api/widgets-messages", currentSession?.id],
-        [...currentMessages, newMessage]
+        newMessages
       );
       
-      // Invalidar a consulta para buscar novas mensagens (incluindo resposta do AI)
+      // Forçar uma revalidação para buscar quaisquer outras mensagens
       setTimeout(() => {
         queryClient.invalidateQueries({
           queryKey: ["/api/widgets-messages", currentSession?.id]
@@ -245,6 +293,22 @@ export function WidgetChatProvider({
       }, 1000);
     },
     onError: (error: Error) => {
+      console.error("Erro na mutação de envio de mensagem:", error);
+      
+      // Se a sessão está encerrada, tentar criar uma nova automaticamente
+      if (error.message && (
+          error.message.includes("Sessão encerrada") || 
+          error.message.includes("Sessão não encontrada") ||
+          error.message.includes("expirada")
+        )) {
+        // Resetar estado para permitir a criação de uma nova sessão
+        sessionCreationAttempted.current = false;
+        // Forçar a invalidação da sessão atual para disparar a criação de uma nova
+        queryClient.invalidateQueries({
+          queryKey: ["/api/widgets/sessions", visitorId, widget?.id]
+        });
+      }
+      
       toast({
         title: "Erro ao enviar mensagem",
         description: error.message,

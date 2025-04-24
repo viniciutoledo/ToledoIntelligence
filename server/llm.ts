@@ -294,8 +294,11 @@ export async function analyzeImage(imagePath: string, language: string): Promise
         try {
           const openai = getOpenAIClient(apiKey);
           
+          // o modelo mais recente da OpenAI é "gpt-4o" que foi lançado em 13 de maio de 2024. não mude isso a menos que explicitamente solicitado pelo usuário
+          const actualModel = modelName === 'gpt-4' ? 'gpt-4o' : modelName;
+          
           const response = await openai.chat.completions.create({
-            model: modelName, 
+            model: actualModel, 
             max_tokens: 1024,
             messages: [
               {
@@ -346,9 +349,21 @@ export async function analyzeImage(imagePath: string, language: string): Promise
 
 // Analyze file with either Anthropic or OpenAI
 // Processa mensagens de texto com LLM
-export async function processTextMessage(message: string, language: string): Promise<string> {
+export async function processTextMessage(
+  message: string, 
+  history: Array<{ content: string, role: 'user' | 'assistant' }> = [],
+  llmConfig?: { provider: LlmProvider, modelName: string, apiKey: string }
+): Promise<string> {
   try {
-    const { provider, modelName, apiKey } = await getActiveLlmInfo();
+    // Se não recebemos configuração LLM, tentar obter configurações padrão
+    const config = llmConfig || await getActiveLlmInfo();
+    const { provider, modelName, apiKey } = config;
+    
+    // Detectar idioma a partir do histórico ou mensagem atual
+    const language = detectLanguage(message, history);
+    
+    // Truncar mensagem para evitar exceder limites de token
+    const truncatedMessage = truncateText(message);
     
     // Prompts para os diferentes provedores
     const systemPrompt = language === 'pt' 
@@ -367,21 +382,25 @@ export async function processTextMessage(message: string, language: string): Pro
       // Use Anthropic Claude
       console.log("Processando texto com Anthropic Claude:", {
         model: modelName,
-        messageLength: message.length
+        messageLength: message.length,
+        historyLength: history.length
       });
       
       const anthropic = getAnthropicClient(apiKey);
+      
+      // Preparar mensagens com histórico
+      const messages = [...history]; // Clone o histórico
+      
+      // Adicionar a mensagem atual do usuário se não estiver no histórico
+      if (!messages.find(m => m.content === truncatedMessage && m.role === 'user')) {
+        messages.push({ role: 'user', content: truncatedMessage });
+      }
       
       const response = await anthropic.messages.create({
         model: modelName,
         max_tokens: 1024,
         system: systemPrompt,
-        messages: [
-          {
-            role: 'user',
-            content: message
-          }
-        ]
+        messages
       });
 
       if (response.content[0].type === 'text') {
@@ -393,34 +412,81 @@ export async function processTextMessage(message: string, language: string): Pro
       // Use OpenAI
       console.log("Processando texto com OpenAI:", {
         model: modelName,
-        messageLength: message.length
+        messageLength: message.length,
+        historyLength: history.length
       });
       
       const openai = getOpenAIClient(apiKey);
       
+      // Preparar mensagens para OpenAI
+      const messages = [{ role: "system", content: systemPrompt }];
+      
+      // Adicionar histórico se existir
+      if (history.length > 0) {
+        messages.push(...history.map(msg => ({
+          role: msg.role,
+          content: msg.content
+        })));
+      }
+      
+      // Adicionar a mensagem atual do usuário se não estiver no final do histórico
+      const lastMessage = history.length > 0 ? history[history.length - 1] : null;
+      if (!lastMessage || lastMessage.role !== 'user' || lastMessage.content !== truncatedMessage) {
+        messages.push({ role: "user", content: truncatedMessage });
+      }
+      
+      // o modelo mais recente da OpenAI é "gpt-4o" que foi lançado em 13 de maio de 2024. não mude isso a menos que explicitamente solicitado pelo usuário
+      const actualModel = modelName === 'gpt-4' ? 'gpt-4o' : modelName;
+      
       const response = await openai.chat.completions.create({
-        model: modelName,
+        model: actualModel,
         max_tokens: 1024,
-        messages: [
-          {
-            role: "system",
-            content: systemPrompt
-          },
-          {
-            role: "user",
-            content: message
-          }
-        ]
+        messages
       });
 
       return response.choices[0].message.content || 'Sem resposta do modelo.';
     }
   } catch (error) {
     console.error('Erro ao processar mensagem de texto:', error);
+    // Tenta detectar o idioma da mensagem original para fornecer resposta de erro adequada
+    const language = detectLanguage(message, history);
     return language === 'pt'
       ? 'Ocorreu um erro ao processar sua mensagem. Por favor, tente novamente mais tarde.'
       : 'An error occurred while processing your message. Please try again later.';
   }
+}
+
+// Função auxiliar para detectar o idioma com base no histórico e mensagem atual
+function detectLanguage(
+  message: string, 
+  history: Array<{ content: string, role: 'user' | 'assistant' }> = []
+): 'pt' | 'en' {
+  // Palavras comuns em português para detecção
+  const ptKeywords = ['olá', 'obrigado', 'bom dia', 'boa tarde', 'boa noite', 'como', 'problema', 'ajuda', 'placa'];
+  // Verificar primeiro a mensagem atual
+  const lowerMessage = message.toLowerCase();
+  
+  for (const word of ptKeywords) {
+    if (lowerMessage.includes(word)) {
+      return 'pt';
+    }
+  }
+  
+  // Se não encontrar na mensagem atual, verifica o histórico (apenas mensagens do usuário)
+  if (history.length > 0) {
+    const userMessages = history.filter(msg => msg.role === 'user');
+    for (const msg of userMessages) {
+      const lowerHistoryMsg = msg.content.toLowerCase();
+      for (const word of ptKeywords) {
+        if (lowerHistoryMsg.includes(word)) {
+          return 'pt';
+        }
+      }
+    }
+  }
+  
+  // Se nenhuma palavra em português for encontrada, assume inglês
+  return 'en';
 }
 
 // Função auxiliar para truncar texto para ficar dentro dos limites

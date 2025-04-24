@@ -44,9 +44,16 @@ export function EmbeddedChat({ apiKey, initialOpen = false }: EmbeddedChatProps)
   
   // Se não houver sessão ativa e o widget estiver carregado, inicie uma sessão
   const sessionCreationAttempted = useRef(false);
+  const sessionCreatedRef = useRef(false);
   
   useEffect(() => {
-    // Verificar se já temos uma sessão ou se já tentamos criar uma
+    // Resetar a tentativa se não temos mais uma sessão (foi encerrada)
+    if (!currentSession && sessionCreatedRef.current) {
+      sessionCreationAttempted.current = false;
+      sessionCreatedRef.current = false;
+    }
+    
+    // Verificar se temos widget mas não temos sessão ativa para criar uma nova
     if (widget && !currentSession && !createSessionMutation.isPending && isInitialized && !sessionCreationAttempted.current) {
       // Marcar que já tentamos criar uma sessão para evitar futuras tentativas
       sessionCreationAttempted.current = true;
@@ -60,7 +67,12 @@ export function EmbeddedChat({ apiKey, initialOpen = false }: EmbeddedChatProps)
         referrerUrl: document.referrer || window.location.href
       });
     }
-  }, [widget, currentSession, isInitialized]); // Removendo dependências desnecessárias que causam loops
+    
+    // Marcar que temos uma sessão quando ela é criada
+    if (currentSession) {
+      sessionCreatedRef.current = true;
+    }
+  }, [widget, currentSession, isInitialized]); // Evitar loops mantendo apenas dependências essenciais
   
   // Finalizar sessão quando componente for desmontado
   useEffect(() => {

@@ -1,16 +1,21 @@
 import { useEffect, useState, useRef } from 'react';
-import { useLocation } from 'wouter';
+import { useLocation, useParams } from 'wouter';
 import { Loader2 } from "lucide-react";
+import { EmbeddedChat } from '@/components/widget/embedded-chat';
 
 /**
- * Página de embed para iframe
+ * Página de embed para chat ToledoIA
  * 
- * Recebe uma URL encodada como parâmetro para incorporação via iframe
- * Exemplo: /embed?url=https%3A%2F%2Ftoledoia.replit.app%2Fembed%2Fwidget%3Fkey%3D12345
+ * Suporta dois tipos de URLs:
+ * 1. /embed/:apiKey - Recebe a API key diretamente na URL
+ * 2. /embed?url=URL_ENCODED - Recebe uma URL codificada para iframe
  */
 export default function EmbedPage() {
   const [, navigate] = useLocation();
+  const params = useParams();
+  
   const [iframeUrl, setIframeUrl] = useState<string | null>(null);
+  const [apiKey, setApiKey] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const redirectAttempted = useRef(false);
   
@@ -18,12 +23,21 @@ export default function EmbedPage() {
     // Evitar múltiplos redirecionamentos
     if (redirectAttempted.current) return;
     
-    const processUrl = () => {
-      // Extrair a URL do iframe da query string
+    const processRequest = () => {
+      // Verificar primeiro se temos um parâmetro apiKey na URL (novo formato)
+      if (params.apiKey) {
+        console.log("API key encontrada na URL:", params.apiKey);
+        setApiKey(params.apiKey);
+        setIsLoading(false);
+        return;
+      }
+      
+      // Se não tem apiKey no caminho, tenta obter URL do iframe dos parâmetros de query
       const urlParam = new URLSearchParams(window.location.search).get('url');
       
       if (!urlParam) {
-        // Se não houver URL, redirecionar para a landing page
+        // Se não houver API key nem URL, redirecionar para a landing page
+        console.log("Nem API key nem URL encontrada, redirecionando para home");
         redirectAttempted.current = true;
         navigate('/');
         return;
@@ -42,9 +56,9 @@ export default function EmbedPage() {
     };
     
     // Usar um pequeno timeout para evitar problemas de ciclo de renderização
-    const timer = setTimeout(processUrl, 100);
+    const timer = setTimeout(processRequest, 100);
     return () => clearTimeout(timer);
-  }, [navigate]);
+  }, [navigate, params]);
   
   // Estado de carregamento
   if (isLoading) {
@@ -55,11 +69,21 @@ export default function EmbedPage() {
     );
   }
   
-  // Se não conseguimos obter a URL, não renderizar nada
+  // Se temos uma API key, mostrar o chat widget diretamente
+  if (apiKey) {
+    return (
+      <div className="h-screen w-screen flex items-center justify-center bg-background">
+        <EmbeddedChat apiKey={apiKey} initialOpen={true} />
+      </div>
+    );
+  }
+  
+  // Se não conseguimos obter a URL para iframe, não renderizar nada
   if (!iframeUrl) {
     return null;
   }
   
+  // Renderizar iframe para compatibilidade com formato antigo
   return (
     <div className="h-screen w-screen flex items-center justify-center bg-background">
       <iframe

@@ -28,8 +28,9 @@ function Router() {
       <Route path="/auth" component={AuthPage} />
       <Route path="/admin-login" component={CpanelLoginPage} />
       
-      {/* Widget embed routes - atenção para os diferentes caminhos */}
+      {/* Widget embed routes - com suporte a parâmetros */}
       <Route path="/embed/widget" component={WidgetEmbedPage} />
+      <Route path="/embed/:apiKey" component={EmbedPage} />
       <Route path="/embed" component={EmbedPage} />
       
       {/* Checkout routes */}
