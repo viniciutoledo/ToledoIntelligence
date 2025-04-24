@@ -244,12 +244,19 @@ export function EmbeddedChat({ apiKey, initialOpen = false }: EmbeddedChatProps)
   // Detectar se estamos dentro de um iframe
   const isInIframe = useMemo(() => {
     try {
-      // Verificação melhorada para compatibilidade entre navegadores
-      return window.self !== window.top;
+      // Verificação simplificada para evitar erros de hooks
+      if (typeof window !== 'undefined') {
+        try {
+          return window.self !== window.top;
+        } catch (e) {
+          // Se houver erro de segurança de cross-origin, provavelmente estamos em um iframe
+          return true;
+        }
+      }
+      return false;
     } catch (e) {
-      // Se houver erro de segurança de cross-origin, provavelmente estamos em um iframe
       console.log("Erro ao detectar iframe:", e);
-      return true;
+      return false;
     }
   }, []);
   
@@ -264,7 +271,7 @@ export function EmbeddedChat({ apiKey, initialOpen = false }: EmbeddedChatProps)
   
   // Format widget data for chat component
   const chatAvatar = {
-    image_url: widget.avatar_url ? getOptimizedFileUrl(widget.avatar_url) : null,
+    image_url: widget.avatar_url ? getOptimizedFileUrl(widget.avatar_url) : undefined,
     name: widget.name
   };
   

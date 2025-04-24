@@ -49,7 +49,14 @@
   let BASE_URL = window.location.origin;
   
   // Verificar se estamos dentro de um iframe (como em um LMS)
-  const isInIframe = window !== window.parent;
+  let isInIframe = false;
+  try {
+    isInIframe = window.self !== window.top;
+  } catch (e) {
+    // Se houver erro de segurança de cross-origin, provavelmente estamos em um iframe
+    isInIframe = true;
+  }
+
   if (isInIframe) {
     // Usar o location.ancestorOrigins se disponível
     if (window.location.ancestorOrigins && window.location.ancestorOrigins.length) {
