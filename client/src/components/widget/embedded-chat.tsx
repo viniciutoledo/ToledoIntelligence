@@ -242,23 +242,18 @@ export function EmbeddedChat({ apiKey, initialOpen = false }: EmbeddedChatProps)
   }
   
   // Detectar se estamos dentro de um iframe
-  const isInIframe = useMemo(() => {
+  // Usando uma variável para guardar o resultado em vez de useMemo
+  // para evitar erros de renderização de hooks
+  const isInIframe = (() => {
+    if (typeof window === 'undefined') return false;
+    
     try {
-      // Verificação simplificada para evitar erros de hooks
-      if (typeof window !== 'undefined') {
-        try {
-          return window.self !== window.top;
-        } catch (e) {
-          // Se houver erro de segurança de cross-origin, provavelmente estamos em um iframe
-          return true;
-        }
-      }
-      return false;
+      return window.self !== window.top;
     } catch (e) {
-      console.log("Erro ao detectar iframe:", e);
-      return false;
+      // Se houver erro de segurança de cross-origin, provavelmente estamos em um iframe
+      return true;
     }
-  }, []);
+  })();
   
   // Container
   const containerStyles = {
