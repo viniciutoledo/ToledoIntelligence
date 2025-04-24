@@ -1293,55 +1293,6 @@ export class MemStorage implements IStorage {
     // Em uma implementação real, você usaria Cosine Similarity com os vetores de embedding
     return this.getVerifiedKnowledgeEntries(language).slice(0, limit);
   }
-  
-  // Knowledge Base management
-  async createKnowledgeEntry(entry: InsertKnowledgeBase): Promise<KnowledgeBase> {
-    const id = this.currentIds.knowledgeBaseId++;
-    const now = new Date();
-    
-    const knowledgeEntry: KnowledgeBase = {
-      ...entry,
-      id,
-      created_at: now,
-    };
-    
-    this.knowledgeBase.set(id, knowledgeEntry);
-    return knowledgeEntry;
-  }
-  
-  async getKnowledgeEntry(id: number): Promise<KnowledgeBase | undefined> {
-    return this.knowledgeBase.get(id);
-  }
-  
-  async updateKnowledgeEntry(id: number, data: Partial<KnowledgeBase>): Promise<KnowledgeBase | undefined> {
-    const entry = this.knowledgeBase.get(id);
-    if (!entry) return undefined;
-    
-    const updatedEntry = {
-      ...entry,
-      ...data
-    };
-    
-    this.knowledgeBase.set(id, updatedEntry);
-    return updatedEntry;
-  }
-  
-  async getKnowledgeEntriesBySourceType(sourceType: string, language: string): Promise<KnowledgeBase[]> {
-    return Array.from(this.knowledgeBase.values())
-      .filter(entry => entry.source_type === sourceType && entry.language === language);
-  }
-  
-  async getVerifiedKnowledgeEntries(language: string): Promise<KnowledgeBase[]> {
-    return Array.from(this.knowledgeBase.values())
-      .filter(entry => entry.is_verified && entry.language === language);
-  }
-  
-  async findSimilarKnowledge(embedding: number[], language: string, limit: number = 5): Promise<KnowledgeBase[]> {
-    // Em uma implementação em memória, não temos busca por similaridade de vetores eficiente
-    // Retornamos apenas entradas verificadas filtradas por idioma
-    // Em uma implementação real, você usaria Cosine Similarity com os vetores de embedding
-    return this.getVerifiedKnowledgeEntries(language).slice(0, limit);
-  }
 }
 
 import { db, pool } from './db';
@@ -1675,6 +1626,86 @@ export class DatabaseStorage implements IStorage {
       pool,
       createTableIfMissing: true 
     });
+  }
+  
+  // Knowledge Base management
+  async createKnowledgeEntry(entry: InsertKnowledgeBase): Promise<KnowledgeBase> {
+    const [newEntry] = await db.insert(knowledgeBase)
+      .values({
+        ...entry,
+        created_at: new Date()
+      })
+      .returning();
+    
+    return newEntry;
+  }
+  
+  async getKnowledgeEntry(id: number): Promise<KnowledgeBase | undefined> {
+    const [entry] = await db.select()
+      .from(knowledgeBase)
+      .where(eq(knowledgeBase.id, id));
+    
+    return entry;
+  }
+  
+  async updateKnowledgeEntry(id: number, data: Partial<KnowledgeBase>): Promise<KnowledgeBase | undefined> {
+    const [updatedEntry] = await db.update(knowledgeBase)
+      .set(data)
+      .where(eq(knowledgeBase.id, id))
+      .returning();
+    
+    return updatedEntry;
+  }
+  
+  async getKnowledgeEntriesBySourceType(sourceType: string, language: string): Promise<KnowledgeBase[]> {
+    return db.select()
+      .from(knowledgeBase)
+      .where(
+        and(
+          eq(knowledgeBase.source_type, sourceType),
+          eq(knowledgeBase.language, language)
+        )
+      );
+  }
+  
+  async getVerifiedKnowledgeEntries(language: string): Promise<KnowledgeBase[]> {
+    return db.select()
+      .from(knowledgeBase)
+      .where(
+        and(
+          eq(knowledgeBase.is_verified, true),
+          eq(knowledgeBase.language, language)
+        )
+      );
+  }
+  
+  async findSimilarKnowledge(embedding: number[], language: string, limit: number = 5): Promise<KnowledgeBase[]> {
+    // Implementação básica usando produto escalar para similaridade de cosseno
+    // Para uma implementação completa, seria necessário usar uma extensão de vetor como pgvector
+    // ou implementar uma função personalizada para calcular a similaridade
+    
+    // Seleciona apenas entradas verificadas no idioma especificado
+    const entries = await this.getVerifiedKnowledgeEntries(language);
+    
+    // Ordenar por similaridade (produto escalar simples)
+    const entriesWithScore = entries.map(entry => {
+      // Calcular similaridade usando produto escalar simples
+      let similarity = 0;
+      
+      if (entry.embedding && entry.embedding.length === embedding.length) {
+        similarity = entry.embedding.reduce((sum, value, index) => {
+          return sum + value * embedding[index];
+        }, 0);
+      }
+      
+      return { entry, similarity };
+    });
+    
+    // Ordenar por similaridade decrescente
+    entriesWithScore.sort((a, b) => b.similarity - a.similarity);
+    
+    // Retornar as entradas mais similares
+    return entriesWithScore.slice(0, limit).map(item => item.entry);
   }
   
   // Login security - controle de tentativas de login simultâneas
