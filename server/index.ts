@@ -5,10 +5,14 @@ import { syncDatabaseSchema } from "./migrate";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
 import { planPricing } from "@shared/schema";
+import path from "path";
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Servir arquivos estáticos da pasta uploads
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // Middleware para permitir incorporação em iframes (embeds)
 app.use((req, res, next) => {

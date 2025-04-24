@@ -3574,7 +3574,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Processar arquivo
       const file = req.file;
-      const fileUrl = `/uploads/${file.filename}`;
+      // Criar URL absoluta com hostname completo para garantir compatibilidade
+      const hostname = req.get('host') || '';
+      const protocol = req.protocol || 'http';
+      const fileUrl = `${protocol}://${hostname}/uploads/${file.filename}`;
       const isImage = file.mimetype.startsWith('image/');
       const messageType = isImage ? 'image' : 'file';
       

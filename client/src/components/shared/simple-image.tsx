@@ -1,5 +1,4 @@
-import { useState } from 'react';
-
+// Componente de imagem simplificado seguindo exatamente as recomendações do usuário
 interface SimpleImageProps {
   src: string | null | undefined;
   alt: string;
@@ -9,10 +8,8 @@ interface SimpleImageProps {
 export function SimpleImage({ 
   src, 
   alt, 
-  className = "max-w-full rounded-md max-h-60 object-contain"
+  className = "max-w-full rounded-md object-contain"
 }: SimpleImageProps) {
-  const [error, setError] = useState(false);
-  
   if (!src) {
     return (
       <div className="p-2 bg-gray-100 rounded text-center text-gray-500 text-sm">
@@ -21,25 +18,19 @@ export function SimpleImage({
     );
   }
   
-  if (error) {
-    return (
-      <div className="p-2 bg-gray-100 rounded text-center text-gray-500 text-sm">
-        Erro ao carregar imagem
-      </div>
-    );
-  }
-  
-  // Normaliza a URL para garantir que comece com /
-  const normalizedSrc = src.startsWith('http') || src.startsWith('/') 
-    ? src 
-    : `/${src}`;
-  
+  // Mantenha a mesma origem sem transformações
   return (
     <img
-      src={normalizedSrc}
+      src={src}
       alt={alt}
+      style={{ maxWidth: '100%' }}
       className={className}
-      onError={() => setError(true)}
+      onError={(e) => {
+        // Exatamente como sugerido no documento
+        e.currentTarget.replaceWith(
+          document.createTextNode('Erro ao carregar imagem')
+        );
+      }}
     />
   );
 }
