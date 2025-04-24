@@ -71,9 +71,17 @@ export default function EmbedPage() {
   
   // Se temos uma API key, mostrar o chat widget diretamente
   if (apiKey) {
+    // Verificar se o parâmetro hideHeader está na URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const hideHeader = urlParams.get('hideHeader') === 'true';
+    
     return (
       <div className="h-screen w-screen flex items-center justify-center bg-background">
-        <EmbeddedChat apiKey={apiKey} initialOpen={true} />
+        <EmbeddedChat 
+          apiKey={apiKey} 
+          initialOpen={true} 
+          hideHeader={hideHeader} 
+        />
       </div>
     );
   }

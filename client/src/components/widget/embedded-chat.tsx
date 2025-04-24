@@ -31,9 +31,10 @@ function getOptimizedFileUrl(fileUrl: string | null): string {
 interface EmbeddedChatProps {
   apiKey: string;
   initialOpen?: boolean;
+  hideHeader?: boolean;
 }
 
-export function EmbeddedChat({ apiKey, initialOpen = false }: EmbeddedChatProps) {
+export function EmbeddedChat({ apiKey, initialOpen = false, hideHeader = false }: EmbeddedChatProps) {
   const { t } = useTranslation();
   const { language } = useLanguage();
   const [isOpen, setIsOpen] = useState(initialOpen);
@@ -279,54 +280,70 @@ export function EmbeddedChat({ apiKey, initialOpen = false }: EmbeddedChatProps)
     supportedFormats: t("widget.supportedFormats", "Formatos suportados: PNG, JPG, PDF (máx 50MB)")
   };
   
+  // Tentar obter o parâmetro hideHeader da URL também
+  // Isso permite que funcione tanto por prop quanto por parâmetro de URL
+  const shouldHideHeader = (() => {
+    if (hideHeader) return true;
+    
+    // Verificar parâmetro na URL
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get('hideHeader') === 'true';
+    } catch (e) {
+      return false;
+    }
+  })();
+
   return (
     <div 
       className="rounded-lg bg-card border shadow-xl overflow-hidden flex flex-col"
       style={containerStyles}
     >
-      {/* Header */}
-      <div 
-        className="p-3 flex items-center justify-between border-b"
-        style={{ backgroundColor: widget.theme_color || "#6366F1", color: "white" }}
-      >
-        <div className="flex items-center">
-          <div className="h-8 w-8 rounded-full flex-shrink-0 overflow-hidden">
-            {widget.avatar_url ? (
-              <img 
-                src={getOptimizedFileUrl(widget.avatar_url)} 
-                alt={widget.name} 
-                loading="lazy"
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <div className="h-full w-full bg-primary-100 flex items-center justify-center text-primary-600">
-                <span className="text-sm font-bold">T</span>
-              </div>
-            )}
+      {/* Header - só exibe se não estiver configurado para ocultar */}
+      {!shouldHideHeader && (
+        <div 
+          className="p-3 flex items-center justify-between border-b"
+          style={{ backgroundColor: widget.theme_color || "#6366F1", color: "white" }}
+        >
+          <div className="flex items-center">
+            <div className="h-8 w-8 rounded-full flex-shrink-0 overflow-hidden">
+              {widget.avatar_url ? (
+                <img 
+                  src={getOptimizedFileUrl(widget.avatar_url)} 
+                  alt={widget.name} 
+                  loading="lazy"
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div className="h-full w-full bg-primary-100 flex items-center justify-center text-primary-600">
+                  <span className="text-sm font-bold">T</span>
+                </div>
+              )}
+            </div>
+            <div className="ml-2">
+              <p className="font-medium text-sm text-white">{widget.name}</p>
+            </div>
           </div>
-          <div className="ml-2">
-            <p className="font-medium text-sm text-white">{widget.name}</p>
+          <div className="flex space-x-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleMinimize}
+              className="hover:bg-white/20 text-white"
+            >
+              <Minimize2 size={18} />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleClose}
+              className="hover:bg-white/20 text-white"
+            >
+              <X size={18} />
+            </Button>
           </div>
         </div>
-        <div className="flex space-x-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleMinimize}
-            className="hover:bg-white/20 text-white"
-          >
-            <Minimize2 size={18} />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleClose}
-            className="hover:bg-white/20 text-white"
-          >
-            <X size={18} />
-          </Button>
-        </div>
-      </div>
+      )}
       
       {/* Chat Content */}
       <div className="flex-1 overflow-hidden">

@@ -42,7 +42,8 @@
     width: 350,
     height: 500,
     mode: 'floating', // 'floating' ou 'inline'
-    targetElement: null
+    targetElement: null,
+    hideHeader: false // true para ocultar o cabeçalho no modo embutido
   };
   
   // Determinar o domínio base para o widget (em desenvolvimento ou produção)
@@ -94,7 +95,12 @@
     widgetIframe.setAttribute('title', 'ToledoIA Chat');
     
     // URL para a página de widget com a chave API
-    widgetIframe.src = `${BASE_URL}/embed/widget?key=${options.apiKey}`;
+    // URL para a página de embed - usando a versão que não contém headers ou elementos de navegação
+    widgetIframe.src = `${BASE_URL}/embed/widget?key=${options.apiKey}&hideHeader=${options.hideHeader !== false}`;
+    
+    // Adicionar atributos de sandbox e permite permissions para melhor funcionamento do iframe
+    widgetIframe.setAttribute('allow', 'clipboard-write; autoplay; encrypted-media');
+    widgetIframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-popups allow-forms');
     
     // Passar a chave API através do nome da janela também (alternativa para quando postMessage falha)
     widgetIframe.name = `apiKey=${options.apiKey}`;
@@ -110,12 +116,14 @@
         return;
       }
       
-      // Configurar o iframe para preencher o elemento pai
+      // Configurar o iframe para preencher o elemento pai completamente sem scroll ou bordas
       widgetIframe.style.width = '100%';
       widgetIframe.style.height = '100%';
       widgetIframe.style.position = 'relative';
       widgetIframe.style.borderRadius = '0';
       widgetIframe.style.boxShadow = 'none';
+      widgetIframe.style.border = 'none';
+      widgetIframe.style.overflow = 'hidden';
       
       // Adicionar ao elemento alvo
       targetEl.appendChild(widgetIframe);
