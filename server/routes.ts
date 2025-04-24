@@ -695,6 +695,99 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Endpoint específico para teste de compatibilidade entre modelos Claude
+  app.post("/api/admin/llm/claude-compatibility-test", isAuthenticated, checkRole("admin"), async (req, res) => {
+    try {
+      const { apiKey } = req.body;
+      
+      if (!apiKey) {
+        return res.status(400).json({ success: false, message: "API key is required" });
+      }
+      
+      const results = {
+        claude2_prompt_format: false,
+        claude3_messages_format: false,
+        claude2_with_messages_format: false,
+        claude3_with_prompt_format: false,
+        errors: {} as Record<string, string>
+      };
+      
+      // Teste 1: Claude 2 com formato prompt
+      try {
+        const claude2PromptParams = {
+          model: "claude-2",
+          max_tokens: 5,
+          prompt: "\n\nHuman: Say hello for testing purposes only\n\nAssistant: "
+        };
+        
+        const response1 = await fetchAnthropicDirectly('messages', claude2PromptParams, apiKey);
+        results.claude2_prompt_format = !!response1.completion;
+      } catch (error) {
+        results.errors.claude2_prompt_format = error instanceof Error ? error.message : 'Unknown error';
+      }
+      
+      // Teste 2: Claude 3 com formato messages
+      try {
+        const claude3MessagesParams = {
+          model: "claude-3-opus-20240229",
+          max_tokens: 5,
+          messages: [{ role: "user", content: "Say hello for testing purposes only" }]
+        };
+        
+        const response2 = await fetchAnthropicDirectly('messages', claude3MessagesParams, apiKey);
+        results.claude3_messages_format = !!response2.content;
+      } catch (error) {
+        results.errors.claude3_messages_format = error instanceof Error ? error.message : 'Unknown error';
+      }
+      
+      // Teste 3: Claude 2 com formato messages (incompatível)
+      try {
+        const claude2MessagesParams = {
+          model: "claude-2",
+          max_tokens: 5,
+          messages: [{ role: "user", content: "Say hello for testing purposes only" }]
+        };
+        
+        const response3 = await fetchAnthropicDirectly('messages', claude2MessagesParams, apiKey);
+        results.claude2_with_messages_format = !!response3.content || !!response3.completion;
+      } catch (error) {
+        results.errors.claude2_with_messages_format = error instanceof Error ? error.message : 'Unknown error';
+      }
+      
+      // Teste 4: Claude 3 com formato prompt (incompatível)
+      try {
+        const claude3PromptParams = {
+          model: "claude-3-opus-20240229",
+          max_tokens: 5,
+          prompt: "\n\nHuman: Say hello for testing purposes only\n\nAssistant: "
+        };
+        
+        const response4 = await fetchAnthropicDirectly('messages', claude3PromptParams, apiKey);
+        results.claude3_with_prompt_format = !!response4.completion || !!response4.content;
+      } catch (error) {
+        results.errors.claude3_with_prompt_format = error instanceof Error ? error.message : 'Unknown error';
+      }
+      
+      return res.json({ 
+        success: true, 
+        results,
+        compatibility_summary: {
+          claude2_preferred_format: results.claude2_prompt_format ? "prompt" : 
+                                   results.claude2_with_messages_format ? "messages" : "unknown",
+          claude3_preferred_format: results.claude3_messages_format ? "messages" : 
+                                   results.claude3_with_prompt_format ? "prompt" : "unknown",
+          recommendation: "Use appropriate format conversion in the fetchAnthropicDirectly function based on model"
+        }
+      });
+    } catch (error) {
+      console.error('Erro ao testar compatibilidade Claude:', error);
+      return res.status(500).json({ 
+        success: false, 
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+  
   // Rota de diagnóstico para depuração das chaves API - apenas em desenvolvimento
   app.get("/api/debug/llm-diagnostics", isAuthenticated, async (req, res) => {
     try {

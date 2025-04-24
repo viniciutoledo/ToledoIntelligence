@@ -35,6 +35,7 @@ import { formatDate } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { LlmSelectionDropdown } from "./llm-selection-dropdown";
+import ClaudeCompatibilityTester from "./claude-compatibility-tester";
 
 export function LlmSettings() {
   const { t } = useLanguage();
@@ -245,6 +246,13 @@ export function LlmSettings() {
                   </FormItem>
                 )}
               />
+            </div>
+
+            <div className="space-y-4 pt-4">
+              <h3 className="text-lg font-medium">Ferramentas de Diagnóstico</h3>
+              <Separator />
+              
+              <ClaudeCompatibilityTester />
             </div>
 
             <div className="flex justify-end pt-4">
