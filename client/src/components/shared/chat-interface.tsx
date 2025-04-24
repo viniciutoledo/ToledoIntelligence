@@ -5,6 +5,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Paperclip, Image, Send, Loader2, X } from "lucide-react";
 
+// Função utilitária para otimizar URLs de arquivos
+function getOptimizedFileUrl(fileUrl: string | null): string {
+  if (!fileUrl) return "";
+  
+  // Se a URL já começa com http(s), retorna como está
+  if (fileUrl.startsWith('http')) return fileUrl;
+  
+  // Se a URL começa com /, adiciona a origem
+  if (fileUrl.startsWith('/')) return `${window.location.origin}${fileUrl}`;
+  
+  // Se não começa com / nem com http, adiciona / no início
+  return `/${fileUrl}`;
+}
+
 // Tipos compartilhados
 interface ChatMessage {
   id: number;
@@ -227,13 +241,37 @@ export function ChatInterface({
                     <img
                       src={msg.file_url?.startsWith('/') ? `${window.location.origin}${msg.file_url}` : msg.file_url}
                       alt="Uploaded file"
+                      loading="lazy"
+                      decoding="async"
+                      crossOrigin="anonymous"
+                      referrerPolicy="no-referrer"
                       className="rounded-md max-h-60 max-w-full object-contain"
                       onError={(e) => {
                         console.error("Erro ao carregar imagem:", msg.file_url);
-                        e.currentTarget.src = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxMDAiIGZpbGw9IiNmMGYwZjAiLz4KPHRleHQgeD0iNTAiIHk9IjUwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTIiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGFsaWdubWVudC1iYXNlbGluZT0ibWlkZGxlIiBmaWxsPSIjOTk5Ij5FcnJvIGFvIGNhcnJlZ2FyIGltYWdlbTwvdGV4dD4KPC9zdmc+";
-                        e.currentTarget.alt = "Erro ao carregar imagem";
-                        e.currentTarget.style.width = "100%";
-                        e.currentTarget.style.height = "100px";
+                        // Tenta corrigir a URL se possível
+                        const imgElement = e.currentTarget;
+                        
+                        // Primeira tentativa: verificar se a URL está completa
+                        if (msg.file_url && !msg.file_url.startsWith('http') && !msg.file_url.startsWith('/')) {
+                          const newUrl = `/${msg.file_url}`;
+                          console.log("Tentando URL alternativa 1:", newUrl);
+                          imgElement.src = newUrl;
+                          return;
+                        }
+                        
+                        // Segunda tentativa: adicionar origem ao caminho relativo
+                        if (msg.file_url && msg.file_url.startsWith('/')) {
+                          const newUrl = `${window.location.origin}${msg.file_url}`;
+                          console.log("Tentando URL alternativa 2:", newUrl);
+                          imgElement.src = newUrl;
+                          return;
+                        }
+                        
+                        // Última opção: mostrar placeholder de erro
+                        imgElement.src = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxMDAiIGZpbGw9IiNmMGYwZjAiLz4KPHRleHQgeD0iNTAiIHk9IjUwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTIiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGFsaWdubWVudC1iYXNlbGluZT0ibWlkZGxlIiBmaWxsPSIjOTk5Ij5FcnJvIGFvIGNhcnJlZ2FyIGltYWdlbTwvdGV4dD4KPC9zdmc+";
+                        imgElement.alt = "Erro ao carregar imagem";
+                        imgElement.style.width = "100%";
+                        imgElement.style.height = "100px";
                       }}
                     />
                   </div>
