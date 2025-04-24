@@ -36,6 +36,7 @@ interface ChatMessage {
   file_url: string | null;
   created_at: string;
   is_user: boolean;
+  fileBase64?: string; // Adicionado para suporte a fallback base64
 }
 
 interface ChatAvatar {

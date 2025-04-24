@@ -3518,6 +3518,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const isImage = file.mimetype.startsWith('image/');
       const messageType = isImage ? 'image' : 'file';
       
+      // Preparar dados para base64 (apenas para imagens como fallback)
+      let fileBase64 = null;
+      if (isImage) {
+        try {
+          // Converter imagem para base64 como fallback
+          const fileData = fs.readFileSync(file.path);
+          fileBase64 = `data:${file.mimetype};base64,${fileData.toString('base64')}`;
+          console.log(`Imagem convertida para base64 (primeiros 50 caracteres): ${fileBase64.substring(0, 50)}...`);
+        } catch (error) {
+          console.error("Erro ao converter imagem para base64:", error);
+          // Continuar mesmo se falhar, já que é apenas um fallback
+        }
+      }
+      
       // Criar a mensagem do usuário com o arquivo
       const userMessage = await storage.createWidgetChatMessage({
         session_id: parseInt(sessionId),
@@ -3587,12 +3601,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         url: userMessageWithFile.file_url
       });
       
-      res.json({
+      // Montar objeto de resposta
+      const responseObj = {
         userMessage: userMessageWithFile,
         aiMessage: aiMessageFinal,
         // Incluir URL do arquivo separadamente para garantir
         fileUrl: fileUrl
-      });
+      };
+      
+      // Adicionar base64 como fallback para imagens
+      if (isImage && fileBase64) {
+        responseObj.fileBase64 = fileBase64;
+      }
+      
+      res.json(responseObj);
     } catch (error) {
       console.error("Erro ao fazer upload de arquivo para widget:", error);
       res.status(500).json({ message: "Erro ao processar arquivo" });
