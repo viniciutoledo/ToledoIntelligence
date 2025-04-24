@@ -12,7 +12,8 @@ import {
   X,
   LogOut,
   BookOpen,
-  CreditCard
+  CreditCard,
+  MessageSquare
 } from "lucide-react";
 import { LanguageToggle } from "@/components/language-toggle";
 
@@ -50,6 +51,11 @@ export function AdminSidebar({ activeItem, onItemClick }: SidebarProps) {
       id: "plans",
       label: t("admin.plans") || "Planos",
       icon: <CreditCard className="mr-3 h-5 w-5" />,
+    },
+    {
+      id: "widgets",
+      label: t("admin.widgets") || "Widgets",
+      icon: <MessageSquare className="mr-3 h-5 w-5" />,
     },
     {
       id: "training",
