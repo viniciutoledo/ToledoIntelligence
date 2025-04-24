@@ -3627,18 +3627,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         url: userMessageWithFile.file_url
       });
       
+      // Incluir base64 diretamente na mensagem do usuário se for uma imagem
+      if (isImage && fileBase64) {
+        userMessageWithFile.fileBase64 = fileBase64;
+      }
+      
       // Montar objeto de resposta
       const responseObj = {
         userMessage: userMessageWithFile,
         aiMessage: aiMessageFinal,
         // Incluir URL do arquivo separadamente para garantir
-        fileUrl: fileUrl
+        fileUrl: fileUrl,
+        // Incluir base64 também no objeto principal para manter compatibilidade
+        // com código que espera encontrá-lo aqui
+        fileBase64: isImage ? fileBase64 : null
       };
-      
-      // Adicionar base64 como fallback para imagens
-      if (isImage && fileBase64) {
-        responseObj.fileBase64 = fileBase64;
-      }
       
       res.json(responseObj);
     } catch (error) {

@@ -209,6 +209,7 @@ export function ChatInterface({
         {messages.map((msg) => (
           <div
             key={msg.id}
+            data-message-id={msg.id}
             className={`flex items-start ${
               msg.is_user ? "flex-row-reverse" : ""
             }`}
@@ -250,15 +251,18 @@ export function ChatInterface({
                     {(msg.file_url || msg.fileBase64) ? (
                       <div className="image-wrapper relative">
                         {/* 
-                          Sistema de fallback em cascata:
-                          1. Primeiro, tenta URL blob se for uma prévia
-                          2. Se não for blob, tenta a URL otimizada do arquivo
-                          3. Se falhar na onError, tentará o base64 (se disponível)
+                          Sistema de fallback em cascata modificado:
+                          1. Se temos base64, usar primeiro como mais confiável
+                          2. Se é URL blob, usar para previews imediatas
+                          3. Se não temos base64 nem é URL blob, usar a URL otimizada
+                          4. onError tentará mecanismos adicionais de recuperação
                         */}
                         <img
-                          src={msg.file_url?.startsWith('blob:') 
-                            ? msg.file_url 
-                            : (msg.file_url ? getOptimizedFileUrl(msg.file_url) : (msg.fileBase64 || ''))}
+                          src={msg.fileBase64 
+                            ? msg.fileBase64 
+                            : (msg.file_url?.startsWith('blob:') 
+                                ? msg.file_url 
+                                : (msg.file_url ? getOptimizedFileUrl(msg.file_url) : ''))}
                           alt="Imagem enviada"
                           loading="lazy"
                           decoding="async"
@@ -311,7 +315,29 @@ export function ChatInterface({
                               if (msg.fileBase64 && !e.currentTarget.src.startsWith('data:')) {
                                 console.log("Usando base64 como primeira alternativa após falha");
                                 imgElement.src = msg.fileBase64;
+                                // Registramos o sucesso da estratégia de recuperação
+                                console.log("Recuperação com base64 aplicada");
                                 return;
+                              }
+                              
+                              // Segunda verificação com base64 - talvez o atributo tenha sido adicionado via resposta AJAX após renderização
+                              if (!e.currentTarget.src.startsWith('data:')) {
+                                // Tentar obter mensagens atualizadas do cache
+                                try {
+                                  // Verificar diretamente no DOM se a mensagem tem o atributo de dados
+                                  const dataHasBase64 = e.currentTarget.getAttribute('data-has-base64');
+                                  if (dataHasBase64 === 'true') {
+                                    // A imagem deveria ter base64, mas msg.fileBase64 está vazio - buscar via dataset
+                                    console.log("Tentando encontrar base64 via atributo de dados");
+                                    const closestMessage = e.currentTarget.closest('[data-message-id]');
+                                    if (closestMessage) {
+                                      const messageId = closestMessage.getAttribute('data-message-id');
+                                      console.log(`Buscando dados base64 para mensagem ID: ${messageId}`);
+                                    }
+                                  }
+                                } catch (cacheError) {
+                                  console.error("Erro ao tentar recuperar dados do cache:", cacheError);
+                                }
                               }
                               
                               // Se for blob URL, não tente consertar - é uma prévia temporária e pode ter sido revogada
