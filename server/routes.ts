@@ -15,7 +15,10 @@ import {
   insertChatSessionSchema,
   insertChatMessageSchema,
   insertPlanFeatureSchema,
-  insertPlanPricingSchema
+  insertPlanPricingSchema,
+  insertChatWidgetSchema,
+  insertWidgetChatSessionSchema,
+  insertWidgetChatMessageSchema
 } from "@shared/schema";
 
 // Importações para o Stripe e Supabase
@@ -2058,6 +2061,500 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     res.status(500).json({ message: "Internal server error" });
   });
+
+  // ===== ROTAS PARA WIDGETS =====
+  
+  // Rota para listar todos os widgets do usuário logado
+  app.get("/api/widgets", isAuthenticated, async (req, res) => {
+    try {
+      const widgets = await storage.getUserChatWidgets(req.user!.id);
+      res.json(widgets);
+    } catch (error) {
+      console.error("Erro ao obter widgets:", error);
+      res.status(500).json({ message: "Erro ao obter widgets" });
+    }
+  });
+  
+  // Rota para obter um widget específico
+  app.get("/api/widgets/:id", isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const widget = await storage.getChatWidget(id);
+      
+      if (!widget) {
+        return res.status(404).json({ message: "Widget não encontrado" });
+      }
+      
+      // Verificar se o widget pertence ao usuário logado
+      if (widget.user_id !== req.user!.id && req.user!.role !== "admin") {
+        return res.status(403).json({ message: "Sem permissão para acessar este widget" });
+      }
+      
+      res.json(widget);
+    } catch (error) {
+      console.error("Erro ao obter widget:", error);
+      res.status(500).json({ message: "Erro ao obter widget" });
+    }
+  });
+  
+  // Rota para criar um novo widget
+  app.post("/api/widgets", isAuthenticated, async (req, res) => {
+    try {
+      const schema = insertChatWidgetSchema.extend({
+        name: z.string().min(3).max(100),
+        description: z.string().nullable().optional(),
+        theme_color: z.string().regex(/^#[0-9A-F]{6}$/i).optional(),
+        welcome_message: z.string().nullable().optional(),
+      });
+      
+      const widgetData = schema.parse(req.body);
+      
+      // Verificar limite de mensagens
+      const canSendMessages = await storage.checkMessageLimit(req.user!.id);
+      if (!canSendMessages) {
+        return res.status(403).json({ 
+          message: "Você atingiu o limite de mensagens do seu plano. Faça upgrade para continuar." 
+        });
+      }
+      
+      // Criar o widget
+      const newWidget = await storage.createChatWidget({
+        ...widgetData,
+        user_id: req.user!.id,
+        description: widgetData.description || null,
+        welcome_message: widgetData.welcome_message || "Olá! Como posso ajudar?",
+        theme_color: widgetData.theme_color || "#6366f1",
+        allowed_domains: widgetData.allowed_domains || []
+      });
+      
+      // Log da ação
+      await logAction({
+        userId: req.user!.id,
+        action: "widget_created",
+        details: { widget_id: newWidget.id, widget_name: newWidget.name },
+        ipAddress: req.ip
+      });
+      
+      res.status(201).json(newWidget);
+    } catch (error) {
+      console.error("Erro ao criar widget:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Dados inválidos", 
+          errors: error.errors 
+        });
+      }
+      res.status(500).json({ message: "Erro ao criar widget" });
+    }
+  });
+  
+  // Rota para atualizar um widget existente
+  app.put("/api/widgets/:id", isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Verificar se o widget existe
+      const widget = await storage.getChatWidget(id);
+      if (!widget) {
+        return res.status(404).json({ message: "Widget não encontrado" });
+      }
+      
+      // Verificar se o widget pertence ao usuário logado
+      if (widget.user_id !== req.user!.id && req.user!.role !== "admin") {
+        return res.status(403).json({ message: "Sem permissão para editar este widget" });
+      }
+      
+      const schema = z.object({
+        name: z.string().min(3).max(100).optional(),
+        description: z.string().nullable().optional(),
+        theme_color: z.string().regex(/^#[0-9A-F]{6}$/i).optional(),
+        welcome_message: z.string().nullable().optional(),
+        is_active: z.boolean().optional(),
+        allowed_domains: z.array(z.string()).optional()
+      });
+      
+      const updateData = schema.parse(req.body);
+      
+      // Atualizar o widget
+      const updatedWidget = await storage.updateChatWidget(id, updateData);
+      
+      // Log da ação
+      await logAction({
+        userId: req.user!.id,
+        action: "widget_updated",
+        details: { widget_id: id, updates: updateData },
+        ipAddress: req.ip
+      });
+      
+      res.json(updatedWidget);
+    } catch (error) {
+      console.error("Erro ao atualizar widget:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Dados inválidos", 
+          errors: error.errors 
+        });
+      }
+      res.status(500).json({ message: "Erro ao atualizar widget" });
+    }
+  });
+  
+  // Rota para excluir um widget
+  app.delete("/api/widgets/:id", isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Verificar se o widget existe
+      const widget = await storage.getChatWidget(id);
+      if (!widget) {
+        return res.status(404).json({ message: "Widget não encontrado" });
+      }
+      
+      // Verificar se o widget pertence ao usuário logado
+      if (widget.user_id !== req.user!.id && req.user!.role !== "admin") {
+        return res.status(403).json({ message: "Sem permissão para excluir este widget" });
+      }
+      
+      // Excluir o widget
+      await storage.deleteChatWidget(id);
+      
+      // Log da ação
+      await logAction({
+        userId: req.user!.id,
+        action: "widget_deleted",
+        details: { widget_id: id, widget_name: widget.name },
+        ipAddress: req.ip
+      });
+      
+      res.status(204).send();
+    } catch (error) {
+      console.error("Erro ao excluir widget:", error);
+      res.status(500).json({ message: "Erro ao excluir widget" });
+    }
+  });
+  
+  // Rota para validar um domínio para um widget
+  app.post("/api/widgets/:id/validate-domain", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { domain } = req.body;
+      
+      if (!domain) {
+        return res.status(400).json({ message: "Domínio não fornecido" });
+      }
+      
+      const isValid = await storage.validateWidgetDomain(id, domain);
+      
+      res.json({ isValid });
+    } catch (error) {
+      console.error("Erro ao validar domínio:", error);
+      res.status(500).json({ message: "Erro ao validar domínio" });
+    }
+  });
+  
+  // Rota para obter um widget via API key (pública)
+  app.get("/api/public/widgets", async (req, res) => {
+    try {
+      const apiKey = req.headers["x-api-key"] as string;
+      
+      if (!apiKey) {
+        return res.status(401).json({ message: "API key não fornecida" });
+      }
+      
+      const widget = await storage.getChatWidgetByApiKey(apiKey);
+      
+      if (!widget) {
+        return res.status(404).json({ message: "Widget não encontrado ou inativo" });
+      }
+      
+      // Verificar o referrer para validar o domínio
+      const referrer = req.headers.referer || req.headers.origin;
+      if (referrer) {
+        try {
+          const url = new URL(referrer);
+          const domain = url.hostname;
+          
+          const isValidDomain = await storage.validateWidgetDomain(widget.id, domain);
+          if (!isValidDomain) {
+            return res.status(403).json({ 
+              message: "Domínio não autorizado para este widget",
+              error: "domain_not_allowed"
+            });
+          }
+        } catch (e) {
+          console.error("Erro ao validar referrer:", e);
+        }
+      }
+      
+      // Remover a API key da resposta
+      const { api_key, ...safeWidget } = widget;
+      
+      res.json(safeWidget);
+    } catch (error) {
+      console.error("Erro ao obter widget público:", error);
+      res.status(500).json({ message: "Erro ao obter widget" });
+    }
+  });
+  
+  // Rota para iniciar uma sessão de chat com um widget (pública)
+  app.post("/api/public/widgets/sessions", async (req, res) => {
+    try {
+      const apiKey = req.headers["x-api-key"] as string;
+      
+      if (!apiKey) {
+        return res.status(401).json({ message: "API key não fornecida" });
+      }
+      
+      const widget = await storage.getChatWidgetByApiKey(apiKey);
+      
+      if (!widget) {
+        return res.status(404).json({ message: "Widget não encontrado ou inativo" });
+      }
+      
+      // Verificar o referrer para validar o domínio
+      const referrer = req.headers.referer || req.headers.origin;
+      if (referrer) {
+        try {
+          const url = new URL(referrer);
+          const domain = url.hostname;
+          
+          const isValidDomain = await storage.validateWidgetDomain(widget.id, domain);
+          if (!isValidDomain) {
+            return res.status(403).json({ message: "Domínio não autorizado para este widget" });
+          }
+        } catch (e) {
+          console.error("Erro ao validar referrer:", e);
+        }
+      }
+      
+      // Verificar limite de mensagens do usuário dono do widget
+      const canSendMessages = await storage.checkMessageLimit(widget.user_id);
+      if (!canSendMessages) {
+        return res.status(403).json({ 
+          message: "O proprietário deste widget atingiu o limite de mensagens do plano",
+          error: "message_limit_reached"
+        });
+      }
+      
+      // Criar a sessão
+      const session = await storage.createWidgetChatSession({
+        widget_id: widget.id,
+        client_info: JSON.stringify({
+          referrer,
+          userAgent: req.headers["user-agent"],
+          ip: req.ip
+        })
+      });
+      
+      // Criar mensagem de boas-vindas
+      if (widget.welcome_message) {
+        await storage.createWidgetChatMessage({
+          session_id: session.id,
+          content: widget.welcome_message,
+          is_from_ai: true
+        });
+      }
+      
+      res.status(201).json(session);
+    } catch (error) {
+      console.error("Erro ao criar sessão de widget:", error);
+      res.status(500).json({ message: "Erro ao criar sessão de chat" });
+    }
+  });
+  
+  // Rota para enviar mensagem para uma sessão de widget (pública)
+  app.post("/api/public/widgets/sessions/:id/messages", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const apiKey = req.headers["x-api-key"] as string;
+      
+      if (!apiKey) {
+        return res.status(401).json({ message: "API key não fornecida" });
+      }
+      
+      // Verificar se a sessão existe
+      const session = await storage.getWidgetChatSession(parseInt(id));
+      if (!session) {
+        return res.status(404).json({ message: "Sessão não encontrada" });
+      }
+      
+      // Verificar se a sessão foi encerrada
+      if (session.ended_at) {
+        return res.status(403).json({ message: "Sessão encerrada" });
+      }
+      
+      // Verificar se o widget existe e está ativo
+      const widget = await storage.getChatWidget(session.widget_id);
+      if (!widget) {
+        return res.status(404).json({ message: "Widget não encontrado" });
+      }
+      
+      if (!widget.is_active) {
+        return res.status(403).json({ message: "Widget está inativo" });
+      }
+      
+      // Verificar se a API key corresponde ao widget
+      if (widget.api_key !== apiKey) {
+        return res.status(403).json({ message: "API key inválida para este widget" });
+      }
+      
+      // Verificar limite de mensagens do usuário dono do widget
+      const canSendMessages = await storage.checkMessageLimit(widget.user_id);
+      if (!canSendMessages) {
+        return res.status(403).json({ 
+          message: "O proprietário deste widget atingiu o limite de mensagens do plano",
+          error: "message_limit_reached"
+        });
+      }
+      
+      const schema = z.object({
+        content: z.string().min(1).max(10000)
+      });
+      
+      const { content } = schema.parse(req.body);
+      
+      // Criar a mensagem do usuário
+      const userMessage = await storage.createWidgetChatMessage({
+        session_id: parseInt(id),
+        content,
+        is_from_ai: false
+      });
+      
+      // Obter configuração LLM ativa
+      const llmConfig = await storage.getActiveLlmConfig();
+      if (!llmConfig) {
+        return res.status(500).json({ message: "Configuração LLM não encontrada" });
+      }
+      
+      // Obter avatar ativo
+      const avatar = await storage.getActiveAvatar();
+      
+      // Processar a resposta da IA
+      let aiResponse: string;
+      try {
+        // Obter o histórico de mensagens da sessão
+        const messages = await storage.getWidgetSessionMessages(parseInt(id));
+        
+        // Processar a mensagem com o LLM
+        aiResponse = await processTextMessage(
+          content,
+          messages.filter(m => m.id !== userMessage.id).map(m => ({
+            content: m.content || "",
+            role: m.is_from_ai ? "assistant" : "user"
+          })),
+          llmConfig
+        );
+      } catch (error) {
+        console.error("Erro ao processar mensagem com LLM:", error);
+        aiResponse = "Desculpe, ocorreu um erro ao processar sua mensagem. Por favor, tente novamente.";
+      }
+      
+      // Criar a mensagem da IA
+      const aiMessage = await storage.createWidgetChatMessage({
+        session_id: parseInt(id),
+        content: aiResponse,
+        is_from_ai: true
+      });
+      
+      // Incrementar contagem de mensagens para o usuário
+      await storage.incrementMessageCount(widget.user_id);
+      
+      res.json({
+        userMessage,
+        aiMessage
+      });
+    } catch (error) {
+      console.error("Erro ao enviar mensagem para widget:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Dados inválidos", 
+          errors: error.errors 
+        });
+      }
+      res.status(500).json({ message: "Erro ao enviar mensagem" });
+    }
+  });
+  
+  // Rota para encerrar uma sessão de widget (pública)
+  app.post("/api/public/widgets/sessions/:id/end", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const apiKey = req.headers["x-api-key"] as string;
+      
+      if (!apiKey) {
+        return res.status(401).json({ message: "API key não fornecida" });
+      }
+      
+      // Verificar se a sessão existe
+      const session = await storage.getWidgetChatSession(parseInt(id));
+      if (!session) {
+        return res.status(404).json({ message: "Sessão não encontrada" });
+      }
+      
+      // Verificar se a sessão já foi encerrada
+      if (session.ended_at) {
+        return res.status(400).json({ message: "Sessão já encerrada" });
+      }
+      
+      // Verificar se o widget existe
+      const widget = await storage.getChatWidget(session.widget_id);
+      if (!widget) {
+        return res.status(404).json({ message: "Widget não encontrado" });
+      }
+      
+      // Verificar se a API key corresponde ao widget
+      if (widget.api_key !== apiKey) {
+        return res.status(403).json({ message: "API key inválida para este widget" });
+      }
+      
+      // Encerrar a sessão
+      const updatedSession = await storage.endWidgetChatSession(parseInt(id));
+      
+      res.json(updatedSession);
+    } catch (error) {
+      console.error("Erro ao encerrar sessão de widget:", error);
+      res.status(500).json({ message: "Erro ao encerrar sessão" });
+    }
+  });
+  
+  // Rota para obter o histórico de mensagens de uma sessão (pública)
+  app.get("/api/public/widgets/sessions/:id/messages", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const apiKey = req.headers["x-api-key"] as string;
+      
+      if (!apiKey) {
+        return res.status(401).json({ message: "API key não fornecida" });
+      }
+      
+      // Verificar se a sessão existe
+      const session = await storage.getWidgetChatSession(parseInt(id));
+      if (!session) {
+        return res.status(404).json({ message: "Sessão não encontrada" });
+      }
+      
+      // Verificar se o widget existe
+      const widget = await storage.getChatWidget(session.widget_id);
+      if (!widget) {
+        return res.status(404).json({ message: "Widget não encontrado" });
+      }
+      
+      // Verificar se a API key corresponde ao widget
+      if (widget.api_key !== apiKey) {
+        return res.status(403).json({ message: "API key inválida para este widget" });
+      }
+      
+      // Obter mensagens da sessão
+      const messages = await storage.getWidgetSessionMessages(parseInt(id));
+      
+      res.json(messages);
+    } catch (error) {
+      console.error("Erro ao obter mensagens de sessão de widget:", error);
+      res.status(500).json({ message: "Erro ao obter mensagens" });
+    }
+  });
+  
+  // ===== FIM DAS ROTAS DE WIDGETS =====
 
   const httpServer = createServer(app);
 
