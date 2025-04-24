@@ -57,10 +57,142 @@ type PlanPricing = {
 const pricingFormSchema = z.object({
   subscription_tier: z.enum(["none", "basic", "intermediate"]),
   name: z.string().min(1, "Nome é obrigatório"),
-  price: z.coerce.number().int().min(0, "O preço deve ser um número positivo"),
+  price: z.coerce.number().min(0, "O preço deve ser um número positivo"),
   currency: z.enum(["USD", "BRL"]),
   description: z.string().nullable().optional(),
 });
+
+// Componente de formulário de preço para cada plano
+function PlanPricingForm({ 
+  tier, 
+  pricingData,
+  onSubmit,
+  isPending
+}: { 
+  tier: "basic" | "intermediate"; 
+  pricingData?: PlanPricing;
+  onSubmit: (values: z.infer<typeof pricingFormSchema>) => void;
+  isPending: boolean;
+}) {
+  const formHook = useForm<z.infer<typeof pricingFormSchema>>({
+    resolver: zodResolver(pricingFormSchema),
+    defaultValues: {
+      subscription_tier: tier,
+      name: pricingData?.name || (tier === "basic" ? "Plano Básico" : "Plano Intermediário"),
+      price: pricingData ? pricingData.price / 100 : tier === "basic" ? 29.90 : 39.90, // Converter de centavos para reais
+      currency: pricingData?.currency || "BRL",
+      description: pricingData?.description || "",
+    },
+  });
+
+  return (
+    <Form {...formHook}>
+      <form onSubmit={formHook.handleSubmit(onSubmit)} className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <FormField
+            control={formHook.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Nome do Plano</FormLabel>
+                <FormControl>
+                  <Input placeholder="Nome do plano" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          <FormField
+            control={formHook.control}
+            name="price"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Preço</FormLabel>
+                <FormControl>
+                  <div className="flex">
+                    <Input
+                      type="number"
+                      step="0.01"
+                      placeholder="Preço do plano"
+                      {...field}
+                      value={field.value}
+                    />
+                  </div>
+                </FormControl>
+                <FormDescription>
+                  Preço em valores reais (29.90, 39.90)
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <FormField
+          control={formHook.control}
+          name="currency"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Moeda</FormLabel>
+              <Select
+                onValueChange={field.onChange}
+                defaultValue={field.value}
+              >
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a moeda" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="BRL">Real (BRL)</SelectItem>
+                  <SelectItem value="USD">Dólar (USD)</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={formHook.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Descrição (opcional)</FormLabel>
+              <FormControl>
+                <Input 
+                  placeholder="Descrição do plano" 
+                  {...field} 
+                  value={field.value || ''} 
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <Button 
+          type="submit" 
+          className="w-full" 
+          disabled={isPending}
+        >
+          {isPending ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Salvando...
+            </>
+          ) : (
+            <>
+              <Save className="mr-2 h-4 w-4" />
+              Salvar Preço do Plano
+            </>
+          )}
+        </Button>
+      </form>
+    </Form>
+  );
+}
 
 export default function PlanPricing() {
   const { t } = useLanguage();
@@ -120,138 +252,48 @@ export default function PlanPricing() {
     },
   });
 
-  // Função para renderizar o formulário de um plano
-  const renderPlanForm = (tier: "basic" | "intermediate") => {
-    const pricingData = planPricing?.find(p => p.subscription_tier === tier);
-    
-    const form = useForm<z.infer<typeof pricingFormSchema>>({
-      resolver: zodResolver(pricingFormSchema),
-      defaultValues: {
-        subscription_tier: tier,
-        name: pricingData?.name || (tier === "basic" ? "Plano Básico" : "Plano Intermediário"),
-        price: pricingData ? pricingData.price / 100 : tier === "basic" ? 29.90 : 39.90, // Converter de centavos para reais
-        currency: pricingData?.currency || "BRL",
-        description: pricingData?.description || null,
-      },
-    });
+  // Encontrar dados dos planos
+  const basicPricingData = planPricing?.find(p => p.subscription_tier === "basic");
+  const intermediatePricingData = planPricing?.find(p => p.subscription_tier === "intermediate");
 
-    const onSubmit = (values: z.infer<typeof pricingFormSchema>) => {
-      // Converter o preço de reais para centavos
-      const priceInCents = Math.round(values.price * 100);
-      const data = { ...values, price: priceInCents };
-      
-      if (pricingData) {
-        updatePriceMutation.mutate({
-          id: pricingData.id,
-          data
-        });
-      } else {
-        createPriceMutation.mutate(data);
-      }
+  // Manipular envio do formulário
+  const handleBasicSubmit = (values: z.infer<typeof pricingFormSchema>) => {
+    // Converter o preço de reais para centavos
+    const priceInCents = Math.round(values.price * 100);
+    const data = { 
+      ...values, 
+      price: priceInCents,
+      description: values.description || null 
     };
+    
+    if (basicPricingData) {
+      updatePriceMutation.mutate({
+        id: basicPricingData.id,
+        data
+      });
+    } else {
+      createPriceMutation.mutate(data as Omit<PlanPricing, 'id' | 'created_at' | 'updated_at'>);
+    }
+  };
 
-    return (
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nome do Plano</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Nome do plano" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="price"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Preço</FormLabel>
-                  <FormControl>
-                    <div className="flex">
-                      <Input
-                        type="number"
-                        step="0.01"
-                        placeholder="Preço do plano"
-                        {...field}
-                      />
-                    </div>
-                  </FormControl>
-                  <FormDescription>
-                    Preço em valores reais (29.90, 39.90)
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-
-          <FormField
-            control={form.control}
-            name="currency"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Moeda</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione a moeda" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="BRL">Real (BRL)</SelectItem>
-                    <SelectItem value="USD">Dólar (USD)</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="description"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Descrição (opcional)</FormLabel>
-                <FormControl>
-                  <Input placeholder="Descrição do plano" {...field} value={field.value || ''} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <Button 
-            type="submit" 
-            className="w-full" 
-            disabled={updatePriceMutation.isPending || createPriceMutation.isPending}
-          >
-            {updatePriceMutation.isPending || createPriceMutation.isPending ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Salvando...
-              </>
-            ) : (
-              <>
-                <Save className="mr-2 h-4 w-4" />
-                Salvar Preço do Plano
-              </>
-            )}
-          </Button>
-        </form>
-      </Form>
-    );
+  // Manipular envio do formulário
+  const handleIntermediateSubmit = (values: z.infer<typeof pricingFormSchema>) => {
+    // Converter o preço de reais para centavos
+    const priceInCents = Math.round(values.price * 100);
+    const data = { 
+      ...values, 
+      price: priceInCents,
+      description: values.description || null 
+    };
+    
+    if (intermediatePricingData) {
+      updatePriceMutation.mutate({
+        id: intermediatePricingData.id,
+        data
+      });
+    } else {
+      createPriceMutation.mutate(data as Omit<PlanPricing, 'id' | 'created_at' | 'updated_at'>);
+    }
   };
 
   return (
@@ -281,11 +323,21 @@ export default function PlanPricing() {
               </TabsList>
               
               <TabsContent value="basic" className="space-y-4 mt-4">
-                {renderPlanForm("basic")}
+                <PlanPricingForm 
+                  tier="basic" 
+                  pricingData={basicPricingData} 
+                  onSubmit={handleBasicSubmit}
+                  isPending={updatePriceMutation.isPending || createPriceMutation.isPending}
+                />
               </TabsContent>
               
               <TabsContent value="intermediate" className="space-y-4 mt-4">
-                {renderPlanForm("intermediate")}
+                <PlanPricingForm 
+                  tier="intermediate"
+                  pricingData={intermediatePricingData} 
+                  onSubmit={handleIntermediateSubmit}
+                  isPending={updatePriceMutation.isPending || createPriceMutation.isPending}
+                />
               </TabsContent>
             </Tabs>
           )}
