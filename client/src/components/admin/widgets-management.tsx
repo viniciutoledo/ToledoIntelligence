@@ -38,7 +38,27 @@ import { generateEmbedCode, type EmbedCodeResult } from "@/components/widget/gen
 const widgetFormSchema = z.object({
   name: z.string().min(3, "Nome deve ter pelo menos 3 caracteres").max(100, "Nome não pode ter mais de 100 caracteres"),
   greeting: z.string().min(1, "Mensagem de boas-vindas é obrigatória"),
-  avatar_url: z.string().url("URL de avatar inválida").default("https://ui-avatars.com/api/?name=T&background=6366F1&color=fff"),
+  avatar_url: z.string()
+    .refine(
+      (value) => {
+        // Validar se é vazio (caso a imagem seja carregada por arquivo)
+        if (!value) return true;
+        
+        // Validar se é uma URL relativa ao servidor (começa com '/')
+        if (value.startsWith('/')) return true;
+        
+        // Validar se é uma URL completa
+        try {
+          new URL(value);
+          return true;
+        } catch {
+          return false;
+        }
+      },
+      { message: "URL de avatar inválida" }
+    )
+    .optional()
+    .default("https://ui-avatars.com/api/?name=T&background=6366F1&color=fff"),
   avatar_image: z.any().optional(),
   theme_color: z.string().regex(/^#[0-9A-F]{6}$/i, "Cor deve estar no formato hexadecimal (ex: #6366F1)").default("#6366F1"),
   allowed_domains: z.array(z.string()).optional()
