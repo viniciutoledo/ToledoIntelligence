@@ -4,7 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Paperclip, Image, Send, Loader2, X } from "lucide-react";
-import { DirectImage } from "./direct-image";
+import { HtmlDirectImage } from "./html-direct-image";
 
 // Função utilitária para otimizar URLs de arquivos
 function getOptimizedFileUrl(fileUrl: string | null): string {
@@ -186,7 +186,7 @@ export function ChatInterface({
       <div className="px-4 py-3 border-b flex items-center">
         <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 mr-3">
           {avatar?.image_url ? (
-            <DirectImage
+            <HtmlDirectImage
               src={avatar.image_url}
               alt={avatar.name || "Avatar"}
             />
@@ -223,7 +223,7 @@ export function ChatInterface({
                 <User className="h-4 w-4" />
               ) : (
                 avatar?.image_url ? (
-                  <DirectImage
+                  <HtmlDirectImage
                     src={avatar.image_url}
                     alt={avatar.name || "Avatar"}
                   />
