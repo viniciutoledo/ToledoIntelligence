@@ -35,23 +35,28 @@ export function EmbeddedChat({ apiKey, initialOpen = false }: EmbeddedChatProps)
                    sendMessageMutation.isPending || 
                    uploadFileMutation.isPending;
   
-  // Inicializar widget quando o componente é montado
+  // Inicializar widget quando o componente é montado (apenas uma vez)
   useEffect(() => {
-    if (apiKey) {
+    if (apiKey && !isInitialized) {
       initializeWidget(apiKey);
     }
-  }, [apiKey, initializeWidget]);
+  }, [apiKey, isInitialized]);
   
   // Se não houver sessão ativa e o widget estiver carregado, inicie uma sessão
   useEffect(() => {
-    if (widget && !currentSession && !createSessionMutation.isPending) {
-      createSessionMutation.mutate({
-        widgetId: widget.id,
-        language: language as "pt" | "en",
-        referrerUrl: document.referrer || window.location.href
-      });
+    if (widget && !currentSession && !createSessionMutation.isPending && isInitialized) {
+      // Usando setTimeout para evitar muitas renderizações consecutivas
+      const timer = setTimeout(() => {
+        createSessionMutation.mutate({
+          widgetId: widget.id,
+          language: language as "pt" | "en",
+          referrerUrl: document.referrer || window.location.href
+        });
+      }, 100);
+      
+      return () => clearTimeout(timer);
     }
-  }, [widget, currentSession, createSessionMutation, language]);
+  }, [widget, currentSession, createSessionMutation.isPending, isInitialized]);
   
   // Finalizar sessão quando componente for desmontado
   useEffect(() => {

@@ -2364,10 +2364,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Rota para obter um widget via API key (pública)
+  // Rota para obter um widget via API key (pública) - usando header
   app.get("/api/public/widgets", async (req, res) => {
     try {
       const apiKey = req.headers["x-api-key"] as string;
+      
+      if (!apiKey) {
+        return res.status(401).json({ message: "API key não fornecida" });
+      }
+      
+      const widget = await storage.getChatWidgetByApiKey(apiKey);
+      
+      if (!widget) {
+        return res.status(404).json({ message: "Widget não encontrado ou inativo" });
+      }
+      
+      // Verificar o referrer para validar o domínio
+      const referrer = req.headers.referer || req.headers.origin;
+      if (referrer) {
+        try {
+          const url = new URL(referrer);
+          const domain = url.hostname;
+          
+          const isValidDomain = await storage.validateWidgetDomain(widget.id, domain);
+          if (!isValidDomain) {
+            return res.status(403).json({ 
+              message: "Domínio não autorizado para este widget",
+              error: "domain_not_allowed"
+            });
+          }
+        } catch (e) {
+          console.error("Erro ao validar referrer:", e);
+        }
+      }
+      
+      // Remover a API key da resposta
+      const { api_key, ...safeWidget } = widget;
+      
+      res.json(safeWidget);
+    } catch (error) {
+      console.error("Erro ao obter widget público via header:", error);
+      res.status(500).json({ message: "Erro ao obter widget" });
+    }
+  });
+    
+  // Rota para obter um widget via API key (pública) - usando query parameter
+  app.get("/api/widgets/public", async (req, res) => {
+    try {
+      const apiKey = req.query.api_key as string;
       
       if (!apiKey) {
         return res.status(401).json({ message: "API key não fornecida" });
