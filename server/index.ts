@@ -18,11 +18,19 @@ app.use('/uploads', express.static(path.join(process.cwd(), 'uploads'), {
   etag: false, // Desabilitar etag
   lastModified: false,
   setHeaders: (res) => {
+    // Headers importantes para permitir acesso cross-origin e cross-frame
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.setHeader('Cross-Origin-Embedder-Policy', 'unsafe-none');
+    res.setHeader('Cross-Origin-Opener-Policy', 'unsafe-none');
+    
+    // Headers específicos para imagens
+    if (res.req?.path && /\.(jpg|jpeg|png|gif)$/i.test(res.req.path)) {
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+    }
   }
 }));
 

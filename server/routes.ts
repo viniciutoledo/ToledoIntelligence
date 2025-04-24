@@ -3581,17 +3581,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const isImage = file.mimetype.startsWith('image/');
       const messageType = isImage ? 'image' : 'file';
       
-      // Preparar dados para base64 (apenas para imagens como fallback)
+      // Preparar dados para base64 (principal método para imagens)
       let fileBase64 = null;
       if (isImage) {
         try {
-          // Converter imagem para base64 como fallback
+          // Converter imagem para base64 como método principal de exibição
           const fileData = fs.readFileSync(file.path);
           fileBase64 = `data:${file.mimetype};base64,${fileData.toString('base64')}`;
           console.log(`Imagem convertida para base64 (primeiros 50 caracteres): ${fileBase64.substring(0, 50)}...`);
+          
+          // Verificar e registrar tamanho do base64 para diagnóstico
+          const base64Size = fileBase64.length;
+          console.log(`Tamanho da string base64: ${base64Size} caracteres`);
+          
+          // Se o tamanho for muito grande (> 5MB), gerar aviso
+          if (base64Size > 5 * 1024 * 1024) {
+            console.warn(`AVISO: String base64 muito grande (${Math.round(base64Size/1024/1024)}MB). Pode causar problemas de desempenho.`);
+          }
         } catch (error) {
           console.error("Erro ao converter imagem para base64:", error);
-          // Continuar mesmo se falhar, já que é apenas um fallback
+          // Falha na conversão para base64 é crítica para imagens
+          return res.status(500).json({ 
+            message: "Erro ao processar imagem, tente novamente com uma imagem menor",
+            error: "image_processing_error" 
+          });
         }
       }
       
