@@ -9,14 +9,22 @@ import { Paperclip, Image, Send, Loader2, X } from "lucide-react";
 function getOptimizedFileUrl(fileUrl: string | null): string {
   if (!fileUrl) return "";
   
-  // Se a URL já começa com http(s), retorna como está
-  if (fileUrl.startsWith('http')) return fileUrl;
-  
-  // Se a URL começa com /, adiciona a origem
-  if (fileUrl.startsWith('/')) return `${window.location.origin}${fileUrl}`;
-  
-  // Se não começa com / nem com http, adiciona / no início
-  return `/${fileUrl}`;
+  try {
+    // Limpa caracteres invisíveis ou especiais que possam estar causando problemas
+    const cleanUrl = fileUrl.replace(/[\u200B-\u200D\uFEFF\u0000-\u001F\u007F-\u009F]/g, '');
+    
+    // Se a URL já começa com http(s), retorna como está
+    if (cleanUrl.startsWith('http')) return cleanUrl;
+    
+    // Se a URL começa com /, adiciona a origem
+    if (cleanUrl.startsWith('/')) return `${window.location.origin}${cleanUrl}`;
+    
+    // Se não começa com / nem com http, adiciona / no início
+    return `/${cleanUrl}`;
+  } catch (error) {
+    console.error("Erro ao processar URL do arquivo:", error);
+    return fileUrl || ""; // Retorna a URL original em caso de erro
+  }
 }
 
 // Tipos compartilhados
@@ -177,7 +185,7 @@ export function ChatInterface({
         <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 mr-3">
           {avatar?.image_url ? (
             <img
-              src={avatar.image_url.startsWith('/') ? `${window.location.origin}${avatar.image_url}` : avatar.image_url}
+              src={getOptimizedFileUrl(avatar.image_url)}
               alt={avatar.name || "Avatar"}
               className="h-10 w-10 rounded-full object-cover"
             />
@@ -214,7 +222,7 @@ export function ChatInterface({
               ) : (
                 avatar?.image_url ? (
                   <img
-                    src={avatar.image_url.startsWith('/') ? `${window.location.origin}${avatar.image_url}` : avatar.image_url}
+                    src={getOptimizedFileUrl(avatar.image_url)}
                     alt={avatar.name || "Avatar"}
                     className="h-8 w-8 rounded-full object-cover"
                   />
@@ -251,20 +259,34 @@ export function ChatInterface({
                         // Tenta corrigir a URL se possível
                         const imgElement = e.currentTarget;
                         
-                        // Primeira tentativa: verificar se a URL está completa
-                        if (msg.file_url && !msg.file_url.startsWith('http') && !msg.file_url.startsWith('/')) {
-                          const newUrl = `/${msg.file_url}`;
-                          console.log("Tentando URL alternativa 1:", newUrl);
-                          imgElement.src = newUrl;
-                          return;
-                        }
-                        
-                        // Segunda tentativa: adicionar origem ao caminho relativo
-                        if (msg.file_url && msg.file_url.startsWith('/')) {
-                          const newUrl = `${window.location.origin}${msg.file_url}`;
-                          console.log("Tentando URL alternativa 2:", newUrl);
-                          imgElement.src = newUrl;
-                          return;
+                        try {
+                          // Tenta resolver a URL usando a função otimizada com diferentes formatos
+                          if (msg.file_url) {
+                            // Remove caracteres especiais que possam estar causando problemas
+                            const cleanUrl = msg.file_url.replace(/[\u200B-\u200D\uFEFF]/g, '');
+                            
+                            if (cleanUrl !== msg.file_url) {
+                              console.log("URL limpada de caracteres especiais:", cleanUrl);
+                              imgElement.src = getOptimizedFileUrl(cleanUrl);
+                              return;
+                            }
+                            
+                            // Tentativa com URL absoluta
+                            if (!cleanUrl.startsWith('http') && !cleanUrl.startsWith('/')) {
+                              console.log("Tentando URL absoluta:", `/${cleanUrl}`);
+                              imgElement.src = `/${cleanUrl}`;
+                              return;
+                            }
+                            
+                            // Tentativa com origem completa
+                            if (cleanUrl.startsWith('/')) {
+                              console.log("Tentando URL com origem:", `${window.location.origin}${cleanUrl}`);
+                              imgElement.src = `${window.location.origin}${cleanUrl}`;
+                              return;
+                            }
+                          }
+                        } catch (error) {
+                          console.error("Erro ao tentar recuperar imagem:", error);
                         }
                         
                         // Última opção: mostrar placeholder de erro
@@ -291,7 +313,7 @@ export function ChatInterface({
                     <span className="text-sm">{msg.content || "Arquivo"}</span>
                   </div>
                   <a 
-                    href={msg.file_url?.startsWith('/') ? `${window.location.origin}${msg.file_url}` : msg.file_url} 
+                    href={getOptimizedFileUrl(msg.file_url)} 
                     target="_blank" 
                     rel="noopener noreferrer"
                     className="mt-2 inline-block text-xs text-primary hover:underline"
@@ -312,7 +334,7 @@ export function ChatInterface({
             <div className="h-8 w-8 rounded-full flex items-center justify-center bg-primary-100 text-primary-600 mr-2 mt-1">
               {avatar?.image_url ? (
                 <img
-                  src={avatar.image_url.startsWith('/') ? `${window.location.origin}${avatar.image_url}` : avatar.image_url}
+                  src={getOptimizedFileUrl(avatar.image_url)}
                   alt={avatar.name || "Avatar"}
                   className="h-8 w-8 rounded-full object-cover"
                 />
