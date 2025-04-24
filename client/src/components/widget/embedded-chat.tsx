@@ -60,21 +60,23 @@ export function EmbeddedChat({ apiKey, initialOpen = false }: EmbeddedChatProps)
         referrerUrl: document.referrer || window.location.href
       });
     }
-    
-    // Se a sessão for encerrada, permitir criar uma nova
-    if (currentSession) {
-      sessionCreationAttempted.current = true;
-    }
-  }, [widget, currentSession, createSessionMutation, isInitialized, language]); // Adicionando dependências completas
+  }, [widget, currentSession, isInitialized]); // Removendo dependências desnecessárias que causam loops
   
   // Finalizar sessão quando componente for desmontado
   useEffect(() => {
     return () => {
       if (currentSession && !currentSession.ended_at) {
-        endSessionMutation.mutate(currentSession.id);
+        // Usando o objeto mutation diretamente sem dependência
+        if (endSessionMutation && typeof endSessionMutation.mutate === 'function') {
+          try {
+            endSessionMutation.mutate(currentSession.id);
+          } catch (error) {
+            console.error("Erro ao finalizar sessão:", error);
+          }
+        }
       }
     };
-  }, [currentSession, endSessionMutation]);
+  }, [currentSession]);
   
   // Handler para enviar mensagens
   const handleSendMessage = (content: string) => {

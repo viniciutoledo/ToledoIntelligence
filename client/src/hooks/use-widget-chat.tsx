@@ -168,8 +168,24 @@ export function WidgetChatProvider({
   // Finalizar sessão
   const endSessionMutation = useMutation({
     mutationFn: async (sessionId: number) => {
-      const res = await apiRequest("PUT", `/api/widgets/sessions/${sessionId}/end`);
-      return res.json();
+      try {
+        const res = await apiRequest("PUT", `/api/widgets/sessions/${sessionId}/end`);
+        
+        // Se a sessão já estiver encerrada, não é um erro real
+        if (!res.ok && res.status === 400) {
+          const errorData = await res.json();
+          if (errorData.message && errorData.message.includes("Sessão já encerrada")) {
+            console.log("Sessão já estava encerrada:", sessionId);
+            return { alreadyClosed: true };
+          }
+          throw new Error(errorData.message || "Erro ao finalizar sessão");
+        }
+        
+        return res.json();
+      } catch (error) {
+        console.error("Erro ao finalizar sessão:", error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
@@ -177,11 +193,14 @@ export function WidgetChatProvider({
       });
     },
     onError: (error: Error) => {
-      toast({
-        title: "Erro ao finalizar sessão",
-        description: error.message,
-        variant: "destructive",
-      });
+      // Não mostrar toast para erros de "sessão já encerrada"
+      if (error.message && !error.message.includes("Sessão já encerrada")) {
+        toast({
+          title: "Erro ao finalizar sessão",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
     }
   });
   
