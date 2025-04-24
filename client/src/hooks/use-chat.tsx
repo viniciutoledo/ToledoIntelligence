@@ -193,8 +193,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     onSuccess: (data) => {
       console.log("Upload bem-sucedido:", data);
       
-      // Verificar se temos fileBase64 na resposta e atualizar a mensagem no cache
-      if (data.fileBase64 && data.userMessage) {
+      // Verificar se temos userMessage com fileBase64 na resposta
+      if (data.userMessage && data.userMessage.fileBase64) {
         // Obter mensagens atuais
         const currentMessages = queryClient.getQueryData<ChatMessage[]>([
           "/api/chat/sessions", currentSession?.id, "messages"
@@ -203,6 +203,32 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         // Atualizar a mensagem do usuário com fileBase64
         const updatedMessages = currentMessages.map(msg => {
           if (msg.id === data.userMessage.id) {
+            return {
+              ...msg,
+              fileBase64: data.userMessage.fileBase64
+            };
+          }
+          return msg;
+        });
+        
+        // Atualizar o cache com as mensagens atualizadas
+        queryClient.setQueryData(
+          ["/api/chat/sessions", currentSession?.id, "messages"],
+          updatedMessages
+        );
+        
+        console.log("Mensagem atualizada com fileBase64 (formato novo)");
+      }
+      // Retrocompatibilidade: verificar também no formato antigo
+      else if (data.fileBase64 && data.id) {
+        // Obter mensagens atuais
+        const currentMessages = queryClient.getQueryData<ChatMessage[]>([
+          "/api/chat/sessions", currentSession?.id, "messages"
+        ]) || [];
+        
+        // Atualizar a mensagem do usuário com fileBase64
+        const updatedMessages = currentMessages.map(msg => {
+          if (msg.id === data.id) {
             return {
               ...msg,
               fileBase64: data.fileBase64
@@ -217,7 +243,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           updatedMessages
         );
         
-        console.log("Mensagem atualizada com fileBase64");
+        console.log("Mensagem atualizada com fileBase64 (formato antigo)");
       }
       
       // Invalidar o cache para buscar todas as mensagens atualizadas

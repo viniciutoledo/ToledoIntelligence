@@ -1898,17 +1898,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Se for uma imagem e temos base64, incluir na resposta
+      // Se for uma imagem e temos base64, incluí-lo no objeto da mensagem
       if (req.file && req.file.mimetype.startsWith("image/") && fileBase64) {
-        // Criar um objeto de resposta com o base64 incluído
-        const responseObj = {
+        // Criar uma cópia da mensagem com fileBase64 incorporado
+        const messageWithBase64 = {
           ...userMessage,
           fileBase64
         };
+        
+        // Criar objeto de resposta completo
+        const responseObj = {
+          userMessage: messageWithBase64,
+          // Se houver resposta do bot, incluir também
+          ...(botResponse ? { aiMessage: { 
+            session_id: sessionId,
+            user_id: req.user!.id,
+            message_type: "text",
+            content: botResponse,
+            file_url: null,
+            is_user: false,
+            // Adicionar outros campos que podem estar faltando
+            id: -1, // Placeholder, será substituído quando buscarmos do banco
+            created_at: new Date().toISOString()
+          }} : {})
+        };
+        
         res.status(201).json(responseObj);
       } else {
         // Resposta regular (sem base64)
-        res.status(201).json(userMessage);
+        const responseObj = {
+          userMessage: userMessage,
+          // Se houver resposta do bot, incluir também
+          ...(botResponse ? { aiMessage: { 
+            session_id: sessionId,
+            user_id: req.user!.id,
+            message_type: "text",
+            content: botResponse,
+            file_url: null,
+            is_user: false,
+            // Adicionar outros campos que podem estar faltando
+            id: -1, // Placeholder, será substituído quando buscarmos do banco
+            created_at: new Date().toISOString()
+          }} : {})
+        };
+        
+        res.status(201).json(responseObj);
       }
     } catch (error) {
       console.error("Erro ao processar upload:", error);
