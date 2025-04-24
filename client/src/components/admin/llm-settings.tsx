@@ -252,10 +252,7 @@ export function LlmSettings() {
               <h3 className="text-lg font-medium">Ferramentas de Diagnóstico</h3>
               <Separator />
               
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                <ClaudeCompatibilityTester />
-                <OpenAICompatibilityTester />
-              </div>
+              <UniversalModelTester />
             </div>
 
             <div className="flex justify-end pt-4">
