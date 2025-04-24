@@ -15,23 +15,42 @@ const DEFAULT_GPT_MODEL = 'gpt-4o';
 // LLM Providers
 type LlmProvider = 'anthropic' | 'openai';
 
+// Tone options
+type LlmTone = 'formal' | 'normal' | 'casual';
+
+// LLM Configuration interface
+interface LlmFullConfig {
+  provider: LlmProvider; 
+  modelName: string; 
+  apiKey: string;
+  tone: LlmTone;
+  behaviorInstructions?: string;
+  shouldUseTrained: boolean;
+}
+
 // Convert fs.readFile to use promises
 const readFile = promisify(fs.readFile);
 
-// Get active LLM provider and model name
-async function getActiveLlmInfo(): Promise<{ provider: LlmProvider, modelName: string, apiKey: string }> {
+// Get active LLM provider and model name with all configuration options
+async function getActiveLlmInfo(): Promise<LlmFullConfig> {
   // Try to get active config from database
   const activeConfig = await storage.getActiveLlmConfig();
   
-  // Determine provider based on model name
+  // Set default values
   let provider: LlmProvider = 'anthropic';
   let modelName = DEFAULT_CLAUDE_MODEL;
   let apiKey = process.env.ANTHROPIC_API_KEY || '';
+  let tone: LlmTone = 'normal';
+  let behaviorInstructions = '';
+  let shouldUseTrained = true;
   
   if (activeConfig) {
     // If we have a config, use it
     apiKey = activeConfig.api_key;
     modelName = activeConfig.model_name;
+    tone = activeConfig.tone as LlmTone || 'normal';
+    behaviorInstructions = activeConfig.behavior_instructions || '';
+    shouldUseTrained = activeConfig.should_use_training !== false;
     
     // Determine provider from model name
     if (modelName.startsWith('gpt')) {
@@ -52,7 +71,14 @@ async function getActiveLlmInfo(): Promise<{ provider: LlmProvider, modelName: s
     throw new Error('No API key available for LLM');
   }
   
-  return { provider, modelName, apiKey };
+  return { 
+    provider, 
+    modelName, 
+    apiKey, 
+    tone, 
+    behaviorInstructions, 
+    shouldUseTrained 
+  };
 }
 
 // Create OpenAI client
@@ -213,13 +239,44 @@ export async function analyzeImage(imagePath: string, language: string): Promise
     }
     
     try {
-      const { provider, modelName, apiKey } = await getActiveLlmInfo();
+      const config = await getActiveLlmInfo();
+      const { provider, modelName, apiKey, tone, behaviorInstructions } = config;
       
       // Obter conteúdo do buffer novamente para detectar formato real
       const imageBuffer = Buffer.from(base64Image, 'base64');
       // Detectar formato baseado no conteúdo real
       const detectedFormat = detectImageFormat(imageBuffer);
       console.log(`Formato de imagem detectado: ${detectedFormat}`);
+      
+      // Configurar estilo de comunicação com base no tom escolhido
+      let toneStyle = '';
+      if (language === 'pt') {
+        switch(tone) {
+          case 'formal':
+            toneStyle = 'Utilize um tom formal e profissional, com vocabulário mais técnico e estruturado.';
+            break;
+          case 'casual':
+            toneStyle = 'Utilize um tom mais descontraído e casual, como uma conversa informal entre colegas.';
+            break;
+          default: // normal
+            toneStyle = 'Utilize um tom equilibrado, nem muito formal nem muito casual.';
+        }
+      } else {
+        switch(tone) {
+          case 'formal':
+            toneStyle = 'Use a formal and professional tone, with more technical and structured vocabulary.';
+            break;
+          case 'casual':
+            toneStyle = 'Use a more relaxed and casual tone, like an informal conversation between colleagues.';
+            break;
+          default: // normal
+            toneStyle = 'Use a balanced tone, neither too formal nor too casual.';
+        }
+      }
+      
+      // Instruções de comportamento personalizadas
+      const customBehavior = behaviorInstructions ? 
+        (language === 'pt' ? `Comportamento específico: ${behaviorInstructions}` : `Specific behavior: ${behaviorInstructions}`) : '';
       
       // Common prompts for both providers with enhanced specificity
       const systemPrompt = language === 'pt' 
@@ -229,14 +286,14 @@ export async function analyzeImage(imagePath: string, language: string): Promise
            como se estivesse falando com um colega técnico. 
            EVITE longas explicações, descrições detalhadas ou introduções teóricas.
            Concentre-se apenas nos problemas mais graves e nas soluções mais práticas.
-           Seja direto e objetivo. Responda em Português.`
+           Seja direto e objetivo. Responda em Português. ${toneStyle} ${customBehavior}`
         : `You are a technician specialized in circuit board maintenance.
            Analyze the circuit board image and identify the 2-3 MOST critical issues or components.
            Be EXTREMELY CONCISE (maximum 3-4 sentences) and use direct technical language,
            as if you were talking to a fellow technician.
            AVOID lengthy explanations, detailed descriptions, or theoretical introductions.
            Focus only on the most serious problems and the most practical solutions.
-           Be direct and to the point. Respond in English.`;
+           Be direct and to the point. Respond in English. ${toneStyle} ${customBehavior}`;
 
       const userPrompt = language === 'pt'
         ? 'Analise rapidamente esta placa de circuito. Identifique apenas os problemas mais críticos (se houver) e sugira soluções práticas. Seja extremamente conciso.'
@@ -352,12 +409,12 @@ export async function analyzeImage(imagePath: string, language: string): Promise
 export async function processTextMessage(
   message: string, 
   history: Array<{ content: string, role: 'user' | 'assistant' }> = [],
-  llmConfig?: { provider: LlmProvider, modelName: string, apiKey: string }
+  llmConfig?: LlmFullConfig
 ): Promise<string> {
   try {
     // Se não recebemos configuração LLM, tentar obter configurações padrão
     const config = llmConfig || await getActiveLlmInfo();
-    const { provider, modelName, apiKey } = config;
+    const { provider, modelName, apiKey, tone, behaviorInstructions, shouldUseTrained } = config;
     
     // Detectar idioma a partir do histórico ou mensagem atual
     const language = detectLanguage(message, history);
@@ -365,17 +422,47 @@ export async function processTextMessage(
     // Truncar mensagem para evitar exceder limites de token
     const truncatedMessage = truncateText(message);
     
+    // Configurar estilo de comunicação com base no tom escolhido
+    let toneStyle = '';
+    if (language === 'pt') {
+      switch(tone) {
+        case 'formal':
+          toneStyle = 'Utilize um tom formal e profissional, com vocabulário mais técnico e estruturado.';
+          break;
+        case 'casual':
+          toneStyle = 'Utilize um tom mais descontraído e casual, como uma conversa informal entre colegas.';
+          break;
+        default: // normal
+          toneStyle = 'Utilize um tom equilibrado, nem muito formal nem muito casual.';
+      }
+    } else {
+      switch(tone) {
+        case 'formal':
+          toneStyle = 'Use a formal and professional tone, with more technical and structured vocabulary.';
+          break;
+        case 'casual':
+          toneStyle = 'Use a more relaxed and casual tone, like an informal conversation between colleagues.';
+          break;
+        default: // normal
+          toneStyle = 'Use a balanced tone, neither too formal nor too casual.';
+      }
+    }
+    
+    // Instruções de comportamento personalizadas
+    const customBehavior = behaviorInstructions ? 
+      (language === 'pt' ? `Comportamento específico: ${behaviorInstructions}` : `Specific behavior: ${behaviorInstructions}`) : '';
+    
     // Prompts para os diferentes provedores
     const systemPrompt = language === 'pt' 
       ? `Você é um assistente técnico especializado em manutenção de placas de circuito. 
          Forneça respostas precisas, úteis e CONCISAS (máximo 3-4 frases) relacionadas à manutenção, 
          diagnóstico e reparo de placas de circuito. Use linguagem simples e direta, como 
          se estivesse conversando com um colega técnico. Evite explicações muito longas e 
-         acadêmicas. Responda em Português.`
+         acadêmicas. Responda em Português. ${toneStyle} ${customBehavior}`
       : `You are a technical assistant specialized in circuit board maintenance. 
          Provide accurate, helpful and CONCISE (maximum 3-4 sentences) responses related to maintenance, 
          diagnosis, and repair of circuit boards. Use simple and direct language, as if you were
-         talking to a fellow technician. Avoid overly lengthy and academic explanations. Respond in English.`;
+         talking to a fellow technician. Avoid overly lengthy and academic explanations. Respond in English. ${toneStyle} ${customBehavior}`;
     
     // Process with appropriate provider
     if (provider === 'anthropic') {

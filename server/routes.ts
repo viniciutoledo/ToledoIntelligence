@@ -2768,6 +2768,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Obter o histórico de mensagens da sessão
         const messages = await storage.getWidgetSessionMessages(parseInt(id));
         
+        // Converter a configuração LLM para o formato esperado pela função processTextMessage
+        const formattedLlmConfig = {
+          provider: llmConfig.api_key.includes("sk-ant-") ? "anthropic" : "openai",
+          modelName: llmConfig.model_name,
+          apiKey: llmConfig.api_key,
+          tone: llmConfig.tone || 'normal',
+          behaviorInstructions: llmConfig.behavior_instructions || '',
+          shouldUseTrained: llmConfig.should_use_training !== false
+        };
+        
         // Processar a mensagem com o LLM
         aiResponse = await processTextMessage(
           content,
@@ -2775,7 +2785,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             content: m.content || "",
             role: m.is_user ? "user" : "assistant"
           })),
-          llmConfig
+          formattedLlmConfig
         );
       } catch (error) {
         console.error("Erro ao processar mensagem com LLM:", error);
@@ -3100,7 +3110,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const formattedLlmConfig = {
             provider: llmConfig.api_key.includes("sk-ant-") ? "anthropic" : "openai",
             modelName: llmConfig.model_name,
-            apiKey: llmConfig.api_key
+            apiKey: llmConfig.api_key,
+            tone: llmConfig.tone || 'normal',
+            behaviorInstructions: llmConfig.behavior_instructions || '',
+            shouldUseTrained: llmConfig.should_use_training !== false
           };
 
           // Processar a mensagem com o LLM
