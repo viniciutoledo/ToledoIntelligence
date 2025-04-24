@@ -49,13 +49,29 @@
   // Determinar o domínio base para o widget (em desenvolvimento ou produção)
   let BASE_URL = window.location.origin;
   
-  // Verificar se estamos dentro de um iframe (como em um LMS)
+  // Verificar se estamos dentro de um iframe (como em um LMS ou plataforma cliente)
   let isInIframe = false;
   try {
     isInIframe = window.self !== window.top;
   } catch (e) {
     // Se houver erro de segurança de cross-origin, provavelmente estamos em um iframe
     isInIframe = true;
+  }
+  
+  // Detectar se estamos em uma plataforma específica que precisa de configurações especiais
+  let hostPlatform = 'generic';
+  try {
+    const url = window.location.href.toLowerCase();
+    if (url.includes('especialistatemplacas') || 
+        url.includes('lms.') || 
+        url.includes('moodle') || 
+        url.includes('course') || 
+        url.includes('aula') || 
+        url.includes('cursos')) {
+      hostPlatform = 'lms';
+    }
+  } catch (e) {
+    console.warn('Erro ao detectar plataforma:', e);
   }
 
   if (isInIframe) {
@@ -310,37 +326,19 @@
     window.removeEventListener('message', handleIframeMessages);
   }
   
-  // Adaptar o widget às necessidades específicas de diferentes plataformas
-  function detectHostingPlatform() {
-    // Detectar se está em plataforma específica
-    if (typeof window !== 'undefined') {
-      const url = window.location.href.toLowerCase();
-      
-      // Verificando as URLs da plataforma mostrada nas imagens
-      // (especialistatemplacas e outros sistemas)
-      if (url.includes('especialistatemplacas') || 
-          url.includes('lms.') || 
-          url.includes('moodle') || 
-          url.includes('course') || 
-          url.includes('aula') || 
-          url.includes('cursos')) {
-        return 'lms';
-      }
-    }
-    
-    return 'generic';
-  }
+  // Função removida: detectHostingPlatform - agora usando a variável global hostPlatform
   
   // Ajustar configurações de acordo com a plataforma
   function adjustSettingsForPlatform(options) {
-    const platform = detectHostingPlatform();
     let adjustedOptions = {...options};
     
-    if (platform === 'lms') {
+    // Usar a variável global hostPlatform
+    if (hostPlatform === 'lms') {
       // Em plataformas de ensino, usar modo inline por padrão
       if (!options.mode || options.mode === 'floating') {
         console.log('ToledoIA Widget: Detectada plataforma de ensino, usando modo inline');
         adjustedOptions.mode = 'inline';
+        adjustedOptions.hideHeader = true; // Esconder cabeçalho em plataformas LMS
         
         // Se não foi especificado um elemento alvo, tenta encontrar um apropriado
         if (!options.targetElement) {
@@ -367,6 +365,14 @@
             adjustedOptions.targetElement = '#toledoia-widget-container';
           }
         }
+      }
+    }
+    
+    // Se estamos em modo inline, configurar para uma melhor experiência embutida
+    if (adjustedOptions.mode === 'inline') {
+      // Definir hideHeader como true se não foi explicitamente definido
+      if (adjustedOptions.hideHeader === undefined) {
+        adjustedOptions.hideHeader = true;
       }
     }
     

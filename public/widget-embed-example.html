@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ToledoIA Widget Embed Example</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f5f5f5;
+      line-height: 1.6;
+    }
+    
+    h1 {
+      color: #333;
+      text-align: center;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    .example-container {
+      margin-top: 20px;
+      border: 1px solid #e1e1e1;
+      padding: 20px;
+      border-radius: 5px;
+    }
+    
+    .code-block {
+      background-color: #f9f9f9;
+      padding: 15px;
+      border-radius: 5px;
+      font-family: monospace;
+      overflow-x: auto;
+      margin: 15px 0;
+      border-left: 4px solid #6366F1;
+    }
+    
+    .embed-container {
+      position: relative;
+      width: 100%;
+      height: 600px;
+      margin: 20px 0;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid #ddd;
+      margin-bottom: 20px;
+    }
+    
+    .tab {
+      padding: 10px 20px;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+    }
+    
+    .tab.active {
+      border-color: #6366F1;
+      color: #6366F1;
+    }
+    
+    .tab-content {
+      display: none;
+    }
+    
+    .tab-content.active {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Exemplos de Integração do Widget ToledoIA</h1>
+    
+    <div class="tabs">
+      <div class="tab active" onclick="showTab('inline')">Widget Inline</div>
+      <div class="tab" onclick="showTab('floating')">Widget Flutuante</div>
+    </div>
+    
+    <div id="inline" class="tab-content active">
+      <h2>Widget Embedado (Inline)</h2>
+      
+      <p>Para incorporar o widget ToledoIA diretamente em sua página, use o código abaixo:</p>
+      
+      <div class="code-block">
+        &lt;!-- Container para o widget --&gt;<br>
+        &lt;div id="toledoia-container" style="position:relative; width:100%; height:600px;"&gt;&lt;/div&gt;<br><br>
+        
+        &lt;!-- Script do widget --&gt;<br>
+        &lt;script src="https://toledoia.replit.app/widget.js"&gt;&lt;/script&gt;<br>
+        &lt;script&gt;<br>
+        &nbsp;&nbsp;document.addEventListener('DOMContentLoaded', function() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;ToledoIAWidget.init({<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;apiKey: "sua-chave-api-aqui",<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;mode: "inline",<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;targetElement: "#toledoia-container",<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;hideHeader: true<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;});<br>
+        &nbsp;&nbsp;});<br>
+        &lt;/script&gt;
+      </div>
+      
+      <h3>Exemplo do Widget Inline</h3>
+      
+      <!-- Aqui colocamos um exemplo real do widget inline -->
+      <div class="embed-container">
+        <iframe
+          src="/embed/widget?key=b052c9ce-4620-49d8-83a4-32e3f14639c8&hideHeader=true"
+          style="position:absolute; top:0; left:0; width:100%; height:100%; border:0;"
+          allow="clipboard-write; autoplay; encrypted-media;"
+          sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+          title="ToledoIA Chat Embed"
+        ></iframe>
+      </div>
+    </div>
+    
+    <div id="floating" class="tab-content">
+      <h2>Widget Flutuante</h2>
+      
+      <p>Para adicionar o widget ToledoIA como um botão flutuante em sua página, use o código abaixo:</p>
+      
+      <div class="code-block">
+        &lt;!-- Script do widget --&gt;<br>
+        &lt;script src="https://toledoia.replit.app/widget.js"&gt;&lt;/script&gt;<br>
+        &lt;script&gt;<br>
+        &nbsp;&nbsp;document.addEventListener('DOMContentLoaded', function() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;ToledoIAWidget.init({<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;apiKey: "sua-chave-api-aqui",<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;position: "bottom-right", // Outras opções: bottom-left, top-right, top-left<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;initialOpen: false<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;});<br>
+        &nbsp;&nbsp;});<br>
+        &lt;/script&gt;
+      </div>
+      
+      <h3>Opções de Configuração</h3>
+      
+      <ul>
+        <li><strong>apiKey</strong>: Sua chave de API ToledoIA (obrigatória)</li>
+        <li><strong>mode</strong>: "floating" (padrão) ou "inline"</li>
+        <li><strong>targetElement</strong>: Seletor CSS ou elemento DOM para inserir o widget quando no modo inline</li>
+        <li><strong>position</strong>: Posição do botão e widget no modo flutuante (bottom-right, bottom-left, top-right, top-left)</li>
+        <li><strong>initialOpen</strong>: Se o widget deve iniciar aberto (true) ou fechado (false) no modo flutuante</li>
+        <li><strong>hideHeader</strong>: Se o cabeçalho do widget deve ser ocultado (true) ou exibido (false)</li>
+        <li><strong>width</strong>: Largura do widget no modo flutuante (padrão: 350px)</li>
+        <li><strong>height</strong>: Altura do widget no modo flutuante (padrão: 500px)</li>
+      </ul>
+    </div>
+  </div>
+  
+  <script>
+    function showTab(tabId) {
+      // Esconder todos os conteúdos
+      document.querySelectorAll('.tab-content').forEach(function(el) {
+        el.classList.remove('active');
+      });
+      
+      // Desativar todas as abas
+      document.querySelectorAll('.tab').forEach(function(el) {
+        el.classList.remove('active');
+      });
+      
+      // Mostrar conteúdo selecionado
+      document.getElementById(tabId).classList.add('active');
+      
+      // Ativar aba selecionada
+      document.querySelector('.tab[onclick="showTab(\'' + tabId + '\')"]').classList.add('active');
+    }
+  </script>
+</body>
+</html>
