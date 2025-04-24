@@ -2408,6 +2408,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
     
+  // Rota alternativa específica para embed - nova versão que evita problemas com o widget público
+  app.get("/api/embed/widget", async (req, res) => {
+    try {
+      const apiKey = req.query.key as string;
+      
+      if (!apiKey) {
+        return res.status(401).json({ message: "API key não fornecida. Use o parâmetro 'key'." });
+      }
+      
+      console.log(`[EMBED] Buscando widget com API key: ${apiKey}`);
+      const widget = await storage.getChatWidgetByApiKey(apiKey);
+      
+      if (!widget) {
+        console.log(`[EMBED] Widget não encontrado para key: ${apiKey}`);
+        return res.status(404).json({ message: "Widget não encontrado ou inativo" });
+      }
+      
+      console.log(`[EMBED] Widget encontrado: ${widget.id}, nome: ${widget.name}`);
+      
+      // Em ambiente de desenvolvimento, não validamos domínio para facilitar testes
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[EMBED] Ambiente de desenvolvimento - ignorando validação de domínio');
+        const { api_key, ...safeWidget } = widget;
+        return res.json(safeWidget);
+      }
+      
+      const referrer = req.headers.referer || req.headers.origin;
+      console.log(`[EMBED] Referrer: ${referrer}`);
+      
+      // Remover a API key da resposta e enviar
+      const { api_key, ...safeWidget } = widget;
+      return res.json(safeWidget);
+    } catch (error) {
+      console.error("[EMBED] Erro ao obter widget:", error);
+      res.status(500).json({ message: "Erro ao obter widget" });
+    }
+  });
+
   // Rota para obter um widget via API key (pública) - usando query parameter
   app.get("/api/widgets/public", async (req, res) => {
     try {

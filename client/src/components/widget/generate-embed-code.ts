@@ -50,7 +50,7 @@ export function generateEmbedCode(options: WidgetOptions): string | EmbedCodeRes
   // Código de script combinado 
   const scriptCode = `${scriptTag}\n${initScript}`;
   
-  // URL para embedar o widget diretamente via iframe
+  // URL para embedar o widget diretamente via iframe (usando a nova rota)
   const embedUrl = `${baseUrl}/embed/widget?key=${mergedOptions.apiKey}`;
   
   // URL encodada para uso como parâmetro
