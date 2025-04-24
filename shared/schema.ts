@@ -415,6 +415,34 @@ export type InsertWidgetChatSession = z.infer<typeof insertWidgetChatSessionSche
 export type WidgetChatMessage = typeof widgetChatMessages.$inferSelect;
 export type InsertWidgetChatMessage = z.infer<typeof insertWidgetChatMessageSchema>;
 
+export type KnowledgeBase = typeof knowledgeBase.$inferSelect;
+export type InsertKnowledgeBase = z.infer<typeof insertKnowledgeBaseSchema>;
+
+// Knowledge Base table para centralizar conhecimento adquirido
+export const knowledgeBase = pgTable("knowledge_base", {
+  id: serial("id").primaryKey(),
+  content: text("content").notNull(),
+  embedding: text("embedding").notNull(), // Será armazenado como JSON stringificado
+  source_type: text("source_type", { enum: ["chat", "document", "widget", "training"] }).notNull(),
+  source_id: integer("source_id"),
+  metadata: json("metadata"),
+  language: text("language", { enum: ["pt", "en"] }).notNull(),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+  is_verified: boolean("is_verified").default(false).notNull(),
+  relevance_score: integer("relevance_score").default(0).notNull()
+});
+
+export const insertKnowledgeBaseSchema = createInsertSchema(knowledgeBase).pick({
+  content: true,
+  embedding: true,
+  source_type: true,
+  source_id: true,
+  metadata: true,
+  language: true,
+  is_verified: true,
+  relevance_score: true,
+});
+
 // Login data
 export type LoginData = {
   email: string;
