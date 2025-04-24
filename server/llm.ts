@@ -131,6 +131,18 @@ let openaiClient: OpenAI | null = null;
 export async function fetchOpenAIDirectly(endpoint: string, data: any, apiKey: string) {
   console.log('Chamando OpenAI diretamente via fetch: ' + endpoint);
   
+  // Verificar se a chave API contém caracteres inválidos ou mascarados (•)
+  if (apiKey.includes('•') || apiKey.includes('…')) {
+    console.error('ERRO: Chave API contém caracteres de mascaramento');
+    // Usar a chave de ambiente se disponível
+    if (process.env.OPENAI_API_KEY) {
+      console.log('Usando chave OpenAI do ambiente como alternativa');
+      apiKey = process.env.OPENAI_API_KEY;
+    } else {
+      throw new Error('Chave API contém caracteres inválidos e não há chave alternativa disponível');
+    }
+  }
+  
   // Garantir que a chave está limpa
   if (typeof apiKey !== 'string') {
     throw new Error('API key inválida para OpenAI: não é uma string');
@@ -157,6 +169,20 @@ export async function fetchOpenAIDirectly(endpoint: string, data: any, apiKey: s
   }
   
   try {
+    // Verificar se há caracteres não-ASCII na chave
+    for (let i = 0; i < cleanedKey.length; i++) {
+      if (cleanedKey.charCodeAt(i) > 255) {
+        console.error(`Caractere inválido encontrado na posição ${i}: ${cleanedKey.charCodeAt(i)}`);
+        if (process.env.OPENAI_API_KEY) {
+          console.log('Usando chave OpenAI do ambiente devido a caracteres inválidos');
+          cleanedKey = process.env.OPENAI_API_KEY;
+          break;
+        } else {
+          throw new Error('A chave de API contém caracteres inválidos');
+        }
+      }
+    }
+    
     // Usar concatenação de strings em vez de template literals para evitar problemas com caracteres especiais
     const authHeader = 'Bearer ' + cleanedKey;
     
@@ -236,6 +262,18 @@ let anthropicClient: Anthropic | null = null;
 export async function fetchAnthropicDirectly(endpoint: string, data: any, apiKey: string) {
   console.log('Chamando Anthropic diretamente via fetch: ' + endpoint);
   
+  // Verificar se a chave API contém caracteres inválidos ou mascarados (•)
+  if (apiKey.includes('•') || apiKey.includes('…')) {
+    console.error('ERRO: Chave API Anthropic contém caracteres de mascaramento');
+    // Usar a chave de ambiente se disponível
+    if (process.env.ANTHROPIC_API_KEY) {
+      console.log('Usando chave Anthropic do ambiente como alternativa');
+      apiKey = process.env.ANTHROPIC_API_KEY;
+    } else {
+      throw new Error('Chave API contém caracteres inválidos e não há chave alternativa disponível');
+    }
+  }
+  
   // Garantir que a chave está limpa
   if (typeof apiKey !== 'string') {
     throw new Error('API key inválida para Anthropic: não é uma string');
@@ -258,6 +296,20 @@ export async function fetchAnthropicDirectly(endpoint: string, data: any, apiKey
     if (process.env.ANTHROPIC_API_KEY) {
       console.log('Tentando usar chave Anthropic do ambiente como fallback');
       cleanedKey = process.env.ANTHROPIC_API_KEY;
+    }
+  }
+  
+  // Verificar se há caracteres não-ASCII na chave
+  for (let i = 0; i < cleanedKey.length; i++) {
+    if (cleanedKey.charCodeAt(i) > 255) {
+      console.error(`Caractere inválido encontrado na posição ${i}: ${cleanedKey.charCodeAt(i)}`);
+      if (process.env.ANTHROPIC_API_KEY) {
+        console.log('Usando chave Anthropic do ambiente devido a caracteres inválidos');
+        cleanedKey = process.env.ANTHROPIC_API_KEY;
+        break;
+      } else {
+        throw new Error('A chave de API contém caracteres inválidos');
+      }
     }
   }
   
