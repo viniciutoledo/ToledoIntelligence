@@ -2138,17 +2138,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Rota para criar um novo widget
   app.post("/api/widgets", isAuthenticated, async (req, res) => {
     try {
+      // Debug do corpo da requisição
+      console.log("Body da requisição de criação de widget:", req.body);
+      
       // Esquema de validação sem user_id pois será fornecido pelo usuário autenticado
       const schema = z.object({
         name: z.string().min(3).max(100),
-        greeting: z.string().optional(),
-        avatar_url: z.string().url().optional(),
-        theme_color: z.string().regex(/^#[0-9A-F]{6}$/i).optional(),
-        allowed_domains: z.array(z.string()).optional(),
+        greeting: z.string().optional().default("Olá! Como posso ajudar?"),
+        avatar_url: z.string().url().optional().default("https://ui-avatars.com/api/?name=T&background=6366F1&color=fff"),
+        theme_color: z.string().regex(/^#[0-9A-F]{6}$/i).optional().default("#6366F1"),
+        allowed_domains: z.array(z.string()).optional().default([]),
       });
       
       // Validar os dados enviados pelo cliente
-      const validatedData = schema.parse(req.body);
+      try {
+        var validatedData = schema.parse(req.body);
+        console.log("Dados validados:", validatedData);
+      } catch (validationError) {
+        console.error("Erro de validação:", validationError);
+        throw validationError;
+      }
       
       // Criar objeto com os dados do widget, incluindo o user_id do usuário autenticado
       const widgetData = {

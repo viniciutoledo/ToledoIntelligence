@@ -205,7 +205,7 @@ export default function WidgetsManagement() {
   const createForm = useForm<WidgetFormValues>({
     resolver: zodResolver(widgetFormSchema),
     defaultValues: {
-      name: "",
+      name: "Meu Widget",
       greeting: "Olá! Como posso ajudar?",
       avatar_url: "https://ui-avatars.com/api/?name=T&background=6366F1&color=fff",
       theme_color: "#6366F1",
