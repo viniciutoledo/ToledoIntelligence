@@ -31,6 +31,29 @@ interface LlmFullConfig {
 // Convert fs.readFile to use promises
 const readFile = promisify(fs.readFile);
 
+// Função para limpar e formatar corretamente qualquer API key
+function cleanApiKey(apiKey: string): string {
+  if (!apiKey || typeof apiKey !== 'string') {
+    return '';
+  }
+  
+  // Remover espaços e quebras de linha
+  let cleaned = apiKey.trim();
+  
+  // Remover prefixo "Bearer" se existir
+  if (cleaned.toLowerCase().startsWith('bearer ')) {
+    cleaned = cleaned.substring(7).trim();
+  }
+  
+  // Remover aspas que possam ter sido incluídas
+  cleaned = cleaned.replace(/^["']|["']$/g, '');
+  
+  // Remover espaços extras
+  cleaned = cleaned.trim();
+  
+  return cleaned;
+}
+
 // Get active LLM provider and model name with all configuration options
 export async function getActiveLlmInfo(): Promise<LlmFullConfig> {
   // Try to get active config from database
@@ -45,8 +68,8 @@ export async function getActiveLlmInfo(): Promise<LlmFullConfig> {
   let shouldUseTrained = true;
   
   if (activeConfig) {
-    // If we have a config, use it
-    apiKey = activeConfig.api_key;
+    // If we have a config, use it and clean the API key
+    apiKey = cleanApiKey(activeConfig.api_key);
     modelName = activeConfig.model_name;
     tone = activeConfig.tone as LlmTone || 'normal';
     behaviorInstructions = activeConfig.behavior_instructions || '';
@@ -62,8 +85,11 @@ export async function getActiveLlmInfo(): Promise<LlmFullConfig> {
     // No config, use environment variables and defaults
     if (process.env.OPENAI_API_KEY && !process.env.ANTHROPIC_API_KEY) {
       provider = 'openai';
-      apiKey = process.env.OPENAI_API_KEY || '';
+      apiKey = cleanApiKey(process.env.OPENAI_API_KEY || '');
       modelName = DEFAULT_GPT_MODEL;
+    } else {
+      // Use Anthropic como padrão, mas certifique-se de limpar a chave
+      apiKey = cleanApiKey(apiKey);
     }
   }
   
@@ -71,6 +97,9 @@ export async function getActiveLlmInfo(): Promise<LlmFullConfig> {
     throw new Error('No API key available for LLM');
   }
   
+  console.log(`Usando provider ${provider} com modelo ${modelName}`);
+  
+  // Retornar a configuração completa com a chave API já limpa
   return { 
     provider, 
     modelName, 
@@ -732,20 +761,60 @@ export async function analyzeFile(filePath: string, language: string): Promise<s
       fileContent = truncateText(fileContent, MAX_CONTENT_TOKENS * 3); // aproximadamente
     }
     
-    const { provider, modelName, apiKey } = await getActiveLlmInfo();
+    // Esta linha será removida, já que obtemos as configurações logo abaixo
     
-    // Common prompts for both providers
+    // Obter o tom e outras configurações específicas
+    const config = await getActiveLlmInfo();
+    const { provider, modelName, apiKey, tone, behaviorInstructions } = config;
+    
+    // Configurar estilo de comunicação com base no tom escolhido
+    let toneStyle = '';
+    if (language === 'pt') {
+      switch(tone) {
+        case 'formal':
+          toneStyle = 'Utilize um tom formal e profissional, com vocabulário mais técnico e estruturado.';
+          break;
+        case 'casual':
+          toneStyle = 'Utilize um tom mais descontraído e casual, como uma conversa informal entre colegas.';
+          break;
+        default: // normal
+          toneStyle = 'Utilize um tom equilibrado, nem muito formal nem muito casual.';
+      }
+    } else {
+      switch(tone) {
+        case 'formal':
+          toneStyle = 'Use a formal and professional tone, with more technical and structured vocabulary.';
+          break;
+        case 'casual':
+          toneStyle = 'Use a more relaxed and casual tone, like an informal conversation between colleagues.';
+          break;
+        default: // normal
+          toneStyle = 'Use a balanced tone, neither too formal nor too casual.';
+      }
+    }
+    
+    // Instruções de comportamento personalizadas
+    const customBehavior = behaviorInstructions ? 
+      (language === 'pt' ? `Comportamento específico: ${behaviorInstructions}` : `Specific behavior: ${behaviorInstructions}`) : '';
+    
+    // Common prompts for both providers com instruções para NÃO dizer que não consegue extrair informações
     const systemPrompt = language === 'pt' 
-      ? `Você é um técnico especializado em manutenção de placas de circuito. 
-         Analise o arquivo fornecido e extraia as 3-4 informações MAIS importantes, como códigos de erro, 
-         especificações técnicas ou instruções de manutenção. Mantenha a resposta CONCISA (máximo 
-         3-4 frases) e em linguagem técnica direta. Evite explicações longas e teóricas. 
-         Responda como um técnico falaria com outro técnico. Responda em Português.`
-      : `You are a technician specialized in circuit board maintenance. 
-         Analyze the provided file and extract the 3-4 MOST important pieces of information, such as error codes, 
-         technical specifications, or maintenance instructions. Keep your response CONCISE (maximum 
-         3-4 sentences) and in direct technical language. Avoid lengthy theoretical explanations.
-         Respond as one technician would talk to another. Respond in English.`;
+      ? `Você é um técnico especializado em manutenção de placas de circuito.
+         IMPORTANTE: NÃO diga que "não consegue extrair informações do documento" ou frases semelhantes.
+         Se o documento contiver informações técnicas, faça uma análise técnica CONCISA das 3-4 informações MAIS importantes.
+         Se o documento não for técnico, apenas faça uma breve análise do seu conteúdo principal.
+         Mantenha a resposta EXTREMAMENTE CONCISA (máximo 3-4 frases) e use linguagem técnica direta.
+         Evite explicações longas e teóricas e introduções desnecessárias.
+         ${toneStyle} ${customBehavior}
+         Responda em Português.`
+      : `You are a technician specialized in circuit board maintenance.
+         IMPORTANT: DO NOT say that you "cannot extract information from the document" or similar phrases.
+         If the document contains technical information, provide a CONCISE technical analysis of the 3-4 MOST important pieces.
+         If the document is not technical, just provide a brief analysis of its main content.
+         Keep your response EXTREMELY CONCISE (maximum 3-4 sentences) and use direct technical language.
+         Avoid lengthy theoretical explanations and unnecessary introductions.
+         ${toneStyle} ${customBehavior}
+         Respond in English.`;
 
     const userPrompt = language === 'pt'
       ? `Por favor, analise o conteúdo deste arquivo e extraia informações técnicas relevantes para manutenção de placas de circuito. O conteúdo do arquivo é:\n\n${fileContent}`
