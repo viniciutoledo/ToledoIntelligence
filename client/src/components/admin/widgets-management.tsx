@@ -89,6 +89,7 @@ export default function WidgetsManagement() {
     mutationFn: async (data: WidgetFormValues) => {
       const response = await apiRequest("POST", "/api/widgets", {
         ...data,
+        name: data.name, // Explicitamente incluir o nome
         allowed_domains: allowedDomains
       });
       return response.json();
@@ -104,6 +105,7 @@ export default function WidgetsManagement() {
       });
     },
     onError: (error) => {
+      console.error("Erro ao criar widget:", error);
       toast({
         title: t("Erro ao criar widget"),
         description: error.message || t("Ocorreu um erro ao criar o widget"),
