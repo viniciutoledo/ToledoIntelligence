@@ -88,10 +88,26 @@ function getOpenAIClient(apiKey: string) {
     throw new Error('API key inválida para OpenAI');
   }
   
-  // Remover espaços em branco e caracteres especiais
-  const cleanedApiKey = apiKey.trim();
+  // Limpar e validar a chave da API
+  let cleanedApiKey = apiKey.trim();
   
-  return new OpenAI({ apiKey: cleanedApiKey });
+  // Remover prefixos como "Bearer" ou "sk-" duplicados se existirem
+  if (cleanedApiKey.startsWith('Bearer ')) {
+    cleanedApiKey = cleanedApiKey.substring(7).trim();
+  }
+  
+  // Verificar se a chave da OpenAI tem o formato correto
+  if (cleanedApiKey.startsWith('sk-') && cleanedApiKey.length >= 30) {
+    // Parece uma chave válida, continue
+    return new OpenAI({ apiKey: cleanedApiKey });
+  } else if (cleanedApiKey.length >= 25) {
+    // Não tem o prefixo 'sk-', mas parece longa o suficiente para ser uma chave, continue
+    console.log('Aviso: A chave da API OpenAI não começa com "sk-", mas será usada mesmo assim');
+    return new OpenAI({ apiKey: cleanedApiKey });
+  } else {
+    // Chave muito curta ou claramente inválida
+    throw new Error('API key da OpenAI parece ser inválida (muito curta ou formato incorreto)');
+  }
 }
 
 // Create Anthropic client
@@ -101,10 +117,21 @@ function getAnthropicClient(apiKey: string) {
     throw new Error('API key inválida para Anthropic');
   }
   
-  // Remover espaços em branco e caracteres especiais
-  const cleanedApiKey = apiKey.trim();
+  // Limpar e validar a chave da API
+  let cleanedApiKey = apiKey.trim();
   
-  return new Anthropic({ apiKey: cleanedApiKey });
+  // Remover prefixos como "Bearer" se existirem
+  if (cleanedApiKey.startsWith('Bearer ')) {
+    cleanedApiKey = cleanedApiKey.substring(7).trim();
+  }
+  
+  // Verificar se a chave da Anthropic tem comprimento razoável
+  if (cleanedApiKey.length >= 30) {
+    return new Anthropic({ apiKey: cleanedApiKey });
+  } else {
+    // Chave muito curta ou claramente inválida
+    throw new Error('API key da Anthropic parece ser inválida (muito curta ou formato incorreto)');
+  }
 }
 
 // Verifica se um buffer contém uma imagem válida
