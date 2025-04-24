@@ -2411,12 +2411,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Rota para obter um widget via API key (pública) - usando query parameter
   app.get("/api/widgets/public", async (req, res) => {
     try {
-      const apiKey = req.query.api_key as string;
+      const apiKey = req.query.key as string;
       
       if (!apiKey) {
-        return res.status(401).json({ message: "API key não fornecida" });
+        return res.status(401).json({ message: "API key não fornecida. Use o parâmetro 'key'." });
       }
       
+      console.log(`Buscando widget com API key: ${apiKey}`);
       const widget = await storage.getChatWidgetByApiKey(apiKey);
       
       if (!widget) {
