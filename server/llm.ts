@@ -183,6 +183,12 @@ export async function fetchOpenAIDirectly(endpoint: string, data: any, apiKey: s
       }
     }
     
+    // Validar formato da chave API (aceitar tanto 'sk-' quanto 'sk-proj-')
+    if (!cleanedKey.startsWith('sk-')) {
+      console.error('ALERTA: Chave OpenAI não tem o formato esperado (sk- ou sk-proj-)');
+      throw new Error('Formato de chave API inválido. Deve começar com sk- ou sk-proj-');
+    }
+    
     // Usar concatenação de strings em vez de template literals para evitar problemas com caracteres especiais
     const authHeader = 'Bearer ' + cleanedKey;
     
@@ -227,6 +233,14 @@ function getOpenAIClient(apiKey: string) {
   if (cleanedKey.length < 20) {
     throw new Error('API key da OpenAI parece ser inválida (muito curta)');
   }
+  
+  // Verificar se a chave começa com o formato esperado
+  if (!cleanedKey.startsWith('sk-')) {
+    console.error('AVISO: Chave OpenAI não começa com sk-, formato potencialmente inválido');
+  }
+  
+  // Validar corretamente os novos formatos de chave (sk-proj-) além do formato tradicional (sk-)
+  console.log('Formato da chave OpenAI: ' + (cleanedKey.startsWith('sk-proj-') ? 'Novo formato (sk-proj-)' : 'Formato tradicional'));
   
   // Loga a chave parcialmente mascarada para debug
   const maskedKey = cleanedKey.substring(0, 4) + '...' + cleanedKey.substring(cleanedKey.length - 4);
