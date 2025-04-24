@@ -1,0 +1,111 @@
+# Protocolo de Diagnóstico: Falhas de Inicialização PM660/PM660L/PM660A
+
+## 1. Avaliação Inicial
+- Verificação Visual
+  - Componentes danificados
+  - Sinais de oxidação
+  - Soldas frias
+  - Componentes ausentes
+- Teste de Carregamento USB
+  - Medir consumo de corrente (normal: >100mA)
+  - Verificar LED de notificação
+  - Observar aquecimento anormal
+- Teste de Bateria
+  - Medir tensão da bateria (normal: 3.7V-4.2V)
+  - Verificar conexões
+  - Testar com bateria conhecida
+
+## 2. Análise da Sequência de Boot
+- Etapa 1: High LD Activation
+  - Verificar tensão (normal: 1.8V)
+  - Medir corrente de consumo
+  - Testar capacitores associados
+- Etapa 2: Low LD Activation
+  - Verificar tensão (normal: 1.1V)
+  - Medir consumo
+  - Testar componentes passivos
+- Etapa 3: RAM Power Supply
+  - Verificar tensão (normal: 1.2V)
+  - Medir pontos de teste RAM_VDD
+  - Verificar resistores pull-up/pull-down
+- Etapa 4: CPU Core Voltage
+  - Verificar tensão (normal: 0.9V)
+  - Testar linha de alimentação CPU
+  - Verificar oscilação
+
+## 3. Diagnóstico com Instrumentação
+- Fonte DC
+  - Aplicar 4.2V diretamente
+  - Monitorar consumo durante power key
+  - Verificar flutuações de corrente
+- Multímetro
+  - Medir continuidade em linhas críticas
+  - Verificar resistências
+  - Detectar curtos para GND
+- Osciloscópio
+  - Verificar sinal de clock PMIC
+  - Analisar formas de onda
+  - Medir pulsos de Reset
+
+## 4. Identificação de Falhas Comuns
+- Curto-Circuitos
+  - Linha BOB
+  - VDD_CORE
+  - VBAT para GND
+  - Linhas de RAM
+- Problemas de Componentes
+  - Capacitores inchados
+  - Resistores abertos
+  - Cristais não oscilando
+  - Bobinas danificadas
+- Falhas de Interconexão
+  - Comunicação PM660-PM660L
+  - Linhas I2C
+  - Barramentos de dados
+  - Linhas de Reset
+
+## 5. Estratégias de Reparo
+- Substituição de Componentes
+  - PMIC (PM660/PM660L/PM660A)
+  - Componentes passivos
+  - CPU (último recurso)
+  - Cristais
+- Reballing e Resolda
+  - Resolda PMIC
+  - Reballing CPU
+  - Retrabalho em BGA
+  - Reativação de pads
+- Jumpers e Bypass
+  - Bypass de componentes defeituosos
+  - Jumpers em trilhas interrompidas
+  - Reconstrução de linhas
+  - Derivações alternativas
+
+## 6. Verificação Pós-Reparo
+- Teste Completo de Boot
+  - Verificar inicialização completa
+  - Teste de estabilidade
+  - Monitorar temperatura
+- Medições de Confirmação
+  - Verificar todas as tensões
+  - Medir consumo normal
+  - Testar em diferentes condições
+- Testes de Funcionalidade
+  - Verificar todas as funções
+  - Teste de carga/descarga
+  - Ciclos de energia
+  - Teste de estresse
+
+## 7. Documentação
+- Registro de Medições
+  - Valores antes do reparo
+  - Valores após intervenção
+  - Comparação com referências
+- Componentes Substituídos
+  - Localização na placa
+  - Valores/códigos
+  - Alternativas compatíveis
+- Procedimentos Realizados
+  - Técnicas aplicadas
+  - Ferramentas utilizadas
+  - Tempo de intervenção

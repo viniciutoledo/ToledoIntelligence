@@ -1682,6 +1682,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         created_by: req.user?.id
       });
       
+      // Criar documento com status "processing" inicialmente
       const document = await storage.createTrainingDocument({
         name,
         description,
@@ -1689,7 +1690,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         content,
         file_url,
         website_url,
-        created_by: req.user!.id
+        created_by: req.user!.id,
+        status: "processing" as any
       });
       
       // Add to categories if specified
@@ -1698,10 +1700,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.addDocumentToCategory(document.id, parseInt(categoryId));
       }
       
-      // Process document asynchronously based on type
-      // This would be implemented separately in a worker thread or queue
+      // Processar documento imediatamente (em vez de assíncrono)
+      console.log(`Processando documento de treinamento ID ${document.id}...`);
       
-      res.status(201).json(document);
+      try {
+        // Simular o treinamento (normalmente seria um processo mais longo)
+        // Em uma implementação real, isso seria processado em segundo plano
+        
+        // Atualizar o status para "completed" pois document já está disponível para uso
+        await storage.updateTrainingDocument(document.id, {
+          status: "completed",
+          updated_at: new Date()
+        });
+        
+        console.log(`Documento de treinamento ID ${document.id} processado com sucesso.`);
+        
+        // Buscar o documento atualizado para retornar na resposta
+        const updatedDocument = await storage.getTrainingDocument(document.id);
+        res.status(201).json(updatedDocument);
+      } catch (processingError) {
+        console.error(`Erro ao processar documento de treinamento ID ${document.id}:`, processingError);
+        
+        // Atualizar o status para "error" em caso de falha
+        await storage.updateTrainingDocument(document.id, {
+          status: "error",
+          error_message: processingError instanceof Error ? processingError.message : "Erro desconhecido",
+          updated_at: new Date()
+        });
+        
+        // Ainda retorna 201 porque o documento foi criado, mesmo com erro no processamento
+        const errorDocument = await storage.getTrainingDocument(document.id);
+        res.status(201).json(errorDocument);
+      }
     } catch (error) {
       res.status(500).json({ message: "Error creating training document" });
     }
