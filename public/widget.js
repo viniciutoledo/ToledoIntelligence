@@ -77,7 +77,7 @@
     }
     
     // URL para a página de widget com a chave API
-    widgetIframe.src = `${BASE_URL}/widget-embed?key=${options.apiKey}`;
+    widgetIframe.src = `${BASE_URL}/embed/widget?key=${options.apiKey}`;
     
     document.body.appendChild(widgetIframe);
     
