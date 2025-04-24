@@ -280,14 +280,14 @@ export function EmbeddedChat({ apiKey, initialOpen = false, hideHeader = false }
     supportedFormats: t("widget.supportedFormats", "Formatos suportados: PNG, JPG, PDF (máx 50MB)")
   };
   
-  // Armazenar o query string em um estado para evitar recálculos desnecessários
-  const [searchParams] = useState(() => {
+  // Usar um valor constante para evitar renderizações desnecessárias
+  const searchParams = useMemo(() => {
     try {
       return new URLSearchParams(window.location.search);
     } catch (e) {
       return new URLSearchParams();
     }
-  });
+  }, []);
   
   // Tentar obter o parâmetro hideHeader da URL também
   // Isso permite que funcione tanto por prop quanto por parâmetro de URL

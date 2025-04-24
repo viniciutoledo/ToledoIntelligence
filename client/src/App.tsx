@@ -19,6 +19,7 @@ import CpanelLoginPage from "@/pages/cpanel-login-page";
 import DiagnosticPage from "@/pages/diagnostic-page";
 import WidgetEmbedPage from "@/pages/widget-embed";
 import EmbedPage from "@/pages/embed";
+import WidgetDocsPage from "@/pages/widget-docs";
 
 function Router() {
   return (
@@ -28,7 +29,8 @@ function Router() {
       <Route path="/auth" component={AuthPage} />
       <Route path="/admin-login" component={CpanelLoginPage} />
       
-      {/* Widget embed routes - com suporte a parâmetros */}
+      {/* Widget docs and embed routes */}
+      <Route path="/widget-docs" component={WidgetDocsPage} />
       <Route path="/embed/widget" component={WidgetEmbedPage} />
       <Route path="/embed/:apiKey" component={EmbedPage} />
       <Route path="/embed" component={EmbedPage} />
