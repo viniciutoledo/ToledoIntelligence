@@ -135,6 +135,14 @@ export interface IStorage {
   checkMessageLimit(userId: number): Promise<boolean>;
   resetMessageCounts(): Promise<void>;
   
+  // Knowledge Base management
+  createKnowledgeEntry(entry: InsertKnowledgeBase): Promise<KnowledgeBase>;
+  getKnowledgeEntry(id: number): Promise<KnowledgeBase | undefined>;
+  updateKnowledgeEntry(id: number, data: Partial<KnowledgeBase>): Promise<KnowledgeBase | undefined>;
+  getKnowledgeEntriesBySourceType(sourceType: string, language: string): Promise<KnowledgeBase[]>;
+  getVerifiedKnowledgeEntries(language: string): Promise<KnowledgeBase[]>;
+  findSimilarKnowledge(embedding: number[], language: string, limit?: number): Promise<KnowledgeBase[]>;
+  
   // Chat widgets management
   getChatWidget(id: string): Promise<ChatWidget | undefined>;
   getUserChatWidgets(userId: number): Promise<ChatWidget[]>;
@@ -215,6 +223,7 @@ export class MemStorage implements IStorage {
   private chatWidgets: Map<string, ChatWidget>;
   private widgetChatSessions: Map<number, WidgetChatSession>;
   private widgetChatMessages: Map<number, WidgetChatMessage>;
+  private knowledgeBase: Map<number, KnowledgeBase>;
   
   sessionStore: session.Store;
   
@@ -235,6 +244,7 @@ export class MemStorage implements IStorage {
     supportTicketId: number;
     widgetChatSessionId: number;
     widgetChatMessageId: number;
+    knowledgeBaseId: number;
   };
 
   constructor() {
@@ -256,6 +266,7 @@ export class MemStorage implements IStorage {
     this.chatWidgets = new Map();
     this.widgetChatSessions = new Map();
     this.widgetChatMessages = new Map();
+    this.knowledgeBase = new Map();
     
     this.currentIds = {
       userId: 1,
@@ -273,7 +284,8 @@ export class MemStorage implements IStorage {
       analysisReportId: 1,
       supportTicketId: 1,
       widgetChatSessionId: 1,
-      widgetChatMessageId: 1
+      widgetChatMessageId: 1,
+      knowledgeBaseId: 1
     };
     
     this.sessionStore = new MemoryStore({
