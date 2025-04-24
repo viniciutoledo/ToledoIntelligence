@@ -2353,11 +2353,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const base64Data = fileData.toString('base64');
           
           // Armazenar os dados da imagem e o tipo MIME
-          updateData.avatar_data = base64Data;
-          updateData.avatar_mime_type = req.file.mimetype;
+          // Usando os campos definidos no schema
+          updateData = {
+            ...updateData,
+            avatar_data: base64Data,
+            avatar_mime_type: req.file.mimetype,
+            avatar_url: `/api/widgets/${id}/avatar`
+          };
           
-          // Configurar a URL para a rota que servirá a imagem
-          updateData.avatar_url = `/api/widgets/${id}/avatar`;
+          // A URL já foi configurada no objeto updateData acima
           
           // Remover arquivo temporário do sistema de arquivos
           await fs.promises.unlink(filePath);

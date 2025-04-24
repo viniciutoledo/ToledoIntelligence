@@ -324,6 +324,8 @@ export const insertChatWidgetSchema = createInsertSchema(chatWidgets)
     name: true,
     greeting: true,
     avatar_url: true,
+    avatar_data: true,
+    avatar_mime_type: true,
     theme_color: true,
     allowed_domains: true,
   })
@@ -346,6 +348,8 @@ export const insertWidgetChatSessionSchema = createInsertSchema(widgetChatSessio
   visitor_id: true,
   language: true,
   referrer_url: true,
+}).extend({
+  client_info: z.string().optional(),
 });
 
 // Widget chat messages table
