@@ -2797,21 +2797,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
           behaviorInstructions: string,
           shouldUseTrained: boolean
         } = {
-          provider: llmConfig.api_key.includes("sk-ant-") ? "anthropic" : "openai",
+          // Detecção de provider baseada no nome do modelo, não na chave API
+          provider: llmConfig.model_name.startsWith('gpt') ? 'openai' : 'anthropic',
           modelName: llmConfig.model_name,
-          apiKey: cleanApiKey(llmConfig.api_key),
+          apiKey: llmConfig.api_key, // Usa a chave API diretamente, limpeza será feita nas funções getXXXClient
           tone: (llmConfig.tone as 'formal' | 'normal' | 'casual') || 'normal',
           behaviorInstructions: llmConfig.behavior_instructions || '',
           shouldUseTrained: llmConfig.should_use_training !== false
         };
         
         // Processar a mensagem com o LLM
+        // Converter mensagens para o formato que a função processTextMessage espera
+        const messageHistory = messages.filter(m => m.id !== userMessage.id).map(m => ({
+          content: m.content || "",
+          role: m.is_user ? "user" : "assistant"
+        }));
+        
         aiResponse = await processTextMessage(
           content,
-          messages.filter(m => m.id !== userMessage.id).map(m => ({
-            content: m.content || "",
-            role: m.is_user ? "user" : "assistant"
-          })),
+          messageHistory,
           formattedLlmConfig
         );
       } catch (error) {
@@ -3150,13 +3154,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
             shouldUseTrained: llmConfig.should_use_training !== false
           };
 
+          // Converter mensagens para o formato que a função processTextMessage espera
+          const messageHistory = messages.filter(m => m.id !== userMessage.id).map(m => ({
+            content: m.content || "",
+            role: m.is_user ? "user" : "assistant"
+          }));
+          
           // Processar a mensagem com o LLM
           aiResponse = await processTextMessage(
             content,
-            messages.filter(m => m.id !== userMessage.id).map(m => ({
-              content: m.content || "",
-              role: m.is_user ? "user" : "assistant"
-            })),
+            messageHistory,
             formattedLlmConfig
           );
         } catch (error) {
