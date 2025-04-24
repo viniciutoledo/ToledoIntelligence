@@ -424,23 +424,26 @@ export async function analyzeImage(imagePath: string, language: string): Promise
 // Processa mensagens de texto com LLM
 export async function processTextMessage(
   message: string, 
-  history: Array<{ content: string, role: 'user' | 'assistant' }> = [],
-  llmConfig?: LlmFullConfig
+  language: string,
+  llmConfig?: LlmFullConfig,
+  history: Array<{ content: string, role: 'user' | 'assistant' }> = []
 ): Promise<string> {
   try {
     // Se não recebemos configuração LLM, tentar obter configurações padrão
     const config = llmConfig || await getActiveLlmInfo();
     const { provider, modelName, apiKey, tone, behaviorInstructions, shouldUseTrained } = config;
     
-    // Detectar idioma a partir do histórico ou mensagem atual
-    const language = detectLanguage(message, history);
+    // Se o idioma não foi especificado, detectamos a partir do histórico ou mensagem atual
+    const detectedLanguage = language || detectLanguage(message, history);
+    // Usar o idioma detectado daqui para frente
+    const effectiveLanguage = detectedLanguage;
     
     // Truncar mensagem para evitar exceder limites de token
     const truncatedMessage = truncateText(message);
     
     // Configurar estilo de comunicação com base no tom escolhido
     let toneStyle = '';
-    if (language === 'pt') {
+    if (effectiveLanguage === 'pt') {
       switch(tone) {
         case 'formal':
           toneStyle = 'Utilize um tom formal e profissional, com vocabulário mais técnico e estruturado.';
@@ -466,10 +469,10 @@ export async function processTextMessage(
     
     // Instruções de comportamento personalizadas
     const customBehavior = behaviorInstructions ? 
-      (language === 'pt' ? `Comportamento específico: ${behaviorInstructions}` : `Specific behavior: ${behaviorInstructions}`) : '';
+      (effectiveLanguage === 'pt' ? `Comportamento específico: ${behaviorInstructions}` : `Specific behavior: ${behaviorInstructions}`) : '';
     
     // Prompts para os diferentes provedores
-    const systemPrompt = language === 'pt' 
+    const systemPrompt = effectiveLanguage === 'pt' 
       ? `Você é um assistente técnico especializado em manutenção de placas de circuito. 
          Forneça respostas precisas, úteis e CONCISAS (máximo 3-4 frases) relacionadas à manutenção, 
          diagnóstico e reparo de placas de circuito. Use linguagem simples e direta, como 
@@ -552,8 +555,9 @@ export async function processTextMessage(
   } catch (error) {
     console.error('Erro ao processar mensagem de texto:', error);
     // Tenta detectar o idioma da mensagem original para fornecer resposta de erro adequada
-    const language = detectLanguage(message, history);
-    return language === 'pt'
+    // Aqui usamos o idioma passado como parâmetro, ou detectamos a partir da mensagem
+    const errorLanguage = language || detectLanguage(message, history);
+    return errorLanguage === 'pt'
       ? 'Ocorreu um erro ao processar sua mensagem. Por favor, tente novamente mais tarde.'
       : 'An error occurred while processing your message. Please try again later.';
   }
