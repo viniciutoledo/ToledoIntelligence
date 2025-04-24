@@ -1,4 +1,4 @@
-import { createContext, useState, useContext, ReactNode } from "react";
+import { createContext, useState, useContext, ReactNode, useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -48,6 +48,7 @@ interface WidgetChatContextType {
   isLoadingSessions: boolean;
   isLoadingMessages: boolean;
   isInitialized: boolean;
+  isProcessingLlm: boolean; // Estado para animação de carregamento da LLM
   createSessionMutation: any;
   endSessionMutation: any;
   sendMessageMutation: any;
@@ -71,6 +72,8 @@ export function WidgetChatProvider({
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
   const [visitorId, setVisitorId] = useState<string>("");
+  const [isProcessingLlm, setIsProcessingLlm] = useState(false);
+  const sessionCreationAttempted = useRef<boolean>(false);
   
   // Buscar informações do widget usando a nova rota dedicada para embed
   const { 
@@ -218,6 +221,11 @@ export function WidgetChatProvider({
       isUser?: boolean;
     }) => {
       try {
+        // Ativar a animação de carregamento da LLM se for mensagem do usuário
+        if (isUser) {
+          setIsProcessingLlm(true);
+        }
+        
         console.log("Enviando mensagem para sessão:", sessionId, "conteúdo:", content);
         // Verificar se a sessão está ativa antes de tentar enviar a mensagem
         const sessionCheckRes = await fetch(`/api/widgets/sessions/active?widget_id=${widget?.id}&visitor_id=${visitorId}`);
@@ -254,10 +262,14 @@ export function WidgetChatProvider({
         return res.json();
       } catch (error) {
         console.error("Erro ao enviar mensagem:", error);
+        setIsProcessingLlm(false); // Desativar animação em caso de erro
         throw error;
       }
     },
     onSuccess: (data) => {
+      // Desativar a animação de carregamento da LLM quando receber a resposta
+      setIsProcessingLlm(false);
+      
       // As mensagens (usuário e IA) vêm juntas na resposta
       const { userMessage, aiMessage } = data;
       
@@ -392,6 +404,7 @@ export function WidgetChatProvider({
         isLoadingSessions,
         isLoadingMessages,
         isInitialized,
+        isProcessingLlm,
         createSessionMutation,
         endSessionMutation,
         sendMessageMutation,
