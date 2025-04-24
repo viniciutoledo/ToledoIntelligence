@@ -247,31 +247,48 @@ export function ChatInterface({
                     <span className="text-sm">{msg.content || "Imagem"}</span>
                   </div>
                   <div className="image-container relative">
-                    {msg.file_url ? (
+                    {(msg.file_url || msg.fileBase64) ? (
                       <div className="image-wrapper relative">
                         {/* 
-                          As URLs blob devem ser preservadas exatamente como estão
-                          Para outras URLs, usamos a função de otimização
+                          Sistema de fallback em cascata:
+                          1. Primeiro, tenta URL blob se for uma prévia
+                          2. Se não for blob, tenta a URL otimizada do arquivo
+                          3. Se falhar na onError, tentará o base64 (se disponível)
                         */}
                         <img
-                          src={msg.file_url.startsWith('blob:') ? msg.file_url : getOptimizedFileUrl(msg.file_url)}
+                          src={msg.file_url?.startsWith('blob:') 
+                            ? msg.file_url 
+                            : (msg.file_url ? getOptimizedFileUrl(msg.file_url) : (msg.fileBase64 || ''))}
                           alt="Imagem enviada"
                           loading="lazy"
                           decoding="async"
                           crossOrigin="anonymous"
                           referrerPolicy="no-referrer"
                           className="rounded-md max-h-60 max-w-full object-contain"
+                          data-has-base64={msg.fileBase64 ? 'true' : 'false'}
                           onLoad={(e) => {
                             // Marcar imagem como carregada com sucesso
-                            console.log("Imagem carregada com sucesso:", e.currentTarget.src);
+                            console.log("Imagem carregada com sucesso:", 
+                              e.currentTarget.src.substring(0, 30) + "...");
                             e.currentTarget.dataset.loaded = "true";
                           }}
                           onError={(e) => {
                             // Evitar ciclos infinitos de tentativas
                             if (e.currentTarget.dataset.retryCount) {
                               const retryCount = parseInt(e.currentTarget.dataset.retryCount);
+                              
+                              // Se chegamos a várias tentativas, usamos o base64 antes de desistir
                               if (retryCount >= 3) {
-                                console.error("Muitas tentativas falhas para carregar imagem:", msg.file_url);
+                                // Se temos base64 disponível e ainda não o usamos, tente-o como fallback final
+                                if (msg.fileBase64 && !e.currentTarget.src.startsWith('data:')) {
+                                  console.log("Usando base64 como último recurso após múltiplas falhas");
+                                  e.currentTarget.src = msg.fileBase64;
+                                  e.currentTarget.dataset.retryCount = "0"; // Resetar contagem para base64
+                                  return;
+                                }
+                                
+                                console.error("Muitas tentativas falhas para carregar imagem:", 
+                                  msg.file_url ? msg.file_url.substring(0, 30) + "..." : "sem url");
                                 e.currentTarget.src = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxMDAiIGZpbGw9IiNmMGYwZjAiLz4KPHRleHQgeD0iNTAiIHk9IjUwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTIiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGFsaWdubWVudC1iYXNlbGluZT0ibWlkZGxlIiBmaWxsPSIjOTk5Ij5FcnJvIGFvIGNhcnJlZ2FyIGltYWdlbTwvdGV4dD4KPC9zdmc+";
                                 e.currentTarget.alt = "Erro ao carregar imagem";
                                 e.currentTarget.style.width = "100%";
@@ -283,11 +300,20 @@ export function ChatInterface({
                               e.currentTarget.dataset.retryCount = "1";
                             }
                             
-                            console.error("Erro ao carregar imagem:", msg.file_url);
+                            console.error("Erro ao carregar imagem:", 
+                              msg.file_url ? msg.file_url.substring(0, 30) + "..." : "sem url");
+                            
                             // Referência para código mais limpo
                             const imgElement = e.currentTarget;
                             
                             try {
+                              // Verificar primeiro se temos base64 disponível - solução imediata
+                              if (msg.fileBase64 && !e.currentTarget.src.startsWith('data:')) {
+                                console.log("Usando base64 como primeira alternativa após falha");
+                                imgElement.src = msg.fileBase64;
+                                return;
+                              }
+                              
                               // Se for blob URL, não tente consertar - é uma prévia temporária e pode ter sido revogada
                               if (msg.file_url && !msg.file_url.startsWith('blob:')) {
                                 // Remove caracteres especiais que possam estar causando problemas
@@ -298,6 +324,12 @@ export function ChatInterface({
                                   imgElement.src = getOptimizedFileUrl(cleanUrl);
                                   return;
                                 }
+                                
+                                // Adiciona cache buster para evitar cache
+                                const cacheBuster = `?t=${Date.now()}`;
+                                console.log("Tentando com cache buster");
+                                imgElement.src = getOptimizedFileUrl(msg.file_url) + cacheBuster;
+                                return;
                                 
                                 // Tentativa com URL absoluta
                                 if (!cleanUrl.startsWith('http') && !cleanUrl.startsWith('/')) {
@@ -321,7 +353,8 @@ export function ChatInterface({
                                 }
                               } else if (msg.file_url && msg.file_url.startsWith('blob:')) {
                                 // Para URLs blob, não temos muitas opções além de mostrar o erro
-                                console.warn("URL blob não pôde ser carregada, pode ter sido revogada:", msg.file_url);
+                                console.warn("URL blob não pôde ser carregada, pode ter sido revogada:", 
+                                  msg.file_url.substring(0, 30) + "...");
                               }
                             } catch (error) {
                               console.error("Erro ao tentar recuperar imagem:", error);
