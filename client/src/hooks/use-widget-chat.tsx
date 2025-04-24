@@ -360,10 +360,60 @@ export function WidgetChatProvider({
   const uploadFileMutation = useMutation({
     mutationFn: async (formData: FormData) => {
       try {
+        // Ativar a animação de carregamento da LLM
+        setIsProcessingLlm(true);
+        
         // Verificar se a sessão está ativa
         if (!currentSession || currentSession.ended_at) {
           throw new Error("Sessão encerrada. Por favor, atualize a página para iniciar uma nova sessão.");
         }
+        
+        const sessionId = formData.get("session_id");
+        const file = formData.get("file") as File;
+        
+        if (!sessionId || !file) {
+          throw new Error("Sessão ou arquivo inválidos");
+        }
+        
+        console.log("Enviando arquivo para sessão:", sessionId, "nome:", file.name);
+        
+        // Se for imagem, podemos mostrar preview imediatamente
+        const isImage = file.type.startsWith("image/");
+        const messageType = isImage ? "image" : "file";
+        
+        // Criar url temporária para preview da imagem
+        let previewUrl = null;
+        if (isImage) {
+          try {
+            // Criar uma URL temporária para exibir a imagem antes do upload ser finalizado
+            previewUrl = URL.createObjectURL(file);
+          } catch (e) {
+            console.error("Erro ao criar preview da imagem:", e);
+          }
+        }
+        
+        // Criar mensagem prévia
+        const previewUserMessage: WidgetChatMessage = {
+          id: Date.now(), // ID temporário
+          session_id: Number(sessionId),
+          message_type: messageType,
+          content: file.name,
+          file_url: previewUrl, // Usamos a URL temporária para dar feedback visual
+          created_at: new Date().toISOString(),
+          is_user: true
+        };
+        
+        // Obter mensagens atuais
+        const currentMessages = queryClient.getQueryData<WidgetChatMessage[]>([
+          "/api/widgets-messages", 
+          Number(sessionId)
+        ]) || [];
+        
+        // Atualizar cache com a mensagem do usuário imediatamente
+        queryClient.setQueryData(
+          ["/api/widgets-messages", Number(sessionId)],
+          [...currentMessages, previewUserMessage]
+        );
         
         const res = await fetch("/api/widgets/upload", {
           method: "POST",
@@ -391,14 +441,59 @@ export function WidgetChatProvider({
           throw new Error(errorData.message || "Erro ao enviar arquivo");
         }
         
+        // Se a URL de preview temporária foi criada, revogar para liberar memória
+        if (previewUrl) {
+          try {
+            URL.revokeObjectURL(previewUrl);
+          } catch (e) {
+            console.error("Erro ao liberar preview da imagem:", e);
+          }
+        }
+        
         return res.json();
       } catch (error) {
         console.error("Erro no upload de arquivo:", error);
         throw error;
+      } finally {
+        // Garantir que a animação de carregamento seja desativada mesmo em caso de erro
+        setIsProcessingLlm(false);
       }
     },
-    onSuccess: () => {
-      // Invalidar para obter as novas mensagens
+    onSuccess: (data) => {
+      // As mensagens (usuário e IA) vêm juntas na resposta
+      const { userMessage, aiMessage } = data;
+      
+      // Obter mensagens atuais
+      const currentMessages = queryClient.getQueryData<WidgetChatMessage[]>([
+        "/api/widgets-messages", 
+        currentSession?.id
+      ]) || [];
+      
+      // Filtrar mensagens temporárias (criadas pelo preview)
+      const filteredMessages = currentMessages.filter(msg => 
+        // Manter mensagens que não sejam do usuário ou que tenham ID menor que timestamp (não temporárias)
+        !msg.is_user || msg.id < 1000000000000
+      );
+      
+      const newMessages = [...filteredMessages];
+      
+      // Adicionar mensagem oficial do usuário se presente na resposta
+      if (userMessage) {
+        newMessages.push(userMessage);
+      }
+      
+      // Adicionar mensagem da IA se presente na resposta  
+      if (aiMessage) {
+        newMessages.push(aiMessage);
+      }
+      
+      // Atualizar o cache com as novas mensagens
+      queryClient.setQueryData(
+        ["/api/widgets-messages", currentSession?.id],
+        newMessages
+      );
+      
+      // Forçar uma revalidação para buscar quaisquer outras mensagens
       setTimeout(() => {
         queryClient.invalidateQueries({
           queryKey: ["/api/widgets-messages", currentSession?.id]
