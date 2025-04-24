@@ -13,6 +13,10 @@ interface LlmConfig {
   created_by: number;
   // API key is masked on the client
   api_key?: string;
+  // Personalization settings
+  tone: "formal" | "normal" | "casual";
+  behavior_instructions: string | null;
+  should_use_training: boolean;
 }
 
 interface LlmData {
@@ -29,6 +33,9 @@ interface TestConnectionParams {
 interface SaveConfigParams {
   model_name: string;
   api_key: string;
+  tone: "formal" | "normal" | "casual";
+  behavior_instructions: string | null;
+  should_use_training: boolean;
 }
 
 type LlmContextType = {

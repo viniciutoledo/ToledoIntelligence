@@ -1564,7 +1564,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             preview: content.substring(0, 100) + (content.length > 100 ? "..." : "")
           });
           
-          botResponse = await processTextMessage(content, session.language);
+          // Obter configuração do LLM para processamento de texto
+          const llmConfig = await getActiveLlmInfo();
+          botResponse = await processTextMessage(content, session.language, llmConfig);
           
           console.log("Resposta da LLM recebida para mensagem de texto:", {
             length: botResponse.length,
