@@ -2,7 +2,7 @@ import express, { type Express, Request, Response, NextFunction } from "express"
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated, checkRole } from "./auth";
-import { analyzeImage, analyzeFile, processTextMessage, testConnection, getActiveLlmInfo } from "./llm";
+import { analyzeImage, analyzeFile, processTextMessage, testConnection, getActiveLlmInfo, cleanApiKey } from "./llm";
 import { logAction } from "./audit";
 import multer from "multer";
 import crypto from "crypto";
@@ -2799,7 +2799,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } = {
           provider: llmConfig.api_key.includes("sk-ant-") ? "anthropic" : "openai",
           modelName: llmConfig.model_name,
-          apiKey: llmConfig.api_key,
+          apiKey: cleanApiKey(llmConfig.api_key),
           tone: (llmConfig.tone as 'formal' | 'normal' | 'casual') || 'normal',
           behaviorInstructions: llmConfig.behavior_instructions || '',
           shouldUseTrained: llmConfig.should_use_training !== false
@@ -3144,7 +3144,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           } = {
             provider: llmConfig.api_key.includes("sk-ant-") ? "anthropic" : "openai",
             modelName: llmConfig.model_name,
-            apiKey: llmConfig.api_key,
+            apiKey: cleanApiKey(llmConfig.api_key),
             tone: (llmConfig.tone as 'formal' | 'normal' | 'casual') || 'normal',
             behaviorInstructions: llmConfig.behavior_instructions || '',
             shouldUseTrained: llmConfig.should_use_training !== false

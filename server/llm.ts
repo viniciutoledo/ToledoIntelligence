@@ -32,7 +32,7 @@ interface LlmFullConfig {
 const readFile = promisify(fs.readFile);
 
 // Função para limpar e formatar corretamente qualquer API key
-function cleanApiKey(apiKey: string): string {
+export function cleanApiKey(apiKey: string): string {
   if (!apiKey || typeof apiKey !== 'string') {
     return '';
   }
@@ -304,7 +304,8 @@ export async function analyzeImage(imagePath: string, language: string): Promise
     
     try {
       const config = await getActiveLlmInfo();
-      const { provider, modelName, apiKey, tone, behaviorInstructions } = config;
+      const { provider, modelName, apiKey: rawApiKey, tone, behaviorInstructions } = config;
+      const apiKey = cleanApiKey(rawApiKey);
       
       // Obter conteúdo do buffer novamente para detectar formato real
       const imageBuffer = Buffer.from(base64Image, 'base64');
@@ -479,7 +480,8 @@ export async function processTextMessage(
   try {
     // Se não recebemos configuração LLM, tentar obter configurações padrão
     const config = llmConfig || await getActiveLlmInfo();
-    const { provider, modelName, apiKey, tone, behaviorInstructions, shouldUseTrained } = config;
+    const { provider, modelName, apiKey: rawApiKey, tone, behaviorInstructions, shouldUseTrained } = config;
+    const apiKey = cleanApiKey(rawApiKey);
     
     // Se o idioma não foi especificado, detectamos a partir do histórico ou mensagem atual
     const detectedLanguage = language || detectLanguage(message, history);
@@ -663,7 +665,7 @@ function estimateTokens(text: string): number {
   return Math.ceil(text.length / 3);
 }
 
-export async function analyzeFile(filePath: string, language: string): Promise<string> {
+export async function analyzeFile(filePath: string, language: string, llmConfig?: LlmFullConfig): Promise<string> {
   try {
     // Verificar se é um arquivo PDF
     const extension = path.extname(filePath).toLowerCase();
@@ -756,8 +758,9 @@ export async function analyzeFile(filePath: string, language: string): Promise<s
     // Esta linha será removida, já que obtemos as configurações logo abaixo
     
     // Obter o tom e outras configurações específicas
-    const config = await getActiveLlmInfo();
-    const { provider, modelName, apiKey, tone, behaviorInstructions } = config;
+    const config = llmConfig || await getActiveLlmInfo();
+    const { provider, modelName, apiKey: rawApiKey, tone, behaviorInstructions } = config;
+    const apiKey = cleanApiKey(rawApiKey);
     
     // Configurar estilo de comunicação com base no tom escolhido
     let toneStyle = '';
@@ -886,13 +889,15 @@ function getMediaType(filePath: string): string {
 
 // Test connection to either Anthropic or OpenAI API
 export async function testConnection(apiKey: string, modelName: string): Promise<boolean> {
+  // Limpar a API key antes de usar
+  const cleanedApiKey = cleanApiKey(apiKey);
   try {
     // Determine provider based on model name
     const isOpenAI = modelName.startsWith('gpt');
     
     if (isOpenAI) {
       // Test OpenAI connection
-      const openai = new OpenAI({ apiKey });
+      const openai = new OpenAI({ apiKey: cleanedApiKey });
       
       // Simple test request
       const response = await openai.chat.completions.create({
@@ -910,7 +915,7 @@ export async function testConnection(apiKey: string, modelName: string): Promise
     } else {
       // Test Anthropic connection
       const anthropic = new Anthropic({
-        apiKey
+        apiKey: cleanedApiKey
       });
       
       // Simple test request
