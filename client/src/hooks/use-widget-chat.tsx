@@ -487,12 +487,13 @@ export function WidgetChatProvider({
       setIsProcessingLlm(false);
       
       // Obter os dados da resposta
-      const { userMessage, aiMessage, fileUrl, tempId, previewUrl } = data;
+      const { userMessage, aiMessage, fileUrl, fileBase64, tempId, previewUrl } = data;
       
       console.log("Recebendo resposta do upload:", {
         userMsg: userMessage?.id, 
         fileUrl, 
-        userMsgFileUrl: userMessage?.file_url
+        userMsgFileUrl: userMessage?.file_url,
+        hasFileBase64: !!fileBase64
       });
       
       // Obter mensagens atuais
@@ -533,6 +534,13 @@ export function WidgetChatProvider({
         }
       }
       
+      // Adicionar base64 à mensagem final se estiver disponível na resposta
+      if (finalUserMessage && fileBase64 && finalUserMessage.message_type === "image") {
+        // Adicionar dados base64 como fallback para imagens
+        finalUserMessage.fileBase64 = fileBase64;
+        console.log("Dados base64 adicionados à mensagem para fallback");
+      }
+      
       // Adicionar mensagem oficial do usuário se presente na resposta
       // substituindo a versão temporária
       if (finalUserMessage) {
@@ -544,7 +552,8 @@ export function WidgetChatProvider({
         console.log("Mensagem final do usuário:", {
           id: finalUserMessage.id,
           tipo: finalUserMessage.message_type,
-          url: finalUserMessage.file_url
+          url: finalUserMessage.file_url,
+          hasBase64Backup: !!finalUserMessage.fileBase64
         });
       }
       
