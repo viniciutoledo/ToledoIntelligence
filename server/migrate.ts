@@ -21,6 +21,18 @@ export async function syncDatabaseSchema() {
     
     // Esta função aplica automaticamente as alterações de esquema
     await pool.query(`
+      -- Verificar e adicionar colunas na tabela llm_configs
+      DO $$ 
+      BEGIN
+        BEGIN
+          ALTER TABLE llm_configs ADD COLUMN IF NOT EXISTS tone TEXT CHECK (tone IN ('formal', 'normal', 'casual')) DEFAULT 'normal' NOT NULL;
+          ALTER TABLE llm_configs ADD COLUMN IF NOT EXISTS behavior_instructions TEXT;
+          ALTER TABLE llm_configs ADD COLUMN IF NOT EXISTS should_use_training BOOLEAN DEFAULT TRUE NOT NULL;
+        EXCEPTION
+          WHEN duplicate_column THEN NULL;
+        END;
+      END $$;
+      
       -- Criar tabela plan_features se não existir
       CREATE TABLE IF NOT EXISTS plan_features (
         id SERIAL PRIMARY KEY,
