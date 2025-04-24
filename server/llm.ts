@@ -98,22 +98,28 @@ let openaiClient: OpenAI | null = null;
 // Adaptador que usa chamadas fetch diretamente em vez de usar o cliente OpenAI
 // para evitar os problemas persistentes com headers HTTP
 async function fetchOpenAIDirectly(endpoint: string, data: any, apiKey: string) {
-  console.log(`Chamando OpenAI diretamente via fetch: ${endpoint}`);
+  console.log('Chamando OpenAI diretamente via fetch: ' + endpoint);
   
   // Garantir que a chave está limpa
   if (typeof apiKey !== 'string') {
     throw new Error('API key inválida para OpenAI: não é uma string');
   }
   
-  // Limpar a chave de qualquer prefixo ou caracteres indesejados
-  const cleanedKey = apiKey.replace(/^bearer\s+/i, '').replace(/["']/g, '').trim();
+  // Limpar a chave de qualquer prefixo, caracteres indesejados ou não imprimíveis
+  const cleanedKey = apiKey.replace(/^bearer\s+/i, '')
+                           .replace(/["']/g, '')
+                           .replace(/[^\x20-\x7E]/g, '') // Remove caracteres não imprimíveis ASCII
+                           .trim();
   
   try {
-    const response = await fetch(`https://api.openai.com/v1/${endpoint}`, {
+    // Usar concatenação de strings em vez de template literals para evitar problemas com caracteres especiais
+    const authHeader = 'Bearer ' + cleanedKey;
+    
+    const response = await fetch('https://api.openai.com/v1/' + endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${cleanedKey}`,
+        'Authorization': authHeader,
         'OpenAI-Beta': 'assistants=v1'
       },
       body: JSON.stringify(data)
@@ -153,7 +159,7 @@ function getOpenAIClient(apiKey: string) {
   
   // Loga a chave parcialmente mascarada para debug
   const maskedKey = cleanedKey.substring(0, 4) + '...' + cleanedKey.substring(cleanedKey.length - 4);
-  console.log(`Inicializando OpenAI com chave: ${maskedKey}`);
+  console.log('Inicializando OpenAI com chave: ' + maskedKey.substring(0, 4) + '...' + maskedKey.substring(maskedKey.length - 4));
   
   // Criar um cliente falso que usa fetch diretamente
   try {
@@ -183,18 +189,24 @@ let anthropicClient: Anthropic | null = null;
 // Adaptador que usa chamadas fetch diretamente em vez de usar o cliente Anthropic
 // para evitar os problemas persistentes com headers HTTP
 async function fetchAnthropicDirectly(endpoint: string, data: any, apiKey: string) {
-  console.log(`Chamando Anthropic diretamente via fetch: ${endpoint}`);
+  console.log('Chamando Anthropic diretamente via fetch: ' + endpoint);
   
   // Garantir que a chave está limpa
   if (typeof apiKey !== 'string') {
     throw new Error('API key inválida para Anthropic: não é uma string');
   }
   
-  // Limpar a chave de qualquer prefixo ou caracteres indesejados
-  const cleanedKey = apiKey.replace(/^bearer\s+/i, '').replace(/["']/g, '').trim();
+  // Limpar a chave de qualquer prefixo, caracteres indesejados ou não imprimíveis
+  const cleanedKey = apiKey.replace(/^bearer\s+/i, '')
+                           .replace(/["']/g, '')
+                           .replace(/[^\x20-\x7E]/g, '') // Remove caracteres não imprimíveis ASCII
+                           .trim();
   
   try {
-    const response = await fetch(`https://api.anthropic.com/v1/${endpoint}`, {
+    // Construir URL e cabeçalhos usando concatenação para evitar problemas com caracteres Unicode
+    const url = 'https://api.anthropic.com/v1/' + endpoint;
+    
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -238,7 +250,7 @@ function getAnthropicClient(apiKey: string) {
   
   // Loga a chave parcialmente mascarada para debug
   const maskedKey = cleanedKey.substring(0, 4) + '...' + cleanedKey.substring(cleanedKey.length - 4);
-  console.log(`Inicializando Anthropic com chave: ${maskedKey}`);
+  console.log('Inicializando Anthropic com chave: ' + maskedKey.substring(0, 4) + '...' + maskedKey.substring(maskedKey.length - 4));
   
   try {
     // Verificando se a chave já está no formato correto para o Anthropic
@@ -1042,46 +1054,72 @@ function getMediaType(filePath: string): string {
 // Test connection to either Anthropic or OpenAI API
 export async function testConnection(apiKey: string, modelName: string): Promise<boolean> {
   try {
+    console.log(`Testando conexão com modelo ${modelName} usando API key [parcial]: ${apiKey.substring(0, 4)}...`);
+    
     // Determine provider based on model name
     const isOpenAI = modelName.startsWith('gpt');
     
     if (isOpenAI) {
-      // Test OpenAI connection
-      const openai = getOpenAIClient(apiKey);
-      
-      // Simple test request
-      const response = await openai.chat.completions.create({
-        model: modelName,
-        max_tokens: 10,
-        messages: [
-          {
-            role: 'user',
-            content: 'Test connection'
-          }
-        ]
-      });
-      
-      return !!response.choices[0].message.content;
+      try {
+        // Test OpenAI connection usando fetch direto
+        console.log(`Testando conexão OpenAI com modelo: ${modelName}`);
+        const openai = getOpenAIClient(apiKey);
+        
+        // Simple test request
+        const response = await openai.chat.completions.create({
+          model: modelName,
+          max_tokens: 10,
+          messages: [
+            {
+              role: 'user',
+              content: 'Test connection'
+            }
+          ]
+        });
+        
+        if (response.choices && response.choices[0] && response.choices[0].message) {
+          console.log('Conexão com OpenAI bem-sucedida');
+          return true;
+        }
+        
+        console.log('Resposta inválida do OpenAI no teste de conexão');
+        return false;
+      } catch (openaiError) {
+        console.error('Erro testando conexão com OpenAI:', openaiError);
+        return false;
+      }
     } else {
-      // Test Anthropic connection
-      const anthropic = getAnthropicClient(apiKey);
-      
-      // Simple test request
-      const response = await anthropic.messages.create({
-        model: modelName,
-        max_tokens: 10,
-        messages: [
-          {
-            role: 'user',
-            content: 'Test connection'
-          }
-        ]
-      });
-      
-      return response.content.length > 0;
+      try {
+        // Test Anthropic connection usando fetch direto
+        console.log(`Testando conexão Anthropic com modelo: ${modelName}`);
+        const anthropic = getAnthropicClient(apiKey);
+        
+        // Simple test request
+        const response = await anthropic.messages.create({
+          model: modelName,
+          max_tokens: 10,
+          messages: [
+            {
+              role: 'user',
+              content: 'Test connection'
+            }
+          ]
+        });
+        
+        if (response.content && response.content.length > 0) {
+          console.log('Conexão com Anthropic bem-sucedida');
+          return true;
+        }
+        
+        console.log('Resposta inválida do Anthropic no teste de conexão');
+        return false;
+      } catch (anthropicError) {
+        console.error('Erro testando conexão com Anthropic:', anthropicError);
+        return false;
+      }
     }
   } catch (error) {
-    console.error('Error testing LLM connection:', error);
+    console.error('Erro geral testando conexão LLM:', error);
     return false;
   }
 }
