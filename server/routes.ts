@@ -3167,10 +3167,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let aiResponse = "";
       if (isImage) {
         try {
-          const llmConfig = await storage.getActiveLlmConfig();
-          if (llmConfig) {
-            aiResponse = await analyzeImage(file.path, llmConfig.language || 'pt');
-          }
+          // Usar a linguagem da sessão do widget em vez de tentar obter do llmConfig
+          // que não tem essa propriedade
+          aiResponse = await analyzeImage(file.path, session.language);
         } catch (error) {
           console.error("Erro ao analisar imagem:", error);
           aiResponse = "Desculpe, não foi possível analisar essa imagem.";
@@ -3178,9 +3177,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         // Se não é imagem, verificar se é um tipo de arquivo que pode ser analisado
         try {
-          const llmConfig = await storage.getActiveLlmConfig();
-          if (llmConfig && (file.mimetype === 'application/pdf' || file.mimetype === 'text/plain')) {
-            aiResponse = await analyzeFile(file.path, llmConfig.language || 'pt');
+          if (file.mimetype === 'application/pdf' || file.mimetype === 'text/plain') {
+            // Usar a linguagem da sessão do widget em vez de tentar obter do llmConfig
+            aiResponse = await analyzeFile(file.path, session.language);
           } else {
             aiResponse = "Recebi seu arquivo. Como posso ajudar com ele?";
           }
