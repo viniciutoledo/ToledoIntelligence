@@ -280,27 +280,19 @@ export function EmbeddedChat({ apiKey, initialOpen = false, hideHeader = false }
     supportedFormats: t("widget.supportedFormats", "Formatos suportados: PNG, JPG, PDF (máx 50MB)")
   };
   
-  // Usar um valor constante para evitar renderizações desnecessárias
-  const searchParams = useMemo(() => {
-    try {
-      return new URLSearchParams(window.location.search);
-    } catch (e) {
-      return new URLSearchParams();
-    }
-  }, []);
-  
-  // Tentar obter o parâmetro hideHeader da URL também
-  // Isso permite que funcione tanto por prop quanto por parâmetro de URL
-  const shouldHideHeader = useMemo(() => {
+  // Obtendo os parâmetros da URL e calculando se o header deve ser ocultado - tudo de uma vez para evitar problemas com hooks
+  const shouldHideHeader = (() => {
+    // Se prop hideHeader é true, já retornamos true
     if (hideHeader) return true;
     
-    // Verificar parâmetro na URL armazenado no estado
+    // Caso contrário, verificamos o parâmetro na URL
     try {
-      return searchParams.get('hideHeader') === 'true';
+      const params = new URLSearchParams(window.location.search);
+      return params.get('hideHeader') === 'true';
     } catch (e) {
       return false;
     }
-  }, [hideHeader, searchParams]);
+  })();
 
   return (
     <div 

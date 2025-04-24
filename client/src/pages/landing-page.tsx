@@ -114,8 +114,7 @@ export default function LandingPage() {
             {/* Links para Widget */}
             <div className="hidden md:flex items-center gap-4 mr-2">
               <a 
-                href="/widget-docs" 
-                target="_blank" 
+                href="/widget-embed-example.html" 
                 className="text-gray-300 hover:text-white transition-colors text-sm"
               >
                 {language === "pt" ? "Documentação Widget" : "Widget Documentation"}

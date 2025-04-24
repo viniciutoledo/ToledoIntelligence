@@ -35,14 +35,53 @@ app.use((req, res, next) => {
   next();
 });
 
-// Rota especial para servir o widget-inline-demo.html com os headers corretos
+// Rotas especiais para servir documentação do widget diretamente
 app.get('/widget-demo', (req, res) => {
-  // Definir cabeçalhos para permitir incorporação
-  res.setHeader('Content-Security-Policy', "frame-ancestors 'self' *");
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  
-  // Redirecionar para a página de demonstração do widget inline
   res.redirect('/widget-inline-demo.html');
+});
+
+app.get('/widget-docs', (req, res) => {
+  res.redirect('/widget-embed-example.html');
+});
+
+// Rota específica para o arquivo HTML de demonstração do widget
+app.get('/widget-embed-example.html', (req, res) => {
+  const path = require('path');
+  const fs = require('fs');
+  const filePath = path.join(process.cwd(), 'public', 'widget-embed-example.html');
+  
+  fs.readFile(filePath, 'utf8', (err, data) => {
+    if (err) {
+      return res.status(404).send('Documentação não encontrada');
+    }
+    
+    // Definir cabeçalhos para permitir incorporação
+    res.setHeader('Content-Type', 'text/html');
+    res.setHeader('Content-Security-Policy', "frame-ancestors 'self' *");
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    
+    res.send(data);
+  });
+});
+
+// Rota específica para o arquivo HTML de demonstração do widget inline
+app.get('/widget-inline-demo.html', (req, res) => {
+  const path = require('path');
+  const fs = require('fs');
+  const filePath = path.join(process.cwd(), 'public', 'widget-inline-demo.html');
+  
+  fs.readFile(filePath, 'utf8', (err, data) => {
+    if (err) {
+      return res.status(404).send('Demonstração não encontrada');
+    }
+    
+    // Definir cabeçalhos para permitir incorporação
+    res.setHeader('Content-Type', 'text/html');
+    res.setHeader('Content-Security-Policy', "frame-ancestors 'self' *");
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    
+    res.send(data);
+  });
 });
 
 // Middleware de logging
