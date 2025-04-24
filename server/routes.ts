@@ -3568,20 +3568,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedUserMessage = await storage.getWidgetChatMessage(userMessage.id);
       const updatedAiMessage = await storage.getWidgetChatMessage(aiMessage.id);
       
-      // Garantir que a URL do arquivo esteja correta na resposta
-      if (updatedUserMessage && messageType === 'image') {
-        // Verificar se a URL do arquivo está correta
-        if (!updatedUserMessage.file_url || !updatedUserMessage.file_url.startsWith('/uploads/')) {
-          updatedUserMessage.file_url = fileUrl;
-        }
-      }
+      // Criar objeto completo da mensagem do usuário para resposta
+      // Assegurando que a URL do arquivo esteja sempre presente e correta
+      const userMessageWithFile = {
+        ...(updatedUserMessage || userMessage),
+        // Garantir que a URL do arquivo seja preservada, mesmo se o banco 
+        // retornar uma URL diferente ou nula
+        file_url: fileUrl
+      };
+      
+      // Certificar-se de que a mensagem AI tenha os campos corretos
+      const aiMessageFinal = updatedAiMessage || aiMessage;
+      
+      // Log para debug
+      console.log("Enviando resposta com mensagem do usuário:", {
+        id: userMessageWithFile.id,
+        tipo: userMessageWithFile.message_type,
+        url: userMessageWithFile.file_url
+      });
       
       res.json({
-        userMessage: updatedUserMessage || {
-          ...userMessage,
-          file_url: fileUrl // Garantir que o file_url esteja sempre presente
-        },
-        aiMessage: updatedAiMessage || aiMessage
+        userMessage: userMessageWithFile,
+        aiMessage: aiMessageFinal,
+        // Incluir URL do arquivo separadamente para garantir
+        fileUrl: fileUrl
       });
     } catch (error) {
       console.error("Erro ao fazer upload de arquivo para widget:", error);

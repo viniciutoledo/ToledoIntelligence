@@ -486,7 +486,13 @@ export function WidgetChatProvider({
       setIsProcessingLlm(false);
       
       // Obter os dados da resposta
-      const { userMessage, aiMessage, tempId, previewUrl } = data;
+      const { userMessage, aiMessage, fileUrl, tempId, previewUrl } = data;
+      
+      console.log("Recebendo resposta do upload:", {
+        userMsg: userMessage?.id, 
+        fileUrl, 
+        userMsgFileUrl: userMessage?.file_url
+      });
       
       // Obter mensagens atuais
       const currentMessages = queryClient.getQueryData<WidgetChatMessage[]>([
@@ -504,24 +510,41 @@ export function WidgetChatProvider({
       
       const newMessages = [...filteredMessages];
       
-      // Verificar se a mensagem do usuário enviada pelo servidor tem URL de arquivo
-      if (userMessage && userMessage.message_type === "image") {
-        // Se o servidor não retornou URL do arquivo, manter a prévia que já temos
-        if (!userMessage.file_url) {
+      // Criar uma cópia da mensagem para garantir que podemos modificá-la
+      const finalUserMessage = userMessage ? { ...userMessage } : null;
+      
+      // Se o servidor enviou um fileUrl separado, é garantido que é o correto
+      if (finalUserMessage && fileUrl) {
+        // Usar a URL do arquivo retornada pelo servidor, que é garantida como correta
+        finalUserMessage.file_url = fileUrl;
+        console.log("URL do arquivo definida a partir de fileUrl:", fileUrl);
+      } 
+      // Se não temos fileUrl separado mas temos userMessage com message_type image
+      else if (finalUserMessage && finalUserMessage.message_type === "image") {
+        // Se o servidor não enviou URL do arquivo ou enviou uma URL vazia, usar a URL da prévia
+        if (!finalUserMessage.file_url || finalUserMessage.file_url === '') {
+          // Procurar a mensagem de prévia
           const previewMessage = filteredMessages.find(msg => msg.id === tempId);
           if (previewMessage && previewMessage.file_url) {
-            userMessage.file_url = previewMessage.file_url;
+            finalUserMessage.file_url = previewMessage.file_url;
+            console.log("URL do arquivo definida a partir de previewMessage:", previewMessage.file_url);
           }
         }
       }
       
       // Adicionar mensagem oficial do usuário se presente na resposta
       // substituindo a versão temporária
-      if (userMessage) {
+      if (finalUserMessage) {
         // Remover qualquer mensagem temporária correspondente
         const actualMessages = newMessages.filter(msg => msg.id !== tempId);
         newMessages.length = 0; // Esvaziar o array
-        newMessages.push(...actualMessages, userMessage);
+        newMessages.push(...actualMessages, finalUserMessage);
+        
+        console.log("Mensagem final do usuário:", {
+          id: finalUserMessage.id,
+          tipo: finalUserMessage.message_type,
+          url: finalUserMessage.file_url
+        });
       }
       
       // Adicionar mensagem da IA se presente na resposta  
