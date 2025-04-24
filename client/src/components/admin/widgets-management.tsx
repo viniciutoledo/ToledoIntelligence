@@ -87,11 +87,16 @@ export default function WidgetsManagement() {
   // Mutations para criar, atualizar e excluir widgets
   const createWidgetMutation = useMutation({
     mutationFn: async (data: WidgetFormValues) => {
-      const response = await apiRequest("POST", "/api/widgets", {
-        ...data,
-        name: data.name, // Explicitamente incluir o nome
+      // Garantir que todos os campos necessários estejam presentes
+      const widgetData = {
+        name: data.name,
+        greeting: data.greeting || "Olá! Como posso ajudar?",
+        avatar_url: data.avatar_url || "https://ui-avatars.com/api/?name=T&background=6366F1&color=fff",
+        theme_color: data.theme_color || "#6366F1",
         allowed_domains: allowedDomains
-      });
+      };
+      
+      const response = await apiRequest("POST", "/api/widgets", widgetData);
       return response.json();
     },
     onSuccess: () => {

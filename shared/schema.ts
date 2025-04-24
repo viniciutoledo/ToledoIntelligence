@@ -311,14 +311,15 @@ export const chatWidgets = pgTable("chat_widgets", {
   updated_at: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const insertChatWidgetSchema = createInsertSchema(chatWidgets).pick({
-  user_id: true,
-  name: true,
-  greeting: true,
-  avatar_url: true,
-  theme_color: true,
-  allowed_domains: true,
-});
+export const insertChatWidgetSchema = createInsertSchema(chatWidgets)
+  .pick({
+    name: true,
+    greeting: true,
+    avatar_url: true,
+    theme_color: true,
+    allowed_domains: true,
+  })
+  .partial(); // Torna todos os campos opcionais para mais flexibilidade
 
 // Widget chat sessions table
 export const widgetChatSessions = pgTable("widget_chat_sessions", {
