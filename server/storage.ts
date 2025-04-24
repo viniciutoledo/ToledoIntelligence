@@ -12,7 +12,8 @@ import {
   supportTickets, SupportTicket, InsertSupportTicket,
   chatWidgets, ChatWidget, InsertChatWidget,
   widgetChatSessions, WidgetChatSession, InsertWidgetChatSession,
-  widgetChatMessages, WidgetChatMessage, InsertWidgetChatMessage
+  widgetChatMessages, WidgetChatMessage, InsertWidgetChatMessage,
+  knowledgeBase, KnowledgeBase, InsertKnowledgeBase
 } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
@@ -261,6 +262,7 @@ export class MemStorage implements IStorage {
     this.documentCategories = new Map();
     this.planFeatures = new Map();
     this.planPricing = new Map();
+    this.knowledgeBase = new Map();
     this.analysisReports = new Map();
     this.supportTickets = new Map();
     this.chatWidgets = new Map();
@@ -1241,6 +1243,104 @@ export class MemStorage implements IStorage {
         this.updateUser(userId, { message_count: 0 });
       }
     }
+  }
+  
+  // Knowledge Base management
+  async createKnowledgeEntry(entry: InsertKnowledgeBase): Promise<KnowledgeBase> {
+    const id = this.currentIds.knowledgeBaseId++;
+    const now = new Date();
+    
+    const knowledgeEntry: KnowledgeBase = {
+      ...entry,
+      id,
+      created_at: now
+    };
+    
+    this.knowledgeBase.set(id, knowledgeEntry);
+    return knowledgeEntry;
+  }
+  
+  async getKnowledgeEntry(id: number): Promise<KnowledgeBase | undefined> {
+    return this.knowledgeBase.get(id);
+  }
+  
+  async updateKnowledgeEntry(id: number, data: Partial<KnowledgeBase>): Promise<KnowledgeBase | undefined> {
+    const entry = this.knowledgeBase.get(id);
+    if (!entry) return undefined;
+    
+    const updatedEntry = {
+      ...entry,
+      ...data
+    };
+    
+    this.knowledgeBase.set(id, updatedEntry);
+    return updatedEntry;
+  }
+  
+  async getKnowledgeEntriesBySourceType(sourceType: string, language: string): Promise<KnowledgeBase[]> {
+    return Array.from(this.knowledgeBase.values())
+      .filter(entry => entry.source_type === sourceType && entry.language === language);
+  }
+  
+  async getVerifiedKnowledgeEntries(language: string): Promise<KnowledgeBase[]> {
+    return Array.from(this.knowledgeBase.values())
+      .filter(entry => entry.is_verified && entry.language === language);
+  }
+  
+  async findSimilarKnowledge(embedding: number[], language: string, limit: number = 5): Promise<KnowledgeBase[]> {
+    // Em uma implementação em memória, não temos busca por similaridade de vetores eficiente
+    // Retornamos apenas entradas verificadas filtradas por idioma
+    // Em uma implementação real, você usaria Cosine Similarity com os vetores de embedding
+    return this.getVerifiedKnowledgeEntries(language).slice(0, limit);
+  }
+  
+  // Knowledge Base management
+  async createKnowledgeEntry(entry: InsertKnowledgeBase): Promise<KnowledgeBase> {
+    const id = this.currentIds.knowledgeBaseId++;
+    const now = new Date();
+    
+    const knowledgeEntry: KnowledgeBase = {
+      ...entry,
+      id,
+      created_at: now,
+    };
+    
+    this.knowledgeBase.set(id, knowledgeEntry);
+    return knowledgeEntry;
+  }
+  
+  async getKnowledgeEntry(id: number): Promise<KnowledgeBase | undefined> {
+    return this.knowledgeBase.get(id);
+  }
+  
+  async updateKnowledgeEntry(id: number, data: Partial<KnowledgeBase>): Promise<KnowledgeBase | undefined> {
+    const entry = this.knowledgeBase.get(id);
+    if (!entry) return undefined;
+    
+    const updatedEntry = {
+      ...entry,
+      ...data
+    };
+    
+    this.knowledgeBase.set(id, updatedEntry);
+    return updatedEntry;
+  }
+  
+  async getKnowledgeEntriesBySourceType(sourceType: string, language: string): Promise<KnowledgeBase[]> {
+    return Array.from(this.knowledgeBase.values())
+      .filter(entry => entry.source_type === sourceType && entry.language === language);
+  }
+  
+  async getVerifiedKnowledgeEntries(language: string): Promise<KnowledgeBase[]> {
+    return Array.from(this.knowledgeBase.values())
+      .filter(entry => entry.is_verified && entry.language === language);
+  }
+  
+  async findSimilarKnowledge(embedding: number[], language: string, limit: number = 5): Promise<KnowledgeBase[]> {
+    // Em uma implementação em memória, não temos busca por similaridade de vetores eficiente
+    // Retornamos apenas entradas verificadas filtradas por idioma
+    // Em uma implementação real, você usaria Cosine Similarity com os vetores de embedding
+    return this.getVerifiedKnowledgeEntries(language).slice(0, limit);
   }
 }
 
