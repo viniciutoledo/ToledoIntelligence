@@ -36,9 +36,9 @@ import { ChatWidget } from "@shared/schema";
 // Schema para validação do formulário
 const widgetFormSchema = z.object({
   name: z.string().min(3, "Nome deve ter pelo menos 3 caracteres").max(100, "Nome não pode ter mais de 100 caracteres"),
-  description: z.string().nullable().optional(),
-  welcome_message: z.string().nullable().optional(),
-  theme_color: z.string().regex(/^#[0-9A-F]{6}$/i, "Cor deve estar no formato hexadecimal (ex: #6366F1)").optional(),
+  greeting: z.string().min(1, "Mensagem de boas-vindas é obrigatória"),
+  avatar_url: z.string().url("URL de avatar inválida").default("https://ui-avatars.com/api/?name=T&background=6366F1&color=fff"),
+  theme_color: z.string().regex(/^#[0-9A-F]{6}$/i, "Cor deve estar no formato hexadecimal (ex: #6366F1)").default("#6366F1"),
   allowed_domains: z.array(z.string()).optional()
 });
 
@@ -193,8 +193,8 @@ export default function WidgetsManagement() {
     resolver: zodResolver(widgetFormSchema),
     defaultValues: {
       name: "",
-      description: "",
-      welcome_message: "Olá! Como posso ajudar?",
+      greeting: "Olá! Como posso ajudar?",
+      avatar_url: "https://ui-avatars.com/api/?name=T&background=6366F1&color=fff",
       theme_color: "#6366F1",
       allowed_domains: []
     }
@@ -205,8 +205,8 @@ export default function WidgetsManagement() {
     resolver: zodResolver(widgetFormSchema),
     defaultValues: {
       name: "",
-      description: "",
-      welcome_message: "",
+      greeting: "",
+      avatar_url: "",
       theme_color: "#6366F1",
       allowed_domains: []
     }
@@ -217,8 +217,8 @@ export default function WidgetsManagement() {
     if (selectedWidget) {
       editForm.reset({
         name: selectedWidget.name,
-        description: selectedWidget.description || "",
-        welcome_message: selectedWidget.welcome_message || "",
+        greeting: selectedWidget.greeting,
+        avatar_url: selectedWidget.avatar_url,
         theme_color: selectedWidget.theme_color || "#6366F1",
       });
       
@@ -426,16 +426,19 @@ export default function WidgetsManagement() {
                   
                   <FormField
                     control={createForm.control}
-                    name="description"
+                    name="avatar_url"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t("Descrição")} ({t("opcional")})</FormLabel>
+                        <FormLabel>{t("URL do Avatar")}</FormLabel>
                         <FormControl>
-                          <Textarea 
-                            placeholder={t("Uma descrição breve sobre o propósito deste widget")} 
+                          <Input 
+                            placeholder="https://ui-avatars.com/api/?name=T&background=6366F1&color=fff" 
                             {...field} 
                           />
                         </FormControl>
+                        <FormDescription>
+                          {t("URL da imagem que será exibida como avatar do chat.")}
+                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -443,7 +446,7 @@ export default function WidgetsManagement() {
                   
                   <FormField
                     control={createForm.control}
-                    name="welcome_message"
+                    name="greeting"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t("Mensagem de boas-vindas")}</FormLabel>
@@ -603,17 +606,20 @@ export default function WidgetsManagement() {
                     
                     <FormField
                       control={editForm.control}
-                      name="description"
+                      name="avatar_url"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>{t("Descrição")} ({t("opcional")})</FormLabel>
+                          <FormLabel>{t("URL do Avatar")}</FormLabel>
                           <FormControl>
-                            <Textarea 
-                              placeholder={t("Uma descrição breve sobre o propósito deste widget")} 
+                            <Input 
+                              placeholder="https://ui-avatars.com/api/?name=T&background=6366F1&color=fff" 
                               {...field} 
                               value={field.value || ""}
                             />
                           </FormControl>
+                          <FormDescription>
+                            {t("URL da imagem que será exibida como avatar do chat.")}
+                          </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -621,7 +627,7 @@ export default function WidgetsManagement() {
                     
                     <FormField
                       control={editForm.control}
-                      name="welcome_message"
+                      name="greeting"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>{t("Mensagem de boas-vindas")}</FormLabel>
