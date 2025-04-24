@@ -151,6 +151,7 @@ export interface IStorage {
   getAllWidgetChatSessions(): Promise<WidgetChatSession[]>;
   createWidgetChatSession(session: InsertWidgetChatSession): Promise<WidgetChatSession>;
   endWidgetChatSession(id: number): Promise<WidgetChatSession | undefined>;
+  getActiveWidgetSession(widgetId: string, visitorId: string): Promise<WidgetChatSession | undefined>;
   
   // Widget chat messages
   getWidgetChatMessage(id: number): Promise<WidgetChatMessage | undefined>;

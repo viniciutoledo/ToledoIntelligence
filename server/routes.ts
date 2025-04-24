@@ -2654,7 +2654,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.createWidgetChatMessage({
           session_id: session.id,
           content: widget.greeting,
-          is_from_ai: true
+          is_user: false
         });
       }
       
@@ -2720,7 +2720,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userMessage = await storage.createWidgetChatMessage({
         session_id: parseInt(id),
         content,
-        is_from_ai: false
+        is_user: true
       });
       
       // Obter configuração LLM ativa
@@ -2756,7 +2756,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const aiMessage = await storage.createWidgetChatMessage({
         session_id: parseInt(id),
         content: aiResponse,
-        is_from_ai: true
+        is_user: false
       });
       
       // Incrementar contagem de mensagens para o usuário
