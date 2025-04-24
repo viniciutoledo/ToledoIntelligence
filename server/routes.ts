@@ -1690,8 +1690,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         content,
         file_url,
         website_url,
-        created_by: req.user!.id,
-        status: "processing" as any
+        created_by: req.user!.id
       });
       
       // Add to categories if specified

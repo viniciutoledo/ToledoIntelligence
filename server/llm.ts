@@ -83,12 +83,28 @@ async function getActiveLlmInfo(): Promise<LlmFullConfig> {
 
 // Create OpenAI client
 function getOpenAIClient(apiKey: string) {
-  return new OpenAI({ apiKey });
+  // Verificar se a apiKey é válida e está corretamente formatada
+  if (!apiKey || typeof apiKey !== 'string' || apiKey.trim() === '') {
+    throw new Error('API key inválida para OpenAI');
+  }
+  
+  // Remover espaços em branco e caracteres especiais
+  const cleanedApiKey = apiKey.trim();
+  
+  return new OpenAI({ apiKey: cleanedApiKey });
 }
 
 // Create Anthropic client
 function getAnthropicClient(apiKey: string) {
-  return new Anthropic({ apiKey });
+  // Verificar se a apiKey é válida e está corretamente formatada
+  if (!apiKey || typeof apiKey !== 'string' || apiKey.trim() === '') {
+    throw new Error('API key inválida para Anthropic');
+  }
+  
+  // Remover espaços em branco e caracteres especiais
+  const cleanedApiKey = apiKey.trim();
+  
+  return new Anthropic({ apiKey: cleanedApiKey });
 }
 
 // Verifica se um buffer contém uma imagem válida
