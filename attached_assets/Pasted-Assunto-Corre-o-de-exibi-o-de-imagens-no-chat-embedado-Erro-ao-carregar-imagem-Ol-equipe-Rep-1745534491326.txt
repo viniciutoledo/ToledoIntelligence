@@ -1,0 +1,65 @@
+Assunto: Correção de exibição de imagens no chat embedado (Erro ao carregar imagem)
+
+Olá, equipe Replit!
+
+Estou usando este iframe para incorporar o widget de chat ToledoIA dentro da minha plataforma:
+
+html
+Copiar
+Editar
+<iframe
+  src="https://78b6c428-6872-4f02-bee4-43bf0c6ebdd6-00-30zctyog4xkw1.picard.replit.dev/embed?url=https%3A%2F%2F78b6c428-6872-4f02-bee4-43bf0c6ebdd6-00-30zctyog4xkw1.picard.replit.dev%2Fembed%2Fwidget%3Fkey%3D7b1e783a-5abb-4269-af75-0ca4a0129dd2"
+  style="width:100%; height:100%; border:0;"
+  sandbox="allow-scripts allow-same-origin"
+  allow="clipboard-write; autoplay;"
+></iframe>
+Mas quando o usuário faz upload de uma imagem, o chat:
+
+Recarrega (repeat da última mensagem de texto)
+
+Exibe “Erro ao carregar imagem”
+
+Nunca mostra a imagem
+
+A IA chega a “ler” e interpretar o upload, mas o front-end não consegue renderizar o <img> corretamente.
+
+O que precisa ser ajustado:
+
+Servidor de arquivos estáticos
+
+Exponha a pasta de uploads (por ex. ./uploads) via express.static('/uploads') sem redirecionamentos, garantindo que GET https://…/uploads/arquivo.png retorne 200 e sem erros de CORS.
+
+Endpoint de upload
+
+Deve responder com { url: 'https://seu-domínio/uploads/nome-do-arquivo.png' } (mesmo host/origem do widget).
+
+Configuração do iframe
+
+Mantenha sandbox="allow-scripts allow-same-origin" para que o <img> carregue sob a mesma origem.
+
+Não use target="_blank" nem code que faça window.open ou location.href no clique do chat.
+
+Renderização no cliente
+
+No componente React que exibe mensagens com arquivo, substitua qualquer lógica de reload por:
+
+jsx
+Copiar
+Editar
+<img
+  src={message.attachment.url}
+  alt="anexo"
+  style={{ maxWidth: '100%' }}
+  onError={e => {
+    e.target.replaceWith(document.createTextNode('Erro ao carregar imagem'))
+  }}
+/>
+Não dispare window.location.reload() ou similar ao receber o arquivo.
+
+Teste final
+
+Abra diretamente https://…/uploads/arquivo.png no browser e confirme que a imagem aparece.
+
+Envie a imagem pelo chat e verifique que ela seja exibida inline, sem recarregar a página ou abrir nova aba.
+
+Por favor, ajustem o servidor e o front-end conforme acima e me retornem o snippet HTML/CSS/JS atualizado para que o chat embedado carregue uploads de imagem corretamente.

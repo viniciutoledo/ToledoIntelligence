@@ -4,7 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Paperclip, Image, Send, Loader2, X } from "lucide-react";
-import { ReliableImage } from "./reliable-image";
+import { SimpleImage } from "./simple-image";
 
 // Função utilitária para otimizar URLs de arquivos
 function getOptimizedFileUrl(fileUrl: string | null): string {
@@ -186,7 +186,7 @@ export function ChatInterface({
       <div className="px-4 py-3 border-b flex items-center">
         <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 mr-3">
           {avatar?.image_url ? (
-            <ReliableImage
+            <SimpleImage
               src={avatar.image_url}
               alt={avatar.name || "Avatar"}
               className="h-10 w-10 rounded-full object-cover"
@@ -224,7 +224,7 @@ export function ChatInterface({
                 <User className="h-4 w-4" />
               ) : (
                 avatar?.image_url ? (
-                  <ReliableImage
+                  <SimpleImage
                     src={avatar.image_url}
                     alt={avatar.name || "Avatar"}
                     className="h-8 w-8 rounded-full object-cover"
@@ -251,13 +251,11 @@ export function ChatInterface({
                   <div className="image-container relative">
                     {(msg.file_url || msg.fileBase64) ? (
                       <div className="image-wrapper relative">
-                        {/* Usando componente ReliableImage para melhor exibição das imagens */}
-                        <ReliableImage 
+                        {/* Usando componente SimpleImage para melhor exibição das imagens */}
+                        <SimpleImage 
                           src={msg.file_url}
-                          base64Data={msg.fileBase64}
                           alt="Imagem enviada" 
                           className="rounded-md max-h-60 max-w-full object-contain"
-                          messageId={msg.id}
                         />
                       </div>
                     ) : (
@@ -304,7 +302,7 @@ export function ChatInterface({
           <div className="flex items-start">
             <div className="h-8 w-8 rounded-full flex items-center justify-center bg-primary-100 text-primary-600 mr-2 mt-1">
               {avatar?.image_url ? (
-                <ReliableImage
+                <SimpleImage
                   src={avatar.image_url}
                   alt={avatar.name || "Avatar"}
                   className="h-8 w-8 rounded-full object-cover"
