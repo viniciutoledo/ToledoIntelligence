@@ -68,8 +68,8 @@ export async function getActiveLlmInfo(): Promise<LlmFullConfig> {
   let shouldUseTrained = true;
   
   if (activeConfig) {
-    // If we have a config, use it and clean the API key
-    apiKey = cleanApiKey(activeConfig.api_key);
+    // If we have a config, use it directly without cleaning the API key
+    apiKey = activeConfig.api_key;
     modelName = activeConfig.model_name;
     tone = activeConfig.tone as LlmTone || 'normal';
     behaviorInstructions = activeConfig.behavior_instructions || '';
@@ -85,11 +85,11 @@ export async function getActiveLlmInfo(): Promise<LlmFullConfig> {
     // No config, use environment variables and defaults
     if (process.env.OPENAI_API_KEY && !process.env.ANTHROPIC_API_KEY) {
       provider = 'openai';
-      apiKey = cleanApiKey(process.env.OPENAI_API_KEY || '');
+      apiKey = process.env.OPENAI_API_KEY || '';
       modelName = DEFAULT_GPT_MODEL;
     } else {
-      // Use Anthropic como padrão, mas certifique-se de limpar a chave
-      apiKey = cleanApiKey(apiKey);
+      // Use Anthropic como padrão, usar a chave diretamente
+      apiKey = process.env.ANTHROPIC_API_KEY || '';
     }
   }
   

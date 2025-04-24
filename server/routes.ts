@@ -3142,9 +3142,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             behaviorInstructions: string,
             shouldUseTrained: boolean
           } = {
-            provider: llmConfig.api_key.includes("sk-ant-") ? "anthropic" : "openai",
+            provider: llmConfig.model_name.startsWith('gpt') ? "openai" : "anthropic",
             modelName: llmConfig.model_name,
-            apiKey: cleanApiKey(llmConfig.api_key),
+            apiKey: llmConfig.api_key,
             tone: (llmConfig.tone as 'formal' | 'normal' | 'casual') || 'normal',
             behaviorInstructions: llmConfig.behavior_instructions || '',
             shouldUseTrained: llmConfig.should_use_training !== false
