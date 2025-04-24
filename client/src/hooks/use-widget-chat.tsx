@@ -227,21 +227,30 @@ export function WidgetChatProvider({
         }
         
         console.log("Enviando mensagem para sessão:", sessionId, "conteúdo:", content);
-        // Verificar se a sessão está ativa antes de tentar enviar a mensagem
-        const sessionCheckRes = await fetch(`/api/widgets/sessions/active?widget_id=${widget?.id}&visitor_id=${visitorId}`);
         
-        if (!sessionCheckRes.ok) {
-          if (sessionCheckRes.status === 404) {
-            throw new Error("Sessão não encontrada ou expirada. Tente reiniciar o chat.");
-          }
-          throw new Error("Erro ao verificar sessão");
-        }
-        
-        const activeSession = await sessionCheckRes.json();
-        
-        // Se a sessão está encerrada, criar uma nova
-        if (activeSession.ended_at) {
-          throw new Error("Sessão encerrada. Tente reiniciar o chat.");
+        // Adicionar previamente a mensagem do usuário ao cache para feedback imediato
+        if (isUser) {
+          const previewUserMessage: WidgetChatMessage = {
+            id: Date.now(), // ID temporário
+            session_id: sessionId,
+            message_type: messageType,
+            content: content,
+            file_url: null,
+            created_at: new Date().toISOString(),
+            is_user: true
+          };
+          
+          // Obter mensagens atuais
+          const currentMessages = queryClient.getQueryData<WidgetChatMessage[]>([
+            "/api/widgets-messages", 
+            sessionId
+          ]) || [];
+          
+          // Atualizar cache com a mensagem do usuário imediatamente
+          queryClient.setQueryData(
+            ["/api/widgets-messages", sessionId],
+            [...currentMessages, previewUserMessage]
+          );
         }
         
         // Enviar a mensagem
@@ -253,10 +262,22 @@ export function WidgetChatProvider({
         });
         
         if (!res.ok) {
-          if (res.status === 403) {
-            const errorData = await res.json();
-            throw new Error(errorData.message || "Erro ao enviar mensagem");
+          const errorData = await res.json();
+          
+          // Se for erro de sessão encerrada, tentar recriar a sessão
+          if (res.status === 403 && errorData.message === "Sessão encerrada") {
+            console.log("Sessão encerrada, recriando");
+            // Resetar tentativa de criação
+            sessionCreationAttempted.current = false;
+            // Invalidar consulta da sessão para forçar recriação
+            queryClient.invalidateQueries({
+              queryKey: ["/api/widgets/sessions", visitorId, widget?.id]
+            });
+            
+            throw new Error("Sessão expirada. O chat será reiniciado automaticamente.");
           }
+          
+          throw new Error(errorData.message || "Erro ao enviar mensagem");
         }
         
         return res.json();
@@ -273,15 +294,21 @@ export function WidgetChatProvider({
       // As mensagens (usuário e IA) vêm juntas na resposta
       const { userMessage, aiMessage } = data;
       
-      // Adicionar ambas as mensagens à lista
+      // Obter mensagens atuais
       const currentMessages = queryClient.getQueryData<WidgetChatMessage[]>([
         "/api/widgets-messages", 
         currentSession?.id
       ]) || [];
       
-      const newMessages = [...currentMessages];
+      // Filtrar mensagens temporárias (criadas pelo preview)
+      const filteredMessages = currentMessages.filter(msg => 
+        // Manter mensagens que não sejam do usuário ou que tenham ID mais antigo
+        !msg.is_user || msg.id < Date.now() - 10000
+      );
       
-      // Adicionar mensagem do usuário se presente na resposta
+      const newMessages = [...filteredMessages];
+      
+      // Adicionar mensagem oficial do usuário se presente na resposta
       if (userMessage) {
         newMessages.push(userMessage);
       }

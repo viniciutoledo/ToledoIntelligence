@@ -3,7 +3,7 @@ import { useLanguage } from "@/hooks/use-language";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Paperclip, Image, Send, Loader2 } from "lucide-react";
+import { Paperclip, Image, Send, Loader2, X } from "lucide-react";
 
 // Tipos compartilhados
 interface ChatMessage {
@@ -342,9 +342,22 @@ export function ChatInterface({
         </div>
         
         {selectedFile && (
-          <div className="mt-2 ml-1 text-xs bg-primary-50 p-2 rounded-md flex items-center">
-            <Paperclip className="h-3 w-3 mr-1 text-primary" />
-            <span className="text-neutral-700">{selectedFile.name}</span>
+          <div className="mt-2 ml-1 text-xs bg-primary-50 p-2 rounded-md flex items-center justify-between">
+            <div className="flex items-center">
+              <Paperclip className="h-3 w-3 mr-1 text-primary" />
+              <span className="text-neutral-700">{selectedFile.name}</span>
+            </div>
+            <button 
+              onClick={() => {
+                setSelectedFile(null);
+                setFileSelected(false);
+                if (fileInputRef.current) fileInputRef.current.value = "";
+              }}
+              className="ml-2 p-1 hover:bg-red-100 rounded-full"
+              title={t("common.cancel")}
+            >
+              <X className="h-3 w-3 text-red-500" />
+            </button>
           </div>
         )}
         
