@@ -5,6 +5,7 @@ export interface WidgetOptions {
   initialOpen?: boolean;
   width?: number;
   height?: number;
+  returnFullObject?: boolean; // Indica se deve retornar o objeto completo ou apenas o código de script
 }
 
 // Interface para o resultado de generateEmbedCode
