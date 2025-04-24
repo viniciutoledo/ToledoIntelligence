@@ -95,8 +95,45 @@ export async function getActiveLlmInfo(): Promise<LlmFullConfig> {
 let openaiClient: OpenAI | null = null;
 
 // Create OpenAI client
+// Adaptador que usa chamadas fetch diretamente em vez de usar o cliente OpenAI
+// para evitar os problemas persistentes com headers HTTP
+async function fetchOpenAIDirectly(endpoint: string, data: any, apiKey: string) {
+  console.log(`Chamando OpenAI diretamente via fetch: ${endpoint}`);
+  
+  // Garantir que a chave está limpa
+  if (typeof apiKey !== 'string') {
+    throw new Error('API key inválida para OpenAI: não é uma string');
+  }
+  
+  // Limpar a chave de qualquer prefixo ou caracteres indesejados
+  const cleanedKey = apiKey.replace(/^bearer\s+/i, '').replace(/["']/g, '').trim();
+  
+  try {
+    const response = await fetch(`https://api.openai.com/v1/${endpoint}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${cleanedKey}`,
+        'OpenAI-Beta': 'assistants=v1'
+      },
+      body: JSON.stringify(data)
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Erro na resposta da OpenAI:', response.status, errorText);
+      throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Erro ao chamar OpenAI diretamente:', error);
+    throw error;
+  }
+}
+
 function getOpenAIClient(apiKey: string) {
-  // Se já temos uma instância, reutilizar
+  // Usar singleton para reutilizar
   if (openaiClient) {
     return openaiClient;
   }
@@ -107,42 +144,31 @@ function getOpenAIClient(apiKey: string) {
   }
   
   // Remover qualquer prefixo em todas as circunstâncias
-  apiKey = apiKey.replace(/^bearer\s+/i, '').trim();
-  
-  // Remover todas as aspas e espaços extras
-  apiKey = apiKey.replace(/["']/g, '').trim();
+  const cleanedKey = apiKey.replace(/^bearer\s+/i, '').replace(/["']/g, '').trim();
   
   // Verificar comprimento mínimo após limpeza
-  if (apiKey.length < 20) {
+  if (cleanedKey.length < 20) {
     throw new Error('API key da OpenAI parece ser inválida (muito curta)');
   }
   
   // Loga a chave parcialmente mascarada para debug
-  const maskedKey = apiKey.substring(0, 4) + '...' + apiKey.substring(apiKey.length - 4);
+  const maskedKey = cleanedKey.substring(0, 4) + '...' + cleanedKey.substring(cleanedKey.length - 4);
   console.log(`Inicializando OpenAI com chave: ${maskedKey}`);
   
-  // Criar o cliente com a chave limpa
+  // Criar um cliente falso que usa fetch diretamente
   try {
-    // Verificando se a chave já está no formato correto para o OpenAI
-    if (apiKey.startsWith('sk-')) {
-      console.log('Chave OpenAI corretamente formatada');
-    } else {
-      console.log('AVISO: Chave OpenAI não começa com sk-, pode causar problemas');
-    }
+    // Criar um cliente fake que usa nossa implementação de fetch direta
+    openaiClient = {
+      chat: {
+        completions: {
+          create: async (params: any) => {
+            const response = await fetchOpenAIDirectly('chat/completions', params, cleanedKey);
+            return response;
+          }
+        }
+      }
+    } as any;
     
-    // Configuração básica do cliente
-    const config: any = { 
-      apiKey: apiKey,
-      dangerouslyAllowBrowser: false,
-      maxRetries: 3
-    };
-    
-    // Adicionando opção defaultHeaders para evitar adição automática do prefixo Bearer
-    config.defaultHeaders = {
-      "Authorization": `${apiKey}` // Sem Bearer
-    };
-    
-    openaiClient = new OpenAI(config);
     return openaiClient;
   } catch (err) {
     console.error('Erro ao criar cliente OpenAI:', err);
@@ -154,8 +180,45 @@ function getOpenAIClient(apiKey: string) {
 let anthropicClient: Anthropic | null = null;
 
 // Create Anthropic client
+// Adaptador que usa chamadas fetch diretamente em vez de usar o cliente Anthropic
+// para evitar os problemas persistentes com headers HTTP
+async function fetchAnthropicDirectly(endpoint: string, data: any, apiKey: string) {
+  console.log(`Chamando Anthropic diretamente via fetch: ${endpoint}`);
+  
+  // Garantir que a chave está limpa
+  if (typeof apiKey !== 'string') {
+    throw new Error('API key inválida para Anthropic: não é uma string');
+  }
+  
+  // Limpar a chave de qualquer prefixo ou caracteres indesejados
+  const cleanedKey = apiKey.replace(/^bearer\s+/i, '').replace(/["']/g, '').trim();
+  
+  try {
+    const response = await fetch(`https://api.anthropic.com/v1/${endpoint}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': cleanedKey,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify(data)
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Erro na resposta da Anthropic:', response.status, errorText);
+      throw new Error(`Anthropic API error: ${response.status} - ${errorText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Erro ao chamar Anthropic diretamente:', error);
+    throw error;
+  }
+}
+
 function getAnthropicClient(apiKey: string) {
-  // Se já temos uma instância, reutilizar
+  // Usar singleton para reutilizar
   if (anthropicClient) {
     return anthropicClient;
   }
@@ -166,41 +229,42 @@ function getAnthropicClient(apiKey: string) {
   }
   
   // Remover qualquer prefixo em todas as circunstâncias
-  apiKey = apiKey.replace(/^bearer\s+/i, '').trim();
-  
-  // Remover todas as aspas e espaços extras
-  apiKey = apiKey.replace(/["']/g, '').trim();
+  const cleanedKey = apiKey.replace(/^bearer\s+/i, '').replace(/["']/g, '').trim();
   
   // Verificar comprimento mínimo após limpeza
-  if (apiKey.length < 20) {
+  if (cleanedKey.length < 20) {
     throw new Error('API key da Anthropic parece ser inválida (muito curta)');
   }
   
   // Loga a chave parcialmente mascarada para debug
-  const maskedKey = apiKey.substring(0, 4) + '...' + apiKey.substring(apiKey.length - 4);
+  const maskedKey = cleanedKey.substring(0, 4) + '...' + cleanedKey.substring(cleanedKey.length - 4);
   console.log(`Inicializando Anthropic com chave: ${maskedKey}`);
   
-  // Criar o cliente com a chave limpa
   try {
     // Verificando se a chave já está no formato correto para o Anthropic
-    if (apiKey.startsWith('sk-ant-')) {
+    if (cleanedKey.startsWith('sk-ant-')) {
       console.log('Chave Anthropic corretamente formatada');
     } else {
       console.log('AVISO: Chave Anthropic não começa com sk-ant-, pode causar problemas');
     }
     
-    // Configuração básica do cliente
-    const config: any = { 
-      apiKey: apiKey
-    };
+    // Criar um cliente falso que usa fetch diretamente
+    anthropicClient = {
+      messages: {
+        create: async (params: any) => {
+          const response = await fetchAnthropicDirectly('messages', params, cleanedKey);
+          return {
+            content: [
+              {
+                type: 'text',
+                text: response.content
+              }
+            ]
+          };
+        }
+      }
+    } as any;
     
-    // Adicionando opção defaultHeaders para evitar adição automática do prefixo Bearer
-    config.defaultHeaders = {
-      "X-Api-Key": apiKey, // Formato alternativo para Anthropic
-      "Anthropic-Version": "2023-06-01" // Garantir que a versão da API está definida
-    };
-    
-    anthropicClient = new Anthropic(config);
     return anthropicClient;
   } catch (err) {
     console.error('Erro ao criar cliente Anthropic:', err);
@@ -418,16 +482,18 @@ export async function analyzeImage(imagePath: string, language: string): Promise
 
       // Process with appropriate provider with enhanced error handling
       if (provider === 'anthropic') {
-        // Use Anthropic Claude
+        // Use Anthropic Claude with direct fetch approach
         try {
+          console.log(`Analisando imagem com Anthropic: ${modelName}`);
           const anthropic = getAnthropicClient(apiKey);
           
-          // Claude apenas suporta formatos específicos de imagem
+          // Claude suporta formatos específicos de imagem
           const supportedFormats = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
           
           // Para Claude, sempre usar image/jpeg como é mais universalmente compatível
           console.log(`Usando formato image/jpeg para o Claude independente do formato original`);
           
+          // Estruturar dados para a chamada fetch direta para o Anthropic
           const response = await anthropic.messages.create({
             model: modelName,
             max_tokens: 1024,
@@ -444,7 +510,7 @@ export async function analyzeImage(imagePath: string, language: string): Promise
                     type: 'image',
                     source: {
                       type: 'base64',
-                      media_type: "image/jpeg" as "image/jpeg", // Sempre usando JPEG para Claude
+                      media_type: "image/jpeg" as "image/jpeg",
                       data: base64Image
                     }
                   }
@@ -616,7 +682,7 @@ export async function processTextMessage(
         return 'Erro no formato da resposta do modelo.';
       }
     } else {
-      // Use OpenAI
+      // Use OpenAI com fetch direto
       console.log("Processando texto com OpenAI:", {
         model: modelName,
         messageLength: message.length,
@@ -645,13 +711,18 @@ export async function processTextMessage(
       // o modelo mais recente da OpenAI é "gpt-4o" que foi lançado em 13 de maio de 2024. não mude isso a menos que explicitamente solicitado pelo usuário
       const actualModel = modelName === 'gpt-4' ? 'gpt-4o' : modelName;
       
+      // Utilizando cliente baseado em fetch direto
       const response = await openai.chat.completions.create({
         model: actualModel,
         max_tokens: 1024,
-        messages
+        messages: messages
       });
 
-      return response.choices[0].message.content || 'Sem resposta do modelo.';
+      if (response.choices && response.choices[0] && response.choices[0].message && response.choices[0].message.content) {
+        return response.choices[0].message.content;
+      }
+      
+      return 'Sem resposta do modelo.';
     }
   } catch (error) {
     console.error('Erro ao processar mensagem de texto:', error);
@@ -867,46 +938,77 @@ export async function analyzeFile(filePath: string, language: string, llmConfig?
     
     // Process with appropriate provider
     if (provider === 'anthropic') {
-      // Use Anthropic Claude
-      const anthropic = getAnthropicClient(apiKey);
-      
-      const response = await anthropic.messages.create({
-        model: modelName,
-        max_tokens: 1024,
-        system: systemPrompt,
-        messages: [
-          {
-            role: 'user',
-            content: userPrompt
-          }
-        ]
-      });
+      // Use Anthropic Claude com fetch direto
+      try {
+        console.log(`Analisando arquivo com Anthropic: ${modelName}`);
+        const anthropic = getAnthropicClient(apiKey);
+        
+        // Preparar a chamada para o método fetch direto
+        const response = await anthropic.messages.create({
+          model: modelName,
+          max_tokens: 1024,
+          system: systemPrompt,
+          messages: [
+            {
+              role: 'user',
+              content: userPrompt
+            }
+          ]
+        });
 
-      if (response.content[0].type === 'text') {
-        return response.content[0].text;
-      } else {
-        return 'Erro no formato da resposta do modelo.';
+        if (response.content && response.content[0] && response.content[0].type === 'text') {
+          return response.content[0].text;
+        } else {
+          console.error('Resposta em formato inesperado do Anthropic');
+          return language === 'pt'
+            ? 'Erro ao analisar o arquivo. Por favor, tente novamente mais tarde.'
+            : 'Error analyzing the file. Please try again later.';
+        }
+      } catch (claudeError) {
+        console.error('Erro específico do Claude ao analisar arquivo:', claudeError);
+        return language === 'pt'
+          ? 'Erro ao analisar o arquivo com Claude. Por favor, tente novamente mais tarde.'
+          : 'Error analyzing the file with Claude. Please try again later.';
       }
     } else {
-      // Use OpenAI
-      const openai = getOpenAIClient(apiKey);
-      
-      const response = await openai.chat.completions.create({
-        model: modelName,
-        max_tokens: 1024,
-        messages: [
-          {
-            role: "system",
-            content: systemPrompt
-          },
-          {
-            role: "user",
-            content: userPrompt
-          }
-        ]
-      });
+      // Use OpenAI com fetch direto
+      try {
+        console.log(`Analisando arquivo com OpenAI: ${modelName}`);
+        const openai = getOpenAIClient(apiKey);
+        
+        // o modelo mais recente da OpenAI é "gpt-4o" que foi lançado em 13 de maio de 2024. não mude isso a menos que explicitamente solicitado pelo usuário
+        const actualModel = modelName === 'gpt-4' ? 'gpt-4o' : modelName;
+        
+        // Preparar a chamada para o método fetch direto
+        const response = await openai.chat.completions.create({
+          model: actualModel,
+          max_tokens: 1024,
+          messages: [
+            {
+              role: "system",
+              content: systemPrompt
+            },
+            {
+              role: "user",
+              content: userPrompt
+            }
+          ]
+        });
 
-      return response.choices[0].message.content || 'Sem resposta do modelo.';
+        if (response.choices && response.choices[0] && response.choices[0].message && response.choices[0].message.content) {
+          return response.choices[0].message.content;
+        }
+        
+        console.error('Resposta vazia ou inválida do OpenAI');
+        return language === 'pt'
+          ? 'Sem resposta válida do modelo. Por favor, tente novamente.'
+          : 'No valid response from the model. Please try again.';
+      } catch (gptError) {
+        console.error('Erro específico do OpenAI ao analisar arquivo:', gptError);
+        return language === 'pt'
+          ? 'Erro ao analisar o arquivo com GPT. Por favor, tente novamente mais tarde.'
+          : 'Error analyzing the file with GPT. Please try again later.';
+      }
     }
   } catch (error) {
     console.error('Error analyzing file:', error);
