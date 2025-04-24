@@ -2,7 +2,7 @@ import express, { type Express, Request, Response, NextFunction } from "express"
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated, checkRole } from "./auth";
-import { analyzeImage, analyzeFile, processTextMessage, testConnection } from "./llm";
+import { analyzeImage, analyzeFile, processTextMessage, testConnection, getActiveLlmInfo } from "./llm";
 import { logAction } from "./audit";
 import multer from "multer";
 import crypto from "crypto";

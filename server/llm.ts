@@ -32,7 +32,7 @@ interface LlmFullConfig {
 const readFile = promisify(fs.readFile);
 
 // Get active LLM provider and model name with all configuration options
-async function getActiveLlmInfo(): Promise<LlmFullConfig> {
+export async function getActiveLlmInfo(): Promise<LlmFullConfig> {
   // Try to get active config from database
   const activeConfig = await storage.getActiveLlmConfig();
   
