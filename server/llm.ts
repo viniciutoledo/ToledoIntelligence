@@ -37,6 +37,8 @@ const readFile = promisify(fs.readFile);
 
 // Get active LLM provider and model name with all configuration options
 export async function getActiveLlmInfo(): Promise<LlmFullConfig> {
+  console.log('DIAGNÓSTICO: Buscando configuração LLM ativa');
+  
   // Try to get active config from database
   const activeConfig = await storage.getActiveLlmConfig();
   
@@ -49,8 +51,32 @@ export async function getActiveLlmInfo(): Promise<LlmFullConfig> {
   let shouldUseTrained = true;
   
   if (activeConfig) {
-    // If we have a config, use it directly without cleaning the API key
-    apiKey = activeConfig.api_key;
+    console.log('DIAGNÓSTICO: Encontrada configuração LLM ativa na base de dados');
+    console.log('DIAGNÓSTICO: Modelo configurado: ' + activeConfig.model_name);
+    
+    // Verificar se a chave API existe na configuração
+    if (!activeConfig.api_key || activeConfig.api_key.length < 10) {
+      console.error('ERRO CRÍTICO: Chave API na configuração do banco é inválida ou muito curta');
+      
+      // Tentar usar chave do ambiente como fallback
+      if (activeConfig.model_name.startsWith('gpt') && process.env.OPENAI_API_KEY) {
+        console.log('DIAGNÓSTICO: Usando chave de ambiente OpenAI como fallback');
+        apiKey = process.env.OPENAI_API_KEY;
+      } else if (!activeConfig.model_name.startsWith('gpt') && process.env.ANTHROPIC_API_KEY) {
+        console.log('DIAGNÓSTICO: Usando chave de ambiente Anthropic como fallback');
+        apiKey = process.env.ANTHROPIC_API_KEY;
+      } else {
+        console.error('ERRO CRÍTICO: Sem chave API válida disponível para o modelo configurado');
+      }
+    } else {
+      // If we have a config, use it directly without cleaning the API key
+      apiKey = activeConfig.api_key;
+      
+      // Verificar a chave parcialmente mascarada
+      const maskedKey = apiKey.substring(0, 4) + '...' + apiKey.substring(apiKey.length - 4);
+      console.log('DIAGNÓSTICO: Chave API carregada (parcial): ' + maskedKey);
+    }
+    
     modelName = activeConfig.model_name;
     tone = activeConfig.tone as LlmTone || 'normal';
     behaviorInstructions = activeConfig.behavior_instructions || '';
@@ -63,22 +89,27 @@ export async function getActiveLlmInfo(): Promise<LlmFullConfig> {
       provider = 'anthropic';
     }
   } else {
+    console.log('DIAGNÓSTICO: Nenhuma configuração LLM encontrada na base, usando variáveis de ambiente');
+    
     // No config, use environment variables and defaults
     if (process.env.OPENAI_API_KEY && !process.env.ANTHROPIC_API_KEY) {
       provider = 'openai';
       apiKey = process.env.OPENAI_API_KEY || '';
       modelName = DEFAULT_GPT_MODEL;
+      console.log('DIAGNÓSTICO: Usando OpenAI do ambiente (sem configuração na base)');
     } else {
       // Use Anthropic como padrão, usar a chave diretamente
       apiKey = process.env.ANTHROPIC_API_KEY || '';
+      console.log('DIAGNÓSTICO: Usando Anthropic do ambiente (sem configuração na base)');
     }
   }
   
   if (!apiKey) {
+    console.error('ERRO CRÍTICO: Nenhuma chave API disponível para LLM!');
     throw new Error('No API key available for LLM');
   }
   
-  console.log(`Usando provider ${provider} com modelo ${modelName}`);
+  console.log(`DIAGNÓSTICO: Configuração final - Provider: ${provider}, Modelo: ${modelName}, Tom: ${tone}`);
   
   // Retornar a configuração completa com a chave API já limpa
   return { 
@@ -105,11 +136,25 @@ async function fetchOpenAIDirectly(endpoint: string, data: any, apiKey: string) 
     throw new Error('API key inválida para OpenAI: não é uma string');
   }
   
-  // Limpar a chave de qualquer prefixo, caracteres indesejados ou não imprimíveis
-  const cleanedKey = apiKey.replace(/^bearer\s+/i, '')
-                           .replace(/["']/g, '')
-                           .replace(/[^\x20-\x7E]/g, '') // Remove caracteres não imprimíveis ASCII
-                           .trim();
+  // URGENTE: Limpar a chave apenas de prefixos e aspas, sem remover outros caracteres
+  // que podem ser parte da chave
+  let cleanedKey = apiKey.replace(/^bearer\s+/i, '').replace(/["']/g, '').trim();
+  
+  // Verificar se a chave não está vazia ou muito curta após a limpeza
+  if (!cleanedKey || cleanedKey.length < 10) {
+    console.error('ALERTA: Chave API ficou muito curta após limpeza, usando original');
+    cleanedKey = apiKey.trim();
+  }
+  
+  // Verificação adicional - garantir que a chave não foi completamente zerada
+  if (!cleanedKey) {
+    console.error('ERRO CRÍTICO: Chave OpenAI está vazia após limpeza');
+    // Usar chave direta do ambiente em caso de emergência
+    if (process.env.OPENAI_API_KEY) {
+      console.log('Tentando usar chave OpenAI do ambiente como fallback');
+      cleanedKey = process.env.OPENAI_API_KEY;
+    }
+  }
   
   try {
     // Usar concatenação de strings em vez de template literals para evitar problemas com caracteres especiais
@@ -196,11 +241,25 @@ async function fetchAnthropicDirectly(endpoint: string, data: any, apiKey: strin
     throw new Error('API key inválida para Anthropic: não é uma string');
   }
   
-  // Limpar a chave de qualquer prefixo, caracteres indesejados ou não imprimíveis
-  const cleanedKey = apiKey.replace(/^bearer\s+/i, '')
-                           .replace(/["']/g, '')
-                           .replace(/[^\x20-\x7E]/g, '') // Remove caracteres não imprimíveis ASCII
-                           .trim();
+  // URGENTE: Limpar a chave apenas de prefixos e aspas, sem remover outros caracteres
+  // que podem ser parte da chave
+  let cleanedKey = apiKey.replace(/^bearer\s+/i, '').replace(/["']/g, '').trim();
+  
+  // Verificar se a chave não está vazia ou muito curta após a limpeza
+  if (!cleanedKey || cleanedKey.length < 10) {
+    console.error('ALERTA: Chave API Anthropic ficou muito curta após limpeza, usando original');
+    cleanedKey = apiKey.trim();
+  }
+  
+  // Verificação adicional - garantir que a chave não foi completamente zerada
+  if (!cleanedKey) {
+    console.error('ERRO CRÍTICO: Chave Anthropic está vazia após limpeza');
+    // Usar chave direta do ambiente em caso de emergência
+    if (process.env.ANTHROPIC_API_KEY) {
+      console.log('Tentando usar chave Anthropic do ambiente como fallback');
+      cleanedKey = process.env.ANTHROPIC_API_KEY;
+    }
+  }
   
   try {
     // Construir URL e cabeçalhos usando concatenação para evitar problemas com caracteres Unicode
