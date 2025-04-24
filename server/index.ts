@@ -35,6 +35,16 @@ app.use((req, res, next) => {
   next();
 });
 
+// Rota especial para servir o widget-inline-demo.html com os headers corretos
+app.get('/widget-demo', (req, res) => {
+  // Definir cabeçalhos para permitir incorporação
+  res.setHeader('Content-Security-Policy', "frame-ancestors 'self' *");
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  
+  // Redirecionar para a página de demonstração do widget inline
+  res.redirect('/widget-inline-demo.html');
+});
+
 // Middleware de logging
 app.use((req, res, next) => {
   const start = Date.now();

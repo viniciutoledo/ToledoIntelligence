@@ -3,18 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ToledoIA Widget Embed Example</title>
+  <title>ToledoIA Widget - Exemplo de Incorporação</title>
   <style>
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       margin: 0;
-      padding: 20px;
+      padding: 0;
       background-color: #f5f5f5;
-      line-height: 1.6;
+      color: #333;
     }
     
-    h1 {
-      color: #333;
+    header {
+      background-color: #6366F1;
+      color: white;
+      padding: 20px;
       text-align: center;
     }
     
@@ -22,53 +24,49 @@
       max-width: 1200px;
       margin: 0 auto;
       padding: 20px;
-      background-color: white;
-      border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     }
     
-    .example-container {
-      margin-top: 20px;
-      border: 1px solid #e1e1e1;
+    section {
+      background-color: white;
+      border-radius: 8px;
       padding: 20px;
-      border-radius: 5px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    h1, h2, h3 {
+      margin-top: 0;
     }
     
     .code-block {
-      background-color: #f9f9f9;
+      background-color: #282c34;
+      color: #abb2bf;
+      border-radius: 4px;
       padding: 15px;
-      border-radius: 5px;
-      font-family: monospace;
       overflow-x: auto;
+      font-family: 'Courier New', Courier, monospace;
       margin: 15px 0;
-      border-left: 4px solid #6366F1;
     }
     
-    .embed-container {
-      position: relative;
-      width: 100%;
-      height: 600px;
-      margin: 20px 0;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      overflow: hidden;
-    }
-    
-    .tabs {
+    .tab-buttons {
       display: flex;
       border-bottom: 1px solid #ddd;
-      margin-bottom: 20px;
+      margin-bottom: 15px;
     }
     
-    .tab {
-      padding: 10px 20px;
+    .tab-button {
+      padding: 10px 15px;
+      background: none;
+      border: none;
       cursor: pointer;
-      border-bottom: 2px solid transparent;
+      font-size: 16px;
+      font-weight: 500;
+      color: #666;
     }
     
-    .tab.active {
-      border-color: #6366F1;
+    .tab-button.active {
       color: #6366F1;
+      border-bottom: 2px solid #6366F1;
     }
     
     .tab-content {
@@ -78,105 +76,311 @@
     .tab-content.active {
       display: block;
     }
+    
+    .widget-container {
+      width: 100%;
+      height: 500px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      overflow: hidden;
+      margin: 20px 0;
+    }
+    
+    .demo-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    
+    @media (max-width: 768px) {
+      .demo-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    .highlight {
+      background-color: #f0f4ff;
+      border-left: 4px solid #6366F1;
+      padding: 10px 15px;
+      margin: 15px 0;
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+    }
+    
+    table, th, td {
+      border: 1px solid #ddd;
+    }
+    
+    th, td {
+      padding: 12px;
+      text-align: left;
+    }
+    
+    th {
+      background-color: #f2f2f2;
+    }
+    
+    .example-button {
+      display: inline-block;
+      padding: 10px 15px;
+      background-color: #6366F1;
+      color: white;
+      border-radius: 5px;
+      text-decoration: none;
+      margin: 10px 0;
+      font-weight: 500;
+    }
   </style>
 </head>
 <body>
+  <header>
+    <h1>ToledoIA Widget - Guia de Incorporação</h1>
+    <p>Integre o assistente ToledoIA em seu site em minutos</p>
+  </header>
+  
   <div class="container">
-    <h1>Exemplos de Integração do Widget ToledoIA</h1>
+    <section>
+      <h2>Visão Geral</h2>
+      <p>O widget do ToledoIA permite que você ofereça assistência especializada em circuitos eletrônicos aos seus usuários diretamente no seu site. Este guia mostra como incorporar o widget no seu site usando diferentes métodos.</p>
+      
+      <div class="highlight">
+        <p><strong>Importante:</strong> Você precisa ter uma chave API válida para usar o widget. Você pode criar e gerenciar suas chaves API no <a href="/admin/widgets">painel administrativo</a>.</p>
+      </div>
+    </section>
     
-    <div class="tabs">
-      <div class="tab active" onclick="showTab('inline')">Widget Inline</div>
-      <div class="tab" onclick="showTab('floating')">Widget Flutuante</div>
+    <div class="tab-buttons">
+      <button class="tab-button active" onclick="showTab('tab1')">Método 1: Widget Flutuante</button>
+      <button class="tab-button" onclick="showTab('tab2')">Método 2: Widget Inline</button>
+      <button class="tab-button" onclick="showTab('tab3')">Parâmetros e Opções</button>
+      <button class="tab-button" onclick="showTab('tab4')">Demonstração</button>
     </div>
     
-    <div id="inline" class="tab-content active">
-      <h2>Widget Embedado (Inline)</h2>
+    <section id="tab1" class="tab-content active">
+      <h2>Método 1: Widget Flutuante</h2>
+      <p>Este método adiciona um pequeno botão flutuante no canto inferior direito do seu site. Quando o usuário clica no botão, o widget do chat se abre.</p>
       
-      <p>Para incorporar o widget ToledoIA diretamente em sua página, use o código abaixo:</p>
+      <h3>Passo 1: Adicione o script do ToledoIA ao seu site</h3>
+      <div class="code-block">
+&lt;script src="https://toledoia.replit.app/widget.js"&gt;&lt;/script&gt;
+      </div>
+      
+      <h3>Passo 2: Inicialize o widget com sua chave API</h3>
+      <div class="code-block">
+&lt;script&gt;
+  document.addEventListener('DOMContentLoaded', function() {
+    ToledoIAWidget.init({ 
+      apiKey: "sua-chave-api-aqui",
+      position: "bottom-right", // Opções: "bottom-right", "bottom-left", "top-right", "top-left"
+      mode: "floating" // Modo flutuante (padrão)
+    });
+  });
+&lt;/script&gt;
+      </div>
+    </section>
+    
+    <section id="tab2" class="tab-content">
+      <h2>Método 2: Widget Inline</h2>
+      <p>Este método incorpora o widget diretamente em um elemento do seu site, como uma seção ou div.</p>
+      
+      <h3>Passo 1: Adicione o script do ToledoIA ao seu site</h3>
+      <div class="code-block">
+&lt;script src="https://toledoia.replit.app/widget.js"&gt;&lt;/script&gt;
+      </div>
+      
+      <h3>Passo 2: Crie um elemento container para o widget</h3>
+      <div class="code-block">
+&lt;div id="toledoia-container" style="width:100%; height:500px;"&gt;&lt;/div&gt;
+      </div>
+      
+      <h3>Passo 3: Inicialize o widget com sua chave API no modo inline</h3>
+      <div class="code-block">
+&lt;script&gt;
+  document.addEventListener('DOMContentLoaded', function() {
+    ToledoIAWidget.init({
+      apiKey: "sua-chave-api-aqui",
+      mode: "inline",
+      targetElement: "#toledoia-container", // Seletor CSS do elemento container
+      hideHeader: true // Opcional: oculta o cabeçalho para uma aparência mais integrada
+    });
+  });
+&lt;/script&gt;
+      </div>
+    </section>
+    
+    <section id="tab3" class="tab-content">
+      <h2>Parâmetros e Opções</h2>
+      <p>Você pode personalizar o comportamento e a aparência do widget usando os seguintes parâmetros:</p>
+      
+      <table>
+        <tr>
+          <th>Parâmetro</th>
+          <th>Tipo</th>
+          <th>Padrão</th>
+          <th>Descrição</th>
+        </tr>
+        <tr>
+          <td>apiKey</td>
+          <td>string</td>
+          <td>-</td>
+          <td><strong>Obrigatório.</strong> Sua chave API do ToledoIA.</td>
+        </tr>
+        <tr>
+          <td>mode</td>
+          <td>string</td>
+          <td>"floating"</td>
+          <td>Modo de exibição do widget. Opções: "floating" ou "inline".</td>
+        </tr>
+        <tr>
+          <td>position</td>
+          <td>string</td>
+          <td>"bottom-right"</td>
+          <td>Posição do botão flutuante. Opções: "bottom-right", "bottom-left", "top-right", "top-left".</td>
+        </tr>
+        <tr>
+          <td>targetElement</td>
+          <td>string</td>
+          <td>-</td>
+          <td>Seletor CSS do elemento que conterá o widget (obrigatório para modo "inline").</td>
+        </tr>
+        <tr>
+          <td>hideHeader</td>
+          <td>boolean</td>
+          <td>false</td>
+          <td>Se verdadeiro, oculta o cabeçalho do widget, útil para integrações personalizadas.</td>
+        </tr>
+        <tr>
+          <td>autoOpen</td>
+          <td>boolean</td>
+          <td>false</td>
+          <td>Se verdadeiro, o widget flutuante abre automaticamente ao carregar a página.</td>
+        </tr>
+      </table>
+      
+      <h3>Métodos API</h3>
+      <p>O widget expõe os seguintes métodos que podem ser chamados programaticamente:</p>
       
       <div class="code-block">
-        &lt;!-- Container para o widget --&gt;<br>
-        &lt;div id="toledoia-container" style="position:relative; width:100%; height:600px;"&gt;&lt;/div&gt;<br><br>
+// Abrir o widget
+ToledoIAWidget.open();
+
+// Fechar o widget
+ToledoIAWidget.close();
+
+// Remover completamente o widget da página
+ToledoIAWidget.destroy();
+      </div>
+    </section>
+    
+    <section id="tab4" class="tab-content">
+      <h2>Demonstração</h2>
+      
+      <div class="demo-grid">
+        <div>
+          <h3>Exemplo de Widget Flutuante</h3>
+          <p>Clique no botão abaixo para ver o widget flutuante em ação.</p>
+          <a href="javascript:void(0)" class="example-button" onclick="demoFloatingWidget()">Mostrar Widget Flutuante</a>
+          <div class="code-block">
+&lt;script&gt;
+  function demoFloatingWidget() {
+    // Primeiro, remova qualquer widget existente
+    if (window.ToledoIAWidget) {
+      ToledoIAWidget.destroy();
+    }
+    
+    // Inicialize o widget no modo flutuante
+    ToledoIAWidget.init({
+      apiKey: "7b1e783a-5abb-4269-af75-0ca4a0129dd2",
+      position: "bottom-right",
+      mode: "floating",
+      autoOpen: true
+    });
+  }
+&lt;/script&gt;
+          </div>
+        </div>
         
-        &lt;!-- Script do widget --&gt;<br>
-        &lt;script src="https://toledoia.replit.app/widget.js"&gt;&lt;/script&gt;<br>
-        &lt;script&gt;<br>
-        &nbsp;&nbsp;document.addEventListener('DOMContentLoaded', function() {<br>
-        &nbsp;&nbsp;&nbsp;&nbsp;ToledoIAWidget.init({<br>
-        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;apiKey: "sua-chave-api-aqui",<br>
-        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;mode: "inline",<br>
-        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;targetElement: "#toledoia-container",<br>
-        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;hideHeader: true<br>
-        &nbsp;&nbsp;&nbsp;&nbsp;});<br>
-        &nbsp;&nbsp;});<br>
-        &lt;/script&gt;
+        <div>
+          <h3>Exemplo de Widget Inline</h3>
+          <p>Abaixo está uma demonstração do widget incorporado diretamente na página:</p>
+          <div id="toledoia-inline-demo" class="widget-container"></div>
+          <div class="code-block">
+&lt;div id="toledoia-inline-demo" style="width:100%; height:500px;"&gt;&lt;/div&gt;
+
+&lt;script&gt;
+  document.addEventListener('DOMContentLoaded', function() {
+    ToledoIAWidget.init({
+      apiKey: "7b1e783a-5abb-4269-af75-0ca4a0129dd2",
+      mode: "inline",
+      targetElement: "#toledoia-inline-demo",
+      hideHeader: true
+    });
+  });
+&lt;/script&gt;
+          </div>
+        </div>
       </div>
-      
-      <h3>Exemplo do Widget Inline</h3>
-      
-      <!-- Aqui colocamos um exemplo real do widget inline -->
-      <div class="embed-container">
-        <iframe
-          src="/embed/widget?key=7b1e783a-5abb-4269-af75-0ca4a0129dd2&hideHeader=true"
-          style="position:absolute; top:0; left:0; width:100%; height:100%; border:0;"
-          allow="clipboard-write; autoplay; encrypted-media;"
-          sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-          title="ToledoIA Chat Embed"
-        ></iframe>
-      </div>
-    </div>
+    </section>
     
-    <div id="floating" class="tab-content">
-      <h2>Widget Flutuante</h2>
+    <section>
+      <h2>Próximos Passos</h2>
+      <p>Para mais informações sobre como personalizar ainda mais seu widget, incluindo cores e comportamentos específicos, consulte nossa <a href="#">documentação completa</a>.</p>
       
-      <p>Para adicionar o widget ToledoIA como um botão flutuante em sua página, use o código abaixo:</p>
-      
-      <div class="code-block">
-        &lt;!-- Script do widget --&gt;<br>
-        &lt;script src="https://toledoia.replit.app/widget.js"&gt;&lt;/script&gt;<br>
-        &lt;script&gt;<br>
-        &nbsp;&nbsp;document.addEventListener('DOMContentLoaded', function() {<br>
-        &nbsp;&nbsp;&nbsp;&nbsp;ToledoIAWidget.init({<br>
-        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;apiKey: "sua-chave-api-aqui",<br>
-        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;position: "bottom-right", // Outras opções: bottom-left, top-right, top-left<br>
-        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;initialOpen: false<br>
-        &nbsp;&nbsp;&nbsp;&nbsp;});<br>
-        &nbsp;&nbsp;});<br>
-        &lt;/script&gt;
-      </div>
-      
-      <h3>Opções de Configuração</h3>
-      
-      <ul>
-        <li><strong>apiKey</strong>: Sua chave de API ToledoIA (obrigatória)</li>
-        <li><strong>mode</strong>: "floating" (padrão) ou "inline"</li>
-        <li><strong>targetElement</strong>: Seletor CSS ou elemento DOM para inserir o widget quando no modo inline</li>
-        <li><strong>position</strong>: Posição do botão e widget no modo flutuante (bottom-right, bottom-left, top-right, top-left)</li>
-        <li><strong>initialOpen</strong>: Se o widget deve iniciar aberto (true) ou fechado (false) no modo flutuante</li>
-        <li><strong>hideHeader</strong>: Se o cabeçalho do widget deve ser ocultado (true) ou exibido (false)</li>
-        <li><strong>width</strong>: Largura do widget no modo flutuante (padrão: 350px)</li>
-        <li><strong>height</strong>: Altura do widget no modo flutuante (padrão: 500px)</li>
-      </ul>
-    </div>
+      <p>Se você encontrar algum problema ao implementar o widget, entre em contato com nossa <a href="#">equipe de suporte</a>.</p>
+    </section>
   </div>
   
+  <script src="/widget.js"></script>
   <script>
+    // Função para alternar entre abas
     function showTab(tabId) {
-      // Esconder todos os conteúdos
-      document.querySelectorAll('.tab-content').forEach(function(el) {
-        el.classList.remove('active');
+      // Ocultar todas as abas
+      document.querySelectorAll('.tab-content').forEach(function(tab) {
+        tab.classList.remove('active');
       });
       
-      // Desativar todas as abas
-      document.querySelectorAll('.tab').forEach(function(el) {
-        el.classList.remove('active');
+      // Remover classe ativa de todos os botões
+      document.querySelectorAll('.tab-button').forEach(function(button) {
+        button.classList.remove('active');
       });
       
-      // Mostrar conteúdo selecionado
+      // Mostrar a aba selecionada
       document.getElementById(tabId).classList.add('active');
       
-      // Ativar aba selecionada
-      document.querySelector('.tab[onclick="showTab(\'' + tabId + '\')"]').classList.add('active');
+      // Adicionar classe ativa ao botão clicado
+      event.target.classList.add('active');
+    }
+    
+    // Inicializar o widget inline após carregar a página
+    document.addEventListener('DOMContentLoaded', function() {
+      // Inicializar widget inline para demonstração
+      if (document.getElementById('toledoia-inline-demo')) {
+        ToledoIAWidget.init({
+          apiKey: "7b1e783a-5abb-4269-af75-0ca4a0129dd2",
+          mode: "inline",
+          targetElement: "#toledoia-inline-demo",
+          hideHeader: true
+        });
+      }
+    });
+    
+    // Função para demonstrar o widget flutuante
+    function demoFloatingWidget() {
+      // Primeiro, remova qualquer widget existente
+      if (window.ToledoIAWidget) {
+        ToledoIAWidget.destroy();
+      }
+      
+      // Inicialize o widget no modo flutuante
+      ToledoIAWidget.init({
+        apiKey: "7b1e783a-5abb-4269-af75-0ca4a0129dd2",
+        position: "bottom-right",
+        mode: "floating",
+        autoOpen: true
+      });
     }
   </script>
 </body>

@@ -291,7 +291,6 @@ export function EmbeddedChat({ apiKey, initialOpen = false, hideHeader = false }
   
   // Tentar obter o parâmetro hideHeader da URL também
   // Isso permite que funcione tanto por prop quanto por parâmetro de URL
-  // Usando useMemo para evitar recálculos desnecessários e loops de renderização
   const shouldHideHeader = useMemo(() => {
     if (hideHeader) return true;
     
