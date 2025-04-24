@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Loader2, MessageSquare, X, Minimize2 } from "lucide-react";
 import { useWidgetChat } from "@/hooks/use-widget-chat";
@@ -43,20 +43,29 @@ export function EmbeddedChat({ apiKey, initialOpen = false }: EmbeddedChatProps)
   }, [apiKey, isInitialized]);
   
   // Se não houver sessão ativa e o widget estiver carregado, inicie uma sessão
+  const sessionCreationAttempted = useRef(false);
+  
   useEffect(() => {
-    if (widget && !currentSession && !createSessionMutation.isPending && isInitialized) {
-      // Usando setTimeout para evitar muitas renderizações consecutivas
-      const timer = setTimeout(() => {
-        createSessionMutation.mutate({
-          widgetId: widget.id,
-          language: language as "pt" | "en",
-          referrerUrl: document.referrer || window.location.href
-        });
-      }, 100);
+    // Verificar se já temos uma sessão ou se já tentamos criar uma
+    if (widget && !currentSession && !createSessionMutation.isPending && isInitialized && !sessionCreationAttempted.current) {
+      // Marcar que já tentamos criar uma sessão para evitar futuras tentativas
+      sessionCreationAttempted.current = true;
       
-      return () => clearTimeout(timer);
+      console.log("Iniciando nova sessão para o widget", widget.id);
+      
+      // Criar a sessão
+      createSessionMutation.mutate({
+        widgetId: widget.id,
+        language: language as "pt" | "en",
+        referrerUrl: document.referrer || window.location.href
+      });
     }
-  }, [widget, currentSession, createSessionMutation.isPending, isInitialized]);
+    
+    // Se a sessão for encerrada, permitir criar uma nova
+    if (currentSession) {
+      sessionCreationAttempted.current = true;
+    }
+  }, [widget?.id, currentSession?.id]); // Apenas dependências essenciais para evitar reconexões
   
   // Finalizar sessão quando componente for desmontado
   useEffect(() => {
