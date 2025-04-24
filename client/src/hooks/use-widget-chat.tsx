@@ -72,17 +72,20 @@ export function WidgetChatProvider({
   const [isInitialized, setIsInitialized] = useState(false);
   const [visitorId, setVisitorId] = useState<string>("");
   
-  // Buscar informações do widget
+  // Buscar informações do widget usando a nova rota dedicada para embed
   const { 
     data: widget,
     isLoading: isLoadingWidget,
     error: widgetError
   } = useQuery({
-    queryKey: ["/api/widgets/public", apiKey],
+    queryKey: ["/api/embed/widget", apiKey],
     queryFn: async () => {
       if (!apiKey) return null;
-      const res = await fetch(`/api/widgets/public?api_key=${apiKey}`);
+      // Usando a nova rota dedicada para widgets de embed
+      console.log("Buscando widget com API key:", apiKey);
+      const res = await fetch(`/api/embed/widget?key=${apiKey}`);
       if (!res.ok) {
+        console.error("Erro ao buscar widget:", res.status, res.statusText);
         throw new Error("Widget não encontrado ou inativo");
       }
       return res.json();

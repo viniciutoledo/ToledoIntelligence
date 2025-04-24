@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Teste de Widget ToledoIA</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f5f5f5;
+      margin: 0;
+      padding: 0;
+      color: #333;
+    }
+    
+    header {
+      background-color: #1a1a1a;
+      color: #fff;
+      padding: 1rem;
+      text-align: center;
+    }
+    
+    main {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+    
+    h1 {
+      color: #6366F1;
+    }
+    
+    p {
+      line-height: 1.6;
+    }
+    
+    .card {
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    
+    footer {
+      text-align: center;
+      padding: 1rem;
+      background-color: #1a1a1a;
+      color: #fff;
+      margin-top: 2rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Teste de Widget ToledoIA</h1>
+    <p>Uma página para testar a funcionalidade de widget incorporável</p>
+  </header>
+  
+  <main>
+    <div class="card">
+      <h2>Sobre o ToledoIA</h2>
+      <p>
+        ToledoIA é uma plataforma SaaS para técnicos de manutenção, potencializada por tecnologias avançadas 
+        de IA para experiências inteligentes e reconhecimento de imagens de placas de circuito.
+      </p>
+    </div>
+    
+    <div class="card">
+      <h2>Recursos Principais</h2>
+      <ul>
+        <li>Análise avançada de imagens de placas de circuito</li>
+        <li>Identificação inteligente de componentes</li>
+        <li>Suporte multilíngue (Português e Inglês)</li>
+        <li>Sistema de widgets incorporáveis</li>
+        <li>Dashboard administrativo</li>
+      </ul>
+    </div>
+    
+    <div class="card">
+      <h2>Como Funciona</h2>
+      <p>
+        O ToledoIA utiliza modelos de IA avançados, como OpenAI e Claude da Anthropic, para analisar 
+        imagens de placas de circuito e fornecer insights precisos sobre problemas e soluções.
+      </p>
+      <p>
+        Os técnicos podem tirar fotos de placas e receber uma análise detalhada, enquanto os 
+        administradores podem monitorar o uso e gerenciar usuários através do painel de controle.
+      </p>
+    </div>
+  </main>
+  
+  <footer>
+    <p>Todos os direitos reservados ao Prof. Vinícius Toledo</p>
+  </footer>
+  
+  <!-- Widget ToledoIA será carregado aqui via script -->
+  <script src="/widget.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Substituir com uma API Key válida do seu sistema
+      window.ToledoIAWidget.init({
+        apiKey: "api_key_para_teste", 
+        position: "bottom-right",
+        initialOpen: false
+      });
+    });
+  </script>
+</body>
+</html>
