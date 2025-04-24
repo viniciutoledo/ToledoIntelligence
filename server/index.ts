@@ -11,8 +11,20 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Servir arquivos estáticos da pasta uploads
-app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+// Servir arquivos estáticos da pasta uploads com configurações otimizadas
+console.log(`Servindo arquivos estáticos de ${path.join(process.cwd(), 'uploads')} na rota /uploads`);
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads'), {
+  maxAge: '0', // Sem cache para desenvolvimento
+  etag: false, // Desabilitar etag
+  lastModified: false,
+  setHeaders: (res) => {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  }
+}));
 
 // Middleware para permitir incorporação em iframes (embeds)
 app.use((req, res, next) => {
