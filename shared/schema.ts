@@ -303,6 +303,8 @@ export const chatWidgets = pgTable("chat_widgets", {
   name: text("name").notNull(),
   greeting: text("greeting").notNull(),
   avatar_url: text("avatar_url").notNull(),
+  avatar_data: text("avatar_data"), // Campo para armazenar dados da imagem em base64
+  avatar_mime_type: text("avatar_mime_type"), // Tipo MIME da imagem (image/jpeg, image/png, etc.)
   is_active: boolean("is_active").notNull().default(true),
   api_key: uuid("api_key").defaultRandom().notNull(),
   theme_color: text("theme_color").default("#6366f1"),

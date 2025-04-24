@@ -2183,9 +2183,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         allowed_domains: Array.isArray(validatedData.allowed_domains) ? validatedData.allowed_domains : []
       };
       
-      // Se tiver arquivo de avatar, usar o caminho do arquivo
+      // Se tiver arquivo de avatar, processar e armazenar em base64
       if (req.file) {
-        widgetData.avatar_url = `/uploads/${req.file.filename}`;
+        // Ler o arquivo e converter para base64
+        const fs = require('fs');
+        const filePath = req.file.path;
+        
+        try {
+          // Ler o arquivo
+          const fileData = fs.readFileSync(filePath);
+          // Converter para base64
+          const base64Data = fileData.toString('base64');
+          
+          // Armazenar os dados da imagem e o tipo MIME
+          widgetData.avatar_data = base64Data;
+          widgetData.avatar_mime_type = req.file.mimetype;
+          
+          // Configurar a URL para a rota que servirá a imagem
+          widgetData.avatar_url = `/api/widgets/${widgetData.id}/avatar`;
+          
+          // Remover arquivo temporário do sistema de arquivos
+          fs.unlinkSync(filePath);
+        } catch (e) {
+          console.error("Erro ao processar arquivo de avatar:", e);
+          // Em caso de erro, usar avatar padrão
+          const firstLetter = widgetData.name.charAt(0).toUpperCase();
+          widgetData.avatar_url = `https://ui-avatars.com/api/?name=${firstLetter}&background=6366F1&color=fff`;
+        }
       } else if (validatedData.avatar_url) {
         widgetData.avatar_url = validatedData.avatar_url;
       } else {
@@ -2270,9 +2294,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Validar os dados
       let updateData = schema.parse(req.body);
       
-      // Se tiver arquivo de avatar, usar o caminho do arquivo
+      // Se tiver arquivo de avatar, processar e armazenar em base64
       if (req.file) {
-        updateData.avatar_url = `/uploads/${req.file.filename}`;
+        // Ler o arquivo e converter para base64
+        const fs = require('fs');
+        const filePath = req.file.path;
+        
+        try {
+          // Ler o arquivo
+          const fileData = fs.readFileSync(filePath);
+          // Converter para base64
+          const base64Data = fileData.toString('base64');
+          
+          // Armazenar os dados da imagem e o tipo MIME
+          updateData.avatar_data = base64Data;
+          updateData.avatar_mime_type = req.file.mimetype;
+          
+          // Configurar a URL para a rota que servirá a imagem
+          updateData.avatar_url = `/api/widgets/${id}/avatar`;
+          
+          // Remover arquivo temporário do sistema de arquivos
+          fs.unlinkSync(filePath);
+        } catch (e) {
+          console.error("Erro ao processar arquivo de avatar:", e);
+          // Em caso de erro, manter a URL original
+          updateData.avatar_url = widget.avatar_url;
+        }
       }
       
       // Converter allowed_domains para array se for string JSON
@@ -2342,6 +2389,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Erro ao excluir widget:", error);
       res.status(500).json({ message: "Erro ao excluir widget" });
+    }
+  });
+  
+  // Rota para servir a imagem do avatar a partir dos dados armazenados
+  app.get("/api/widgets/:id/avatar", async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Obter o widget
+      const widget = await storage.getChatWidget(id);
+      
+      if (!widget) {
+        return res.status(404).json({ message: "Widget não encontrado" });
+      }
+      
+      // Verificar se o widget tem dados de imagem
+      if (!widget.avatar_data || !widget.avatar_mime_type) {
+        // Se não tiver, pode redirecionar para o avatar_url
+        if (widget.avatar_url && (widget.avatar_url.startsWith('http') || widget.avatar_url.startsWith('/uploads/'))) {
+          return res.redirect(widget.avatar_url);
+        }
+        return res.status(404).json({ message: "Avatar não encontrado" });
+      }
+      
+      // Converter de base64 para Buffer
+      const imageBuffer = Buffer.from(widget.avatar_data, 'base64');
+      
+      // Definir o tipo de conteúdo
+      res.setHeader('Content-Type', widget.avatar_mime_type);
+      // Permitir cache no cliente
+      res.setHeader('Cache-Control', 'public, max-age=86400'); // 24 horas
+      
+      // Enviar a imagem
+      res.send(imageBuffer);
+    } catch (error) {
+      console.error("Erro ao servir avatar:", error);
+      res.status(500).json({ message: "Erro ao servir avatar" });
     }
   });
   

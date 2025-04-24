@@ -85,6 +85,8 @@ export async function syncDatabaseSchema() {
         name TEXT NOT NULL,
         greeting TEXT NOT NULL,
         avatar_url TEXT NOT NULL,
+        avatar_data TEXT,
+        avatar_mime_type TEXT,
         is_active BOOLEAN NOT NULL DEFAULT TRUE,
         api_key UUID NOT NULL DEFAULT uuid_generate_v4(),
         theme_color TEXT DEFAULT '#6366f1',
@@ -92,6 +94,17 @@ export async function syncDatabaseSchema() {
         created_at TIMESTAMP NOT NULL DEFAULT NOW(),
         updated_at TIMESTAMP NOT NULL DEFAULT NOW()
       );
+      
+      -- Adicionar colunas de avatar_data e avatar_mime_type se não existirem
+      DO $$ 
+      BEGIN
+        BEGIN
+          ALTER TABLE chat_widgets ADD COLUMN IF NOT EXISTS avatar_data TEXT;
+          ALTER TABLE chat_widgets ADD COLUMN IF NOT EXISTS avatar_mime_type TEXT;
+        EXCEPTION
+          WHEN duplicate_column THEN NULL;
+        END;
+      END $$;
       
       -- Criar tabela widget_chat_sessions se não existir
       CREATE TABLE IF NOT EXISTS widget_chat_sessions (
