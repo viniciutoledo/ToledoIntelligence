@@ -2304,12 +2304,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Se tiver arquivo de avatar, processar e armazenar em base64
       if (req.file) {
         // Ler o arquivo e converter para base64
-        const fs = require('fs');
         const filePath = req.file.path;
         
         try {
-          // Ler o arquivo
-          const fileData = fs.readFileSync(filePath);
+          // Ler o arquivo usando fs/promises que é compatível com ES modules
+          const fileData = await fs.promises.readFile(filePath);
           // Converter para base64
           const base64Data = fileData.toString('base64');
           
@@ -2321,7 +2320,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           updateData.avatar_url = `/api/widgets/${id}/avatar`;
           
           // Remover arquivo temporário do sistema de arquivos
-          fs.unlinkSync(filePath);
+          await fs.promises.unlink(filePath);
         } catch (e) {
           console.error("Erro ao processar arquivo de avatar:", e);
           // Em caso de erro, manter a URL original
