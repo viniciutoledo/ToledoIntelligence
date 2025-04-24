@@ -186,8 +186,8 @@ export function ChatInterface({
       <div className="px-4 py-3 border-b flex items-center">
         <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 mr-3">
           {avatar?.image_url ? (
-            <img
-              src={getOptimizedFileUrl(avatar.image_url)}
+            <ReliableImage
+              src={avatar.image_url}
               alt={avatar.name || "Avatar"}
               className="h-10 w-10 rounded-full object-cover"
             />
@@ -224,8 +224,8 @@ export function ChatInterface({
                 <User className="h-4 w-4" />
               ) : (
                 avatar?.image_url ? (
-                  <img
-                    src={getOptimizedFileUrl(avatar.image_url)}
+                  <ReliableImage
+                    src={avatar.image_url}
                     alt={avatar.name || "Avatar"}
                     className="h-8 w-8 rounded-full object-cover"
                   />
@@ -304,8 +304,8 @@ export function ChatInterface({
           <div className="flex items-start">
             <div className="h-8 w-8 rounded-full flex items-center justify-center bg-primary-100 text-primary-600 mr-2 mt-1">
               {avatar?.image_url ? (
-                <img
-                  src={getOptimizedFileUrl(avatar.image_url)}
+                <ReliableImage
+                  src={avatar.image_url}
                   alt={avatar.name || "Avatar"}
                   className="h-8 w-8 rounded-full object-cover"
                 />
