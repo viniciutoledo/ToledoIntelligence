@@ -89,15 +89,18 @@ export default function WidgetsManagement() {
     mutationFn: async (data: WidgetFormValues) => {
       // Garantir que todos os campos necessários estejam presentes
       const widgetData = {
-        name: data.name,
+        name: data.name || "Meu Widget",
         greeting: data.greeting || "Olá! Como posso ajudar?",
         avatar_url: data.avatar_url || "https://ui-avatars.com/api/?name=T&background=6366F1&color=fff",
         theme_color: data.theme_color || "#6366F1",
         allowed_domains: allowedDomains
       };
       
+      console.log("Enviando dados para criar widget:", widgetData);
       const response = await apiRequest("POST", "/api/widgets", widgetData);
-      return response.json();
+      const responseData = await response.json();
+      console.log("Resposta da criação de widget:", responseData);
+      return responseData;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/widgets"] });
