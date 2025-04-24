@@ -282,112 +282,159 @@ export default function WidgetsManagement() {
   };
 
   const handleCreateSubmit = async (data: WidgetFormValues) => {
+    console.log("Início da função handleCreateSubmit com dados:", data);
+    
+    // Sempre usar FormData, independente de ter arquivo ou não
+    const formData = new FormData();
+    
+    // Garantir que o nome esteja presente
+    if (!data.name) {
+      data.name = "Meu Widget"; // Valor padrão caso esteja vazio
+    }
+    
+    // Adicionar campos obrigatórios
+    formData.append("name", data.name);
+    formData.append("greeting", data.greeting || "Olá! Como posso ajudar?");
+    formData.append("theme_color", data.theme_color || "#6366F1");
+    
+    // Adicionar domínios permitidos
+    if (allowedDomains.length > 0) {
+      formData.append("allowed_domains", JSON.stringify(allowedDomains));
+    }
+    
+    // Verificar se há um arquivo de avatar
     const fileInput = createFileInputRef.current;
     const file = fileInput?.files?.[0];
-    
     if (file) {
-      // Se tiver arquivo selecionado, enviar usando FormData
-      const formData = new FormData();
-      formData.append("name", data.name);
-      formData.append("greeting", data.greeting);
-      formData.append("theme_color", data.theme_color);
       formData.append("avatar_image", file);
+    } else if (data.avatar_url) {
+      formData.append("avatar_url", data.avatar_url);
+    }
+    
+    // Verificar o conteúdo do FormData (para depuração)
+    console.log("FormData criado com campos:");
+    for (const pair of (formData as any).entries()) {
+      console.log(pair[0] + ': ' + pair[1]);
+    }
+    
+    try {
+      console.log("Enviando requisição...");
+      const response = await fetch("/api/widgets", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
       
-      if (allowedDomains.length > 0) {
-        formData.append("allowed_domains", JSON.stringify(allowedDomains));
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Erro na resposta:", errorText);
+        throw new Error(errorText);
       }
       
-      try {
-        const response = await fetch("/api/widgets", {
-          method: "POST",
-          body: formData,
-          credentials: "include",
-        });
-        
-        if (!response.ok) {
-          throw new Error(await response.text());
-        }
-        
-        queryClient.invalidateQueries({ queryKey: ["/api/widgets"] });
-        setIsCreateDialogOpen(false);
-        setAllowedDomains([]);
-        setPreviewImage(null);
-        
-        if (fileInput) {
-          fileInput.value = "";
-        }
-        
-        toast({
-          title: t("Widget criado com sucesso"),
-          description: t("O novo widget está pronto para ser usado"),
-          variant: "default",
-        });
-      } catch (error: any) {
-        toast({
-          title: t("Erro ao criar widget"),
-          description: error.message || t("Ocorreu um erro ao criar o widget"),
-          variant: "destructive",
-        });
+      const responseData = await response.json();
+      console.log("Resposta de sucesso:", responseData);
+      
+      // Atualizar os dados da UI
+      queryClient.invalidateQueries({ queryKey: ["/api/widgets"] });
+      setIsCreateDialogOpen(false);
+      setAllowedDomains([]);
+      setPreviewImage(null);
+      
+      if (fileInput) {
+        fileInput.value = "";
       }
-    } else {
-      // Se não tiver arquivo, usar a mutation normal
-      createWidgetMutation.mutate(data);
+      
+      toast({
+        title: t("Widget criado com sucesso"),
+        description: t("O novo widget está pronto para ser usado"),
+        variant: "default",
+      });
+    } catch (error: any) {
+      console.error("Erro ao criar widget:", error);
+      toast({
+        title: t("Erro ao criar widget"),
+        description: error.message || t("Ocorreu um erro ao criar o widget"),
+        variant: "destructive",
+      });
     }
   };
 
   const handleEditSubmit = async (data: WidgetFormValues) => {
+    console.log("Início da função handleEditSubmit com dados:", data);
     if (!selectedWidgetId) return;
     
+    // Sempre usar FormData, independente de ter arquivo ou não
+    const formData = new FormData();
+    
+    // Garantir que o nome esteja presente
+    if (!data.name) {
+      data.name = "Meu Widget"; // Valor padrão caso esteja vazio
+    }
+    
+    // Adicionar campos obrigatórios
+    formData.append("name", data.name);
+    formData.append("greeting", data.greeting || "Olá! Como posso ajudar?");
+    formData.append("theme_color", data.theme_color || "#6366F1");
+    
+    // Adicionar domínios permitidos
+    if (allowedDomains.length > 0) {
+      formData.append("allowed_domains", JSON.stringify(allowedDomains));
+    }
+    
+    // Verificar se há um arquivo de avatar
     const fileInput = editFileInputRef.current;
     const file = fileInput?.files?.[0];
-    
     if (file) {
-      // Se tiver arquivo selecionado, enviar usando FormData
-      const formData = new FormData();
-      formData.append("name", data.name);
-      formData.append("greeting", data.greeting);
-      formData.append("theme_color", data.theme_color);
       formData.append("avatar_image", file);
+    } else if (data.avatar_url) {
+      formData.append("avatar_url", data.avatar_url);
+    }
+    
+    // Verificar o conteúdo do FormData (para depuração)
+    console.log("FormData criado com campos:");
+    for (const pair of (formData as any).entries()) {
+      console.log(pair[0] + ': ' + pair[1]);
+    }
+    
+    try {
+      console.log("Enviando requisição...");
+      const response = await fetch(`/api/widgets/${selectedWidgetId}`, {
+        method: "PUT",
+        body: formData,
+        credentials: "include",
+      });
       
-      if (allowedDomains.length > 0) {
-        formData.append("allowed_domains", JSON.stringify(allowedDomains));
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Erro na resposta:", errorText);
+        throw new Error(errorText);
       }
       
-      try {
-        const response = await fetch(`/api/widgets/${selectedWidgetId}`, {
-          method: "PUT",
-          body: formData,
-          credentials: "include",
-        });
-        
-        if (!response.ok) {
-          throw new Error(await response.text());
-        }
-        
-        queryClient.invalidateQueries({ queryKey: ["/api/widgets"] });
-        queryClient.invalidateQueries({ queryKey: ["/api/widgets", selectedWidgetId] });
-        setIsEditDialogOpen(false);
-        setEditPreviewImage(null);
-        
-        if (fileInput) {
-          fileInput.value = "";
-        }
-        
-        toast({
-          title: t("Widget atualizado com sucesso"),
-          description: t("As alterações foram salvas"),
-          variant: "default",
-        });
-      } catch (error: any) {
-        toast({
-          title: t("Erro ao atualizar widget"),
-          description: error.message || t("Ocorreu um erro ao atualizar o widget"),
-          variant: "destructive",
-        });
+      const responseData = await response.json();
+      console.log("Resposta de sucesso:", responseData);
+      
+      // Atualizar os dados da UI
+      queryClient.invalidateQueries({ queryKey: ["/api/widgets"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/widgets", selectedWidgetId] });
+      setIsEditDialogOpen(false);
+      setEditPreviewImage(null);
+      
+      if (fileInput) {
+        fileInput.value = "";
       }
-    } else {
-      // Se não tiver arquivo, usar a mutation normal
-      updateWidgetMutation.mutate({ id: selectedWidgetId, data });
+      
+      toast({
+        title: t("Widget atualizado com sucesso"),
+        description: t("As alterações foram salvas"),
+        variant: "default",
+      });
+    } catch (error: any) {
+      console.error("Erro ao atualizar widget:", error);
+      toast({
+        title: t("Erro ao atualizar widget"),
+        description: error.message || t("Ocorreu um erro ao atualizar o widget"),
+        variant: "destructive",
+      });
     }
   };
 

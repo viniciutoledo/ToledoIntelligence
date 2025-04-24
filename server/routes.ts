@@ -2136,22 +2136,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Rota para criar um novo widget
-  app.post("/api/widgets", isAuthenticated, async (req, res) => {
+  app.post("/api/widgets", isAuthenticated, upload.single('avatar_image'), async (req, res) => {
     try {
       // Debug do corpo da requisição
       console.log("Body da requisição de criação de widget:", req.body);
+      console.log("Arquivo enviado:", req.file);
       
-      // Esquema de validação sem user_id pois será fornecido pelo usuário autenticado
+      // Esquema de validação mais flexível
       const schema = z.object({
-        name: z.string().min(3).max(100),
+        name: z.string().min(1).max(100),
         greeting: z.string().optional().default("Olá! Como posso ajudar?"),
-        avatar_url: z.string().url().optional().default("https://ui-avatars.com/api/?name=T&background=6366F1&color=fff"),
-        theme_color: z.string().regex(/^#[0-9A-F]{6}$/i).optional().default("#6366F1"),
-        allowed_domains: z.array(z.string()).optional().default([]),
+        avatar_url: z.string().optional().default("https://ui-avatars.com/api/?name=T&background=6366F1&color=fff"),
+        theme_color: z.string().optional().default("#6366F1"),
+        allowed_domains: z.union([
+          z.array(z.string()),
+          z.string().transform(str => {
+            try {
+              return JSON.parse(str);
+            } catch {
+              return [];
+            }
+          })
+        ]).optional().default([]),
       });
       
       // Validar os dados enviados pelo cliente
       try {
+        // Garantir que req.body.name não seja undefined
+        if (!req.body.name) {
+          req.body.name = "Meu Widget";
+        }
+        
         var validatedData = schema.parse(req.body);
         console.log("Dados validados:", validatedData);
       } catch (validationError) {
@@ -2164,10 +2179,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         user_id: req.user!.id,
         name: validatedData.name,
         greeting: validatedData.greeting,
-        avatar_url: validatedData.avatar_url,
         theme_color: validatedData.theme_color,
-        allowed_domains: validatedData.allowed_domains
+        allowed_domains: Array.isArray(validatedData.allowed_domains) ? validatedData.allowed_domains : []
       };
+      
+      // Se tiver arquivo de avatar, usar o caminho do arquivo
+      if (req.file) {
+        widgetData.avatar_url = `/uploads/${req.file.filename}`;
+      } else if (validatedData.avatar_url) {
+        widgetData.avatar_url = validatedData.avatar_url;
+      } else {
+        // Usar um avatar padrão com a primeira letra do nome
+        const firstLetter = widgetData.name.charAt(0).toUpperCase();
+        widgetData.avatar_url = `https://ui-avatars.com/api/?name=${firstLetter}&background=6366F1&color=fff`;
+      }
       
       // Verificar limite de mensagens
       const canSendMessages = await storage.checkMessageLimit(req.user!.id);
@@ -2177,15 +2202,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      console.log("Dados finais para criar widget:", widgetData);
+      
       // Criar o widget
-      const newWidget = await storage.createChatWidget({
-        ...widgetData,
-        user_id: req.user!.id,
-        greeting: widgetData.greeting || "Olá! Como posso ajudar?",
-        avatar_url: widgetData.avatar_url || "https://ui-avatars.com/api/?name=T&background=6366F1&color=fff",
-        theme_color: widgetData.theme_color || "#6366f1",
-        allowed_domains: widgetData.allowed_domains || []
-      });
+      const newWidget = await storage.createChatWidget(widgetData);
       
       // Log da ação
       await logAction({
@@ -2209,9 +2229,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Rota para atualizar um widget existente
-  app.put("/api/widgets/:id", isAuthenticated, async (req, res) => {
+  app.put("/api/widgets/:id", isAuthenticated, upload.single('avatar_image'), async (req, res) => {
     try {
       const { id } = req.params;
+      
+      // Debug do corpo da requisição
+      console.log("Body da requisição de atualização de widget:", req.body);
+      console.log("Arquivo enviado:", req.file);
       
       // Verificar se o widget existe
       const widget = await storage.getChatWidget(id);
@@ -2224,16 +2248,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Sem permissão para editar este widget" });
       }
       
+      // Esquema de validação mais flexível
       const schema = z.object({
-        name: z.string().min(3).max(100).optional(),
+        name: z.string().min(1).max(100).optional(),
         greeting: z.string().optional(),
-        avatar_url: z.string().url().optional(),
-        theme_color: z.string().regex(/^#[0-9A-F]{6}$/i).optional(),
+        avatar_url: z.string().optional(),
+        theme_color: z.string().optional(),
         is_active: z.boolean().optional(),
-        allowed_domains: z.array(z.string()).optional()
+        allowed_domains: z.union([
+          z.array(z.string()),
+          z.string().transform(str => {
+            try {
+              return JSON.parse(str);
+            } catch {
+              return [];
+            }
+          })
+        ]).optional()
       });
       
-      const updateData = schema.parse(req.body);
+      // Validar os dados
+      let updateData = schema.parse(req.body);
+      
+      // Se tiver arquivo de avatar, usar o caminho do arquivo
+      if (req.file) {
+        updateData.avatar_url = `/uploads/${req.file.filename}`;
+      }
+      
+      // Converter allowed_domains para array se for string JSON
+      if (updateData.allowed_domains && typeof updateData.allowed_domains === 'string') {
+        try {
+          updateData.allowed_domains = JSON.parse(updateData.allowed_domains);
+        } catch (e) {
+          console.error("Erro ao parsear allowed_domains:", e);
+          updateData.allowed_domains = [];
+        }
+      }
+      
+      console.log("Dados de atualização validados:", updateData);
       
       // Atualizar o widget
       const updatedWidget = await storage.updateChatWidget(id, updateData);
