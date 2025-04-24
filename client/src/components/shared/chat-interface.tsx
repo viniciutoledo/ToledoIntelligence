@@ -30,6 +30,7 @@ interface ChatInterfaceProps {
   
   // Status
   isLoading: boolean;
+  isProcessingLlm?: boolean;
   
   // Callbacks
   onSendMessage: (content: string) => void;
@@ -72,6 +73,7 @@ export function ChatInterface({
   avatar,
   isWidget = false,
   isLoading = false,
+  isProcessingLlm = false,
   onSendMessage,
   onFileUpload,
   customTexts = {}
@@ -259,6 +261,31 @@ export function ChatInterface({
             </div>
           </div>
         ))}
+        
+        {/* Indicador de digitação - Três pontos animados */}
+        {isProcessingLlm && (
+          <div className="flex items-start">
+            <div className="h-8 w-8 rounded-full flex items-center justify-center bg-primary-100 text-primary-600 mr-2 mt-1">
+              {avatar?.image_url ? (
+                <img
+                  src={avatar.image_url.startsWith('/') ? `${window.location.origin}${avatar.image_url}` : avatar.image_url}
+                  alt={avatar.name || "Avatar"}
+                  className="h-8 w-8 rounded-full object-cover"
+                />
+              ) : (
+                <span className="text-sm font-bold">T</span>
+              )}
+            </div>
+            <div className="py-2 px-3 bg-neutral-100 text-neutral-800 rounded-lg rounded-tl-none">
+              <div className="flex space-x-1">
+                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
+                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+              </div>
+            </div>
+          </div>
+        )}
+        
         <div ref={messagesEndRef} />
       </div>
 

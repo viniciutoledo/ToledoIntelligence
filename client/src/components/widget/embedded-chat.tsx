@@ -22,6 +22,7 @@ export function EmbeddedChat({ apiKey, initialOpen = false }: EmbeddedChatProps)
     currentSession,
     messages,
     isInitialized,
+    isProcessingLlm,
     createSessionMutation,
     endSessionMutation,
     sendMessageMutation,
@@ -255,6 +256,7 @@ export function EmbeddedChat({ apiKey, initialOpen = false }: EmbeddedChatProps)
           avatar={chatAvatar}
           isWidget={true}
           isLoading={isLoading}
+          isProcessingLlm={isProcessingLlm}
           onSendMessage={handleSendMessage}
           onFileUpload={handleFileUpload}
           customTexts={customTexts}
