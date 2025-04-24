@@ -109,6 +109,13 @@ const avatarUpload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Servir arquivos estáticos da pasta public
+  app.use(express.static(path.join(process.cwd(), 'public')));
+  
+  // Exibir o caminho dos uploads para facilitar acesso através da URL
+  console.log(`Servindo arquivos estáticos de ${UPLOADS_DIR} na rota /uploads`);
+  app.use('/uploads', express.static(UPLOADS_DIR));
+  
   // Setup authentication routes
   setupAuth(app);
   
