@@ -2222,12 +2222,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Criar objeto com os dados do widget, incluindo o user_id do usuário autenticado
-      const widgetData = {
+      const widgetData: any = {
         user_id: req.user!.id,
         name: validatedData.name,
         greeting: validatedData.greeting,
         theme_color: validatedData.theme_color,
-        allowed_domains: Array.isArray(validatedData.allowed_domains) ? validatedData.allowed_domains : []
+        allowed_domains: Array.isArray(validatedData.allowed_domains) ? validatedData.allowed_domains : [],
+        avatar_url: validatedData.avatar_url
       };
       
       // Se tiver arquivo de avatar, processar e armazenar em base64
@@ -2769,11 +2770,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const messages = await storage.getWidgetSessionMessages(parseInt(id));
         
         // Converter a configuração LLM para o formato esperado pela função processTextMessage
-        const formattedLlmConfig = {
+        const formattedLlmConfig: {
+          provider: 'anthropic' | 'openai',
+          modelName: string,
+          apiKey: string,
+          tone: 'formal' | 'normal' | 'casual',
+          behaviorInstructions: string,
+          shouldUseTrained: boolean
+        } = {
           provider: llmConfig.api_key.includes("sk-ant-") ? "anthropic" : "openai",
           modelName: llmConfig.model_name,
           apiKey: llmConfig.api_key,
-          tone: llmConfig.tone || 'normal',
+          tone: (llmConfig.tone as 'formal' | 'normal' | 'casual') || 'normal',
           behaviorInstructions: llmConfig.behavior_instructions || '',
           shouldUseTrained: llmConfig.should_use_training !== false
         };
@@ -3107,11 +3115,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const messages = await storage.getWidgetSessionMessages(session_id);
           
           // Converter a configuração LLM para o formato esperado pela função processTextMessage
-          const formattedLlmConfig = {
+          const formattedLlmConfig: {
+            provider: 'anthropic' | 'openai',
+            modelName: string,
+            apiKey: string,
+            tone: 'formal' | 'normal' | 'casual',
+            behaviorInstructions: string,
+            shouldUseTrained: boolean
+          } = {
             provider: llmConfig.api_key.includes("sk-ant-") ? "anthropic" : "openai",
             modelName: llmConfig.model_name,
             apiKey: llmConfig.api_key,
-            tone: llmConfig.tone || 'normal',
+            tone: (llmConfig.tone as 'formal' | 'normal' | 'casual') || 'normal',
             behaviorInstructions: llmConfig.behavior_instructions || '',
             shouldUseTrained: llmConfig.should_use_training !== false
           };
