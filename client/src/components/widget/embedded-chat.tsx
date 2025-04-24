@@ -38,10 +38,55 @@ export function EmbeddedChat({ apiKey, initialOpen = false }: EmbeddedChatProps)
   
   // Inicializar widget quando o componente é montado (apenas uma vez)
   useEffect(() => {
-    if (apiKey && !isInitialized) {
-      initializeWidget(apiKey);
+    // Tentar obter a API key de window.name se não foi passada como prop
+    // Isso é uma alternativa para casos onde o postMessage falha
+    const tryExtractApiKeyFromWindowName = () => {
+      try {
+        if (window.name && window.name.startsWith('apiKey=')) {
+          return window.name.substring(7);
+        }
+      } catch (e) {
+        console.error('Erro ao ler window.name:', e);
+      }
+      return null;
+    };
+
+    // Configurar receptor de mensagens do pai para receber a chave API
+    const messageHandler = (event: MessageEvent) => {
+      if (event.data && typeof event.data === 'object' && event.data.type === 'PROVIDE_API_KEY') {
+        console.log('Recebido API key via postMessage');
+        if (event.data.apiKey && !isInitialized) {
+          initializeWidget(event.data.apiKey);
+        }
+      }
+    };
+    
+    window.addEventListener('message', messageHandler);
+    
+    // Solicitar a chave API do pai se necessário
+    if (window.parent && window.parent !== window) {
+      console.log('Solicitando API key do pai');
+      window.parent.postMessage({ type: 'REQUEST_API_KEY' }, '*');
     }
-  }, [apiKey, isInitialized]);
+    
+    // Se temos a chave API via props, usamos ela
+    if (apiKey && !isInitialized) {
+      console.log('Inicializando widget com API key fornecida via props');
+      initializeWidget(apiKey);
+    } 
+    // Tentar extrair do nome da janela como backup
+    else if (!isInitialized) {
+      const extractedApiKey = tryExtractApiKeyFromWindowName();
+      if (extractedApiKey) {
+        console.log('Inicializando widget com API key extraída de window.name');
+        initializeWidget(extractedApiKey);
+      }
+    }
+    
+    return () => {
+      window.removeEventListener('message', messageHandler);
+    };
+  }, [apiKey, isInitialized, initializeWidget]);
   
   // Se não houver sessão ativa e o widget estiver carregado, inicie uma sessão
   const sessionCreationAttempted = useRef(false);

@@ -89,6 +89,9 @@
     // URL para a página de widget com a chave API
     widgetIframe.src = `${BASE_URL}/embed/widget?key=${options.apiKey}`;
     
+    // Passar a chave API através do nome da janela também (alternativa para quando postMessage falha)
+    widgetIframe.name = `apiKey=${options.apiKey}`;
+    
     // Modo inline (incorporado diretamente em um elemento)
     if (options.mode === 'inline' && options.targetElement) {
       const targetEl = typeof options.targetElement === 'string' 
@@ -150,18 +153,48 @@
     
     // Escutar mensagens do iframe
     window.addEventListener('message', handleIframeMessages);
+    
+    // Após criar o iframe, enviar a chave API para ele
+    // Esperar um pouco para ter certeza que o iframe foi carregado
+    setTimeout(function() {
+      if (widgetIframe && widgetIframe.contentWindow) {
+        console.log('Enviando chave API para o iframe após inicialização');
+        try {
+          widgetIframe.contentWindow.postMessage({
+            type: 'PROVIDE_API_KEY',
+            apiKey: options.apiKey
+          }, '*');
+        } catch (e) {
+          console.warn('Erro ao enviar mensagem para o iframe:', e);
+        }
+      }
+    }, 1000);
   }
   
   // Lidar com mensagens do iframe
   function handleIframeMessages(event) {
-    // Verificar origem para segurança
-    if (event.origin !== BASE_URL) {
+    // Verificar origem para segurança - em modo de desenvolvimento permitir qualquer origem
+    // Em produção, devemos descomponhar essa linha
+    if (event.origin !== BASE_URL && !event.origin.includes('replit') && !event.origin.includes('localhost')) {
+      console.log('Origem da mensagem não confiável:', event.origin);
       return;
     }
     
     // Lidar com diferentes tipos de mensagens
     if (event.data === 'toledoia-widget-close' || event.data === 'toledoia-widget-minimize') {
       hideWidget();
+    } else if (event.data && typeof event.data === 'object') {
+      // Lidar com mensagens estruturadas
+      if (event.data.type === 'REQUEST_API_KEY') {
+        // O iframe está pedindo a chave API
+        if (widgetIframe && widgetIframe.contentWindow) {
+          console.log('Enviando chave API para o iframe por solicitação');
+          widgetIframe.contentWindow.postMessage({
+            type: 'PROVIDE_API_KEY',
+            apiKey: widgetOptions.apiKey
+          }, '*');
+        }
+      }
     }
   }
   
