@@ -2246,8 +2246,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           widgetData.avatar_data = base64Data;
           widgetData.avatar_mime_type = req.file.mimetype;
           
-          // Configurar a URL para a rota que servirá a imagem
-          widgetData.avatar_url = `/api/widgets/${widgetData.id}/avatar`;
+          // Usamos uma URL genérica inicialmente - o ID será atualizado após a criação
+          widgetData.avatar_url = "/api/widgets/avatar";
           
           // Remover arquivo temporário do sistema de arquivos
           fs.unlinkSync(filePath);
