@@ -31,28 +31,9 @@ interface LlmFullConfig {
 // Convert fs.readFile to use promises
 const readFile = promisify(fs.readFile);
 
-// Função para limpar e formatar corretamente qualquer API key
-export function cleanApiKey(apiKey: string): string {
-  if (!apiKey || typeof apiKey !== 'string') {
-    return '';
-  }
-  
-  // Remover espaços e quebras de linha
-  let cleaned = apiKey.trim();
-  
-  // Remover prefixo "Bearer" se existir
-  if (cleaned.toLowerCase().startsWith('bearer ')) {
-    cleaned = cleaned.substring(7).trim();
-  }
-  
-  // Remover aspas que possam ter sido incluídas
-  cleaned = cleaned.replace(/^["']|["']$/g, '');
-  
-  // Remover espaços extras
-  cleaned = cleaned.trim();
-  
-  return cleaned;
-}
+// Nota: A função de limpeza de API key foi substituída por
+// métodos mais robustos diretamente nas funções getOpenAIClient e getAnthropicClient
+// para tratar as chaves adequadamente.
 
 // Get active LLM provider and model name with all configuration options
 export async function getActiveLlmInfo(): Promise<LlmFullConfig> {
