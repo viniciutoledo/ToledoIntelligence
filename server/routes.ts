@@ -695,6 +695,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Rota de diagnóstico para depuração das chaves API - apenas em desenvolvimento
+  app.get("/api/debug/llm-diagnostics", isAuthenticated, async (req, res) => {
+    try {
+      // Criar objeto de resultado para debug
+      const debugResult: any = {
+        env_keys: {
+          openai_present: !!process.env.OPENAI_API_KEY,
+          openai_length: process.env.OPENAI_API_KEY ? process.env.OPENAI_API_KEY.length : 0,
+          openai_first_chars: process.env.OPENAI_API_KEY ? process.env.OPENAI_API_KEY.substring(0, 3) : '',
+          anthropic_present: !!process.env.ANTHROPIC_API_KEY,
+          anthropic_length: process.env.ANTHROPIC_API_KEY ? process.env.ANTHROPIC_API_KEY.length : 0,
+          anthropic_first_chars: process.env.ANTHROPIC_API_KEY ? process.env.ANTHROPIC_API_KEY.substring(0, 3) : '',
+        },
+        db_config: null,
+        active_config: null,
+        test_results: {
+          openai_direct: false,
+          anthropic_direct: false
+        }
+      };
+      
+      // Obter configuração ativa do banco
+      const activeConfig = await storage.getActiveLlmConfig();
+      if (activeConfig) {
+        debugResult.db_config = {
+          id: activeConfig.id,
+          model_name: activeConfig.model_name,
+          is_active: activeConfig.is_active,
+          api_key_length: activeConfig.api_key ? activeConfig.api_key.length : 0,
+          api_key_first_chars: activeConfig.api_key ? activeConfig.api_key.substring(0, 3) : '',
+          tone: activeConfig.tone,
+          created_at: activeConfig.created_at
+        };
+      }
+      
+      // Testar obtenção das configurações
+      try {
+        const llmConfig = await getActiveLlmInfo();
+        debugResult.active_config = {
+          provider: llmConfig.provider,
+          modelName: llmConfig.modelName,
+          apiKey_length: llmConfig.apiKey ? llmConfig.apiKey.length : 0,
+          apiKey_first_chars: llmConfig.apiKey ? llmConfig.apiKey.substring(0, 3) : '',
+          tone: llmConfig.tone
+        };
+      } catch (configError) {
+        debugResult.active_config_error = configError instanceof Error ? configError.message : 'Unknown error';
+      }
+      
+      // Testar OpenAI diretamente
+      try {
+        if (process.env.OPENAI_API_KEY) {
+          const openaiParams = {
+            model: "gpt-3.5-turbo",
+            messages: [{ role: "user", content: "Say hello for testing purposes only" }],
+            max_tokens: 5
+          };
+          
+          await fetchOpenAIDirectly('chat/completions', openaiParams, process.env.OPENAI_API_KEY);
+          debugResult.test_results.openai_direct = true;
+        }
+      } catch (openaiError) {
+        debugResult.test_results.openai_error = openaiError instanceof Error ? openaiError.message : 'Unknown error';
+      }
+      
+      // Testar Anthropic diretamente
+      try {
+        if (process.env.ANTHROPIC_API_KEY) {
+          const anthropicParams = {
+            model: "claude-2",
+            max_tokens: 5,
+            messages: [{ role: "user", content: "Say hello for testing purposes only" }]
+          };
+          
+          await fetchAnthropicDirectly('messages', anthropicParams, process.env.ANTHROPIC_API_KEY);
+          debugResult.test_results.anthropic_direct = true;
+        }
+      } catch (anthropicError) {
+        debugResult.test_results.anthropic_error = anthropicError instanceof Error ? anthropicError.message : 'Unknown error';
+      }
+      
+      return res.json({ success: true, debug: debugResult });
+    } catch (error) {
+      console.error('Erro no diagnóstico de API keys:', error);
+      return res.status(500).json({ 
+        success: false, 
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+  
   app.put("/api/admin/llm/:id/activate", isAuthenticated, checkRole("admin"), async (req, res) => {
     const id = parseInt(req.params.id);
     

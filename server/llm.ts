@@ -261,18 +261,49 @@ async function fetchAnthropicDirectly(endpoint: string, data: any, apiKey: strin
     }
   }
   
+  // Correção para formatar os dados conforme esperado pela API do Anthropic
+  // A API espera { prompt: "" } para Claude 1/2 ou { messages: [] } para Claude 3
+  const formattedData = { ...data };
+  
+  console.log('DADOS ORIGINAIS ANTHROPIC:', JSON.stringify(data, null, 2));
+  
+  // Verificar se estamos tentando usar o formato Claude 3 (messages) com um modelo Claude 2
+  if (data.messages && (data.model === 'claude-2' || data.model === 'claude-2.0' || data.model === 'claude-2.1')) {
+    console.log('Convertendo formato de API Claude 3 para Claude 2');
+    
+    // Extrair apenas o conteúdo da primeira mensagem do usuário
+    const userMessage = data.messages.find((msg: any) => msg.role === 'user');
+    if (userMessage) {
+      formattedData.prompt = `\n\nHuman: ${userMessage.content}\n\nAssistant: `;
+      delete formattedData.messages;
+    }
+  }
+  
+  // Verificar o formato correto com base no modelo
+  if (!formattedData.prompt && !formattedData.messages) {
+    console.error('AVISO: Dados do Anthropic não têm prompt nem messages, tentando corrigir');
+    
+    // Tentar criar um prompt básico como fallback
+    formattedData.prompt = "\n\nHuman: Hello\n\nAssistant: ";
+  }
+  
+  console.log('DADOS FORMATADOS ANTHROPIC:', JSON.stringify(formattedData, null, 2));
+  
   try {
     // Construir URL e cabeçalhos usando concatenação para evitar problemas com caracteres Unicode
     const url = 'https://api.anthropic.com/v1/' + endpoint;
+    
+    // Verificar versão da API baseado no modelo
+    const apiVersion = data.model?.includes('claude-3') ? '2023-06-01' : '2023-06-01';
     
     const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': cleanedKey,
-        'anthropic-version': '2023-06-01'
+        'anthropic-version': apiVersion
       },
-      body: JSON.stringify(data)
+      body: JSON.stringify(formattedData)
     });
     
     if (!response.ok) {
@@ -1121,11 +1152,10 @@ export async function testConnection(apiKey: string, modelName: string): Promise
     if (isOpenAI) {
       try {
         // Test OpenAI connection usando fetch direto
-        console.log(`Testando conexão OpenAI com modelo: ${modelName}`);
-        const openai = getOpenAIClient(apiKey);
+        console.log(`Testando conexão OpenAI direta via fetch com modelo: ${modelName}`);
         
-        // Simple test request
-        const response = await openai.chat.completions.create({
+        // Parâmetros para teste OpenAI
+        const params = {
           model: modelName,
           max_tokens: 10,
           messages: [
@@ -1134,7 +1164,10 @@ export async function testConnection(apiKey: string, modelName: string): Promise
               content: 'Test connection'
             }
           ]
-        });
+        };
+        
+        // Chamada direta sem usar o cliente - abordagem mais confiável
+        const response = await fetchOpenAIDirectly('chat/completions', params, apiKey);
         
         if (response.choices && response.choices[0] && response.choices[0].message) {
           console.log('Conexão com OpenAI bem-sucedida');
@@ -1150,22 +1183,40 @@ export async function testConnection(apiKey: string, modelName: string): Promise
     } else {
       try {
         // Test Anthropic connection usando fetch direto
-        console.log(`Testando conexão Anthropic com modelo: ${modelName}`);
-        const anthropic = getAnthropicClient(apiKey);
+        console.log(`Testando conexão Anthropic direta via fetch com modelo: ${modelName}`);
         
-        // Simple test request
-        const response = await anthropic.messages.create({
-          model: modelName,
-          max_tokens: 10,
-          messages: [
-            {
-              role: 'user',
-              content: 'Test connection'
-            }
-          ]
-        });
+        // Determinar o formato correto baseado no modelo
+        let params: any;
         
-        if (response.content && response.content.length > 0) {
+        if (modelName.includes('claude-3')) {
+          // Format for Claude 3 API (usar messages array)
+          params = {
+            model: modelName,
+            max_tokens: 10,
+            messages: [
+              {
+                role: 'user',
+                content: 'Test connection'
+              }
+            ]
+          };
+        } else {
+          // Format for older Claude models (usar prompt)
+          params = {
+            model: modelName,
+            max_tokens: 10,
+            prompt: "\n\nHuman: Test connection\n\nAssistant: "
+          };
+        }
+        
+        console.log('Dados enviados para Anthropic:', JSON.stringify(params));
+        
+        // Chamada direta sem usar o cliente - abordagem mais confiável
+        const response = await fetchAnthropicDirectly('messages', params, apiKey);
+        console.log('Resposta do Anthropic:', JSON.stringify(response));
+        
+        if ((response.content && response.content.length > 0) || 
+            (response.completion && response.completion.length > 0)) {
           console.log('Conexão com Anthropic bem-sucedida');
           return true;
         }
