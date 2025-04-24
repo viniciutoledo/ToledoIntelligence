@@ -111,6 +111,17 @@ export default function LandingPage() {
           </div>
 
           <div className="flex items-center gap-4">
+            {/* Links para Widget */}
+            <div className="hidden md:flex items-center gap-4 mr-2">
+              <a 
+                href="/widget-embed-example.html" 
+                target="_blank" 
+                className="text-gray-300 hover:text-white transition-colors text-sm"
+              >
+                {language === "pt" ? "Documentação Widget" : "Widget Documentation"}
+              </a>
+            </div>
+            
             {/* Alternador de Idioma */}
             <button
               onClick={toggleLanguage}
