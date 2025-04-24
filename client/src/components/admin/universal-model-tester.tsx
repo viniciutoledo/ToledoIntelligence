@@ -13,32 +13,65 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 const providers = [
   {
     name: 'OpenAI',
-    models: ['gpt-3.5-turbo', 'gpt-4', 'gpt-4o', 'gpt-4-turbo'],
+    models: [
+      'gpt-4.1',
+      'gpt-4.1-mini',
+      'o4-mini',
+      'o3',
+      'gpt-4o',
+      'gpt-4o-mini',
+      'o3-mini-beta',
+      'o1',
+      'gpt-4-turbo'
+    ],
     apiKeyPlaceholder: 'sk-...'
   },
   {
     name: 'Anthropic',
-    models: ['claude-2', 'claude-3-haiku-20240307', 'claude-3-sonnet-20240229', 'claude-3-opus-20240229', 'claude-3-7-sonnet-20250219'],
+    models: [
+      'claude-3-5-sonnet',
+      'claude-3-7-sonnet-20250219',
+      'claude-3-5-haiku',
+      'claude-3-haiku-20240307',
+      'claude-3-sonnet-20240229',
+      'claude-3-opus-20240229'
+    ],
     apiKeyPlaceholder: 'sk-ant-...'
   },
   {
-    name: 'Alibaba',
-    models: ['qwen-plus', 'qwen-max', 'qwen-7b'],
+    name: 'Meta',
+    models: [
+      'llama-3.3',
+      'llama-3-8b',
+      'llama-3-70b'
+    ],
     apiKeyPlaceholder: 'api-key...'
   },
   {
-    name: 'Meta',
-    models: ['llama-3-8b', 'llama-3-70b'],
+    name: 'Alibaba',
+    models: [
+      'qwen-2.5-max',
+      'qwen-plus',
+      'qwen-max',
+      'qwen-7b'
+    ],
     apiKeyPlaceholder: 'api-key...'
   },
   {
     name: 'Deepseek',
-    models: ['deepseek-chat', 'deepseek-coder'],
+    models: [
+      'deepseek-v3',
+      'deepseek-chat',
+      'deepseek-coder'
+    ],
     apiKeyPlaceholder: 'api-key...'
   },
   {
     name: 'Maritaca',
-    models: ['maritalk'],
+    models: [
+      'sabia-3',
+      'maritalk'
+    ],
     apiKeyPlaceholder: 'api-key...'
   }
 ];
@@ -46,7 +79,7 @@ const providers = [
 const UniversalModelTester = () => {
   const [apiKey, setApiKey] = useState('');
   const [provider, setProvider] = useState('OpenAI');
-  const [model, setModel] = useState('gpt-3.5-turbo');
+  const [model, setModel] = useState('gpt-4o');
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('test');
