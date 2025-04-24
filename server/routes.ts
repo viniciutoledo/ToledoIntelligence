@@ -2527,8 +2527,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const referrer = req.headers.referer || req.headers.origin;
       console.log(`[EMBED] Referrer: ${referrer}`);
       
-      // Remover a API key da resposta e enviar
+      // Remover a API key da resposta
       const { api_key, ...safeWidget } = widget;
+      
+      // Converter URLs relativas para absolutas
+      if (safeWidget.avatar_url && safeWidget.avatar_url.startsWith('/')) {
+        // Determinar o protocolo e o host para criar a URL absoluta
+        const protocol = req.secure ? 'https://' : 'http://';
+        const host = req.get('host') || 'localhost:5000';
+        safeWidget.avatar_url = `${protocol}${host}${safeWidget.avatar_url}`;
+      }
+      
       return res.json(safeWidget);
     } catch (error) {
       console.error("[EMBED] Erro ao obter widget:", error);
