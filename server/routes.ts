@@ -2138,14 +2138,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Rota para criar um novo widget
   app.post("/api/widgets", isAuthenticated, async (req, res) => {
     try {
-      const schema = insertChatWidgetSchema.extend({
+      // Esquema de validação sem user_id pois será fornecido pelo usuário autenticado
+      const schema = z.object({
         name: z.string().min(3).max(100),
         greeting: z.string().optional(),
         avatar_url: z.string().url().optional(),
         theme_color: z.string().regex(/^#[0-9A-F]{6}$/i).optional(),
+        allowed_domains: z.array(z.string()).optional(),
       });
       
-      const widgetData = schema.parse(req.body);
+      // Validar os dados enviados pelo cliente
+      const validatedData = schema.parse(req.body);
+      
+      // Criar objeto com os dados do widget, incluindo o user_id do usuário autenticado
+      const widgetData = {
+        user_id: req.user!.id,
+        name: validatedData.name,
+        greeting: validatedData.greeting,
+        avatar_url: validatedData.avatar_url,
+        theme_color: validatedData.theme_color,
+        allowed_domains: validatedData.allowed_domains
+      };
       
       // Verificar limite de mensagens
       const canSendMessages = await storage.checkMessageLimit(req.user!.id);
