@@ -3564,9 +3564,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Incrementar contagem de mensagens para o usuário
       await storage.incrementMessageCount(widget.user_id);
       
+      // Buscar as mensagens completas e atualizadas do banco
+      const updatedUserMessage = await storage.getWidgetChatMessage(userMessage.id);
+      const updatedAiMessage = await storage.getWidgetChatMessage(aiMessage.id);
+      
+      // Garantir que a URL do arquivo esteja correta na resposta
+      if (updatedUserMessage && messageType === 'image') {
+        // Verificar se a URL do arquivo está correta
+        if (!updatedUserMessage.file_url || !updatedUserMessage.file_url.startsWith('/uploads/')) {
+          updatedUserMessage.file_url = fileUrl;
+        }
+      }
+      
       res.json({
-        userMessage,
-        aiMessage
+        userMessage: updatedUserMessage || {
+          ...userMessage,
+          file_url: fileUrl // Garantir que o file_url esteja sempre presente
+        },
+        aiMessage: updatedAiMessage || aiMessage
       });
     } catch (error) {
       console.error("Erro ao fazer upload de arquivo para widget:", error);
