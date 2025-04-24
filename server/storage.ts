@@ -1112,6 +1112,15 @@ export class MemStorage implements IStorage {
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   }
   
+  async getActiveWidgetSession(widgetId: string, visitorId: string): Promise<WidgetChatSession | undefined> {
+    return Array.from(this.widgetChatSessions.values())
+      .find(session => 
+        session.widget_id === widgetId && 
+        session.visitor_id === visitorId && 
+        !session.ended_at
+      );
+  }
+  
   async createWidgetChatSession(session: InsertWidgetChatSession): Promise<WidgetChatSession> {
     const id = this.currentIds.widgetChatSessionId++;
     const now = new Date();
@@ -1462,6 +1471,22 @@ export class DatabaseStorage implements IStorage {
       .from(widgetChatSessions)
       .where(eq(widgetChatSessions.widget_id, widgetId))
       .orderBy(desc(widgetChatSessions.created_at));
+  }
+  
+  async getActiveWidgetSession(widgetId: string, visitorId: string): Promise<WidgetChatSession | undefined> {
+    const [session] = await db.select()
+      .from(widgetChatSessions)
+      .where(
+        and(
+          eq(widgetChatSessions.widget_id, widgetId),
+          eq(widgetChatSessions.visitor_id, visitorId),
+          isNull(widgetChatSessions.ended_at)
+        )
+      )
+      .orderBy(desc(widgetChatSessions.created_at))
+      .limit(1);
+    
+    return session;
   }
   
   async createWidgetChatSession(session: InsertWidgetChatSession): Promise<WidgetChatSession> {
