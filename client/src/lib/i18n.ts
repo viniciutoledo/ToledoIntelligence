@@ -190,6 +190,15 @@ const enTranslations = {
     premium: 'Premium',
     remove: 'Remove',
     
+    // Dashboard Statistics
+    platformStats: 'Platform Statistics',
+    widgetsStats: 'Widget Statistics',
+    widgetsTotal: 'Total Widgets',
+    widgetSessions: 'Widget Sessions',
+    widgetMessages: 'Widget Messages',
+    widgetInteractions: 'Interactive sessions with visitors',
+    uniqueVisitors: 'Unique visitors',
+    
     actionUserLogin: 'User login',
     actionUserLogout: 'User logout',
     actionUserRegistered: 'User registered',

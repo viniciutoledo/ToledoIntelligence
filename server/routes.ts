@@ -867,22 +867,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Dashboard stats (admin)
   app.get("/api/admin/stats", isAuthenticated, checkRole("admin"), async (req, res) => {
-    const allUsers = await storage.getUsers();
-    
-    // Calculate dashboard stats
-    const stats = {
-      userCount: allUsers.length,
-      technicianCount: allUsers.filter(user => user.role === "technician").length,
-      adminCount: allUsers.filter(user => user.role === "admin").length,
-      activeUsers: allUsers.filter(user => !user.is_blocked).length,
-      blockedUsers: allUsers.filter(user => user.is_blocked).length,
-      totalChatSessions: 0, // Será implementado em versão futura
-      activeChatSessions: 0, // Será implementado em versão futura
-      messageCount: 0, // Será implementado em versão futura
-      averageResponseTime: 0, // Será implementado em versão futura
-    };
-    
-    res.json(stats);
+    try {
+      const allUsers = await storage.getUsers();
+      
+      // Obter estatísticas de chat
+      const chatSessions = await storage.getChatSessions();
+      const activeSessions = chatSessions.filter(session => !session.ended_at);
+      const chatMessages = await storage.getAllChatMessages();
+      
+      // Obter estatísticas de widgets
+      const widgets = await storage.getAllChatWidgets();
+      const activeWidgets = widgets.filter(widget => widget.is_active);
+      const widgetSessions = await storage.getAllWidgetChatSessions();
+      const widgetMessages = await storage.getAllWidgetChatMessages();
+      
+      // Calcular usuários impactados pelos widgets (visitantes únicos)
+      const uniqueVisitorIds = new Set(widgetSessions.map(session => session.visitor_id));
+      
+      // Calcular tempo médio de resposta
+      const aiResponseTimes = chatMessages
+        .filter(msg => !msg.is_user && msg.response_time)
+        .map(msg => msg.response_time || 0);
+      
+      const avgResponseTime = aiResponseTimes.length > 0 
+        ? aiResponseTimes.reduce((acc, time) => acc + time, 0) / aiResponseTimes.length 
+        : 0;
+      
+      // Calculate dashboard stats
+      const stats = {
+        userCount: allUsers.length,
+        technicianCount: allUsers.filter(user => user.role === "technician").length,
+        adminCount: allUsers.filter(user => user.role === "admin").length,
+        activeUsers: allUsers.filter(user => !user.is_blocked).length,
+        blockedUsers: allUsers.filter(user => user.is_blocked).length,
+        totalChatSessions: chatSessions.length,
+        activeChatSessions: activeSessions.length,
+        messageCount: chatMessages.length,
+        averageResponseTime: avgResponseTime,
+        
+        // Estatísticas de widgets
+        widgetCount: widgets.length,
+        activeWidgets: activeWidgets.length,
+        widgetSessions: widgetSessions.length,
+        widgetMessages: widgetMessages.length,
+        widgetUsersImpacted: uniqueVisitorIds.size,
+      };
+      
+      res.json(stats);
+    } catch (error) {
+      console.error("Erro ao obter estatísticas:", error);
+      res.status(500).json({ 
+        message: "Erro ao obter estatísticas",
+        error: error.message
+      });
+    }
   });
 
   // Audit logs (admin)
