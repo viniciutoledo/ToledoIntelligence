@@ -2597,6 +2597,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Rotas para widgets incorporáveis
+  
   // Rota para iniciar uma sessão de chat com um widget (pública)
   app.post("/api/public/widgets/sessions", async (req, res) => {
     try {
@@ -2852,6 +2854,353 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Erro ao obter mensagens de sessão de widget:", error);
       res.status(500).json({ message: "Erro ao obter mensagens" });
+    }
+  });
+  
+  // Novas rotas para compatibilidade com o widget (sem o prefixo 'public')
+  
+  // Rota para encerrar uma sessão de widget
+  app.put("/api/widgets/sessions/:id/end", async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Verificar se a sessão existe
+      const session = await storage.getWidgetChatSession(parseInt(id));
+      if (!session) {
+        return res.status(404).json({ message: "Sessão não encontrada" });
+      }
+      
+      // Verificar se a sessão já foi encerrada
+      if (session.ended_at) {
+        return res.status(400).json({ message: "Sessão já encerrada" });
+      }
+      
+      // Encerrar a sessão
+      const updatedSession = await storage.endWidgetChatSession(parseInt(id));
+      
+      res.json(updatedSession);
+    } catch (error) {
+      console.error("Erro ao encerrar sessão de widget:", error);
+      res.status(500).json({ message: "Erro ao encerrar sessão" });
+    }
+  });
+  
+  // GET /api/widgets/sessions/active - Retorna a sessão ativa para um widget
+  app.get("/api/widgets/sessions/active", async (req, res) => {
+    try {
+      const { widget_id, visitor_id } = req.query as { widget_id: string, visitor_id: string };
+      
+      if (!widget_id || !visitor_id) {
+        return res.status(400).json({ 
+          message: "Parâmetros widget_id e visitor_id são obrigatórios" 
+        });
+      }
+      
+      console.log('Buscando sessão ativa para widget:', widget_id, 'e visitante:', visitor_id);
+      
+      // Buscar widget para confirmar que existe
+      const widget = await storage.getChatWidget(widget_id);
+      if (!widget) {
+        return res.status(404).json({ message: "Widget não encontrado" });
+      }
+      
+      // Buscar sessão ativa
+      const session = await storage.getActiveWidgetSession(widget_id, visitor_id);
+      if (!session) {
+        return res.status(404).json({ message: "Nenhuma sessão ativa encontrada" });
+      }
+      
+      res.json(session);
+    } catch (error) {
+      console.error('Erro ao buscar sessão ativa:', error);
+      res.status(500).json({ message: "Erro ao buscar sessão ativa" });
+    }
+  });
+  
+  // POST /api/widgets/sessions - Cria uma nova sessão
+  app.post("/api/widgets/sessions", async (req, res) => {
+    try {
+      const { widget_id, visitor_id, language, referrer_url } = req.body;
+      
+      if (!widget_id || !visitor_id) {
+        return res.status(400).json({ 
+          message: "widget_id e visitor_id são obrigatórios" 
+        });
+      }
+      
+      console.log('Criando nova sessão para widget:', widget_id, 'e visitante:', visitor_id);
+      
+      // Buscar widget para confirmar que existe
+      const widget = await storage.getChatWidget(widget_id);
+      if (!widget) {
+        return res.status(404).json({ message: "Widget não encontrado" });
+      }
+      
+      // Verificar limite de mensagens do usuário dono do widget
+      const canSendMessages = await storage.checkMessageLimit(widget.user_id);
+      if (!canSendMessages) {
+        return res.status(403).json({ 
+          message: "O proprietário deste widget atingiu o limite de mensagens do plano",
+          error: "message_limit_reached"
+        });
+      }
+      
+      // Criar a sessão
+      const session = await storage.createWidgetChatSession({
+        widget_id,
+        visitor_id,
+        language,
+        referrer_url
+      });
+      
+      // Criar mensagem de boas-vindas
+      if (widget.greeting) {
+        await storage.createWidgetChatMessage({
+          session_id: session.id,
+          content: widget.greeting,
+          is_user: false
+        });
+      }
+      
+      res.status(201).json(session);
+    } catch (error) {
+      console.error("Erro ao criar sessão de widget:", error);
+      res.status(500).json({ message: "Erro ao criar sessão de chat" });
+    }
+  });
+  
+  // GET /api/widgets/messages - Obtém mensagens de uma sessão
+  app.get("/api/widgets/messages", async (req, res) => {
+    try {
+      const { session_id } = req.query as { session_id: string };
+      
+      if (!session_id) {
+        return res.status(400).json({ message: "Parâmetro session_id é obrigatório" });
+      }
+      
+      const sessionIdNumber = parseInt(session_id);
+      
+      // Verificar se a sessão existe
+      const session = await storage.getWidgetChatSession(sessionIdNumber);
+      if (!session) {
+        return res.status(404).json({ message: "Sessão não encontrada" });
+      }
+      
+      // Obter mensagens da sessão
+      const messages = await storage.getWidgetSessionMessages(sessionIdNumber);
+      
+      res.json(messages);
+    } catch (error) {
+      console.error("Erro ao obter mensagens de sessão de widget:", error);
+      res.status(500).json({ message: "Erro ao obter mensagens" });
+    }
+  });
+  
+  // POST /api/widgets/messages - Envia uma mensagem para uma sessão
+  app.post("/api/widgets/messages", async (req, res) => {
+    try {
+      const { session_id, content, message_type = "text", is_user = true } = req.body;
+      
+      if (!session_id || content === undefined) {
+        return res.status(400).json({ 
+          message: "session_id e content são obrigatórios" 
+        });
+      }
+      
+      // Verificar se a sessão existe
+      const session = await storage.getWidgetChatSession(session_id);
+      if (!session) {
+        return res.status(404).json({ message: "Sessão não encontrada" });
+      }
+      
+      // Verificar se a sessão foi encerrada
+      if (session.ended_at) {
+        return res.status(403).json({ message: "Sessão encerrada" });
+      }
+      
+      // Verificar se o widget existe e está ativo
+      const widget = await storage.getChatWidget(session.widget_id);
+      if (!widget) {
+        return res.status(404).json({ message: "Widget não encontrado" });
+      }
+      
+      if (!widget.is_active) {
+        return res.status(403).json({ message: "Widget está inativo" });
+      }
+      
+      // Verificar limite de mensagens do usuário dono do widget
+      const canSendMessages = await storage.checkMessageLimit(widget.user_id);
+      if (!canSendMessages) {
+        return res.status(403).json({ 
+          message: "O proprietário deste widget atingiu o limite de mensagens do plano",
+          error: "message_limit_reached"
+        });
+      }
+      
+      // Criar a mensagem do usuário
+      const userMessage = await storage.createWidgetChatMessage({
+        session_id,
+        content,
+        message_type,
+        is_user
+      });
+      
+      // Se a mensagem é do usuário, gerar resposta automática
+      if (is_user) {
+        // Obter configuração LLM ativa
+        const llmConfig = await storage.getActiveLlmConfig();
+        if (!llmConfig) {
+          return res.status(500).json({ message: "Configuração LLM não encontrada" });
+        }
+        
+        // Processar a resposta da IA
+        let aiResponse: string;
+        try {
+          // Obter o histórico de mensagens da sessão
+          const messages = await storage.getWidgetSessionMessages(session_id);
+          
+          // Processar a mensagem com o LLM
+          aiResponse = await processTextMessage(
+            content,
+            messages.filter(m => m.id !== userMessage.id).map(m => ({
+              content: m.content || "",
+              role: m.is_user ? "user" : "assistant"
+            })),
+            llmConfig
+          );
+        } catch (error) {
+          console.error("Erro ao processar mensagem com LLM:", error);
+          aiResponse = "Desculpe, ocorreu um erro ao processar sua mensagem. Por favor, tente novamente.";
+        }
+        
+        // Criar a mensagem da IA
+        const aiMessage = await storage.createWidgetChatMessage({
+          session_id,
+          content: aiResponse,
+          message_type: "text",
+          is_user: false
+        });
+        
+        // Incrementar contagem de mensagens para o usuário
+        await storage.incrementMessageCount(widget.user_id);
+        
+        res.json({
+          userMessage,
+          aiMessage
+        });
+      } else {
+        // Se não for do usuário, só retorna a mensagem criada
+        res.json(userMessage);
+      }
+    } catch (error) {
+      console.error("Erro ao enviar mensagem para widget:", error);
+      res.status(500).json({ message: "Erro ao enviar mensagem" });
+    }
+  });
+  
+  // Rota para upload de arquivo do widget
+  app.post("/api/widgets/upload", upload.single('file'), async (req, res) => {
+    try {
+      const sessionId = req.body.session_id;
+      
+      if (!sessionId) {
+        return res.status(400).json({ message: "session_id é obrigatório" });
+      }
+      
+      if (!req.file) {
+        return res.status(400).json({ message: "Nenhum arquivo enviado" });
+      }
+      
+      // Verificar se a sessão existe
+      const session = await storage.getWidgetChatSession(parseInt(sessionId));
+      if (!session) {
+        return res.status(404).json({ message: "Sessão não encontrada" });
+      }
+      
+      // Verificar se a sessão foi encerrada
+      if (session.ended_at) {
+        return res.status(403).json({ message: "Sessão encerrada" });
+      }
+      
+      // Verificar se o widget existe e está ativo
+      const widget = await storage.getChatWidget(session.widget_id);
+      if (!widget) {
+        return res.status(404).json({ message: "Widget não encontrado" });
+      }
+      
+      if (!widget.is_active) {
+        return res.status(403).json({ message: "Widget está inativo" });
+      }
+      
+      // Verificar limite de mensagens do usuário dono do widget
+      const canSendMessages = await storage.checkMessageLimit(widget.user_id);
+      if (!canSendMessages) {
+        return res.status(403).json({ 
+          message: "O proprietário deste widget atingiu o limite de mensagens do plano",
+          error: "message_limit_reached"
+        });
+      }
+      
+      // Processar arquivo
+      const file = req.file;
+      const fileUrl = `/uploads/${file.filename}`;
+      const isImage = file.mimetype.startsWith('image/');
+      const messageType = isImage ? 'image' : 'file';
+      
+      // Criar a mensagem do usuário com o arquivo
+      const userMessage = await storage.createWidgetChatMessage({
+        session_id: parseInt(sessionId),
+        content: file.originalname,
+        message_type: messageType,
+        file_url: fileUrl,
+        is_user: true
+      });
+      
+      // Se é uma imagem, analisar com IA
+      let aiResponse = "";
+      if (isImage) {
+        try {
+          const llmConfig = await storage.getActiveLlmConfig();
+          if (llmConfig) {
+            aiResponse = await analyzeImage(file.path, llmConfig.language || 'pt');
+          }
+        } catch (error) {
+          console.error("Erro ao analisar imagem:", error);
+          aiResponse = "Desculpe, não foi possível analisar essa imagem.";
+        }
+      } else {
+        // Se não é imagem, verificar se é um tipo de arquivo que pode ser analisado
+        try {
+          const llmConfig = await storage.getActiveLlmConfig();
+          if (llmConfig && (file.mimetype === 'application/pdf' || file.mimetype === 'text/plain')) {
+            aiResponse = await analyzeFile(file.path, llmConfig.language || 'pt');
+          } else {
+            aiResponse = "Recebi seu arquivo. Como posso ajudar com ele?";
+          }
+        } catch (error) {
+          console.error("Erro ao analisar arquivo:", error);
+          aiResponse = "Recebi seu arquivo, mas não foi possível analisá-lo. Como posso ajudar?";
+        }
+      }
+      
+      // Criar a mensagem da IA com a resposta
+      const aiMessage = await storage.createWidgetChatMessage({
+        session_id: parseInt(sessionId),
+        content: aiResponse,
+        message_type: "text",
+        is_user: false
+      });
+      
+      // Incrementar contagem de mensagens para o usuário
+      await storage.incrementMessageCount(widget.user_id);
+      
+      res.json({
+        userMessage,
+        aiMessage
+      });
+    } catch (error) {
+      console.error("Erro ao fazer upload de arquivo para widget:", error);
+      res.status(500).json({ message: "Erro ao processar arquivo" });
     }
   });
   
