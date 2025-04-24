@@ -247,56 +247,93 @@ export function ChatInterface({
                   </div>
                   <div className="image-container relative">
                     {msg.file_url ? (
-                      <img
-                        src={msg.file_url.startsWith('blob:') ? msg.file_url : getOptimizedFileUrl(msg.file_url)}
-                        alt="Imagem enviada"
-                        loading="lazy"
-                        decoding="async"
-                        crossOrigin="anonymous"
-                        referrerPolicy="no-referrer"
-                        className="rounded-md max-h-60 max-w-full object-contain"
-                        onError={(e) => {
-                          console.error("Erro ao carregar imagem:", msg.file_url);
-                          // Tenta corrigir a URL se possível
-                          const imgElement = e.currentTarget;
-                          
-                          try {
-                            // Não tenta corrigir URLs blob - são temporárias de preview
-                            if (msg.file_url && !msg.file_url.startsWith('blob:')) {
-                              // Remove caracteres especiais que possam estar causando problemas
-                              const cleanUrl = msg.file_url.replace(/[\u200B-\u200D\uFEFF]/g, '');
-                              
-                              if (cleanUrl !== msg.file_url) {
-                                console.log("URL limpada de caracteres especiais:", cleanUrl);
-                                imgElement.src = getOptimizedFileUrl(cleanUrl);
+                      <div className="image-wrapper relative">
+                        {/* 
+                          As URLs blob devem ser preservadas exatamente como estão
+                          Para outras URLs, usamos a função de otimização
+                        */}
+                        <img
+                          src={msg.file_url.startsWith('blob:') ? msg.file_url : getOptimizedFileUrl(msg.file_url)}
+                          alt="Imagem enviada"
+                          loading="lazy"
+                          decoding="async"
+                          crossOrigin="anonymous"
+                          referrerPolicy="no-referrer"
+                          className="rounded-md max-h-60 max-w-full object-contain"
+                          onLoad={(e) => {
+                            // Marcar imagem como carregada com sucesso
+                            console.log("Imagem carregada com sucesso:", e.currentTarget.src);
+                            e.currentTarget.dataset.loaded = "true";
+                          }}
+                          onError={(e) => {
+                            // Evitar ciclos infinitos de tentativas
+                            if (e.currentTarget.dataset.retryCount) {
+                              const retryCount = parseInt(e.currentTarget.dataset.retryCount);
+                              if (retryCount >= 3) {
+                                console.error("Muitas tentativas falhas para carregar imagem:", msg.file_url);
+                                e.currentTarget.src = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxMDAiIGZpbGw9IiNmMGYwZjAiLz4KPHRleHQgeD0iNTAiIHk9IjUwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTIiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGFsaWdubWVudC1iYXNlbGluZT0ibWlkZGxlIiBmaWxsPSIjOTk5Ij5FcnJvIGFvIGNhcnJlZ2FyIGltYWdlbTwvdGV4dD4KPC9zdmc+";
+                                e.currentTarget.alt = "Erro ao carregar imagem";
+                                e.currentTarget.style.width = "100%";
+                                e.currentTarget.style.height = "100px";
                                 return;
                               }
-                              
-                              // Tentativa com URL absoluta
-                              if (!cleanUrl.startsWith('http') && !cleanUrl.startsWith('/')) {
-                                console.log("Tentando URL absoluta:", `/${cleanUrl}`);
-                                imgElement.src = `/${cleanUrl}`;
-                                return;
-                              }
-                              
-                              // Tentativa com origem completa
-                              if (cleanUrl.startsWith('/')) {
-                                console.log("Tentando URL com origem:", `${window.location.origin}${cleanUrl}`);
-                                imgElement.src = `${window.location.origin}${cleanUrl}`;
-                                return;
-                              }
+                              e.currentTarget.dataset.retryCount = (retryCount + 1).toString();
+                            } else {
+                              e.currentTarget.dataset.retryCount = "1";
                             }
-                          } catch (error) {
-                            console.error("Erro ao tentar recuperar imagem:", error);
-                          }
-                          
-                          // Última opção: mostrar placeholder de erro
-                          imgElement.src = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxMDAiIGZpbGw9IiNmMGYwZjAiLz4KPHRleHQgeD0iNTAiIHk9IjUwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTIiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGFsaWdubWVudC1iYXNlbGluZT0ibWlkZGxlIiBmaWxsPSIjOTk5Ij5FcnJvIGFvIGNhcnJlZ2FyIGltYWdlbTwvdGV4dD4KPC9zdmc+";
-                          imgElement.alt = "Erro ao carregar imagem";
-                          imgElement.style.width = "100%";
-                          imgElement.style.height = "100px";
-                        }}
-                      />
+                            
+                            console.error("Erro ao carregar imagem:", msg.file_url);
+                            // Referência para código mais limpo
+                            const imgElement = e.currentTarget;
+                            
+                            try {
+                              // Se for blob URL, não tente consertar - é uma prévia temporária e pode ter sido revogada
+                              if (msg.file_url && !msg.file_url.startsWith('blob:')) {
+                                // Remove caracteres especiais que possam estar causando problemas
+                                const cleanUrl = msg.file_url.replace(/[\u200B-\u200D\uFEFF\u0000-\u001F\u007F-\u009F]/g, '');
+                                
+                                if (cleanUrl !== msg.file_url) {
+                                  console.log("URL limpada de caracteres especiais:", cleanUrl);
+                                  imgElement.src = getOptimizedFileUrl(cleanUrl);
+                                  return;
+                                }
+                                
+                                // Tentativa com URL absoluta
+                                if (!cleanUrl.startsWith('http') && !cleanUrl.startsWith('/')) {
+                                  console.log("Tentando URL absoluta:", `/${cleanUrl}`);
+                                  imgElement.src = `/${cleanUrl}`;
+                                  return;
+                                }
+                                
+                                // Tentativa com origem completa
+                                if (cleanUrl.startsWith('/')) {
+                                  console.log("Tentando URL com origem:", `${window.location.origin}${cleanUrl}`);
+                                  imgElement.src = `${window.location.origin}${cleanUrl}`;
+                                  return;
+                                }
+                                
+                                // Tentativa com URL de uploads explícita
+                                if (!cleanUrl.includes('/uploads/') && !cleanUrl.startsWith('http')) {
+                                  console.log("Tentando URL com pasta uploads:", `/uploads/${cleanUrl.replace(/^\/+/, '')}`);
+                                  imgElement.src = `/uploads/${cleanUrl.replace(/^\/+/, '')}`;
+                                  return;
+                                }
+                              } else if (msg.file_url && msg.file_url.startsWith('blob:')) {
+                                // Para URLs blob, não temos muitas opções além de mostrar o erro
+                                console.warn("URL blob não pôde ser carregada, pode ter sido revogada:", msg.file_url);
+                              }
+                            } catch (error) {
+                              console.error("Erro ao tentar recuperar imagem:", error);
+                            }
+                            
+                            // Última opção: mostrar placeholder de erro
+                            imgElement.src = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxMDAiIGZpbGw9IiNmMGYwZjAiLz4KPHRleHQgeD0iNTAiIHk9IjUwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTIiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGFsaWdubWVudC1iYXNlbGluZT0ibWlkZGxlIiBmaWxsPSIjOTk5Ij5FcnJvIGFvIGNhcnJlZ2FyIGltYWdlbTwvdGV4dD4KPC9zdmc+";
+                            imgElement.alt = "Erro ao carregar imagem";
+                            imgElement.style.width = "100%";
+                            imgElement.style.height = "100px";
+                          }}
+                        />
+                      </div>
                     ) : (
                       <div className="h-60 w-full bg-neutral-100 flex items-center justify-center text-neutral-400">
                         <Image className="h-8 w-8" />

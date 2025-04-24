@@ -381,20 +381,32 @@ export function WidgetChatProvider({
         const isImage = file.type.startsWith("image/");
         const messageType = isImage ? "image" : "file";
         
-        // Criar url temporária para preview da imagem
+        // Armazenar o arquivo original para futuras referências
+        const originalFile = file;
+        
+        // Criar e armazenar URL temporária para preview da imagem
         let previewUrl = null;
         if (isImage) {
           try {
             // Criar uma URL temporária para exibir a imagem antes do upload ser finalizado
             previewUrl = URL.createObjectURL(file);
+            
+            // Armazenar em um atributo para a URL persistir durante o upload
+            // @ts-ignore - adicionando campo temporário que não está na interface
+            file._previewUrl = previewUrl;
+            
+            console.log("URL temporária criada:", previewUrl);
           } catch (e) {
             console.error("Erro ao criar preview da imagem:", e);
           }
         }
         
+        // Gerar um ID único temporário para a mensagem prévia
+        const tempId = Date.now();
+        
         // Criar mensagem prévia
         const previewUserMessage: WidgetChatMessage = {
-          id: Date.now(), // ID temporário
+          id: tempId, // ID temporário
           session_id: Number(sessionId),
           message_type: messageType,
           content: file.name,
@@ -415,6 +427,7 @@ export function WidgetChatProvider({
           [...currentMessages, previewUserMessage]
         );
         
+        // Realizar o upload do arquivo
         const res = await fetch("/api/widgets/upload", {
           method: "POST",
           body: formData,
@@ -441,27 +454,39 @@ export function WidgetChatProvider({
           throw new Error(errorData.message || "Erro ao enviar arquivo");
         }
         
-        // Se a URL de preview temporária foi criada, revogar para liberar memória
-        if (previewUrl) {
-          try {
-            URL.revokeObjectURL(previewUrl);
-          } catch (e) {
-            console.error("Erro ao liberar preview da imagem:", e);
+        // Obter a resposta do servidor
+        const responseData = await res.json();
+        
+        // Verificar se temos a mensagem do usuário na resposta
+        if (responseData.userMessage) {
+          // Garantir que a URL do arquivo da mensagem do usuário está correta
+          if (isImage && responseData.userMessage.message_type === "image") {
+            // Se o servidor não enviou URL para a imagem, usar a URL temporária
+            if (!responseData.userMessage.file_url && previewUrl) {
+              responseData.userMessage.file_url = previewUrl;
+            }
           }
         }
         
-        return res.json();
+        return {
+          ...responseData,
+          tempId: tempId, // Incluir o ID temporário para podermos encontrar a mensagem prévia
+          previewUrl: previewUrl // Incluir a URL da prévia
+        };
       } catch (error) {
         console.error("Erro no upload de arquivo:", error);
         throw error;
       } finally {
-        // Garantir que a animação de carregamento seja desativada mesmo em caso de erro
-        setIsProcessingLlm(false);
+        // Não revocar URL aqui, pois precisamos dela para exibir a prévia
+        // Ela será revogada eventualmente pelo navegador quando não for mais necessária
       }
     },
     onSuccess: (data) => {
-      // As mensagens (usuário e IA) vêm juntas na resposta
-      const { userMessage, aiMessage } = data;
+      // Desativar a animação de carregamento da LLM
+      setIsProcessingLlm(false);
+      
+      // Obter os dados da resposta
+      const { userMessage, aiMessage, tempId, previewUrl } = data;
       
       // Obter mensagens atuais
       const currentMessages = queryClient.getQueryData<WidgetChatMessage[]>([
@@ -469,17 +494,34 @@ export function WidgetChatProvider({
         currentSession?.id
       ]) || [];
       
-      // Filtrar mensagens temporárias (criadas pelo preview)
+      // Filtrar todas as mensagens temporárias do usuário (as que possuem ID temporário)
+      // exceto a que acabou de ser enviada, que manteremos como está
       const filteredMessages = currentMessages.filter(msg => 
-        // Manter mensagens que não sejam do usuário ou que tenham ID menor que timestamp (não temporárias)
-        !msg.is_user || msg.id < 1000000000000
+        !msg.is_user || // Manter todas as mensagens que não são do usuário
+        msg.id < 1000000000000 || // Manter mensagens com ID não-temporário
+        (msg.id === tempId && msg.file_url === previewUrl) // Manter mensagem temporária que acabamos de adicionar
       );
       
       const newMessages = [...filteredMessages];
       
+      // Verificar se a mensagem do usuário enviada pelo servidor tem URL de arquivo
+      if (userMessage && userMessage.message_type === "image") {
+        // Se o servidor não retornou URL do arquivo, manter a prévia que já temos
+        if (!userMessage.file_url) {
+          const previewMessage = filteredMessages.find(msg => msg.id === tempId);
+          if (previewMessage && previewMessage.file_url) {
+            userMessage.file_url = previewMessage.file_url;
+          }
+        }
+      }
+      
       // Adicionar mensagem oficial do usuário se presente na resposta
+      // substituindo a versão temporária
       if (userMessage) {
-        newMessages.push(userMessage);
+        // Remover qualquer mensagem temporária correspondente
+        const actualMessages = newMessages.filter(msg => msg.id !== tempId);
+        newMessages.length = 0; // Esvaziar o array
+        newMessages.push(...actualMessages, userMessage);
       }
       
       // Adicionar mensagem da IA se presente na resposta  
@@ -501,6 +543,9 @@ export function WidgetChatProvider({
       }, 1000);
     },
     onError: (error: Error) => {
+      // Desativar a animação de carregamento da LLM
+      setIsProcessingLlm(false);
+      
       // Se a sessão está encerrada, tentar criar uma nova automaticamente
       if (error.message && (
           error.message.includes("Sessão encerrada") || 
