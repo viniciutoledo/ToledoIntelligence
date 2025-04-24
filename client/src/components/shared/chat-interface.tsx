@@ -198,7 +198,7 @@ export function ChatInterface({
               ) : (
                 avatar?.image_url ? (
                   <img
-                    src={avatar.image_url}
+                    src={avatar.image_url.startsWith('/') ? `${window.location.origin}${avatar.image_url}` : avatar.image_url}
                     alt={avatar.name || "Avatar"}
                     className="h-8 w-8 rounded-full object-cover"
                   />
@@ -222,7 +222,7 @@ export function ChatInterface({
                     <span className="text-sm">{msg.content || "Imagem"}</span>
                   </div>
                   <img
-                    src={msg.file_url}
+                    src={msg.file_url?.startsWith('/') ? `${window.location.origin}${msg.file_url}` : msg.file_url}
                     alt="Uploaded file"
                     className="rounded-md max-h-48 w-auto"
                     onError={(e) => {
@@ -230,7 +230,7 @@ export function ChatInterface({
                     }}
                   />
                   <a 
-                    href={msg.file_url} 
+                    href={msg.file_url?.startsWith('/') ? `${window.location.origin}${msg.file_url}` : msg.file_url} 
                     target="_blank" 
                     rel="noopener noreferrer"
                     className="mt-2 inline-block text-xs text-primary hover:underline"
@@ -245,7 +245,7 @@ export function ChatInterface({
                     <span className="text-sm">{msg.content || "Arquivo"}</span>
                   </div>
                   <a 
-                    href={msg.file_url} 
+                    href={msg.file_url?.startsWith('/') ? `${window.location.origin}${msg.file_url}` : msg.file_url} 
                     target="_blank" 
                     rel="noopener noreferrer"
                     className="mt-2 inline-block text-xs text-primary hover:underline"
