@@ -1,18 +1,15 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect } from "react";
 import { useLanguage } from "@/hooks/use-language";
 import { useChat } from "@/hooks/use-chat";
 import { useAvatar } from "@/hooks/use-avatar";
 import { useAuth } from "@/hooks/use-auth";
-import { useToast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Paperclip, Image, Send, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import { ChatInterface as SharedChatInterface } from "@/components/shared/chat-interface";
 
 export function ChatInterface() {
   const { t } = useLanguage();
   const { user } = useAuth();
   const { avatar } = useAvatar();
-  const { toast } = useToast();
   const {
     currentSession,
     messages,
@@ -25,92 +22,14 @@ export function ChatInterface() {
                    sendMessageMutation.isPending || 
                    uploadFileMutation.isPending;
   
-  const [message, setMessage] = useState("");
-  const [fileSelected, setFileSelected] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  
-  // Create a new session when component mounts if none exists
+  // Criar uma nova sessão quando o componente monta, se nenhuma existir
   useEffect(() => {
     if (!currentSession && !createSessionMutation.isPending) {
       createSessionMutation.mutate(user?.language);
     }
   }, [currentSession, createSessionMutation, user]);
   
-  // Scroll to bottom when messages change
-  useEffect(() => {
-    console.log("Mensagens atualizadas:", messages);
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-  
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || !currentSession) return;
-    
-    const file = e.target.files[0];
-    if (!file) {
-      setFileSelected(false);
-      setSelectedFile(null);
-      return;
-    }
-    
-    // Verificar tamanho do arquivo (máximo 50MB)
-    const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB em bytes
-    if (file.size > MAX_FILE_SIZE) {
-      toast({
-        title: t("common.error"),
-        description: t("technician.fileTooLarge"),
-        variant: "destructive",
-      });
-      
-      // Limpar seleção
-      if (fileInputRef.current) fileInputRef.current.value = "";
-      return;
-    }
-    
-    console.log("Arquivo selecionado:", file.name, file.type, file.size);
-    setFileSelected(true);
-    setSelectedFile(file);
-    
-    // Não enviamos o arquivo automaticamente, apenas armazenamos para envio posterior
-    // O usuário precisa clicar no botão de enviar
-  };
-  
-  const handleSendMessage = () => {
-    if ((!message.trim() && !selectedFile) || !currentSession) return;
-    
-    if (selectedFile) {
-      uploadFileMutation.mutate({
-        sessionId: currentSession.id,
-        file: selectedFile,
-      });
-      
-      // Limpar arquivo selecionado após envio
-      setSelectedFile(null);
-      setFileSelected(false);
-      
-      // Reset do input de arquivo
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    }
-    
-    if (message.trim()) {
-      sendMessageMutation.mutate({
-        sessionId: currentSession.id,
-        content: message,
-      });
-      
-      setMessage("");
-    }
-  };
-  
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
-  };
-
-  // Loading state
+  // Estado de carregamento
   if (createSessionMutation.isPending) {
     return (
       <div className="flex flex-col items-center justify-center h-[60vh]">
@@ -120,204 +39,40 @@ export function ChatInterface() {
     );
   }
 
+  // Formatando o avatar para o componente compartilhado
+  const chatAvatar = avatar ? {
+    image_url: avatar.image_url,
+    name: avatar.name || (user?.language === "pt" ? "Bot ToledoIA" : "ToledoIA Bot")
+  } : undefined;
+
+  // Lidar com o envio de mensagem
+  const handleSendMessage = (content: string) => {
+    if (!content.trim() || !currentSession) return;
+    
+    sendMessageMutation.mutate({
+      sessionId: currentSession.id,
+      content,
+    });
+  };
+  
+  // Lidar com o upload de arquivo
+  const handleFileUpload = (file: File) => {
+    if (!file || !currentSession) return;
+    
+    uploadFileMutation.mutate({
+      sessionId: currentSession.id,
+      file,
+    });
+  };
+
   return (
-    <div className="flex flex-col h-[80vh]">
-      {/* Chat Header */}
-      <div className="px-4 py-3 border-b flex items-center">
-        <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 mr-3">
-          {avatar?.image_url ? (
-            <img
-              src={avatar.image_url}
-              alt={avatar.name}
-              className="h-10 w-10 rounded-full object-cover"
-            />
-          ) : (
-            <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center text-primary-600">
-              <span className="text-lg font-bold">T</span>
-            </div>
-          )}
-        </div>
-        <div>
-          <h3 className="font-medium text-neutral-800">
-            {avatar?.name || (user?.language === "pt" ? "Bot ToledoIA" : "ToledoIA Bot")}
-          </h3>
-          <p className="text-xs text-neutral-500">{t("technician.online")}</p>
-        </div>
-      </div>
-
-      {/* Chat Messages */}
-      <div className="flex-grow p-4 overflow-y-auto space-y-4">
-        {messages.map((msg) => (
-          <div
-            key={msg.id}
-            className={`flex items-start ${
-              msg.is_user ? "flex-row-reverse" : ""
-            }`}
-          >
-            <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
-              msg.is_user 
-                ? "bg-neutral-300 text-neutral-600 ml-2 mt-1" 
-                : "bg-primary-100 text-primary-600 mr-2 mt-1"
-            }`}>
-              {msg.is_user ? (
-                <User className="h-4 w-4" />
-              ) : (
-                avatar?.image_url ? (
-                  <img
-                    src={avatar.image_url}
-                    alt={avatar.name}
-                    className="h-8 w-8 rounded-full object-cover"
-                  />
-                ) : (
-                  <span className="text-sm font-bold">T</span>
-                )
-              )}
-            </div>
-            
-            <div className={`py-2 px-3 max-w-[80%] ${
-              msg.is_user 
-                ? "bg-primary text-white rounded-lg rounded-tr-none" 
-                : "bg-neutral-100 text-neutral-800 rounded-lg rounded-tl-none"
-            }`}>
-              {msg.message_type === "text" ? (
-                <p className="text-sm">{msg.content}</p>
-              ) : msg.message_type === "image" && msg.file_url ? (
-                <div>
-                  <div className="flex items-center mb-2">
-                    <Image className="h-4 w-4 mr-2" />
-                    <span className="text-sm">{msg.content || "Imagem"}</span>
-                  </div>
-                  <img
-                    src={msg.file_url}
-                    alt="Uploaded file"
-                    className="rounded-md max-h-48 w-auto"
-                    onError={(e) => {
-                      console.error("Erro ao carregar imagem:", msg.file_url);
-                      e.currentTarget.alt = "Erro ao carregar imagem";
-                    }}
-                  />
-                  <a 
-                    href={msg.file_url} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="mt-2 inline-block text-xs text-primary hover:underline"
-                  >
-                    {t("technician.downloadFile")}
-                  </a>
-                </div>
-              ) : msg.message_type === "file" && msg.file_url ? (
-                <div>
-                  <div className="flex items-center">
-                    <Paperclip className="h-4 w-4 mr-2" />
-                    <span className="text-sm">{msg.content || "Arquivo"}</span>
-                  </div>
-                  <a 
-                    href={msg.file_url} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="mt-2 inline-block text-xs text-primary hover:underline"
-                  >
-                    {t("technician.downloadFile")}
-                  </a>
-                </div>
-              ) : (
-                <div>
-                  <p className="text-sm text-neutral-500">{t("technician.messageUnavailable")}</p>
-                  <pre className="text-xs mt-2 p-2 bg-gray-100 rounded overflow-x-auto">
-                    {JSON.stringify(msg, null, 2)}
-                  </pre>
-                </div>
-              )}
-            </div>
-          </div>
-        ))}
-        <div ref={messagesEndRef} />
-      </div>
-
-      {/* Chat Input */}
-      <div className="p-4 border-t">
-        <div className="flex items-center">
-          <div className="relative">
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              className="hidden" 
-              onChange={handleFileUpload}
-              accept=".pdf,.txt,.png,.jpg,.jpeg,.gif"
-            />
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              type="button"
-              className="p-2 rounded-full text-neutral-500 hover:text-primary hover:bg-primary-50"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={!currentSession || isLoading}
-              title={t("technician.uploadFileOrImage")}
-            >
-              {uploadFileMutation.isPending ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <Paperclip className="h-5 w-5" />
-              )}
-            </Button>
-          </div>
-          
-          <Input
-            placeholder={t("technician.typeMessage")}
-            className="flex-grow mx-2 py-2 px-3 border rounded-full focus:outline-none focus:ring-2 focus:ring-primary"
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            onKeyPress={handleKeyPress}
-            disabled={!currentSession || sendMessageMutation.isPending}
-          />
-          
-          <Button
-            type="button"
-            size="icon"
-            className="p-2 rounded-full bg-primary text-white hover:bg-primary-600"
-            onClick={handleSendMessage}
-            disabled={(!message.trim() && !selectedFile) || !currentSession || isLoading}
-          >
-            {sendMessageMutation.isPending || uploadFileMutation.isPending ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
-            ) : (
-              <Send className="h-5 w-5" />
-            )}
-          </Button>
-        </div>
-        
-        {selectedFile && (
-          <div className="mt-2 ml-1 text-xs bg-primary-50 p-2 rounded-md flex items-center">
-            <Paperclip className="h-3 w-3 mr-1 text-primary" />
-            <span className="text-neutral-700">{selectedFile.name}</span>
-          </div>
-        )}
-        
-        <div className="text-xs text-neutral-500 mt-2 ml-1">
-          Formatos suportados: PNG, JPG, PDF, TXT (máx 50MB)
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Import missing icons
-function User(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      {...props}
-    >
-      <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-      <circle cx="12" cy="7" r="4" />
-    </svg>
+    <SharedChatInterface
+      messages={messages}
+      currentSession={currentSession}
+      avatar={chatAvatar}
+      isLoading={isLoading}
+      onSendMessage={handleSendMessage}
+      onFileUpload={handleFileUpload}
+    />
   );
 }
