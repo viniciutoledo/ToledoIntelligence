@@ -359,17 +359,43 @@ export function WidgetChatProvider({
   // Upload de arquivo
   const uploadFileMutation = useMutation({
     mutationFn: async (formData: FormData) => {
-      const res = await fetch("/api/widgets/upload", {
-        method: "POST",
-        body: formData,
-        credentials: "include"
-      });
-      
-      if (!res.ok) {
-        throw new Error("Erro ao enviar arquivo");
+      try {
+        // Verificar se a sessão está ativa
+        if (!currentSession || currentSession.ended_at) {
+          throw new Error("Sessão encerrada. Por favor, atualize a página para iniciar uma nova sessão.");
+        }
+        
+        const res = await fetch("/api/widgets/upload", {
+          method: "POST",
+          body: formData,
+          credentials: "include"
+        });
+        
+        // Tratar erros específicos
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({ message: "Erro desconhecido" }));
+          
+          // Se for erro de sessão encerrada, tentar recriar a sessão
+          if (res.status === 403 && errorData.message === "Sessão encerrada") {
+            console.log("Sessão encerrada, tentando recriar...");
+            // Resetar tentativa de criação
+            sessionCreationAttempted.current = false;
+            // Invalidar consulta da sessão para forçar recriação
+            queryClient.invalidateQueries({
+              queryKey: ["/api/widgets/sessions", visitorId, widget?.id]
+            });
+            
+            throw new Error("Sessão expirada. O chat será reiniciado automaticamente.");
+          }
+          
+          throw new Error(errorData.message || "Erro ao enviar arquivo");
+        }
+        
+        return res.json();
+      } catch (error) {
+        console.error("Erro no upload de arquivo:", error);
+        throw error;
       }
-      
-      return res.json();
     },
     onSuccess: () => {
       // Invalidar para obter as novas mensagens
@@ -380,11 +406,31 @@ export function WidgetChatProvider({
       }, 1000);
     },
     onError: (error: Error) => {
-      toast({
-        title: "Erro ao enviar arquivo",
-        description: error.message,
-        variant: "destructive",
-      });
+      // Se a sessão está encerrada, tentar criar uma nova automaticamente
+      if (error.message && (
+          error.message.includes("Sessão encerrada") || 
+          error.message.includes("Sessão não encontrada") ||
+          error.message.includes("expirada")
+        )) {
+        // Resetar estado para permitir a criação de uma nova sessão
+        sessionCreationAttempted.current = false;
+        // Forçar a invalidação da sessão atual para disparar a criação de uma nova
+        queryClient.invalidateQueries({
+          queryKey: ["/api/widgets/sessions", visitorId, widget?.id]
+        });
+        
+        toast({
+          title: "Sessão reiniciada",
+          description: "Sua sessão foi reiniciada. Por favor, tente novamente.",
+          variant: "default",
+        });
+      } else {
+        toast({
+          title: "Erro ao enviar arquivo",
+          description: error.message || "Não foi possível enviar o arquivo. Por favor, tente novamente.",
+          variant: "destructive",
+        });
+      }
     }
   });
   
