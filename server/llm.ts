@@ -110,62 +110,89 @@ export async function getActiveLlmInfo(): Promise<LlmFullConfig> {
   };
 }
 
+// Client singleton para OpenAI
+let openaiClient: OpenAI | null = null;
+
 // Create OpenAI client
 function getOpenAIClient(apiKey: string) {
-  // Primeiro aplicar a função de limpeza mais robusta
-  apiKey = cleanApiKey(apiKey);
-  
-  // Verificação de depuração para identificar problemas com a chave
-  if (apiKey.toLowerCase().includes('bearer')) {
-    console.error('ALERTA: Chave OpenAI ainda contém prefixo Bearer depois da limpeza!');
-    // Tentar limpar novamente, de forma mais agressiva
-    apiKey = apiKey.replace(/bearer\s+/gi, '').trim();
+  // Se já temos uma instância, reutilizar
+  if (openaiClient) {
+    return openaiClient;
   }
   
-  // Verificar se a apiKey é válida e está corretamente formatada
-  if (!apiKey || typeof apiKey !== 'string' || apiKey.trim() === '') {
-    throw new Error('API key inválida para OpenAI');
+  // Garantir que não temos nenhum prefixo em NENHUMA circunstância
+  if (typeof apiKey !== 'string') {
+    throw new Error('API key inválida para OpenAI: não é uma string');
   }
   
-  // Verificar se a chave da OpenAI tem o formato correto
-  if (apiKey.startsWith('sk-') && apiKey.length >= 30) {
-    // Parece uma chave válida, continue
-    console.log('Usando chave OpenAI com formato correto (sk-)');
-    return new OpenAI({ apiKey });
-  } else if (apiKey.length >= 25) {
-    // Não tem o prefixo 'sk-', mas parece longa o suficiente para ser uma chave, continue
-    console.log('Aviso: A chave da API OpenAI não começa com "sk-", mas será usada mesmo assim');
-    return new OpenAI({ apiKey });
-  } else {
-    // Chave muito curta ou claramente inválida
-    throw new Error('API key da OpenAI parece ser inválida (muito curta ou formato incorreto)');
+  // Remover qualquer prefixo em todas as circunstâncias
+  apiKey = apiKey.replace(/^bearer\s+/i, '').trim();
+  
+  // Remover todas as aspas e espaços extras
+  apiKey = apiKey.replace(/["']/g, '').trim();
+  
+  // Verificar comprimento mínimo após limpeza
+  if (apiKey.length < 20) {
+    throw new Error('API key da OpenAI parece ser inválida (muito curta)');
+  }
+  
+  // Loga a chave parcialmente mascarada para debug
+  const maskedKey = apiKey.substring(0, 4) + '...' + apiKey.substring(apiKey.length - 4);
+  console.log(`Inicializando OpenAI com chave: ${maskedKey}`);
+  
+  // Criar o cliente com a chave limpa
+  try {
+    openaiClient = new OpenAI({ 
+      apiKey: apiKey, 
+      dangerouslyAllowBrowser: false,
+      maxRetries: 3
+    });
+    return openaiClient;
+  } catch (err) {
+    console.error('Erro ao criar cliente OpenAI:', err);
+    throw new Error('Falha ao inicializar cliente OpenAI');
   }
 }
 
+// Client singleton para Anthropic
+let anthropicClient: Anthropic | null = null;
+
 // Create Anthropic client
 function getAnthropicClient(apiKey: string) {
-  // Primeiro aplicar a função de limpeza mais robusta
-  apiKey = cleanApiKey(apiKey);
-  
-  // Verificação de depuração para identificar problemas com a chave
-  if (apiKey.toLowerCase().includes('bearer')) {
-    console.error('ALERTA: Chave Anthropic ainda contém prefixo Bearer depois da limpeza!');
-    // Tentar limpar novamente, de forma mais agressiva
-    apiKey = apiKey.replace(/bearer\s+/gi, '').trim();
+  // Se já temos uma instância, reutilizar
+  if (anthropicClient) {
+    return anthropicClient;
   }
   
-  // Verificar se a apiKey é válida e está corretamente formatada
-  if (!apiKey || typeof apiKey !== 'string' || apiKey.trim() === '') {
-    throw new Error('API key inválida para Anthropic');
+  // Garantir que não temos nenhum prefixo em NENHUMA circunstância
+  if (typeof apiKey !== 'string') {
+    throw new Error('API key inválida para Anthropic: não é uma string');
   }
   
-  // Verificar se a chave da Anthropic tem comprimento razoável
-  if (apiKey.length >= 30) {
-    console.log('Usando chave Anthropic com comprimento adequado');
-    return new Anthropic({ apiKey });
-  } else {
-    // Chave muito curta ou claramente inválida
-    throw new Error('API key da Anthropic parece ser inválida (muito curta ou formato incorreto)');
+  // Remover qualquer prefixo em todas as circunstâncias
+  apiKey = apiKey.replace(/^bearer\s+/i, '').trim();
+  
+  // Remover todas as aspas e espaços extras
+  apiKey = apiKey.replace(/["']/g, '').trim();
+  
+  // Verificar comprimento mínimo após limpeza
+  if (apiKey.length < 20) {
+    throw new Error('API key da Anthropic parece ser inválida (muito curta)');
+  }
+  
+  // Loga a chave parcialmente mascarada para debug
+  const maskedKey = apiKey.substring(0, 4) + '...' + apiKey.substring(apiKey.length - 4);
+  console.log(`Inicializando Anthropic com chave: ${maskedKey}`);
+  
+  // Criar o cliente com a chave limpa
+  try {
+    anthropicClient = new Anthropic({ 
+      apiKey: apiKey
+    });
+    return anthropicClient;
+  } catch (err) {
+    console.error('Erro ao criar cliente Anthropic:', err);
+    throw new Error('Falha ao inicializar cliente Anthropic');
   }
 }
 
@@ -318,8 +345,7 @@ export async function analyzeImage(imagePath: string, language: string): Promise
     
     try {
       const config = await getActiveLlmInfo();
-      const { provider, modelName, apiKey: rawApiKey, tone, behaviorInstructions } = config;
-      const apiKey = cleanApiKey(rawApiKey);
+      const { provider, modelName, apiKey, tone, behaviorInstructions } = config;
       
       // Obter conteúdo do buffer novamente para detectar formato real
       const imageBuffer = Buffer.from(base64Image, 'base64');
@@ -494,8 +520,7 @@ export async function processTextMessage(
   try {
     // Se não recebemos configuração LLM, tentar obter configurações padrão
     const config = llmConfig || await getActiveLlmInfo();
-    const { provider, modelName, apiKey: rawApiKey, tone, behaviorInstructions, shouldUseTrained } = config;
-    const apiKey = cleanApiKey(rawApiKey);
+    const { provider, modelName, apiKey, tone, behaviorInstructions, shouldUseTrained } = config;
     
     // Se o idioma não foi especificado, detectamos a partir do histórico ou mensagem atual
     const detectedLanguage = language || detectLanguage(message, history);
@@ -773,8 +798,7 @@ export async function analyzeFile(filePath: string, language: string, llmConfig?
     
     // Obter o tom e outras configurações específicas
     const config = llmConfig || await getActiveLlmInfo();
-    const { provider, modelName, apiKey: rawApiKey, tone, behaviorInstructions } = config;
-    const apiKey = cleanApiKey(rawApiKey);
+    const { provider, modelName, apiKey, tone, behaviorInstructions } = config;
     
     // Configurar estilo de comunicação com base no tom escolhido
     let toneStyle = '';
@@ -903,15 +927,13 @@ function getMediaType(filePath: string): string {
 
 // Test connection to either Anthropic or OpenAI API
 export async function testConnection(apiKey: string, modelName: string): Promise<boolean> {
-  // Limpar a API key antes de usar
-  const cleanedApiKey = cleanApiKey(apiKey);
   try {
     // Determine provider based on model name
     const isOpenAI = modelName.startsWith('gpt');
     
     if (isOpenAI) {
       // Test OpenAI connection
-      const openai = new OpenAI({ apiKey: cleanedApiKey });
+      const openai = getOpenAIClient(apiKey);
       
       // Simple test request
       const response = await openai.chat.completions.create({
@@ -928,9 +950,7 @@ export async function testConnection(apiKey: string, modelName: string): Promise
       return !!response.choices[0].message.content;
     } else {
       // Test Anthropic connection
-      const anthropic = new Anthropic({
-        apiKey: cleanedApiKey
-      });
+      const anthropic = getAnthropicClient(apiKey);
       
       // Simple test request
       const response = await anthropic.messages.create({
