@@ -239,72 +239,80 @@ export function ChatInterface({
             }`}>
               {msg.message_type === "text" ? (
                 <p className="text-sm">{msg.content}</p>
-              ) : msg.message_type === "image" && msg.file_url ? (
+              ) : msg.message_type === "image" ? (
                 <div>
                   <div className="flex items-center mb-2">
                     <Image className="h-4 w-4 mr-2" />
                     <span className="text-sm">{msg.content || "Imagem"}</span>
                   </div>
                   <div className="image-container relative">
-                    <img
-                      src={getOptimizedFileUrl(msg.file_url)}
-                      alt="Uploaded file"
-                      loading="lazy"
-                      decoding="async"
-                      crossOrigin="anonymous"
-                      referrerPolicy="no-referrer"
-                      className="rounded-md max-h-60 max-w-full object-contain"
-                      onError={(e) => {
-                        console.error("Erro ao carregar imagem:", msg.file_url);
-                        // Tenta corrigir a URL se possível
-                        const imgElement = e.currentTarget;
-                        
-                        try {
-                          // Tenta resolver a URL usando a função otimizada com diferentes formatos
-                          if (msg.file_url) {
-                            // Remove caracteres especiais que possam estar causando problemas
-                            const cleanUrl = msg.file_url.replace(/[\u200B-\u200D\uFEFF]/g, '');
-                            
-                            if (cleanUrl !== msg.file_url) {
-                              console.log("URL limpada de caracteres especiais:", cleanUrl);
-                              imgElement.src = getOptimizedFileUrl(cleanUrl);
-                              return;
+                    {msg.file_url ? (
+                      <img
+                        src={msg.file_url.startsWith('blob:') ? msg.file_url : getOptimizedFileUrl(msg.file_url)}
+                        alt="Imagem enviada"
+                        loading="lazy"
+                        decoding="async"
+                        crossOrigin="anonymous"
+                        referrerPolicy="no-referrer"
+                        className="rounded-md max-h-60 max-w-full object-contain"
+                        onError={(e) => {
+                          console.error("Erro ao carregar imagem:", msg.file_url);
+                          // Tenta corrigir a URL se possível
+                          const imgElement = e.currentTarget;
+                          
+                          try {
+                            // Não tenta corrigir URLs blob - são temporárias de preview
+                            if (msg.file_url && !msg.file_url.startsWith('blob:')) {
+                              // Remove caracteres especiais que possam estar causando problemas
+                              const cleanUrl = msg.file_url.replace(/[\u200B-\u200D\uFEFF]/g, '');
+                              
+                              if (cleanUrl !== msg.file_url) {
+                                console.log("URL limpada de caracteres especiais:", cleanUrl);
+                                imgElement.src = getOptimizedFileUrl(cleanUrl);
+                                return;
+                              }
+                              
+                              // Tentativa com URL absoluta
+                              if (!cleanUrl.startsWith('http') && !cleanUrl.startsWith('/')) {
+                                console.log("Tentando URL absoluta:", `/${cleanUrl}`);
+                                imgElement.src = `/${cleanUrl}`;
+                                return;
+                              }
+                              
+                              // Tentativa com origem completa
+                              if (cleanUrl.startsWith('/')) {
+                                console.log("Tentando URL com origem:", `${window.location.origin}${cleanUrl}`);
+                                imgElement.src = `${window.location.origin}${cleanUrl}`;
+                                return;
+                              }
                             }
-                            
-                            // Tentativa com URL absoluta
-                            if (!cleanUrl.startsWith('http') && !cleanUrl.startsWith('/')) {
-                              console.log("Tentando URL absoluta:", `/${cleanUrl}`);
-                              imgElement.src = `/${cleanUrl}`;
-                              return;
-                            }
-                            
-                            // Tentativa com origem completa
-                            if (cleanUrl.startsWith('/')) {
-                              console.log("Tentando URL com origem:", `${window.location.origin}${cleanUrl}`);
-                              imgElement.src = `${window.location.origin}${cleanUrl}`;
-                              return;
-                            }
+                          } catch (error) {
+                            console.error("Erro ao tentar recuperar imagem:", error);
                           }
-                        } catch (error) {
-                          console.error("Erro ao tentar recuperar imagem:", error);
-                        }
-                        
-                        // Última opção: mostrar placeholder de erro
-                        imgElement.src = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxMDAiIGZpbGw9IiNmMGYwZjAiLz4KPHRleHQgeD0iNTAiIHk9IjUwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTIiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGFsaWdubWVudC1iYXNlbGluZT0ibWlkZGxlIiBmaWxsPSIjOTk5Ij5FcnJvIGFvIGNhcnJlZ2FyIGltYWdlbTwvdGV4dD4KPC9zdmc+";
-                        imgElement.alt = "Erro ao carregar imagem";
-                        imgElement.style.width = "100%";
-                        imgElement.style.height = "100px";
-                      }}
-                    />
+                          
+                          // Última opção: mostrar placeholder de erro
+                          imgElement.src = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxMDAiIGZpbGw9IiNmMGYwZjAiLz4KPHRleHQgeD0iNTAiIHk9IjUwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTIiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGFsaWdubWVudC1iYXNlbGluZT0ibWlkZGxlIiBmaWxsPSIjOTk5Ij5FcnJvIGFvIGNhcnJlZ2FyIGltYWdlbTwvdGV4dD4KPC9zdmc+";
+                          imgElement.alt = "Erro ao carregar imagem";
+                          imgElement.style.width = "100%";
+                          imgElement.style.height = "100px";
+                        }}
+                      />
+                    ) : (
+                      <div className="h-60 w-full bg-neutral-100 flex items-center justify-center text-neutral-400">
+                        <Image className="h-8 w-8" />
+                      </div>
+                    )}
                   </div>
-                  <a 
-                    href={getOptimizedFileUrl(msg.file_url)} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="mt-2 inline-block text-xs text-primary hover:underline"
-                  >
-                    {texts.downloadFile}
-                  </a>
+                  {msg.file_url && !msg.file_url.startsWith('blob:') && (
+                    <a 
+                      href={getOptimizedFileUrl(msg.file_url)} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="mt-2 inline-block text-xs text-primary hover:underline"
+                    >
+                      {texts.downloadFile}
+                    </a>
+                  )}
                 </div>
               ) : msg.message_type === "file" && msg.file_url ? (
                 <div>
