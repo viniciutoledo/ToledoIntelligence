@@ -251,7 +251,7 @@ export function ChatInterface({
                   <div className="image-container relative">
                     {(msg.file_url || msg.fileBase64) ? (
                       <div className="image-wrapper relative">
-                        {/* Usando componente ReliableImage para melhor exibição das imagens */}
+                        {/* Usando o componente de imagem confiável que implementa vários sistemas de recuperação */}
                         <ReliableImage 
                           src={msg.file_url}
                           base64Data={msg.fileBase64}
@@ -261,8 +261,8 @@ export function ChatInterface({
                         />
                       </div>
                     ) : (
-                      <div className="p-4 bg-gray-100 rounded text-gray-500 text-sm">
-                        {texts.messageUnavailable}
+                      <div className="h-60 w-full bg-neutral-100 flex items-center justify-center text-neutral-400">
+                        <Image className="h-8 w-8" />
                       </div>
                     )}
                   </div>
