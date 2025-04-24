@@ -9,7 +9,10 @@ import {
   planFeatures, PlanFeature, InsertPlanFeature,
   planPricing, PlanPricing, InsertPlanPricing,
   analysisReports, AnalysisReport, InsertAnalysisReport,
-  supportTickets, SupportTicket, InsertSupportTicket
+  supportTickets, SupportTicket, InsertSupportTicket,
+  chatWidgets, ChatWidget, InsertChatWidget,
+  widgetChatSessions, WidgetChatSession, InsertWidgetChatSession,
+  widgetChatMessages, WidgetChatMessage, InsertWidgetChatMessage
 } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
@@ -131,6 +134,26 @@ export interface IStorage {
   incrementMessageCount(userId: number): Promise<User | undefined>;
   checkMessageLimit(userId: number): Promise<boolean>;
   resetMessageCounts(): Promise<void>;
+  
+  // Chat widgets management
+  getChatWidget(id: string): Promise<ChatWidget | undefined>;
+  getUserChatWidgets(userId: number): Promise<ChatWidget[]>;
+  createChatWidget(widget: InsertChatWidget): Promise<ChatWidget>;
+  updateChatWidget(id: string, data: Partial<ChatWidget>): Promise<ChatWidget | undefined>;
+  deleteChatWidget(id: string): Promise<void>;
+  getChatWidgetByApiKey(apiKey: string): Promise<ChatWidget | undefined>;
+  validateWidgetDomain(widgetId: string, domain: string): Promise<boolean>;
+  
+  // Widget chat sessions
+  getWidgetChatSession(id: number): Promise<WidgetChatSession | undefined>;
+  getWidgetChatSessions(widgetId: string): Promise<WidgetChatSession[]>;
+  createWidgetChatSession(session: InsertWidgetChatSession): Promise<WidgetChatSession>;
+  endWidgetChatSession(id: number): Promise<WidgetChatSession | undefined>;
+  
+  // Widget chat messages
+  getWidgetChatMessage(id: number): Promise<WidgetChatMessage | undefined>;
+  getWidgetSessionMessages(sessionId: number): Promise<WidgetChatMessage[]>;
+  createWidgetChatMessage(message: InsertWidgetChatMessage): Promise<WidgetChatMessage>;
 }
 
 export class MemStorage implements IStorage {
@@ -185,6 +208,9 @@ export class MemStorage implements IStorage {
   private planPricing: Map<number, PlanPricing>;
   private analysisReports: Map<number, AnalysisReport>;
   private supportTickets: Map<number, SupportTicket>;
+  private chatWidgets: Map<string, ChatWidget>;
+  private widgetChatSessions: Map<number, WidgetChatSession>;
+  private widgetChatMessages: Map<number, WidgetChatMessage>;
   
   sessionStore: session.Store;
   
@@ -203,6 +229,8 @@ export class MemStorage implements IStorage {
     planPricingId: number;
     analysisReportId: number;
     supportTicketId: number;
+    widgetChatSessionId: number;
+    widgetChatMessageId: number;
   };
 
   constructor() {
@@ -221,6 +249,9 @@ export class MemStorage implements IStorage {
     this.planPricing = new Map();
     this.analysisReports = new Map();
     this.supportTickets = new Map();
+    this.chatWidgets = new Map();
+    this.widgetChatSessions = new Map();
+    this.widgetChatMessages = new Map();
     
     this.currentIds = {
       userId: 1,
@@ -236,7 +267,9 @@ export class MemStorage implements IStorage {
       planFeatureId: 1,
       planPricingId: 1,
       analysisReportId: 1,
-      supportTicketId: 1
+      supportTicketId: 1,
+      widgetChatSessionId: 1,
+      widgetChatMessageId: 1
     };
     
     this.sessionStore = new MemoryStore({
@@ -966,6 +999,175 @@ export class MemStorage implements IStorage {
     return updatedPricing;
   }
   
+  // Chat widgets management
+  async getChatWidget(id: string): Promise<ChatWidget | undefined> {
+    return this.chatWidgets.get(id);
+  }
+  
+  async getUserChatWidgets(userId: number): Promise<ChatWidget[]> {
+    return Array.from(this.chatWidgets.values())
+      .filter(widget => widget.user_id === userId)
+      .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+  }
+  
+  async createChatWidget(widget: InsertChatWidget): Promise<ChatWidget> {
+    const id = crypto.randomUUID();
+    const apiKey = crypto.randomUUID();
+    const now = new Date();
+    
+    const newWidget: ChatWidget = {
+      ...widget,
+      id,
+      api_key: apiKey,
+      is_active: true,
+      theme_color: widget.theme_color || '#6366f1',
+      allowed_domains: widget.allowed_domains || [],
+      created_at: now,
+      updated_at: now
+    };
+    
+    this.chatWidgets.set(id, newWidget);
+    return newWidget;
+  }
+  
+  async updateChatWidget(id: string, data: Partial<ChatWidget>): Promise<ChatWidget | undefined> {
+    const widget = this.chatWidgets.get(id);
+    if (!widget) return undefined;
+    
+    const updatedWidget = {
+      ...widget,
+      ...data,
+      updated_at: new Date()
+    };
+    
+    this.chatWidgets.set(id, updatedWidget);
+    return updatedWidget;
+  }
+  
+  async deleteChatWidget(id: string): Promise<void> {
+    this.chatWidgets.delete(id);
+    
+    // Também remover todas as sessões associadas
+    const associatedSessions = Array.from(this.widgetChatSessions.values())
+      .filter(session => session.widget_id === id)
+      .map(session => session.id);
+      
+    for (const sessionId of associatedSessions) {
+      this.widgetChatSessions.delete(sessionId);
+      
+      // E remover mensagens das sessões
+      const sessionMessages = Array.from(this.widgetChatMessages.values())
+        .filter(message => message.session_id === sessionId)
+        .map(message => message.id);
+        
+      for (const messageId of sessionMessages) {
+        this.widgetChatMessages.delete(messageId);
+      }
+    }
+  }
+  
+  async getChatWidgetByApiKey(apiKey: string): Promise<ChatWidget | undefined> {
+    return Array.from(this.chatWidgets.values())
+      .find(widget => widget.api_key === apiKey && widget.is_active);
+  }
+  
+  async validateWidgetDomain(widgetId: string, domain: string): Promise<boolean> {
+    const widget = await this.getChatWidget(widgetId);
+    if (!widget || !widget.is_active) return false;
+    
+    // Se não houver domínios permitidos especificados, permitir todos (não recomendado para produção)
+    if (!widget.allowed_domains || widget.allowed_domains.length === 0) return true;
+    
+    // Verificar se o domínio está na lista de permitidos
+    return widget.allowed_domains.some(allowedDomain => {
+      // Permitir correspondência exata
+      if (allowedDomain === domain) return true;
+      
+      // Permitir curingas
+      if (allowedDomain.startsWith('*.')) {
+        const wildcard = allowedDomain.substring(2);
+        return domain.endsWith(wildcard);
+      }
+      
+      return false;
+    });
+  }
+  
+  // Widget chat sessions
+  async getWidgetChatSession(id: number): Promise<WidgetChatSession | undefined> {
+    return this.widgetChatSessions.get(id);
+  }
+  
+  async getWidgetChatSessions(widgetId: string): Promise<WidgetChatSession[]> {
+    return Array.from(this.widgetChatSessions.values())
+      .filter(session => session.widget_id === widgetId)
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  }
+  
+  async createWidgetChatSession(session: InsertWidgetChatSession): Promise<WidgetChatSession> {
+    const id = this.currentIds.widgetChatSessionId++;
+    const now = new Date();
+    
+    const chatSession: WidgetChatSession = {
+      ...session,
+      id,
+      started_at: now,
+      ended_at: null,
+      created_at: now
+    };
+    
+    this.widgetChatSessions.set(id, chatSession);
+    return chatSession;
+  }
+  
+  async endWidgetChatSession(id: number): Promise<WidgetChatSession | undefined> {
+    const session = this.widgetChatSessions.get(id);
+    if (!session) return undefined;
+    
+    const updatedSession = {
+      ...session,
+      ended_at: new Date()
+    };
+    
+    this.widgetChatSessions.set(id, updatedSession);
+    return updatedSession;
+  }
+  
+  // Widget chat messages
+  async getWidgetChatMessage(id: number): Promise<WidgetChatMessage | undefined> {
+    return this.widgetChatMessages.get(id);
+  }
+  
+  async getWidgetSessionMessages(sessionId: number): Promise<WidgetChatMessage[]> {
+    return Array.from(this.widgetChatMessages.values())
+      .filter(message => message.session_id === sessionId)
+      .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+  }
+  
+  async createWidgetChatMessage(message: InsertWidgetChatMessage): Promise<WidgetChatMessage> {
+    const id = this.currentIds.widgetChatMessageId++;
+    const now = new Date();
+    
+    const widgetMessage: WidgetChatMessage = {
+      ...message,
+      id,
+      created_at: now
+    };
+    
+    this.widgetChatMessages.set(id, widgetMessage);
+    
+    // Também incrementar contagem de mensagens para o usuário do widget
+    const session = await this.getWidgetChatSession(message.session_id);
+    if (session) {
+      const widget = await this.getChatWidget(session.widget_id);
+      if (widget) {
+        await this.incrementMessageCount(widget.user_id);
+      }
+    }
+    
+    return widgetMessage;
+  }
+  
   // Usage tracking
   async incrementMessageCount(userId: number): Promise<User | undefined> {
     const user = await this.getUser(userId);
@@ -1133,6 +1335,174 @@ export class DatabaseStorage implements IStorage {
     
     // Na implementação real, seria necessário lidar com as relações 
     // e potencialmente anonimizar dados ao invés de excluí-los completamente
+  }
+  
+  // Chat widgets management
+  async getChatWidget(id: string): Promise<ChatWidget | undefined> {
+    const [widget] = await db.select().from(chatWidgets).where(eq(chatWidgets.id, id));
+    return widget;
+  }
+  
+  async getUserChatWidgets(userId: number): Promise<ChatWidget[]> {
+    return db.select().from(chatWidgets)
+      .where(eq(chatWidgets.user_id, userId))
+      .orderBy(desc(chatWidgets.updated_at));
+  }
+  
+  async createChatWidget(widget: InsertChatWidget): Promise<ChatWidget> {
+    const [newWidget] = await db.insert(chatWidgets).values({
+      ...widget,
+      id: crypto.randomUUID(),
+      api_key: crypto.randomUUID(),
+      is_active: true,
+      theme_color: widget.theme_color || '#6366f1',
+      allowed_domains: widget.allowed_domains || [],
+      created_at: new Date(),
+      updated_at: new Date()
+    }).returning();
+    
+    return newWidget;
+  }
+  
+  async updateChatWidget(id: string, data: Partial<ChatWidget>): Promise<ChatWidget | undefined> {
+    const [updatedWidget] = await db.update(chatWidgets)
+      .set({
+        ...data,
+        updated_at: new Date()
+      })
+      .where(eq(chatWidgets.id, id))
+      .returning();
+    
+    return updatedWidget;
+  }
+  
+  async deleteChatWidget(id: string): Promise<void> {
+    // Primeiro obter todas as sessões do widget
+    const widgetSessions = await db.select()
+      .from(widgetChatSessions)
+      .where(eq(widgetChatSessions.widget_id, id));
+    
+    // Para cada sessão, excluir suas mensagens
+    for (const session of widgetSessions) {
+      await db.delete(widgetChatMessages)
+        .where(eq(widgetChatMessages.session_id, session.id));
+    }
+    
+    // Excluir todas as sessões do widget
+    await db.delete(widgetChatSessions)
+      .where(eq(widgetChatSessions.widget_id, id));
+    
+    // Finalmente, excluir o widget
+    await db.delete(chatWidgets)
+      .where(eq(chatWidgets.id, id));
+  }
+  
+  async getChatWidgetByApiKey(apiKey: string): Promise<ChatWidget | undefined> {
+    const [widget] = await db.select()
+      .from(chatWidgets)
+      .where(
+        and(
+          eq(chatWidgets.api_key, apiKey),
+          eq(chatWidgets.is_active, true)
+        )
+      );
+    
+    return widget;
+  }
+  
+  async validateWidgetDomain(widgetId: string, domain: string): Promise<boolean> {
+    const widget = await this.getChatWidget(widgetId);
+    if (!widget || !widget.is_active) return false;
+    
+    // Se não houver domínios permitidos especificados, permitir todos (não recomendado para produção)
+    if (!widget.allowed_domains || widget.allowed_domains.length === 0) return true;
+    
+    // Verificar se o domínio está na lista de permitidos
+    return widget.allowed_domains.some(allowedDomain => {
+      // Permitir correspondência exata
+      if (allowedDomain === domain) return true;
+      
+      // Permitir curingas
+      if (allowedDomain.startsWith('*.')) {
+        const wildcard = allowedDomain.substring(2);
+        return domain.endsWith(wildcard);
+      }
+      
+      return false;
+    });
+  }
+  
+  // Widget chat sessions
+  async getWidgetChatSession(id: number): Promise<WidgetChatSession | undefined> {
+    const [session] = await db.select()
+      .from(widgetChatSessions)
+      .where(eq(widgetChatSessions.id, id));
+    
+    return session;
+  }
+  
+  async getWidgetChatSessions(widgetId: string): Promise<WidgetChatSession[]> {
+    return db.select()
+      .from(widgetChatSessions)
+      .where(eq(widgetChatSessions.widget_id, widgetId))
+      .orderBy(desc(widgetChatSessions.created_at));
+  }
+  
+  async createWidgetChatSession(session: InsertWidgetChatSession): Promise<WidgetChatSession> {
+    const [newSession] = await db.insert(widgetChatSessions)
+      .values({
+        ...session,
+        started_at: new Date(),
+        created_at: new Date()
+      })
+      .returning();
+    
+    return newSession;
+  }
+  
+  async endWidgetChatSession(id: number): Promise<WidgetChatSession | undefined> {
+    const [updatedSession] = await db.update(widgetChatSessions)
+      .set({ ended_at: new Date() })
+      .where(eq(widgetChatSessions.id, id))
+      .returning();
+    
+    return updatedSession;
+  }
+  
+  // Widget chat messages
+  async getWidgetChatMessage(id: number): Promise<WidgetChatMessage | undefined> {
+    const [message] = await db.select()
+      .from(widgetChatMessages)
+      .where(eq(widgetChatMessages.id, id));
+    
+    return message;
+  }
+  
+  async getWidgetSessionMessages(sessionId: number): Promise<WidgetChatMessage[]> {
+    return db.select()
+      .from(widgetChatMessages)
+      .where(eq(widgetChatMessages.session_id, sessionId))
+      .orderBy(asc(widgetChatMessages.created_at));
+  }
+  
+  async createWidgetChatMessage(message: InsertWidgetChatMessage): Promise<WidgetChatMessage> {
+    const [newMessage] = await db.insert(widgetChatMessages)
+      .values({
+        ...message,
+        created_at: new Date()
+      })
+      .returning();
+      
+    // Também incrementar contagem de mensagens para o usuário do widget
+    const session = await this.getWidgetChatSession(message.session_id);
+    if (session) {
+      const widget = await this.getChatWidget(session.widget_id);
+      if (widget) {
+        await this.incrementMessageCount(widget.user_id);
+      }
+    }
+    
+    return newMessage;
   }
 
   constructor() {
