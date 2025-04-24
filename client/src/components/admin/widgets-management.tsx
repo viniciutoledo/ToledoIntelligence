@@ -1168,7 +1168,7 @@ export default function WidgetsManagement() {
                         <div className="border-t pt-6">
                           <h3 className="font-medium mb-2">{t("Link direto para incorporação")}</h3>
                           <p className="text-sm text-muted-foreground mb-4">
-                            {t("Use este link para incorporar o widget via iframe (compatível com GPT Maker).")}
+                            {t("Use este link para incorporar o widget via iframe em plataformas de terceiros.")}
                           </p>
                           
                           <div className="flex items-center gap-2">
@@ -1189,7 +1189,7 @@ export default function WidgetsManagement() {
                             </Button>
                           </div>
                           <p className="text-xs text-muted-foreground mt-2">
-                            {t("Este link funciona de maneira idêntica ao formato utilizado pelo GPT Maker.")}
+                            {t("Este link permite fácil incorporação em qualquer plataforma que suporte iframe via URL.")}
                           </p>
                         </div>
                         
@@ -1240,7 +1240,7 @@ export default function WidgetsManagement() {
                             <li>{t("Escolha um dos métodos de incorporação acima.")}</li>
                             <li>{t("Para usar o código JavaScript, cole-o no HTML do seu site, antes do fechamento da tag body.")}</li>
                             <li>{t("Para usar o iframe, cole o código HTML em qualquer lugar da sua página.")}</li>
-                            <li>{t("Para usar o link direto, use-o em um campo que aceite incorporação de URLs (como no GPT Maker).")}</li>
+                            <li>{t("Para usar o link direto, use-o em um campo que aceite incorporação de URLs em plataformas de terceiros.")}</li>
                           </ol>
                         </div>
                       </div>

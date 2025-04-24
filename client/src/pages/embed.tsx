@@ -4,7 +4,7 @@ import { useLocation } from 'wouter';
 /**
  * Página de embed para iframe
  * 
- * Funciona similar ao GPT Maker, recebendo uma URL encodada como parâmetro
+ * Recebe uma URL encodada como parâmetro para incorporação via iframe
  * Exemplo: /embed?url=https%3A%2F%2Ftoledoia.replit.app%2Fembed%2Fwidget%3Fkey%3D12345
  */
 export default function EmbedPage() {
