@@ -253,7 +253,7 @@ export function WidgetChatProvider({
       // Invalidar para obter as novas mensagens
       setTimeout(() => {
         queryClient.invalidateQueries({
-          queryKey: ["/api/widgets/messages", currentSession?.id]
+          queryKey: ["/api/widgets-messages", currentSession?.id]
         });
       }, 1000);
     },
