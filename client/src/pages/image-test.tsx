@@ -58,7 +58,7 @@ export default function ImageTestPage() {
         {/* Seção 1: Imagem estática de teste */}
         <div className="border p-4 rounded">
           <h2 className="text-xl font-semibold mb-4">1. Teste de Imagem Estática</h2>
-          <TestImage />
+          <TestImage src="https://placehold.co/400x300?text=Imagem+de+Teste" />
         </div>
         
         {/* Seção 2: Teste com UltimateImage */}
