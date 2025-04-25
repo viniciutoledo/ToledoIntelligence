@@ -1732,7 +1732,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     const messages = await storage.getSessionMessages(sessionId);
-    res.json(messages);
+    
+    // Para cada mensagem, adicionar um campo file_url que aponta para o endpoint dedicado
+    // se a mensagem tiver arquivo
+    const messagesWithEndpoints = messages.map(message => {
+      if (message.message_type === "image" || message.message_type === "file") {
+        return {
+          ...message,
+          file_url: `/api/chat/messages/${message.id}/file`
+        };
+      }
+      return message;
+    });
+    
+    res.json(messagesWithEndpoints);
+  });
+  
+  // Rota para servir arquivos de mensagens de chat diretamente do banco de dados
+  app.get("/api/chat/messages/:id/file", isAuthenticated, async (req, res) => {
+    try {
+      const messageId = parseInt(req.params.id);
+      
+      if (isNaN(messageId)) {
+        return res.status(400).json({ message: "ID de mensagem inválido" });
+      }
+      
+      // Obter a mensagem do banco de dados
+      const message = await storage.getChatMessage(messageId);
+      
+      if (!message) {
+        return res.status(404).json({ message: "Mensagem não encontrada" });
+      }
+      
+      // Verificar se o usuário tem permissão para acessar a mensagem
+      const session = await storage.getChatSession(message.session_id);
+      if (!session || (session.user_id !== req.user!.id && req.user!.role !== "admin")) {
+        return res.status(403).json({ message: "Acesso não autorizado" });
+      }
+      
+      // Verificar se a mensagem tem dados de arquivo
+      if (!message.file_data || !message.file_mime_type) {
+        // Se não tiver dados no banco, pode redirecionar para o file_url original
+        if (message.file_url && (message.file_url.startsWith('http') || message.file_url.startsWith('/uploads/'))) {
+          return res.redirect(message.file_url);
+        }
+        return res.status(404).json({ message: "Arquivo não encontrado" });
+      }
+      
+      // Converter de base64 para Buffer
+      const fileBuffer = Buffer.from(message.file_data, 'base64');
+      
+      // Definir o tipo de conteúdo
+      res.setHeader('Content-Type', message.file_mime_type);
+      // Permitir cache no cliente
+      res.setHeader('Cache-Control', 'public, max-age=86400'); // 24 horas
+      
+      // Enviar o arquivo
+      res.send(fileBuffer);
+    } catch (error) {
+      console.error("Erro ao servir arquivo da mensagem:", error);
+      res.status(500).json({ message: "Erro ao servir arquivo" });
+    }
   });
   
   app.post("/api/chat/sessions/:id/messages", isAuthenticated, checkRole("technician"), upload.single("file"), async (req, res) => {
@@ -1796,7 +1856,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Create user message
-      const messageData = {
+      const messageData: any = {
         session_id: sessionId,
         user_id: req.user!.id,
         message_type: messageType as "text" | "image" | "file",
@@ -1804,6 +1864,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         file_url: fileUrl,
         is_user: true
       };
+      
+      // Se tiver arquivo, salvar dados de imagem em base64 e tipo MIME
+      if (req.file) {
+        try {
+          // Ler o arquivo usando fs (já garantimos acima que o arquivo existe)
+          const fileData = fs.readFileSync(req.file.path);
+          
+          // Salvar dados raw do arquivo
+          messageData.file_data = fileData.toString('base64');
+          messageData.file_mime_type = req.file.mimetype;
+          
+          console.log(`Arquivo convertido para base64 e armazenado no banco (tamanho: ${messageData.file_data.length} bytes)`);
+        } catch (error) {
+          console.error("Erro ao converter arquivo para base64:", error);
+          // Continuar mesmo se falhar, já que ainda temos o file_url como fallback
+        }
+      }
       
       const userMessage = await storage.createChatMessage(messageData);
       

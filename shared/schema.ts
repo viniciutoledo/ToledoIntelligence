@@ -93,6 +93,8 @@ export const chatMessages = pgTable("chat_messages", {
   message_type: text("message_type", { enum: ["text", "image", "file"] }).notNull(),
   content: text("content"),
   file_url: text("file_url"),
+  file_data: text("file_data"), // Campo para armazenar dados da imagem em base64
+  file_mime_type: text("file_mime_type"), // Tipo MIME do arquivo
   created_at: timestamp("created_at").defaultNow().notNull(),
   is_user: boolean("is_user").notNull().default(true),
 });
@@ -103,6 +105,8 @@ export const insertChatMessageSchema = createInsertSchema(chatMessages).pick({
   message_type: true,
   content: true,
   file_url: true,
+  file_data: true,
+  file_mime_type: true,
   is_user: true,
 });
 
@@ -359,6 +363,8 @@ export const widgetChatMessages = pgTable("widget_chat_messages", {
   message_type: text("message_type", { enum: ["text", "image", "file"] }).notNull().default("text"),
   content: text("content"),
   file_url: text("file_url"),
+  file_data: text("file_data"), // Campo para armazenar dados da imagem em base64
+  file_mime_type: text("file_mime_type"), // Tipo MIME do arquivo
   created_at: timestamp("created_at").defaultNow().notNull(),
   is_user: boolean("is_user").notNull().default(true),
 });
@@ -368,6 +374,8 @@ export const insertWidgetChatMessageSchema = createInsertSchema(widgetChatMessag
   message_type: true,
   content: true,
   file_url: true,
+  file_data: true,
+  file_mime_type: true,
   is_user: true,
 });
 
