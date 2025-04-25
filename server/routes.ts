@@ -385,6 +385,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Rota para obter os limites de mensagens dos planos
+  app.get("/api/admin/plans/message-limits", isAuthenticated, checkRole("admin"), async (req, res) => {
+    try {
+      // Limites padrão para cada plano
+      const defaultLimits = {
+        none: 50,
+        basic: 2500,
+        intermediate: 5000
+      };
+      
+      // Obter todos os usuários para verificar seus limites reais
+      const allUsers = await storage.getUsers();
+      
+      // Verificar os limites reais configurados para usuários de cada plano
+      // Se não houver usuários de um plano específico, usar o valor padrão
+      const realLimits = {
+        none: allUsers.filter(u => u.subscription_tier === "none").length > 0 ?
+          Math.max(...allUsers.filter(u => u.subscription_tier === "none").map(u => u.max_messages || 0)) : 
+          defaultLimits.none,
+          
+        basic: allUsers.filter(u => u.subscription_tier === "basic").length > 0 ?
+          Math.max(...allUsers.filter(u => u.subscription_tier === "basic").map(u => u.max_messages || 0)) : 
+          defaultLimits.basic,
+          
+        intermediate: allUsers.filter(u => u.subscription_tier === "intermediate").length > 0 ?
+          Math.max(...allUsers.filter(u => u.subscription_tier === "intermediate").map(u => u.max_messages || 0)) : 
+          defaultLimits.intermediate
+      };
+      
+      // Formatar resposta
+      const plans = [
+        { tier: "none", limit: realLimits.none, defaultLimit: defaultLimits.none },
+        { tier: "basic", limit: realLimits.basic, defaultLimit: defaultLimits.basic },
+        { tier: "intermediate", limit: realLimits.intermediate, defaultLimit: defaultLimits.intermediate }
+      ];
+      
+      res.json(plans);
+    } catch (error) {
+      console.error("Erro ao obter limites de mensagens:", error);
+      res.status(500).json({ message: "Erro ao obter limites de mensagens dos planos" });
+    }
+  });
+  
+  // Rota para atualizar o limite de mensagens de um plano
+  app.put("/api/admin/plans/message-limits/:tier", isAuthenticated, checkRole("admin"), async (req, res) => {
+    try {
+      const tier = req.params.tier as "none" | "basic" | "intermediate";
+      const { limit } = req.body;
+      
+      if (!tier || !["none", "basic", "intermediate"].includes(tier)) {
+        return res.status(400).json({ message: "Plano inválido" });
+      }
+      
+      if (typeof limit !== 'number' || limit < 0) {
+        return res.status(400).json({ message: "Limite inválido" });
+      }
+      
+      // Atualizar max_messages para todos os usuários deste plano
+      const updatedUsers = await db
+        .update(users)
+        .set({ max_messages: limit })
+        .where(eq(users.subscription_tier, tier))
+        .returning();
+      
+      // Log da ação
+      await logAction({
+        userId: req.user!.id,
+        action: "plan_message_limit_updated",
+        details: { tier, limit, affectedUsers: updatedUsers.length },
+        ipAddress: req.ip
+      });
+      
+      res.json({ 
+        tier, 
+        limit, 
+        message: `Limite de mensagens atualizado para ${updatedUsers.length} usuários`,
+        affectedUsers: updatedUsers.length
+      });
+    } catch (error) {
+      console.error("Erro ao atualizar limite de mensagens:", error);
+      res.status(500).json({ message: "Erro ao atualizar limite de mensagens do plano" });
+    }
+  });
+  
   // Resetar contador de mensagens
   app.post("/api/admin/users/:id/reset-message-count", isAuthenticated, checkRole("admin"), async (req, res) => {
     try {
