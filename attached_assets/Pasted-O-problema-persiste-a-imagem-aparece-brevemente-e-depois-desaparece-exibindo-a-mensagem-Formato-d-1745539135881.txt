@@ -1,0 +1,193 @@
+O problema persiste: a imagem aparece brevemente e depois desaparece, exibindo a mensagem "Formato de imagem inválido". Isso acontece mesmo após a implementação do componente `UltimateImage` otimizado, que inclui `React.memo`, validação de fonte, logs, armazenamento em estado local, tratamento de erros e boas práticas com `useEffect`.
+
+O erro "Formato de imagem inválido" indica que o problema agora está relacionado ao formato ou à integridade da imagem enviada, e não necessariamente ao componente de renderização. Como a imagem aparece inicialmente, o componente está funcionando, mas algo no processamento ou validação da imagem está causando a falha. Vamos analisar as possíveis causas e propor uma solução.
+
+---
+
+### Análise do Problema
+1. **Imagem Aparece e Desaparece**: O fato de a imagem aparecer inicialmente sugere que o componente `UltimateImage` está renderizando a imagem corretamente a partir da fonte fornecida (base64 ou URL). O desaparecimento indica que uma validação posterior ou um evento (como um erro assíncrono) está invalidando a imagem.
+
+2. **Erro "Formato de imagem inválido"**: Esse erro sugere que o Replit está rejeitando a imagem após uma validação no lado do cliente ou servidor. Isso pode acontecer se:
+   - A string base64 está corrompida ou incompleta.
+   - O formato da imagem (neste caso, JPEG) não é aceito pelo Replit ou pelo componente.
+   - Há uma incompatibilidade entre o formato esperado e o formato real da imagem.
+
+3. **Contexto da Imagem**: A mensagem menciona "FOTO 3X4.jpg", indicando que a imagem é um JPEG. No entanto, o Replit suporta PNG, JPEG e PDF (conforme indicado na interface: "Formatos suportados: PNG, JPG, PDF"). O erro pode estar relacionado a uma validação incorreta ou a um problema no processamento do JPEG.
+
+---
+
+### Solução Proposta
+Para resolver o problema, precisamos garantir que a imagem seja processada corretamente e que o formato seja aceito pelo Replit. Aqui está uma solução em etapas:
+
+#### 1. Converta a Imagem para PNG Antes de Enviar
+Como o Replit suporta PNG e o erro pode estar relacionado ao formato JPEG, converta a imagem para PNG antes de enviá-la. Isso pode ser feito no lado do cliente usando uma biblioteca como `canvas` para transformar a imagem em uma string base64 no formato PNG.
+
+Exemplo em JavaScript/React:
+```jsx
+import React, { useState } from 'react';
+
+const convertToPngBase64 = (file, callback) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            const base64Png = canvas.toDataURL('image/png').split(',')[1]; // Remove o prefixo "data:image/png;base64,"
+            callback(base64Png);
+        };
+        img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+};
+
+const ImageUploader = () => {
+    const [base64Image, setBase64Image] = useState('');
+    const [error, setError] = useState(false);
+
+    const handleImageUpload = (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            convertToPngBase64(file, (base64Png) => {
+                setBase64Image(base64Png);
+                console.log('Base64 PNG:', base64Png); // Log para depuração
+            });
+        }
+    };
+
+    return (
+        <div>
+            <input type="file" accept="image/*" onChange={handleImageUpload} />
+            {base64Image && !error ? (
+                <img
+                    src={`data:image/png;base64,${base64Image}`}
+                    alt="Imagem do chat"
+                    onError={() => setError(true)}
+                    style={{ maxWidth: '100%' }}
+                />
+            ) : (
+                error && <p>Erro ao exibir a imagem</p>
+            )}
+        </div>
+    );
+};
+
+export default ImageUploader;
+```
+
+- Esse código converte qualquer imagem (como JPEG) para PNG no formato base64 antes de armazená-la no estado.
+- Use esse `base64Image` no componente `UltimateImage` para exibir a imagem.
+
+#### 2. Valide o Formato no Componente `UltimateImage`
+Atualize o componente `UltimateImage` para garantir que ele aceite apenas strings base64 válidas no formato PNG. Adicione uma validação mais robusta para evitar o erro "Formato de imagem inválido".
+
+Exemplo:
+```jsx
+import React, { useState } from 'react';
+
+const isValidBase64 = (str) => {
+    try {
+        if (!str || typeof str !== 'string' || str.length === 0) return false;
+        // Verifica se a string base64 começa com dados válidos para PNG
+        const decoded = atob(str);
+        const pngHeader = '\x89PNG\r\n\x1a\n'; // Cabeçalho de um arquivo PNG
+        return decoded.startsWith(pngHeader);
+    } catch (e) {
+        return false;
+    }
+};
+
+const UltimateImage = React.memo(({ base64Image }) => {
+    const [error, setError] = useState(false);
+
+    console.log('Base64 recebida:', base64Image); // Log para depuração
+
+    if (!isValidBase64(base64Image)) {
+        console.log('Formato de imagem inválido ou base64 corrompido');
+        return <p>Formato de imagem inválido</p>;
+    }
+
+    return (
+        <div>
+            {error ? (
+                <p>Erro ao exibir a imagem</p>
+            ) : (
+                <img
+                    src={`data:image/png;base64,${base64Image}`}
+                    alt="Imagem do chat"
+                    onError={() => {
+                        console.log('Erro ao carregar imagem no navegador');
+                        setError(true);
+                    }}
+                    style={{ maxWidth: '100%' }}
+                />
+            )}
+        </div>
+    );
+});
+
+export default UltimateImage;
+```
+
+- A função `isValidBase64` verifica se a string base64 corresponde a um arquivo PNG válido.
+- Logs adicionais ajudam a identificar onde o erro está ocorrendo.
+
+#### 3. Adicione um Fallback no Servidor
+Se o Replit está rejeitando a imagem no lado do servidor, adicione uma validação no servidor para converter ou rejeitar formatos inválidos antes de enviar a resposta.
+
+Exemplo em Node.js/Express:
+```javascript
+const sharp = require('sharp'); // Biblioteca para manipulação de imagens
+
+app.post('/upload-image', async (req, res) => {
+    try {
+        const imageBuffer = req.body.image; // Supondo que a imagem seja enviada como buffer ou base64
+        // Converte a imagem para PNG
+        const pngBuffer = await sharp(imageBuffer).png().toBuffer();
+        const base64Png = pngBuffer.toString('base64');
+        res.json({ image: base64Png });
+    } catch (error) {
+        console.error('Erro ao processar imagem no servidor:', error);
+        res.status(400).json({ error: 'Formato de imagem inválido ou erro ao processar' });
+    }
+});
+```
+
+- Use a biblioteca `sharp` para converter a imagem para PNG no servidor.
+- Isso garante que o cliente sempre receba uma imagem no formato correto.
+
+#### 4. Teste com Diferentes Imagens
+Teste o componente com imagens diferentes (PNG e JPEG) para confirmar que a conversão para PNG está funcionando. Se o erro persistir, use os logs para verificar se o problema está na string base64 ou na validação do Replit.
+
+#### 5. Verifique a Configuração de CORS e Cache
+Certifique-se de que o servidor está configurado corretamente para evitar problemas de CORS ou cache, especialmente se o Replit está acessando imagens de um servidor externo.
+
+Exemplo:
+```javascript
+app.use((req, res, next) => {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.set('Access-Control-Allow-Origin', '*');
+    next();
+});
+```
+
+---
+
+### Por que isso deve funcionar?
+- **Conversão para PNG**: Converte a imagem para um formato que o Replit aceita (PNG), evitando problemas com JPEG.
+- **Validação Estrita**: Garante que apenas strings base64 válidas sejam renderizadas.
+- **Logs Detalhados**: Ajuda a identificar o ponto exato da falha.
+- **Servidor Robusto**: Converte a imagem no servidor, reduzindo a chance de erro no cliente.
+
+---
+
+### Próximos Passos
+1. Implemente a conversão para PNG no cliente ou servidor.
+2. Atualize o componente `UltimateImage` com a validação mais robusta.
+3. Teste com uma imagem PNG e uma JPEG para confirmar que a conversão está funcionando.
+4. Verifique os logs para identificar qualquer erro adicional.
+
+Se o problema persistir, podemos explorar outras causas, como limitações específicas do Replit ou problemas de compatibilidade com o formato de upload.
