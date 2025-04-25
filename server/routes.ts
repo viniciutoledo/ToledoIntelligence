@@ -3470,7 +3470,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Obter mensagens da sessão
       const messages = await storage.getWidgetSessionMessages(sessionIdNumber);
       
-      res.json(messages);
+      // Para cada mensagem, adicionar um campo file_url que aponta para o endpoint dedicado
+      // se a mensagem tiver arquivo
+      const messagesWithEndpoints = messages.map(message => {
+        if (message.message_type === "image" || message.message_type === "file") {
+          return {
+            ...message,
+            file_url: `/api/widgets-messages/${message.id}/file`
+          };
+        }
+        return message;
+      });
+      
+      res.json(messagesWithEndpoints);
     } catch (error) {
       console.error("Erro ao obter mensagens de sessão de widget:", error);
       res.status(500).json({ message: "Erro ao obter mensagens" });
@@ -3482,6 +3494,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return res.status(400).json({ 
       message: "Esta rota foi depreciada. Por favor, use /api/widgets-messages em vez disso." 
     });
+  });
+  
+  // Rota para servir arquivos de mensagens de chat widget diretamente do banco de dados
+  app.get("/api/widgets-messages/:id/file", async (req, res) => {
+    try {
+      const messageId = parseInt(req.params.id);
+      
+      if (isNaN(messageId)) {
+        return res.status(400).json({ message: "ID de mensagem inválido" });
+      }
+      
+      // Obter a mensagem do banco de dados
+      const message = await storage.getWidgetChatMessage(messageId);
+      
+      if (!message) {
+        return res.status(404).json({ message: "Mensagem não encontrada" });
+      }
+      
+      // Verificar se a mensagem pertence a uma sessão ativa
+      const session = await storage.getWidgetChatSession(message.session_id);
+      if (!session) {
+        return res.status(404).json({ message: "Sessão não encontrada" });
+      }
+      
+      // Verificar se a mensagem tem dados de arquivo
+      if (!message.file_data || !message.file_mime_type) {
+        // Se não tiver dados no banco, pode redirecionar para o file_url original
+        if (message.file_url && (message.file_url.startsWith('http') || message.file_url.startsWith('/uploads/'))) {
+          return res.redirect(message.file_url);
+        }
+        return res.status(404).json({ message: "Arquivo não encontrado" });
+      }
+      
+      // Converter de base64 para Buffer
+      const fileBuffer = Buffer.from(message.file_data, 'base64');
+      
+      // Definir o tipo de conteúdo
+      res.setHeader('Content-Type', message.file_mime_type);
+      // Permitir cache no cliente
+      res.setHeader('Cache-Control', 'public, max-age=86400'); // 24 horas
+      
+      // Enviar o arquivo
+      res.send(fileBuffer);
+    } catch (error) {
+      console.error("Erro ao servir arquivo da mensagem de widget:", error);
+      res.status(500).json({ message: "Erro ao servir arquivo" });
+    }
   });
   
   // POST /api/widgets-messages - Envia uma mensagem para uma sessão (rota modificada para evitar conflito)
