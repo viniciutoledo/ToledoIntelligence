@@ -1,4 +1,4 @@
-import { createContext, ReactNode, useContext, useState } from "react";
+import { createContext, ReactNode, useContext, useState, useEffect } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -30,6 +30,7 @@ type ChatContextType = {
   messages: ChatMessage[];
   isLoadingSessions: boolean;
   isLoadingMessages: boolean;
+  isProcessingLlm: boolean;
   createSessionMutation: any;
   endSessionMutation: any;
   sendMessageMutation: any;
@@ -43,6 +44,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const { t } = useLanguage();
   const [currentSession, setCurrentSessionState] = useState<ChatSession | null>(null);
+  const [isProcessingLlm, setIsProcessingLlm] = useState(false);
 
   // Get chat sessions
   const {
@@ -73,6 +75,18 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     enabled: !!currentSession,
     refetchOnWindowFocus: false,
   });
+  
+  // Monitor messages to detect when the AI message arrives
+  useEffect(() => {
+    if (isProcessingLlm && messages.length > 0) {
+      // Verificar se a última mensagem é do assistente (não é do usuário)
+      const lastMessage = messages[messages.length - 1];
+      if (!lastMessage.is_user) {
+        // Se a última mensagem é do assistente, podemos desligar o indicador de processamento
+        setIsProcessingLlm(false);
+      }
+    }
+  }, [messages, isProcessingLlm]);
 
   // Create session mutation
   const createSessionMutation = useMutation({
@@ -123,6 +137,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       sessionId: number;
       content: string;
     }) => {
+      setIsProcessingLlm(true);
+      
       const res = await apiRequest(
         "POST",
         `/api/chat/sessions/${sessionId}/messages`,
@@ -134,8 +150,10 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       queryClient.invalidateQueries({
         queryKey: ["/api/chat/sessions", currentSession?.id, "messages"],
       });
+      setIsProcessingLlm(false);
     },
     onError: (error: Error) => {
+      setIsProcessingLlm(false);
       toast({
         title: t("common.error"),
         description: error.message,
@@ -153,6 +171,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       sessionId: number;
       file: File;
     }) => {
+      setIsProcessingLlm(true);
+      
       console.log("Iniciando upload de arquivo:", {
         name: file.name,
         type: file.type,
@@ -257,9 +277,12 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           queryKey: ["/api/chat/sessions", currentSession?.id, "messages"],
         });
       }, 500);
+      
+      setIsProcessingLlm(false);
     },
     onError: (error: Error) => {
       console.error("Erro no mutation de upload:", error);
+      setIsProcessingLlm(false);
       toast({
         title: t("common.error"),
         description: error.message,
@@ -289,6 +312,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         messages,
         isLoadingSessions,
         isLoadingMessages,
+        isProcessingLlm,
         createSessionMutation,
         endSessionMutation,
         sendMessageMutation,
