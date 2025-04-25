@@ -4,6 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Paperclip, Image, Send, Loader2, X, ExternalLink } from "lucide-react";
+import { SimpleImage } from "./simple-image";
 import { UltimateImage } from "./ultimate-image";
 import { ExternalImageInput } from "./external-image-input";
 
@@ -187,7 +188,7 @@ export function ChatInterface({
       <div className="px-4 py-3 border-b flex items-center">
         <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 mr-3">
           {avatar?.image_url ? (
-            <UltimateImage
+            <SimpleImage
               src={avatar.image_url}
               alt={avatar.name || "Avatar"}
             />
@@ -224,7 +225,7 @@ export function ChatInterface({
                 <User className="h-4 w-4" />
               ) : (
                 avatar?.image_url ? (
-                  <UltimateImage
+                  <SimpleImage
                     src={avatar.image_url}
                     alt={avatar.name || "Avatar"}
                   />
@@ -277,8 +278,8 @@ export function ChatInterface({
                   <div className="image-container relative">
                     {(msg.file_url || msg.fileBase64) ? (
                       <div className="image-wrapper relative">
-                        {/* Usando UltimateImage para exibição estável e confiável das imagens */}
-                        <UltimateImage 
+                        {/* Usando SimpleImage para exibição estável e confiável das imagens */}
+                        <SimpleImage 
                           src={msg.fileBase64 || msg.file_url}
                           alt="Imagem enviada" 
                           className="rounded-md"
@@ -328,7 +329,7 @@ export function ChatInterface({
           <div className="flex items-start">
             <div className="h-8 w-8 rounded-full flex items-center justify-center bg-primary-100 text-primary-600 mr-2 mt-1">
               {avatar?.image_url ? (
-                <UltimateImage
+                <SimpleImage
                   src={avatar.image_url}
                   alt={avatar.name || "Avatar"}
                 />

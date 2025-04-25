@@ -1,138 +1,99 @@
-import React, { useState, useCallback } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { toast } from '@/hooks/use-toast';
-import { Paperclip, Image as ImageIcon, X } from 'lucide-react';
+import React, { useState } from 'react';
+import { Button } from "@/components/ui/button";
+import { Image } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/hooks/use-language";
 
-// Esta é uma variação do componente de imagem externa para integrar com o chat existente
-export function ExternalImageInput({
-  onSendImage,
-  className = "",
-}: {
-  onSendImage: (url: string) => void;
-  className?: string;
-}) {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [imageUrl, setImageUrl] = useState('');
-  const [isValidating, setIsValidating] = useState(false);
+interface ExternalImageInputProps {
+  onSendImage: (imageUrl: string) => void;
+}
 
-  // Validar a URL da imagem
-  const validateImageUrl = useCallback(async (url: string): Promise<boolean> => {
-    // Verificar formato básico da URL
-    if (!url || !url.match(/^https?:\/\/.+\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i)) {
+export function ExternalImageInput({ onSendImage }: ExternalImageInputProps) {
+  const [showInput, setShowInput] = useState(false);
+  const [imageUrl, setImageUrl] = useState("");
+  const { toast } = useToast();
+  const { t } = useLanguage();
+
+  const handleSubmit = () => {
+    if (!imageUrl || !imageUrl.trim()) {
       toast({
-        title: "URL inválida",
-        description: "A URL deve apontar para uma imagem (JPG, PNG, GIF, WebP)",
-        variant: "destructive"
-      });
-      return false;
-    }
-
-    // Testar se a imagem carrega
-    try {
-      setIsValidating(true);
-      return await new Promise((resolve) => {
-        const img = new Image();
-        img.onload = () => resolve(true);
-        img.onerror = () => resolve(false);
-        img.src = url;
-        // Definir timeout para não travar a interface
-        setTimeout(() => resolve(false), 5000);
-      });
-    } catch (error) {
-      return false;
-    } finally {
-      setIsValidating(false);
-    }
-  }, []);
-
-  // Enviar a URL da imagem
-  const handleSend = useCallback(async () => {
-    const isValid = await validateImageUrl(imageUrl);
-    
-    if (!isValid) {
-      toast({
-        title: "Imagem não carregada",
-        description: "Não foi possível verificar a imagem. Verifique a URL e tente novamente.",
-        variant: "destructive"
+        title: t("common.error"),
+        description: t("technician.enterValidUrl"),
+        variant: "destructive",
       });
       return;
     }
 
+    // Validar a URL (verificação básica se está formatada como uma URL)
+    try {
+      new URL(imageUrl);
+    } catch (e) {
+      toast({
+        title: t("common.error"),
+        description: t("technician.invalidUrl"),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Verificar extensão da imagem para filtrar só URLs de imagem
+    const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg'];
+    const hasImageExtension = imageExtensions.some(ext => 
+      imageUrl.toLowerCase().endsWith(ext) || 
+      imageUrl.toLowerCase().includes(`${ext}?`) || 
+      imageUrl.toLowerCase().includes(`${ext}&`)
+    );
+
+    if (!hasImageExtension) {
+      toast({
+        title: t("common.error"),
+        description: t("technician.urlMustBeImage"),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Enviar a URL da imagem
     onSendImage(imageUrl);
-    setImageUrl('');
-    setIsExpanded(false);
     
-    toast({
-      description: "Imagem externa enviada com sucesso!"
-    });
-  }, [imageUrl, onSendImage, validateImageUrl]);
-
-  // Cancelar o envio
-  const handleCancel = useCallback(() => {
-    setImageUrl('');
-    setIsExpanded(false);
-  }, []);
-
-  // Alternar o painel de entrada de URL
-  const toggleUrlInput = useCallback(() => {
-    setIsExpanded(prev => !prev);
-  }, []);
+    // Limpar e esconder o input após enviar
+    setImageUrl("");
+    setShowInput(false);
+  };
 
   return (
-    <div className={`${className}`}>
-      {!isExpanded ? (
-        <Button
-          variant="ghost"
-          size="icon"
-          title="Enviar imagem externa (URL)"
-          onClick={toggleUrlInput}
-          className="text-muted-foreground hover:text-foreground"
-        >
-          <ImageIcon className="h-5 w-5" />
-        </Button>
-      ) : (
-        <div className="flex flex-col w-full bg-muted/20 p-2 rounded-md space-y-2">
-          <div className="flex items-center space-x-2">
-            <Input
-              placeholder="https://exemplo.com/imagem.jpg"
+    <div className="relative">
+      <Button 
+        variant="ghost" 
+        size="icon" 
+        type="button"
+        className="p-2 rounded-full text-neutral-500 hover:text-primary hover:bg-primary-50"
+        onClick={() => setShowInput(!showInput)}
+        title="Enviar imagem externa"
+      >
+        <Image className="h-5 w-5" />
+      </Button>
+      
+      {showInput && (
+        <div className="absolute left-0 bottom-full mb-2 p-2 bg-white shadow-lg rounded-md border z-10 w-72">
+          <p className="text-xs text-gray-600 mb-2">Cole a URL de uma imagem online:</p>
+          <div className="flex">
+            <input
+              type="text"
+              className="flex-grow p-2 border text-sm rounded-l-md"
               value={imageUrl}
               onChange={(e) => setImageUrl(e.target.value)}
-              className="flex-1 text-sm"
-              disabled={isValidating}
+              placeholder="https://exemplo.com/imagem.jpg"
             />
-            <Button
-              size="sm"
-              variant="default"
-              disabled={!imageUrl || isValidating}
-              onClick={handleSend}
+            <button
+              className="bg-primary text-white p-2 rounded-r-md text-sm"
+              onClick={handleSubmit}
             >
-              {isValidating ? 'Verificando...' : 'Enviar'}
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={handleCancel}
-            >
-              <X className="h-4 w-4" />
-            </Button>
+              Enviar
+            </button>
           </div>
-          
-          {imageUrl && (
-            <div className="relative w-full max-h-40 overflow-hidden rounded border bg-background">
-              <img
-                src={imageUrl}
-                alt="Pré-visualização"
-                className="max-w-full max-h-40 mx-auto object-contain"
-                onError={(e) => {
-                  e.currentTarget.style.display = 'none';
-                }}
-              />
-            </div>
-          )}
-          
-          <p className="text-xs text-muted-foreground">
-            Dica: Use esta opção para enviar imagens hospedadas externamente e evitar problemas de upload.
+          <p className="text-xs text-gray-500 mt-1">
+            URLs de imagens devem terminar com .jpg, .png, .gif, etc.
           </p>
         </div>
       )}
