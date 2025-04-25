@@ -1828,6 +1828,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(403).json({ message: "Unauthorized" });
     }
     
+    // Verificar se o usuário pode enviar mensagens (limite do plano)
+    const canSendMessage = await storage.checkMessageLimit(req.user!.id);
+    if (!canSendMessage) {
+      // Delete uploaded file if it exists
+      if (req.file) {
+        fs.unlink(req.file.path, () => {});
+      }
+      
+      const user = await storage.getUser(req.user!.id);
+      const language = user?.language || 'en';
+      
+      return res.status(403).json({
+        message: language === 'pt' 
+          ? "Você atingiu o limite de mensagens do seu plano. Atualize para um plano superior para continuar."
+          : "You have reached your plan's message limit. Upgrade to a higher plan to continue.",
+        limitReached: true
+      });
+    }
+    
     try {
       let messageType = "text";
       let content = req.body.content;
@@ -1883,6 +1902,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const userMessage = await storage.createChatMessage(messageData);
+      
+      // Incrementar contagem de mensagens (cada mensagem do usuário conta 1)
+      await storage.incrementMessageCount(req.user!.id);
       
       // Process content with LLM - both files and text messages
       let botResponse;
@@ -1973,6 +1995,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           content: botResponse,
           is_user: false
         });
+        
+        // Incrementar contagem de mensagens (cada resposta do LLM também conta 1)
+        await storage.incrementMessageCount(req.user!.id);
       }
       
       // Se for uma imagem e temos base64, incluí-lo no objeto da mensagem
@@ -3592,6 +3617,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         is_user
       });
       
+      // Incrementar contagem de mensagens para o usuário (mensagem do visitante)
+      await storage.incrementMessageCount(widget.user_id);
+      
       // Se a mensagem é do usuário, gerar resposta automática
       if (is_user) {
         // Obter configuração LLM ativa
@@ -3771,6 +3799,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const userMessage = await storage.createWidgetChatMessage(messageData);
+      
+      // Incrementar contagem de mensagens para o usuário (enviada pelo visitante)
+      await storage.incrementMessageCount(widget.user_id);
       
       // Se é uma imagem, analisar com IA
       let aiResponse = "";
