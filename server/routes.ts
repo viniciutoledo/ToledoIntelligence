@@ -3745,13 +3745,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Criar a mensagem do usuário com o arquivo
-      const userMessage = await storage.createWidgetChatMessage({
+      const messageData: any = {
         session_id: parseInt(sessionId),
         content: file.originalname,
         message_type: messageType,
         file_url: fileUrl,
         is_user: true
-      });
+      };
+      
+      // Salvar dados de imagem em base64 e tipo MIME
+      if (file) {
+        try {
+          // Ler o arquivo usando fs
+          const fileData = fs.readFileSync(file.path);
+          
+          // Salvar dados raw do arquivo
+          messageData.file_data = fileData.toString('base64');
+          messageData.file_mime_type = file.mimetype;
+          
+          console.log(`Arquivo convertido para base64 e armazenado no banco (tamanho: ${messageData.file_data.length} bytes)`);
+        } catch (error) {
+          console.error("Erro ao converter arquivo para base64:", error);
+          // Continuar mesmo se falhar, já que ainda temos o file_url como fallback
+        }
+      }
+      
+      const userMessage = await storage.createWidgetChatMessage(messageData);
       
       // Se é uma imagem, analisar com IA
       let aiResponse = "";
