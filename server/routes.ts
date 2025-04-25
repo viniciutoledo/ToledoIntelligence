@@ -443,11 +443,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Atualizar max_messages para todos os usuários deste plano
-      const updatedUsers = await db
-        .update(users)
-        .set({ max_messages: limit })
-        .where(eq(users.subscription_tier, tier))
-        .returning();
+      // Buscar todos os usuários deste plano
+      const usersToUpdate = await storage.getUsersBySubscriptionTier(tier);
+      
+      // Atualizar cada usuário com o novo limite
+      const updatedUsers = await Promise.all(
+        usersToUpdate.map(user => 
+          storage.updateUser(user.id, { max_messages: limit })
+        )
+      );
       
       // Log da ação
       await logAction({

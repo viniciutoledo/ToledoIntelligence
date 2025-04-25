@@ -2555,6 +2555,18 @@ export class DatabaseStorage implements IStorage {
       console.error("Error resetting message counts:", error);
     }
   }
+  
+  async getUsersBySubscriptionTier(tier: "none" | "basic" | "intermediate"): Promise<User[]> {
+    try {
+      return await db
+        .select()
+        .from(users)
+        .where(eq(users.subscription_tier, tier));
+    } catch (error) {
+      console.error(`Error getting users by subscription tier (${tier}):`, error);
+      return [];
+    }
+  }
 }
 
 // Use DatabaseStorage em vez de MemStorage

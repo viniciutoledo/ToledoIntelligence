@@ -94,16 +94,31 @@ type User = {
   last_login: Date | null;
 };
 
+// Tipo para os limites de mensagens por plano
+type PlanMessageLimit = {
+  tier: 'none' | 'basic' | 'intermediate';
+  limit: number;
+  defaultLimit: number;
+};
+
 export default function PlanManagement() {
   const { t } = useLanguage();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<string>("basic");
+  const [activeMainTab, setActiveMainTab] = useState<string>("precos");
   const [newFeature, setNewFeature] = useState({
     feature_key: "",
     feature_name: "",
     feature_description: "",
     subscription_tier: "basic" as "none" | "basic" | "intermediate",
     is_enabled: true
+  });
+  const [messageLimits, setMessageLimits] = useState<{
+    [key: string]: number | undefined
+  }>({
+    none: undefined,
+    basic: undefined,
+    intermediate: undefined
   });
 
   // Buscar recursos dos planos
