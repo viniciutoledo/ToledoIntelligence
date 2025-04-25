@@ -3,8 +3,9 @@ import { useLanguage } from "@/hooks/use-language";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Paperclip, Image, Send, Loader2, X } from "lucide-react";
+import { Paperclip, Image, Send, Loader2, X, ExternalLink } from "lucide-react";
 import { UltimateImage } from "./ultimate-image";
+import { ExternalImageInput } from "./external-image-input";
 
 // Função utilitária para otimizar URLs de arquivos
 function getOptimizedFileUrl(fileUrl: string | null): string {
@@ -239,7 +240,34 @@ export function ChatInterface({
                 : "bg-neutral-100 text-neutral-800 rounded-lg rounded-tl-none"
             }`}>
               {msg.message_type === "text" ? (
-                <p className="text-sm">{msg.content}</p>
+                <p className="text-sm">
+                  {msg.content && msg.content.startsWith('[IMAGEM_EXTERNA]') ? (
+                    <>
+                      <div className="flex items-center mb-2">
+                        <ExternalLink className="h-4 w-4 mr-2 text-primary" />
+                        <span>Imagem externa</span>
+                      </div>
+                      <img 
+                        src={msg.content.substring(16).trim()} 
+                        alt="Imagem externa" 
+                        className="max-w-full rounded-md mt-1"
+                        onError={(e) => {
+                          e.currentTarget.src = "https://placehold.co/200x150?text=Erro+ao+carregar+imagem";
+                        }}
+                      />
+                      <a
+                        href={msg.content.substring(16).trim()}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-2 inline-block text-xs text-primary hover:underline"
+                      >
+                        Abrir imagem original
+                      </a>
+                    </>
+                  ) : (
+                    msg.content
+                  )}
+                </p>
               ) : msg.message_type === "image" ? (
                 <div>
                   <div className="flex items-center mb-2">
@@ -348,6 +376,20 @@ export function ChatInterface({
               )}
             </Button>
           </div>
+          
+          {/* Botão para imagens externas */}
+          <ExternalImageInput
+            onSendImage={(imageUrl) => {
+              if (currentSession) {
+                // Envia a URL externa da imagem como mensagem de texto, será processada pelo LLM como qualquer outra URL
+                onSendMessage(`[IMAGEM_EXTERNA] ${imageUrl}`);
+                toast({
+                  description: "Imagem externa enviada!",
+                  duration: 2000,
+                });
+              }
+            }}
+          />
           
           <Input
             placeholder={texts.typeMessage}

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { TestImage } from '@/components/shared/test-image';
 import { UltimateImage } from '@/components/shared/ultimate-image';
+import { ExternalImageChat } from '@/components/shared/external-image-chat';
 
 // Esta página permitirá isolar e testar os problemas de exibição de imagens
 export default function ImageTestPage() {
@@ -110,6 +111,33 @@ export default function ImageTestPage() {
               </div>
             )}
           </div>
+        </div>
+      </div>
+      
+      {/* Seção 3: Alternativa para chat */}
+      <div className="mt-6 p-4 border rounded">
+        <h2 className="text-xl font-semibold mb-4">3. Solução Alternativa para Chat</h2>
+        <p className="text-sm mb-4">
+          Como o upload direto no chat não está funcionando, use esta abordagem para enviar imagens externas:
+        </p>
+        
+        <ExternalImageChat 
+          onSend={(url) => {
+            // Em uma implementação real, este manipulador enviaria a URL para o chat
+            console.log("URL da imagem enviada para o chat:", url);
+            // Para demonstração, exibimos a imagem
+            setSelectedImage(url);
+          }} 
+        />
+        
+        <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded">
+          <h3 className="text-amber-800 font-medium">Como usar:</h3>
+          <ol className="list-decimal ml-5 text-sm text-amber-700 space-y-1 mt-2">
+            <li>Converta sua imagem para PNG usando uma ferramenta online (ex: convertio.co)</li>
+            <li>Faça upload em um serviço de hospedagem de imagens (ex: imgur.com, postimages.org)</li>
+            <li>Copie o link direto da imagem e cole no campo acima</li>
+            <li>A URL da imagem será enviada para o chat, contornando o problema de upload</li>
+          </ol>
         </div>
       </div>
       
