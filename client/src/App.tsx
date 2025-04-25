@@ -20,6 +20,7 @@ import DiagnosticPage from "@/pages/diagnostic-page";
 import WidgetEmbedPage from "@/pages/widget-embed";
 import EmbedPage from "@/pages/embed";
 import WidgetDocsPage from "@/pages/widget-docs";
+import ImageTestPage from "@/pages/image-test";
 
 function Router() {
   return (
@@ -41,6 +42,9 @@ function Router() {
       
       {/* Diagnostic tool - será removido após a correção */}
       <Route path="/diagnostic" component={DiagnosticPage} />
+      
+      {/* Image test page para diagnóstico de problemas com imagens */}
+      <Route path="/image-test" component={ImageTestPage} />
       
       {/* Protected routes */}
       <ProtectedRoute path="/technician" component={TechnicianPage} roles={["technician", "admin"]} />
