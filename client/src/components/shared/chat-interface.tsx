@@ -5,8 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Paperclip, Image, Send, Loader2, X, ExternalLink } from "lucide-react";
 import { SimpleImage } from "./simple-image";
-import { UltimateImage } from "./ultimate-image";
-import { ExternalImageInput } from "./external-image-input";
 
 // Função utilitária para otimizar URLs de arquivos
 function getOptimizedFileUrl(fileUrl: string | null): string {
@@ -377,20 +375,6 @@ export function ChatInterface({
               )}
             </Button>
           </div>
-          
-          {/* Botão para imagens externas */}
-          <ExternalImageInput
-            onSendImage={(imageUrl) => {
-              if (currentSession) {
-                // Envia a URL externa da imagem como mensagem de texto, será processada pelo LLM como qualquer outra URL
-                onSendMessage(`[IMAGEM_EXTERNA] ${imageUrl}`);
-                toast({
-                  description: "Imagem externa enviada!",
-                  duration: 2000,
-                });
-              }
-            }}
-          />
           
           <Input
             placeholder={texts.typeMessage}

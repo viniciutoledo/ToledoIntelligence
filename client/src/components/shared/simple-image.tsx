@@ -1,41 +1,54 @@
-import React, { useState } from 'react';
+import React from 'react';
 
 interface SimpleImageProps {
-  src: string | null | undefined;
-  alt?: string;
+  src: string | null;
+  alt: string;
   className?: string;
 }
 
-export function SimpleImage({ src, alt = "Imagem", className = "" }: SimpleImageProps) {
-  const [error, setError] = useState(false);
-  const [loaded, setLoaded] = useState(false);
-  
+export function SimpleImage({ src, alt, className = "" }: SimpleImageProps) {
   if (!src) {
-    return (
-      <div className="p-2 bg-gray-100 text-gray-500 text-sm rounded">
-        Imagem não disponível
-      </div>
-    );
+    return null;
   }
+
+  // Verifica se é base64
+  const isBase64 = typeof src === 'string' && src.startsWith('data:');
   
-  if (error) {
-    return (
-      <div className="p-2 bg-red-50 text-red-500 text-sm rounded">
-        Erro ao carregar imagem
-      </div>
-    );
-  }
+  // Limpa a URL se necessário (não base64)
+  const cleanSrc = !isBase64 ? getCleanUrl(src) : src;
+  
+  // Acrescentar classe padrão e classes adicionais
+  const imgClasses = `w-full h-auto object-contain ${className}`;
   
   return (
-    <div className="image-container">
-      {!loaded && <div className="text-xs text-gray-500 mb-1">Carregando imagem...</div>}
-      <img
-        src={src}
-        alt={alt}
-        className={`max-w-full rounded-md ${className}`}
-        onLoad={() => setLoaded(true)}
-        onError={() => setError(true)}
-      />
-    </div>
+    <img 
+      src={cleanSrc} 
+      alt={alt}
+      className={imgClasses}
+      loading="lazy"
+      onError={(e) => {
+        // Se a imagem falhar, não mostramos mensagem de erro ou imagem substituta
+        // Apenas ocultamos o elemento da imagem para não mostrar ícone de imagem quebrada
+        e.currentTarget.style.display = 'none';
+      }}
+    />
   );
+}
+
+// Função para limpar URLs
+function getCleanUrl(url: string): string {
+  // Limpa caracteres especiais que possam causar problemas
+  const cleanUrl = url.replace(/[\u200B-\u200D\uFEFF\u0000-\u001F\u007F-\u009F]/g, '');
+  
+  // Adicionar o prefixo da origem se for um caminho relativo
+  if (cleanUrl.startsWith('/')) {
+    return `${window.location.origin}${cleanUrl}`;
+  }
+  
+  // Adicionar / se for um caminho relativo sem /
+  if (!cleanUrl.startsWith('http') && !cleanUrl.startsWith('/') && !cleanUrl.startsWith('blob:') && !cleanUrl.startsWith('data:')) {
+    return `/${cleanUrl}`;
+  }
+  
+  return cleanUrl;
 }
