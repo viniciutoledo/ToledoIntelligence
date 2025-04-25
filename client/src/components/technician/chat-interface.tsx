@@ -16,6 +16,7 @@ export function ChatInterface() {
     createSessionMutation,
     sendMessageMutation,
     uploadFileMutation,
+    isProcessingLlm,
   } = useChat();
   
   const isLoading = createSessionMutation.isPending || 
@@ -71,6 +72,7 @@ export function ChatInterface() {
       currentSession={currentSession}
       avatar={chatAvatar}
       isLoading={isLoading}
+      isProcessingLlm={isProcessingLlm}
       onSendMessage={handleSendMessage}
       onFileUpload={handleFileUpload}
     />
