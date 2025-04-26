@@ -132,6 +132,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     next();
   });
+  
+  // Rota específica para iframe embed (compatível com Curseduca e outras plataformas)
+  app.get('/embed/iframe', (req, res, next) => {
+    // Headers adicionais específicos para embedding em iframe
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    
+    // Configurar cache para melhor performance de iframe
+    res.setHeader('Cache-Control', 'public, max-age=300');
+    
+    next();
+  });
   // Servir arquivos estáticos da pasta public
   app.use(express.static(path.join(process.cwd(), 'public')));
   
@@ -3121,6 +3135,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.json(safeWidget);
     } catch (error) {
       console.error("[EMBED] Erro ao obter widget:", error);
+      res.status(500).json({ message: "Erro ao obter widget" });
+    }
+  });
+  
+  // Endpoint especial para uso com iframe (compatível com Curseduca e outras plataformas)
+  app.get("/api/embed/iframe-widget", async (req, res) => {
+    try {
+      const apiKey = req.query.key as string;
+      
+      if (!apiKey) {
+        return res.status(401).json({ message: "API key não fornecida. Use o parâmetro 'key'." });
+      }
+      
+      console.log(`[IFRAME] Buscando widget com API key: ${apiKey}`);
+      const widget = await storage.getChatWidgetByApiKey(apiKey);
+      
+      if (!widget) {
+        console.log(`[IFRAME] Widget não encontrado para key: ${apiKey}`);
+        return res.status(404).json({ message: "Widget não encontrado ou inativo" });
+      }
+      
+      console.log(`[IFRAME] Widget encontrado: ${widget.id}, nome: ${widget.name}`);
+      
+      // Configurar cabeçalhos adicionais para permitir iframe em qualquer domínio
+      res.removeHeader('X-Frame-Options');
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Methods', 'GET');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+      res.setHeader('Content-Security-Policy', "frame-ancestors *");
+      
+      // Remover a API key da resposta
+      const { api_key, ...safeWidget } = widget;
+      
+      // Converter URLs relativas para absolutas usando a função utilitária
+      if (safeWidget.avatar_url) {
+        safeWidget.avatar_url = ensureAbsoluteUrl(safeWidget.avatar_url, req);
+      }
+      
+      return res.json(safeWidget);
+    } catch (error) {
+      console.error("[IFRAME] Erro ao obter widget:", error);
       res.status(500).json({ message: "Erro ao obter widget" });
     }
   });

@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exemplo de Embed do ToledoIA (Via iframe)</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #f7f8fa;
+      color: #333;
+    }
+    
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    h1 {
+      color: #1e3a8a;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+    
+    .description {
+      background-color: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 30px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    }
+    
+    .code-block {
+      background-color: #2d2d2d;
+      color: #f8f8f8;
+      padding: 15px;
+      border-radius: 5px;
+      overflow-x: auto;
+      font-family: monospace;
+      margin-bottom: 20px;
+    }
+    
+    .demo-section {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 30px;
+      margin-bottom: 30px;
+    }
+    
+    .demo-column {
+      flex: 1;
+      min-width: 300px;
+    }
+    
+    .demo-iframe {
+      width: 100%;
+      height: 600px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    }
+    
+    .info-box {
+      background-color: #e8f4fd;
+      border-left: 4px solid #3498db;
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 4px;
+    }
+    
+    .info-box h3 {
+      margin-top: 0;
+      color: #2980b9;
+    }
+    
+    .important-note {
+      background-color: #fff8e1;
+      border-left: 4px solid #ffc107;
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 4px;
+    }
+    
+    .important-note h3 {
+      margin-top: 0;
+      color: #ff9800;
+    }
+    
+    @media (max-width: 768px) {
+      .demo-section {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>ToledoIA - Exemplo de Incorporação via iframe</h1>
+    
+    <div class="description">
+      <p>
+        Esta página demonstra como incorporar o widget do ToledoIA no seu site usando a 
+        tag <code>iframe</code> com o endpoint dedicado <code>/embed/iframe</code>. 
+        Este formato é compatível com sistemas LMS como o Curseduca, Moodle e outros.
+      </p>
+      
+      <div class="important-note">
+        <h3>Importante</h3>
+        <p>Substitua <code>SUA_API_KEY</code> pela chave API do seu widget ToledoIA.</p>
+        <p>A URL do iframe deve seguir o formato:</p>
+        <code>https://[seu-dominio]/embed/iframe?key=SUA_API_KEY</code>
+      </div>
+    </div>
+    
+    <div class="info-box">
+      <h3>Código de Incorporação</h3>
+      <p>Adicione este código HTML onde quiser exibir o widget de chat:</p>
+    </div>
+    
+    <div class="code-block">
+      &lt;iframe 
+        src="https://seu-dominio.com/embed/iframe?key=SUA_API_KEY" 
+        width="100%" 
+        height="600" 
+        frameborder="0" 
+        allow="microphone" 
+        style="border: none; width: 100%; height: 600px;"
+      &gt;&lt;/iframe&gt;
+    </div>
+    
+    <div class="info-box">
+      <h3>Embed no Curseduca</h3>
+      <p>Para incorporar no Curseduca, use este formato na opção "Criar Item" > "Link externo":</p>
+    </div>
+    
+    <div class="code-block">
+      /embed?url=https%3A%2F%2Fseu-dominio.com%2Fembed%2Fiframe%3Fkey%3DSUA_API_KEY
+    </div>
+    
+    <h2 style="text-align: center; margin: 40px 0 20px;">Demonstração</h2>
+    
+    <div class="demo-section">
+      <div class="demo-column">
+        <h3>Widget em iframe (100% width)</h3>
+        <iframe 
+          src="/embed/iframe?key=7b1e783a-5abb-4269-af75-0ca4a0129dd2" 
+          class="demo-iframe"
+          frameborder="0" 
+          allow="microphone"></iframe>
+      </div>
+      
+      <div class="demo-column">
+        <h3>Widget em iframe (largura fixa)</h3>
+        <div style="max-width: 350px; margin: 0 auto;">
+          <iframe 
+            src="/embed/iframe?key=7b1e783a-5abb-4269-af75-0ca4a0129dd2" 
+            width="350" 
+            height="600" 
+            frameborder="0" 
+            allow="microphone"
+            style="border: 1px solid #eee; border-radius: 8px;"></iframe>
+        </div>
+      </div>
+    </div>
+    
+    <div class="info-box">
+      <h3>Atributos importantes do iframe</h3>
+      <ul>
+        <li><strong>width</strong>: Largura do iframe (pode ser em pixels ou porcentagem)</li>
+        <li><strong>height</strong>: Altura do iframe (recomendado mínimo de 500px)</li>
+        <li><strong>frameborder</strong>: Definir como "0" para remover bordas</li>
+        <li><strong>allow</strong>: Inclua "microphone" para permitir entrada de áudio</li>
+        <li><strong>style</strong>: Estilos CSS adicionais conforme necessário</li>
+      </ul>
+    </div>
+    
+    <div class="important-note">
+      <h3>Dicas de implementação</h3>
+      <p>
+        O widget se adapta automaticamente ao tamanho do iframe. Para melhor experiência no mobile, 
+        use valores responsivos (como 100%) para a largura.
+      </p>
+      <p>
+        Você também pode customizar a aparência do chat pelo painel administrativo do ToledoIA.
+      </p>
+    </div>
+  </div>
+</body>
+</html>

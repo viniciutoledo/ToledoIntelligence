@@ -27,8 +27,24 @@ export default function IframePage() {
       return;
     }
     
-    setApiKey(keyParam);
-    setIsLoading(false);
+    // Verificar a validade da API key usando o endpoint específico para iframe
+    fetch(`/api/embed/iframe-widget?key=${encodeURIComponent(keyParam)}`)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Falha ao validar API key');
+        }
+        return response.json();
+      })
+      .then(data => {
+        console.log('Widget carregado com sucesso:', data.name);
+        setApiKey(keyParam);
+        setIsLoading(false);
+      })
+      .catch(err => {
+        console.error('Erro ao validar API key:', err);
+        setError('API key inválida ou widget não encontrado');
+        setIsLoading(false);
+      });
 
     // Adicionar atributos específicos do iframe
     document.documentElement.classList.add('iframe-embedded');
