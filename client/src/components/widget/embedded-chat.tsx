@@ -297,7 +297,7 @@ export function EmbeddedChat({ apiKey, initialOpen = false, hideHeader = false, 
 
   return (
     <div 
-      className="rounded-lg bg-card border shadow-xl overflow-hidden flex flex-col"
+      className={`rounded-lg bg-card border shadow-xl overflow-hidden flex flex-col embedded-chat-container ${fullHeight ? 'full-height-embed' : ''}`}
       style={containerStyles}
     >
       {/* Header - só exibe se não estiver configurado para ocultar */}
@@ -347,7 +347,7 @@ export function EmbeddedChat({ apiKey, initialOpen = false, hideHeader = false, 
       )}
       
       {/* Chat Content */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-hidden chat-content-wrapper">
         <SharedChatInterface
           messages={messages}
           currentSession={currentSession}
@@ -360,6 +360,13 @@ export function EmbeddedChat({ apiKey, initialOpen = false, hideHeader = false, 
           customTexts={customTexts}
         />
       </div>
+      
+      {/* Footer para iframe embedded */}
+      {fullHeight && (
+        <div className="embedded-chat-footer text-center text-xs p-1 text-muted-foreground bg-muted/50">
+          Powered by ToledoIA
+        </div>
+      )}
     </div>
   );
 }
