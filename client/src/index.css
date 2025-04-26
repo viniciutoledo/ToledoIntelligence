@@ -72,3 +72,34 @@
     @apply font-sans antialiased bg-background text-foreground;
   }
 }
+
+/* Estilos específicos para página de iframe embed */
+html.iframe-embedded,
+html.iframe-embedded body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  background: transparent;
+}
+
+.iframe-embedded-body {
+  background: transparent !important;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Remove bordas quando em iframe para permitir incorporação sem margens */
+html.iframe-embedded .rounded-lg {
+  border-radius: 0 !important;
+}
+
+html.iframe-embedded .border {
+  border: none !important;
+}
+
+html.iframe-embedded .shadow-xl {
+  box-shadow: none !important;
+}

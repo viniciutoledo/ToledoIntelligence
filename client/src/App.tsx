@@ -19,6 +19,7 @@ import CpanelLoginPage from "@/pages/cpanel-login-page";
 import DiagnosticPage from "@/pages/diagnostic-page";
 import WidgetEmbedPage from "@/pages/widget-embed";
 import EmbedPage from "@/pages/embed";
+import IframePage from "@/pages/iframe";
 import WidgetDocsPage from "@/pages/widget-docs";
 import ImageTestPage from "@/pages/image-test";
 
@@ -33,6 +34,7 @@ function Router() {
       {/* Widget docs and embed routes */}
       <Route path="/widget-docs" component={WidgetDocsPage} />
       <Route path="/embed/widget" component={WidgetEmbedPage} />
+      <Route path="/embed/iframe" component={IframePage} />
       <Route path="/embed/:apiKey" component={EmbedPage} />
       <Route path="/embed" component={EmbedPage} />
       
