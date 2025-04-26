@@ -18,6 +18,7 @@ import {
   TableHeader, 
   TableRow 
 } from "@/components/ui/table";
+import { WidgetDocsLink } from "./widget-docs-link";
 import { 
   DropdownMenu, 
   DropdownMenuContent, 

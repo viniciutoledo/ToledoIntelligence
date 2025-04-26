@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Guia de Integração do Widget ToledoIA</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+      color: #333;
+      background: #f9f9fb;
+      line-height: 1.6;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+    
+    .header {
+      text-align: center;
+      margin-bottom: 3rem;
+      padding: 2rem 0;
+      background: linear-gradient(135deg, #1a1d28 0%, #2d3748 100%);
+      color: white;
+    }
+    
+    .header h1 {
+      margin: 0;
+      font-size: 2.5rem;
+      font-weight: 700;
+    }
+    
+    .header p {
+      margin: 1rem 0 0;
+      font-size: 1.2rem;
+      opacity: 0.9;
+    }
+    
+    .content {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+      padding: 2rem;
+      margin-bottom: 2rem;
+    }
+    
+    h2 {
+      color: #2d3748;
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 0.5rem;
+      margin-top: 2rem;
+    }
+    
+    h3 {
+      color: #4a5568;
+      margin-top: 1.5rem;
+    }
+    
+    code {
+      font-family: Consolas, Monaco, 'Andale Mono', monospace;
+      background: #f1f5f9;
+      padding: 0.2rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.9rem;
+    }
+    
+    pre {
+      background: #1a1d28;
+      color: #e2e8f0;
+      padding: 1rem;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin: 1rem 0;
+    }
+    
+    pre code {
+      background: transparent;
+      color: inherit;
+      padding: 0;
+      font-size: 0.9rem;
+    }
+    
+    .method {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-right: 0.5rem;
+    }
+    
+    .get {
+      background: #d1fae5;
+      color: #065f46;
+    }
+    
+    .post {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+    
+    .info-box {
+      border-left: 4px solid #3b82f6;
+      background: #eff6ff;
+      padding: 1rem;
+      margin: 1rem 0;
+      border-radius: 0 4px 4px 0;
+    }
+    
+    .warning-box {
+      border-left: 4px solid #f59e0b;
+      background: #fffbeb;
+      padding: 1rem;
+      margin: 1rem 0;
+      border-radius: 0 4px 4px 0;
+    }
+    
+    .tabs {
+      display: flex;
+      margin: 1rem 0;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    
+    .tab {
+      padding: 0.5rem 1rem;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-right: 1rem;
+    }
+    
+    .tab.active {
+      border-bottom: 2px solid #3b82f6;
+      color: #3b82f6;
+      font-weight: 500;
+    }
+    
+    .tab-content {
+      display: none;
+      padding: 1rem 0;
+    }
+    
+    .tab-content.active {
+      display: block;
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+    }
+    
+    table, th, td {
+      border: 1px solid #e2e8f0;
+    }
+    
+    th {
+      background: #f8fafc;
+      text-align: left;
+      padding: 0.75rem;
+    }
+    
+    td {
+      padding: 0.75rem;
+    }
+    
+    .steps {
+      counter-reset: step;
+      margin: 2rem 0;
+    }
+    
+    .step {
+      margin-bottom: 2rem;
+      position: relative;
+      padding-left: 3rem;
+    }
+    
+    .step::before {
+      counter-increment: step;
+      content: counter(step);
+      position: absolute;
+      left: 0;
+      top: 0;
+      background: #3b82f6;
+      color: white;
+      width: 2rem;
+      height: 2rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+    }
+    
+    .demo-section {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 2rem;
+      margin: 2rem 0;
+    }
+    
+    .demo-iframe {
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      flex: 1;
+      min-width: 300px;
+      height: 600px;
+    }
+    
+    .integration-examples {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 2rem;
+      margin: 2rem 0;
+    }
+    
+    .integration-card {
+      flex: 1;
+      min-width: 300px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+      padding: 1.5rem;
+      border: 1px solid #e2e8f0;
+    }
+    
+    .integration-card h3 {
+      margin-top: 0;
+      display: flex;
+      align-items: center;
+    }
+    
+    .integration-card h3 img {
+      height: 24px;
+      margin-right: 0.5rem;
+    }
+    
+    @media (max-width: 768px) {
+      .container {
+        padding: 1rem;
+      }
+      
+      .header {
+        padding: 1.5rem 0;
+      }
+      
+      .header h1 {
+        font-size: 2rem;
+      }
+      
+      .content {
+        padding: 1.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Guia de Integração do Widget ToledoIA</h1>
+    <p>Documentação completa para integrar o chat ToledoIA em qualquer plataforma</p>
+  </div>
+  
+  <div class="container">
+    <div class="content">
+      <h2>Visão Geral</h2>
+      <p>O ToledoIA oferece múltiplas formas de integrar seu poderoso assistente de IA em sites e plataformas externas. Este guia fornece instruções detalhadas para cada método de integração, dependendo do seu caso de uso.</p>
+      
+      <div class="integration-examples">
+        <div class="integration-card">
+          <h3>Widget via JavaScript</h3>
+          <p>Método padrão para adicionar o chat em qualquer site ou aplicação web com controle total de personalização.</p>
+          <p><strong>Ideal para:</strong> Sites pessoais, blogs, portfólios</p>
+        </div>
+        
+        <div class="integration-card">
+          <h3>Integração via iframe</h3>
+          <p>Método simplificado para integrar o chat em plataformas que suportam incorporação de conteúdo externo.</p>
+          <p><strong>Ideal para:</strong> LMS, intranet, plataformas com recursos iframe</p>
+        </div>
+        
+        <div class="integration-card">
+          <h3>Curseduca</h3>
+          <p>Solução especializada para integração com a plataforma Curseduca para cursos online.</p>
+          <p><strong>Ideal para:</strong> Professores e instituições que usam Curseduca</p>
+        </div>
+      </div>
+      
+      <div class="info-box">
+        <p><strong>API Key Necessária:</strong> Todos os métodos de integração exigem uma API key válida do ToledoIA. Obtenha a sua no painel administrativo do ToledoIA na seção "Widgets".</p>
+      </div>
+    </div>
+    
+    <div class="content">
+      <h2>Método 1: Widget JavaScript</h2>
+      
+      <h3>Requisitos</h3>
+      <ul>
+        <li>Acesso à edição do código HTML do seu site</li>
+        <li>API key do ToledoIA (disponível no painel administrativo)</li>
+      </ul>
+      
+      <h3>Implementação</h3>
+      
+      <div class="steps">
+        <div class="step">
+          <h4>Obter sua API key</h4>
+          <p>Acesse o painel administrativo do ToledoIA, vá para a seção "Widgets" e crie um novo widget ou utilize um existente. Copie a API key gerada.</p>
+        </div>
+        
+        <div class="step">
+          <h4>Adicionar o script ao seu site</h4>
+          <p>Adicione o seguinte código ao final do seu arquivo HTML, logo antes da tag de fechamento <code>&lt;/body&gt;</code>:</p>
+          
+          <pre><code>&lt;script src="https://toledoia.com/widget.js" defer&gt;&lt;/script&gt;
+&lt;script&gt;
+  document.addEventListener('DOMContentLoaded', function() {
+    ToledoIAWidget.init({
+      apiKey: 'SUA_API_KEY',
+      position: 'right',  // 'right' ou 'left'
+      language: 'pt',     // 'pt' ou 'en'
+      theme: 'light'      // 'light' ou 'dark'
+    });
+  });
+&lt;/script&gt;</code></pre>
+          
+          <p>Substitua <code>SUA_API_KEY</code> pela API key que você obteve no painel administrativo.</p>
+        </div>
+      </div>
+      
+      <h3>Opções de Configuração</h3>
+      
+      <table>
+        <tr>
+          <th>Opção</th>
+          <th>Tipo</th>
+          <th>Padrão</th>
+          <th>Descrição</th>
+        </tr>
+        <tr>
+          <td><code>apiKey</code></td>
+          <td>String</td>
+          <td>-</td>
+          <td>Sua API key do ToledoIA (obrigatório)</td>
+        </tr>
+        <tr>
+          <td><code>position</code></td>
+          <td>String</td>
+          <td>'right'</td>
+          <td>Posição do widget na tela ('right' ou 'left')</td>
+        </tr>
+        <tr>
+          <td><code>language</code></td>
+          <td>String</td>
+          <td>'pt'</td>
+          <td>Idioma do widget ('pt' ou 'en')</td>
+        </tr>
+        <tr>
+          <td><code>theme</code></td>
+          <td>String</td>
+          <td>'light'</td>
+          <td>Tema do widget ('light' ou 'dark')</td>
+        </tr>
+        <tr>
+          <td><code>initialOpen</code></td>
+          <td>Boolean</td>
+          <td>false</td>
+          <td>Se o widget deve iniciar aberto</td>
+        </tr>
+        <tr>
+          <td><code>hideHeader</code></td>
+          <td>Boolean</td>
+          <td>false</td>
+          <td>Oculta o cabeçalho do widget</td>
+        </tr>
+      </table>
+    </div>
+    
+    <div class="content">
+      <h2>Método 2: Integração via iframe</h2>
+      
+      <p>A integração via iframe é ideal para plataformas onde você não tem acesso total ao código JavaScript ou precisa incorporar o ToledoIA em ambientes controlados.</p>
+      
+      <h3>Requisitos</h3>
+      <ul>
+        <li>Capacidade de adicionar um iframe em sua página/plataforma</li>
+        <li>API key do ToledoIA</li>
+      </ul>
+      
+      <h3>Implementação Básica</h3>
+      
+      <pre><code>&lt;iframe 
+  src="https://toledoia.com/embed/iframe?key=SUA_API_KEY" 
+  width="100%" 
+  height="600" 
+  frameborder="0" 
+  allow="microphone" 
+  style="border: none; width: 100%; height: 600px;"
+&gt;&lt;/iframe&gt;</code></pre>
+      
+      <p>Substitua <code>SUA_API_KEY</code> pela API key que você obteve no painel administrativo.</p>
+      
+      <div class="warning-box">
+        <p><strong>Importante:</strong> Ao usar iframe, certifique-se de que sua API key está configurada para permitir o domínio onde o iframe está sendo incorporado, ou defina como "*" para permitir qualquer domínio (menos seguro).</p>
+      </div>
+      
+      <h3>Parâmetros da URL</h3>
+      
+      <table>
+        <tr>
+          <th>Parâmetro</th>
+          <th>Descrição</th>
+        </tr>
+        <tr>
+          <td><code>key</code></td>
+          <td>Sua API key do ToledoIA (obrigatório)</td>
+        </tr>
+        <tr>
+          <td><code>hideHeader</code></td>
+          <td>Define como 'true' para ocultar o cabeçalho do chat</td>
+        </tr>
+        <tr>
+          <td><code>language</code></td>
+          <td>Idioma do widget ('pt' ou 'en')</td>
+        </tr>
+      </table>
+      
+      <h3>Exemplo com Parâmetros</h3>
+      
+      <pre><code>&lt;iframe 
+  src="https://toledoia.com/embed/iframe?key=SUA_API_KEY&hideHeader=true&language=en" 
+  width="100%" 
+  height="600" 
+  frameborder="0" 
+  allow="microphone" 
+  style="border: none; width: 100%; height: 600px;"
+&gt;&lt;/iframe&gt;</code></pre>
+    </div>
+    
+    <div class="content">
+      <h2>Método 3: Integração com Curseduca</h2>
+      
+      <p>O ToledoIA oferece uma integração especial com a plataforma Curseduca, permitindo que professores incorporem a IA diretamente nos cursos.</p>
+      
+      <div class="info-box">
+        <p><strong>Nota:</strong> Esta integração foi especialmente projetada para compatibilidade com a plataforma Curseduca, mas os mesmos princípios podem ser aplicados a outras plataformas LMS similares.</p>
+      </div>
+      
+      <h3>Passo a Passo para Integração</h3>
+      
+      <div class="steps">
+        <div class="step">
+          <h4>Obter sua API key</h4>
+          <p>No painel administrativo do ToledoIA, acesse "Widgets" e crie ou selecione um widget existente. Copie a API key.</p>
+        </div>
+        
+        <div class="step">
+          <h4>Adicionar ao Curseduca</h4>
+          <p>No Curseduca, ao criar um novo item de conteúdo:</p>
+          <ol>
+            <li>Selecione a opção "Link Externo"</li>
+            <li>No campo URL, adicione a seguinte URL formatada:</li>
+          </ol>
+          <pre><code>/embed?url=https%3A%2F%2Ftoledoia.com%2Fembed%2Fiframe%3Fkey%3DSUA_API_KEY</code></pre>
+          <p>Substitua <code>SUA_API_KEY</code> pela sua API key do ToledoIA. Esta URL especial permite que o ToledoIA seja mostrado diretamente na página de curso, sem redirecionar para uma nova janela.</p>
+        </div>
+        
+        <div class="step">
+          <h4>Configurações Adicionais</h4>
+          <p>No Curseduca:</p>
+          <ul>
+            <li>Marque a opção "Incorporar/Embed" se disponível</li>
+            <li>Defina a altura do iframe para pelo menos 600px</li>
+            <li>Recomenda-se permitir que o conteúdo ocupe a largura máxima disponível</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    
+    <div class="content">
+      <h2>Demonstração</h2>
+      
+      <div class="demo-section">
+        <iframe 
+          src="/embed/iframe?key=7b1e783a-5abb-4269-af75-0ca4a0129dd2" 
+          class="demo-iframe"
+          frameborder="0" 
+          allow="microphone"></iframe>
+        
+        <div>
+          <h3>Teste o ToledoIA</h3>
+          <p>Este é um exemplo de como o ToledoIA aparece quando incorporado via iframe. Este widget está completamente funcional e você pode testar suas capacidades.</p>
+          
+          <p>Alguns exemplos do que você pode perguntar:</p>
+          <ul>
+            <li>Analise este circuito elétrico...</li>
+            <li>Como detectar problemas em placas de circuito?</li>
+            <li>Explique o funcionamento de um transformador</li>
+          </ul>
+          
+          <p>O widget também suporta o upload de imagens para análise técnica.</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="content">
+      <h2>Perguntas Frequentes</h2>
+      
+      <h3>Como personalizar a aparência do widget?</h3>
+      <p>Todas as personalizações visuais, como cores, avatar e mensagem de boas-vindas, devem ser feitas no painel administrativo do ToledoIA na seção "Widgets". Essas configurações são aplicadas automaticamente em qualquer integração que use a mesma API key.</p>
+      
+      <h3>O widget funciona em dispositivos móveis?</h3>
+      <p>Sim, o ToledoIA é totalmente responsivo e se adapta a diferentes tamanhos de tela, incluindo smartphones e tablets.</p>
+      
+      <h3>Posso limitar o uso do widget a domínios específicos?</h3>
+      <p>Sim, no painel administrativo do ToledoIA, você pode configurar domínios permitidos para cada widget. Isso impede que sua API key seja usada em sites não autorizados.</p>
+      
+      <h3>Como monitorar o uso do widget?</h3>
+      <p>O painel administrativo do ToledoIA oferece estatísticas detalhadas de uso para cada widget, incluindo número de conversas, tópicos mais discutidos e muito mais.</p>
+      
+      <h3>O widget afeta o desempenho do meu site?</h3>
+      <p>O ToledoIA foi projetado para ter impacto mínimo no desempenho do seu site. O script é carregado assincronamente e o widget só é inicializado quando necessário.</p>
+    </div>
+    
+    <div class="content">
+      <h2>Solução de Problemas</h2>
+      
+      <h3>O widget não aparece no meu site</h3>
+      <ul>
+        <li>Verifique se você está usando a API key correta</li>
+        <li>Confirme se o domínio do seu site está na lista de domínios permitidos</li>
+        <li>Verifique se há erros no console do navegador</li>
+        <li>Confirme se o widget está ativo no painel administrativo</li>
+      </ul>
+      
+      <h3>As imagens não são exibidas corretamente</h3>
+      <ul>
+        <li>Verifique se o formato da imagem é suportado (JPG, PNG)</li>
+        <li>Confirme se a imagem não excede o tamanho máximo (50MB)</li>
+        <li>Tente redimensionar a imagem antes de fazer upload</li>
+      </ul>
+      
+      <h3>O iframe não carrega no Curseduca ou outras plataformas</h3>
+      <ul>
+        <li>Confirme se você está usando a URL de incorporação correta</li>
+        <li>Verifique se a plataforma permite iframes de domínios externos</li>
+        <li>Teste se há restrições de CSP (Content Security Policy) na plataforma</li>
+      </ul>
+      
+      <div class="warning-box">
+        <p>Se persistirem os problemas após tentar as soluções acima, entre em contato com o suporte do ToledoIA para assistência adicional.</p>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // Código para funcionalidade de abas, se implementado posteriormente
+    document.addEventListener('DOMContentLoaded', function() {
+      // Implementação futura de interatividade se necessário
+    });
+  </script>
+</body>
+</html>
