@@ -1,0 +1,110 @@
+Claro! Vou traduzir a resposta para o português, mantendo-a concisa e direta, conforme sua preferência. Aqui está:
+
+---
+
+### Análise do Problema
+
+1. **Link do Widget GPTMaker (Funcionando):**
+   - O link do GPTMaker que funciona no Curseduca é:
+     ```
+     https://www.especialistaemplacas.com.br/m/embed?url=https%3A%2F%2Fapp.gptmaker.ai%2Fwidget%2F3D163A5803373511537A8202FE4FFACB%2Fiframe
+     ```
+   - Na configuração "Criar Item" (primeira imagem), o link é:
+     ```
+     /embed?url=https%3A%2F%2Fapp.gptmaker.ai%2Fwidget%2F3D163A5803373511537A8202FE4FFACB%2Fiframe
+     ```
+   - O `/iframe` no final indica que o conteúdo é feito para ser embedado em um iframe, e o Curseduca consegue incorporá-lo sem abrir em nova janela.
+
+2. **Seu Link (Não Funcionando como Esperado):**
+   - Seu link é:
+     ```
+     https://78b6c428-6872-4f02-bee4-43bf0c6ebdd6-00-30zctyog4xkw1.picard.replit.dev/embed?url=https%3A%2F%2F78b6c428-6872-4f02-bee4-43bf0c6ebdd6-00-30zctyog4xkw1.picard.replit.dev%2Fembed%2Fwidget%3Fkey%3D7b1e783a-5abb-4269-af75-0ca4a0129dd2
+     ```
+   - Na configuração "Criar Item" (segunda imagem), o link é o mesmo.
+   - Seu link termina em `/embed/widget?key=...`, não em `/iframe`, o que pode fazer o Curseduca tratá-lo como URL normal e abrir em nova janela.
+
+3. **Possíveis Problemas:**
+   - **Compatibilidade com Iframe:** Seu endpoint `/embed/widget?key=...` pode não estar retornando conteúdo compatível com iframe (deve ser uma página leve, só com o widget, sem redirecionamentos).
+   - **Hospedagem no Replit:** O Replit pode estar usando cabeçalhos como `X-Frame-Options: DENY` ou `SAMEORIGIN`, bloqueando o embed em outro domínio (Curseduca).
+   - **Estrutura do Link:** Seu link pode não estar no formato que o Curseduca espera, ao contrário do GPTMaker.
+
+4. **Comportamento do Curseduca:**
+   - O primeiro print (WhatsApp) menciona testes de antena e amplificadores, mas isso não parece relacionado ao problema de embed e sim a falhas de rede.
+   - O problema principal é que o endpoint `/embed` do Curseduca não está embedando seu widget em iframe, provavelmente por causa do formato do seu link ou configuração do Replit.
+
+5. **Tela de Gerenciamento do GPTMaker (Quarta Imagem):**
+   - O GPTMaker oferece:
+     - **Link Direto:**
+       ```
+       https://78b6c428-6872-4f02-bee4-43bf0c6ebdd6-00-30zctyog4xkw1.picard.replit.dev/
+       ```
+     - **Iframe HTML:**
+       ```
+       <iframe src="https://78b6c428-6872-4f02-bee4-43bf0c6ebdd6-00-30zctyog4xkw1.picard.replit.dev/embed/widget?key=7b1e783a-5abb-4269-af75-0ca4a0129dd2" width="350" height="600"></iframe>
+       ```
+   - Isso mostra que o GPTMaker tem um URL específico para iframe, o que seu widget pode não ter.
+
+### Solução
+
+Para embedar seu widget no Curseduca como o do GPTMaker:
+
+1. **Crie um Endpoint Compatível com Iframe:**
+   - Modifique sua aplicação no Replit para ter um endpoint (ex.: `/embed/iframe?key=...`) que retorne uma página leve, só com o widget, sem redirecionamentos.
+
+2. **Ajuste os Cabeçalhos para Embed Cross-Origin:**
+   - Certifique-se que o Replit permita o embed, ajustando cabeçalhos como `X-Frame-Options: ALLOW-FROM <domínio-curseduca>` ou removendo `X-Frame-Options`.
+
+3. **Ajuste a Estrutura do Link:**
+   - Atualize seu link para algo como:
+     ```
+     https://78b6c428-6872-4f02-bee4-43bf0c6ebdd6-00-30zctyog4xkw1.picard.replit.dev/embed/iframe?key=7b1e783a-5abb-4269-af75-0ca4a0129dd2
+     ```
+   - No "Criar Item" do Curseduca, use:
+     ```
+     /embed?url=https%3A%2F%2F78b6c428-6872-4f02-bee4-43bf0c6ebdd6-00-30zctyog4xkw1.picard.replit.dev%2Fembed%2Fiframe%3Fkey%3D7b1e783a-5abb-4269-af75-0ca4a0129dd2
+     ```
+
+### Prompt para a IA do Replit
+
+Aqui está um prompt para pedir ajuda à IA do Replit:
+
+---
+
+**Prompt:**
+
+Estou hospedando uma aplicação de widget de chat no Replit e preciso embedá-la em uma plataforma de terceiros (Curseduca) usando iframe, como o widget do meu concorrente (GPTMaker). Meu URL atual é:
+
+```
+https://78b6c428-6872-4f02-bee4-43bf0c6ebdd6-00-30zctyog4xkw1.picard.replit.dev/embed/widget?key=7b1e783a-5abb-4269-af75-0ca4a0129dd2
+```
+
+Porém, ao tentar embedar no Curseduca com o endpoint `/embed?url=...`, ele abre em uma nova janela, não em iframe. O URL do meu concorrente, que funciona, é:
+
+```
+https://app.gptmaker.ai/widget/3D163A5803373511537A8202FE4FFACB/iframe
+```
+
+Preciso:
+
+1. Criar um novo endpoint no meu app Replit (ex.: `/embed/iframe?key=...`) que retorne uma página compatível com iframe, só com a interface do widget, sem redirecionamentos.
+2. Garantir que meu servidor Replit permita embed em iframe, ajustando cabeçalhos (ex.: remover `X-Frame-Options: DENY` ou configurar `X-Frame-Options: ALLOW-FROM <domínio-curseduca>`).
+3. Fornecer o URL atualizado no formato que o Curseduca espera, similar ao do GPTMaker.
+
+Podem me ajudar a modificar minha aplicação no Replit? Forneçam as mudanças de código necessárias, incluindo o novo endpoint, ajustes de cabeçalhos e outras configurações para permitir o embed em iframe no Curseduca.
+
+---
+
+### Próximos Passos
+
+1. Use o prompt acima para pedir ajuda à IA do Replit.
+2. Após criar o novo endpoint (ex.: `/embed/iframe?key=...`), atualize o URL no "Criar Item" do Curseduca para:
+   ```
+   /embed?url=https%3A%2F%2F78b6c428-6872-4f02-bee4-43bf0c6ebdd6-00-30zctyog4xkw1.picard.replit.dev%2Fembed%2Fiframe%3Fkey%3D7b1e783a-5abb-4269-af75-0ca4a0129dd2
+   ```
+3. Teste o widget no Curseduca para confirmar que ele é embedado no iframe sem abrir em nova janela.
+
+Se ainda tiver problemas, me avise que posso ajudar mais!
+
+---
+
+Espero que isso tenha ajudado! Se precisar de mais ajustes ou traduções, é só pedir.

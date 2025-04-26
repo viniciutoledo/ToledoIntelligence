@@ -32,9 +32,10 @@ interface EmbeddedChatProps {
   apiKey: string;
   initialOpen?: boolean;
   hideHeader?: boolean;
+  fullHeight?: boolean;
 }
 
-export function EmbeddedChat({ apiKey, initialOpen = false, hideHeader = false }: EmbeddedChatProps) {
+export function EmbeddedChat({ apiKey, initialOpen = false, hideHeader = false, fullHeight = false }: EmbeddedChatProps) {
   const { t } = useTranslation();
   const { language } = useLanguage();
   const [isOpen, setIsOpen] = useState(initialOpen);
@@ -258,11 +259,11 @@ export function EmbeddedChat({ apiKey, initialOpen = false, hideHeader = false }
   
   // Container
   const containerStyles = {
-    position: isInIframe ? "absolute" : "fixed",
-    bottom: isInIframe ? 0 : "1rem",
-    right: isInIframe ? 0 : "1rem",
-    height: isInIframe ? "100%" : "500px",
-    width: isInIframe ? "100%" : "350px",
+    position: isInIframe || fullHeight ? "absolute" : "fixed",
+    bottom: isInIframe || fullHeight ? 0 : "1rem",
+    right: isInIframe || fullHeight ? 0 : "1rem",
+    height: isInIframe || fullHeight ? "100%" : "500px",
+    width: isInIframe || fullHeight ? "100%" : "350px",
   } as React.CSSProperties;
   
   // Format widget data for chat component
