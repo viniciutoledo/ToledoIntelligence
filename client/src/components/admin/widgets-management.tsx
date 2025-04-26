@@ -527,6 +527,9 @@ export default function WidgetsManagement() {
           <Plus className="mr-2 h-4 w-4" /> {t("Novo Widget")}
         </Button>
       </div>
+      
+      {/* Link para documentação de integração */}
+      <WidgetDocsLink />
 
       <Separator />
 
