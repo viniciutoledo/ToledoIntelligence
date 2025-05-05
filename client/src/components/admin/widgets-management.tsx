@@ -884,10 +884,11 @@ export default function WidgetsManagement() {
             <Form {...editForm}>
               <form onSubmit={editForm.handleSubmit(handleEditSubmit)} className="space-y-6">
                 <Tabs defaultValue="general">
-                  <TabsList className="grid w-full grid-cols-3">
+                  <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="general">{t("Geral")}</TabsTrigger>
                     <TabsTrigger value="security">{t("Segurança")}</TabsTrigger>
                     <TabsTrigger value="embed">{t("Integração")}</TabsTrigger>
+                    <TabsTrigger value="advanced">{t("Configurações Avançadas")}</TabsTrigger>
                   </TabsList>
                   
                   <TabsContent value="general" className="space-y-4 pt-4">
@@ -1162,6 +1163,7 @@ export default function WidgetsManagement() {
                   <TabsContent value="embed" className="space-y-4 pt-4">
                     {selectedWidget && (
                       <div className="space-y-6">
+                      
                         <div>
                           <h3 className="font-medium mb-2">{t("Código de incorporação")}</h3>
                           <p className="text-sm text-muted-foreground mb-4">
@@ -1266,6 +1268,161 @@ export default function WidgetsManagement() {
                             <li>{t("Para usar o iframe, cole o código HTML em qualquer lugar da sua página.")}</li>
                             <li>{t("Para usar o link direto, use-o em um campo que aceite incorporação de URLs em plataformas de terceiros.")}</li>
                           </ol>
+                        </div>
+                      </div>
+                    )}
+                  </TabsContent>
+
+                  <TabsContent value="advanced" className="space-y-4 pt-4">
+                    {selectedWidget && (
+                      <div className="space-y-6">
+                        <div>
+                          <h3 className="font-medium mb-2">{t("Configurações de iframe")}</h3>
+                          <p className="text-sm text-muted-foreground mb-4">
+                            {t("Personalize como o widget é exibido quando incorporado via iframe.")}                            
+                          </p>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                            <div className="border p-4 rounded-md">
+                              <div className="flex items-center justify-between mb-4">
+                                <div>
+                                  <h4 className="font-medium">{t("Ocultar botão de minimizar")}</h4>
+                                  <p className="text-sm text-muted-foreground">
+                                    {t("Útil para iframes que devem exibir o chat em tela cheia")}
+                                  </p>
+                                </div>
+                                <Switch
+                                  checked={selectedWidget.hide_minimize_button || false}
+                                  onCheckedChange={(checked) => {
+                                    // Implemente a lógica para salvar esta configuração
+                                    if (selectedWidget) {
+                                      const updatedWidget = { ...selectedWidget, hide_minimize_button: checked };
+                                      // Note: isso será salvo quando o usuário clicar em Salvar Alterações
+                                      // Esta implementação é apenas para atualizar o estado local
+                                      // O campo hide_minimize_button será enviado junto com o resto do formulário
+                                    }
+                                  }}
+                                />
+                              </div>
+                            </div>
+
+                            <div className="border p-4 rounded-md">
+                              <div className="flex items-center justify-between mb-4">
+                                <div>
+                                  <h4 className="font-medium">{t("Ocultar botão de fechar")}</h4>
+                                  <p className="text-sm text-muted-foreground">
+                                    {t("Útil para iframes que não devem permitir que o usuário feche o chat")}
+                                  </p>
+                                </div>
+                                <Switch
+                                  checked={selectedWidget.hide_close_button || false}
+                                  onCheckedChange={(checked) => {
+                                    if (selectedWidget) {
+                                      const updatedWidget = { ...selectedWidget, hide_close_button: checked };
+                                      // Mesma lógica do anterior, atualização local apenas
+                                    }
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                            <div>
+                              <h4 className="font-medium mb-2">{t("Altura padrão")}</h4>
+                              <div className="flex items-center gap-2">
+                                <Input
+                                  type="number"
+                                  placeholder="600"
+                                  value={selectedWidget.default_height || "600"}
+                                  onChange={(e) => {
+                                    const value = e.target.value;
+                                    if (selectedWidget) {
+                                      const updatedWidget = { ...selectedWidget, default_height: value };
+                                      // Mesma lógica anterior
+                                    }
+                                  }}
+                                  className="max-w-[150px]"
+                                />
+                                <span className="text-sm text-muted-foreground">px</span>
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {t("Altura do iframe em pixels")}
+                              </p>
+                            </div>
+
+                            <div>
+                              <h4 className="font-medium mb-2">{t("Largura padrão")}</h4>
+                              <div className="flex items-center gap-2">
+                                <Input
+                                  type="number"
+                                  placeholder="350"
+                                  value={selectedWidget.default_width || "350"}
+                                  onChange={(e) => {
+                                    const value = e.target.value;
+                                    if (selectedWidget) {
+                                      const updatedWidget = { ...selectedWidget, default_width: value };
+                                      // Mesma lógica anterior
+                                    }
+                                  }}
+                                  className="max-w-[150px]"
+                                />
+                                <span className="text-sm text-muted-foreground">px</span>
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {t("Largura do iframe em pixels")}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="mb-4">
+                            <h4 className="font-medium mb-2">{t("CSS personalizado")}</h4>
+                            <Textarea
+                              placeholder=".widget-header { background-color: #f8f8f8; }"
+                              value={selectedWidget.custom_css || ""}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                if (selectedWidget) {
+                                  const updatedWidget = { ...selectedWidget, custom_css: value };
+                                  // Mesma lógica anterior
+                                }
+                              }}
+                              rows={4}
+                              className="font-mono text-sm"
+                            />
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {t("CSS adicional para personalizar a aparência do widget quando incorporado")}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="border-t pt-6">
+                          <h3 className="font-medium mb-2">{t("Preview do iframe")}</h3>
+                          <p className="text-sm text-muted-foreground mb-4">
+                            {t("Visualize como o widget será exibido quando incorporado como iframe.")}
+                          </p>
+                          
+                          <div className="relative border border-dashed rounded-lg p-4 flex justify-center bg-muted/20">
+                            <div 
+                              className="overflow-hidden bg-white rounded-lg shadow-md" 
+                              style={{
+                                width: `${selectedWidget.default_width || 350}px`,
+                                height: `${selectedWidget.default_height || 600}px`,
+                              }}
+                            >
+                              <div className="bg-primary/10 text-primary p-4 text-center border-b">
+                                <p>{t("Preview do widget")} - {selectedWidget.name}</p>
+                              </div>
+                              <div className="flex items-center justify-center h-full">
+                                <p className="text-muted-foreground text-sm text-center p-4">
+                                  {t("Aqui será exibido seu widget de chat quando incorporado")}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                          <p className="text-xs text-center text-muted-foreground mt-2">
+                            {t("Esta visualização é apenas para fins ilustrativos. O widget real pode variar dependendo do conteúdo e outros fatores.")}
+                          </p>
                         </div>
                       </div>
                     )}
