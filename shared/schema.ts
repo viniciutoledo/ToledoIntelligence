@@ -319,6 +319,12 @@ export const chatWidgets = pgTable("chat_widgets", {
   api_key: uuid("api_key").defaultRandom().notNull(),
   theme_color: text("theme_color").default("#6366f1"),
   allowed_domains: text("allowed_domains").array(),
+  // Opções avançadas para customização do iframe
+  hide_minimize_button: boolean("hide_minimize_button").default(false),
+  allow_close: boolean("allow_close").default(true),
+  iframe_height: text("iframe_height").default("500px"),
+  iframe_width: text("iframe_width").default("100%"),
+  custom_css: text("custom_css"),
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -332,6 +338,12 @@ export const insertChatWidgetSchema = createInsertSchema(chatWidgets)
     avatar_mime_type: true,
     theme_color: true,
     allowed_domains: true,
+    // Opções avançadas para iframe
+    hide_minimize_button: true,
+    allow_close: true,
+    iframe_height: true,
+    iframe_width: true,
+    custom_css: true,
   })
   .partial(); // Torna todos os campos opcionais para mais flexibilidade
 

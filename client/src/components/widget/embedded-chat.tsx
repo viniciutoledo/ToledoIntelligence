@@ -332,7 +332,7 @@ export function EmbeddedChat({ apiKey, initialOpen = false, hideHeader = false, 
                 variant="ghost"
                 size="icon"
                 onClick={handleMinimize}
-                className="hover:bg-white/20 text-white"
+                className="hover:bg-white/20 text-white minimize-button"
               >
                 <Minimize2 size={18} />
               </Button>
