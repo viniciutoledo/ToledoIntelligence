@@ -634,7 +634,7 @@ export default function WidgetsManagement() {
                         {t("Copiar API Key")}
                       </DropdownMenuItem>
                       <DropdownMenuItem 
-                        onClick={() => copyToClipboard(getEmbedCode(widget), t("Código de incorporação copiado"))}
+                        onClick={() => copyToClipboard(getFullEmbedCode(widget).scriptCode, t("Código de incorporação copiado"))}
                         className="text-blue-600"
                       >
                         <Copy className="mr-2 h-4 w-4" />
@@ -1340,7 +1340,7 @@ export default function WidgetsManagement() {
                           
                           <div className="relative">
                             <Textarea 
-                              value={getEmbedCode(selectedWidget)}
+                              value={getFullEmbedCode(selectedWidget).scriptCode}
                               readOnly
                               rows={4}
                               className="font-mono text-sm"
@@ -1350,7 +1350,7 @@ export default function WidgetsManagement() {
                               variant="ghost"
                               className="absolute top-2 right-2"
                               onClick={() => copyToClipboard(
-                                getEmbedCode(selectedWidget), 
+                                getFullEmbedCode(selectedWidget).scriptCode, 
                                 t("Código de incorporação copiado")
                               )}
                             >
@@ -1397,8 +1397,8 @@ export default function WidgetsManagement() {
                             <Textarea 
                               value={`<iframe 
   src="${window.location.origin}/embed/widget?key=${selectedWidget.api_key}" 
-  width="350" 
-  height="600" 
+  width="${selectedWidget.default_width || '350'}" 
+  height="${selectedWidget.default_height || '600'}" 
   frameborder="0" 
   allow="microphone"
   style="border: none; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);"
@@ -1414,8 +1414,8 @@ export default function WidgetsManagement() {
                               onClick={() => copyToClipboard(
                                 `<iframe 
   src="${window.location.origin}/embed/widget?key=${selectedWidget.api_key}" 
-  width="350" 
-  height="600" 
+  width="${selectedWidget.default_width || '350'}" 
+  height="${selectedWidget.default_height || '600'}" 
   frameborder="0" 
   allow="microphone"
   style="border: none; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);"
