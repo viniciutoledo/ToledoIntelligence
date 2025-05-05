@@ -277,7 +277,7 @@ export function EmbeddedChat({ apiKey, initialOpen = false, hideHeader = false, 
   
   // CSS Personalizado - injetando na página se existir
   useEffect(() => {
-    if (widget.custom_css && typeof document !== 'undefined') {
+    if (widget && widget.custom_css && typeof document !== 'undefined') {
       // Criando ou atualizando a tag de estilo para o CSS personalizado
       let styleTag = document.getElementById('widget-custom-css');
       
@@ -297,22 +297,22 @@ export function EmbeddedChat({ apiKey, initialOpen = false, hideHeader = false, 
         }
       };
     }
-  }, [widget.custom_css]);
+  }, [widget, widget?.custom_css]);
   
   // Container
   const containerStyles = {
     position: isInIframe || fullHeight ? "absolute" : "fixed",
     bottom: isInIframe || fullHeight ? 0 : "1rem",
     right: isInIframe || fullHeight ? 0 : "1rem",
-    height: isInIframe || fullHeight ? "100%" : (widget.default_height ? `${widget.default_height}px` : "500px"),
-    width: isInIframe || fullHeight ? "100%" : (widget.default_width ? `${widget.default_width}px` : "350px"),
+    height: isInIframe || fullHeight ? "100%" : (widget?.default_height ? `${widget.default_height}px` : "500px"),
+    width: isInIframe || fullHeight ? "100%" : (widget?.default_width ? `${widget.default_width}px` : "350px"),
   } as React.CSSProperties;
   
   // Format widget data for chat component
-  const chatAvatar = {
+  const chatAvatar = widget ? {
     image_url: widget.avatar_url ? getOptimizedFileUrl(widget.avatar_url) : undefined,
     name: widget.name
-  };
+  } : { name: "ToledoIA" };
   
   // Textos customizados
   const customTexts = {
@@ -344,8 +344,8 @@ export function EmbeddedChat({ apiKey, initialOpen = false, hideHeader = false, 
       className={`rounded-lg bg-card border shadow-xl overflow-hidden flex flex-col embedded-chat-container ${fullHeight ? 'full-height-embed' : ''}`}
       style={containerStyles}
     >
-      {/* Header - só exibe se não estiver configurado para ocultar */}
-      {!shouldHideHeader && (
+      {/* Header - só exibe se não estiver configurado para ocultar e se o widget existir */}
+      {!shouldHideHeader && widget && (
         <div 
           className="p-3 flex items-center justify-between border-b"
           style={{ backgroundColor: widget.theme_color || "#6366F1", color: "white" }}
