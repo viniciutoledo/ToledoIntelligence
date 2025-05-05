@@ -275,14 +275,11 @@ export function EmbeddedChat({ apiKey, initialOpen = false, hideHeader = false, 
     }
   })();
   
-  // CSS Personalizado - injetando na página se existir
-  useEffect(() => {
+  // Aplicação de CSS personalizado - fora do useEffect para evitar erros de hooks
+  const applyCustomCSS = (css: string | null | undefined) => {
+    if (typeof document === 'undefined') return;
+    
     try {
-      // Verificação adicional para evitar erros
-      if (!widget || !widget.custom_css || typeof document === 'undefined') {
-        return;
-      }
-      
       // Criando ou atualizando a tag de estilo para o CSS personalizado
       let styleTag = document.getElementById('widget-custom-css');
       
@@ -294,25 +291,40 @@ export function EmbeddedChat({ apiKey, initialOpen = false, hideHeader = false, 
         }
       }
       
-      if (styleTag && typeof widget.custom_css === 'string') {
-        styleTag.textContent = widget.custom_css;
+      if (styleTag && typeof css === 'string') {
+        styleTag.textContent = css;
       }
-      
-      // Limpeza ao desmontar
-      return () => {
-        try {
-          const tag = document.getElementById('widget-custom-css');
-          if (tag && document.head && document.head.contains(tag)) {
-            document.head.removeChild(tag);
-          }
-        } catch (cleanupError) {
-          console.error('Erro ao limpar CSS personalizado:', cleanupError);
-        }
-      };
     } catch (error) {
       console.error('Erro ao aplicar CSS personalizado:', error);
-      return () => {}; // Retorna uma função vazia para evitar erros
     }
+  };
+  
+  // Limpeza do CSS personalizado
+  const cleanupCustomCSS = () => {
+    if (typeof document === 'undefined') return;
+    
+    try {
+      const tag = document.getElementById('widget-custom-css');
+      if (tag && document.head && document.head.contains(tag)) {
+        document.head.removeChild(tag);
+      }
+    } catch (cleanupError) {
+      console.error('Erro ao limpar CSS personalizado:', cleanupError);
+    }
+  };
+  
+  // Hook para gerenciar o ciclo de vida do CSS personalizado - com dependências seguras
+  useEffect(() => {
+    // Só aplica o CSS se o widget estiver disponível
+    if (widget) {
+      const customCSS = widget.custom_css || '';
+      applyCustomCSS(customCSS);
+    }
+    
+    // Limpeza ao desmontar
+    return () => {
+      cleanupCustomCSS();
+    };
   }, [widget]);
   
   // Container
