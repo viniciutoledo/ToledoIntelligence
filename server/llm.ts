@@ -794,7 +794,9 @@ export async function processTextMessage(
   message: string, 
   language: string,
   llmConfig?: LlmFullConfig,
-  history: Array<{ content: string, role: 'user' | 'assistant' }> = []
+  history: Array<{ content: string, role: 'user' | 'assistant' }> = [],
+  userId?: number,
+  widgetId?: string
 ): Promise<string> {
   try {
     // Se não recebemos configuração LLM, tentar obter configurações padrão
@@ -878,8 +880,16 @@ export async function processTextMessage(
       });
 
       if (response.content[0].type === 'text') {
-        return response.content[0].text;
+        const responseText = response.content[0].text;
+        
+        // Registrar uso bem-sucedido
+        const tokenEstimate = estimateTokens(truncatedMessage) + estimateTokens(responseText);
+        await logLlmUsage(modelName, "text", true, userId, widgetId, tokenEstimate);
+        
+        return responseText;
       } else {
+        // Registrar erro de formato
+        await logLlmUsage(modelName, "text", false, userId, widgetId, 0, 'Erro no formato da resposta');
         return 'Erro no formato da resposta do modelo.';
       }
     } else {
@@ -920,13 +930,32 @@ export async function processTextMessage(
       });
 
       if (response.choices && response.choices[0] && response.choices[0].message && response.choices[0].message.content) {
-        return response.choices[0].message.content;
+        const responseText = response.choices[0].message.content;
+        
+        // Registrar uso bem-sucedido
+        const tokenEstimate = estimateTokens(truncatedMessage) + estimateTokens(responseText);
+        await logLlmUsage(modelName, "text", true, userId, widgetId, tokenEstimate);
+        
+        return responseText;
       }
       
+      // Registrar erro de resposta vazia
+      await logLlmUsage(modelName, "text", false, userId, widgetId, 0, 'Resposta vazia do modelo');
       return 'Sem resposta do modelo.';
     }
   } catch (error) {
     console.error('Erro ao processar mensagem de texto:', error);
+    
+    // Registrar erro na aplicação
+    const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+    
+    // Usar o modelo padrão se não tivermos acesso ao modelName devido ao erro
+    const modelToLog = (llmConfig?.modelName || 
+                      (llmConfig?.provider === 'openai' ? DEFAULT_GPT_MODEL : DEFAULT_CLAUDE_MODEL));
+    
+    // Registrar o erro no sistema
+    await logLlmUsage(modelToLog, "text", false, userId, widgetId, 0, errorMessage);
+    
     // Tenta detectar o idioma da mensagem original para fornecer resposta de erro adequada
     // Aqui usamos o idioma passado como parâmetro, ou detectamos a partir da mensagem
     const errorLanguage = language || detectLanguage(message, history);
@@ -1329,18 +1358,35 @@ export async function testConnection(apiKey: string, modelName: string): Promise
         if ((response.content && response.content.length > 0) || 
             (response.completion && response.completion.length > 0)) {
           console.log('Conexão com Anthropic bem-sucedida');
+          
+          // Registrar o uso bem-sucedido
+          await logLlmUsage(modelName, "test", true);
+          
           return true;
         }
         
         console.log('Resposta inválida do Anthropic no teste de conexão');
+        
+        // Registrar o uso malsucedido
+        await logLlmUsage(modelName, "test", false, undefined, undefined, 0, 'Resposta inválida do Anthropic');
+        
         return false;
       } catch (anthropicError) {
         console.error('Erro testando conexão com Anthropic:', anthropicError);
+        
+        // Registrar o erro
+        await logLlmUsage(modelName, "test", false, undefined, undefined, 0, anthropicError.message);
+        
         return false;
       }
     }
   } catch (error) {
     console.error('Erro geral testando conexão LLM:', error);
+    
+    // Registrar erro geral (não específico de um provedor)
+    await logLlmUsage(modelName, "test", false, undefined, undefined, 0, 
+      error instanceof Error ? error.message : 'Erro desconhecido na conexão LLM');
+    
     return false;
   }
 }
