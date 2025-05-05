@@ -29,9 +29,9 @@ export async function logLlmUsage(
     // Converter widgetId string para number caso necessário (o schema espera number)
     let widgetIdNumber: number | undefined = undefined;
     if (widgetId) {
-      // Se for um UUID, usamos null já que não podemos converter para número
+      // Se for um UUID, deixamos undefined já que não podemos converter para número
       if (widgetId.includes('-')) {
-        widgetIdNumber = null;
+        widgetIdNumber = undefined;
       } else {
         // Tenta converter widgetId para um número se for uma string numérica
         const numericId = parseInt(widgetId);
@@ -47,7 +47,7 @@ export async function logLlmUsage(
       provider,
       operation_type: operationType,
       user_id: userId,
-      widget_id: widgetId ? parseInt(widgetId) : undefined,
+      widget_id: widgetIdNumber,
       token_count: tokenCount,
       success,
       error_message: errorMessage
