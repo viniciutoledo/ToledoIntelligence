@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useMemo } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Loader2, MessageSquare, X, Minimize2 } from "lucide-react";
 import { useWidgetChat } from "@/hooks/use-widget-chat";
@@ -275,6 +275,30 @@ export function EmbeddedChat({ apiKey, initialOpen = false, hideHeader = false, 
     }
   })();
   
+  // CSS Personalizado - injetando na página se existir
+  useEffect(() => {
+    if (widget.custom_css && typeof document !== 'undefined') {
+      // Criando ou atualizando a tag de estilo para o CSS personalizado
+      let styleTag = document.getElementById('widget-custom-css');
+      
+      if (!styleTag) {
+        styleTag = document.createElement('style');
+        styleTag.id = 'widget-custom-css';
+        document.head.appendChild(styleTag);
+      }
+      
+      styleTag.textContent = widget.custom_css;
+      
+      // Limpeza ao desmontar
+      return () => {
+        const tag = document.getElementById('widget-custom-css');
+        if (tag) {
+          document.head.removeChild(tag);
+        }
+      };
+    }
+  }, [widget.custom_css]);
+  
   // Container
   const containerStyles = {
     position: isInIframe || fullHeight ? "absolute" : "fixed",
@@ -313,27 +337,7 @@ export function EmbeddedChat({ apiKey, initialOpen = false, hideHeader = false, 
     }
   })();
 
-  // Aplicar CSS personalizado se existir
-  useEffect(() => {
-    // Se existe CSS personalizado, aplicar
-    if (widget && widget.custom_css) {
-      // Criar ou atualizar o elemento style
-      let styleElement = document.getElementById('toledoia-custom-css');
-      if (!styleElement) {
-        styleElement = document.createElement('style');
-        styleElement.id = 'toledoia-custom-css';
-        document.head.appendChild(styleElement);
-      }
-      styleElement.textContent = widget.custom_css;
-
-      // Limpeza quando componente for desmontado
-      return () => {
-        if (styleElement && document.head.contains(styleElement)) {
-          document.head.removeChild(styleElement);
-        }
-      };
-    }
-  }, [widget]);
+  // O CSS personalizado já está sendo aplicado pelo useEffect acima
 
   return (
     <div 

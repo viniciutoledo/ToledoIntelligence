@@ -664,9 +664,10 @@ export default function WidgetsManagement() {
           <Form {...createForm}>
             <form onSubmit={createForm.handleSubmit(handleCreateSubmit)} className="space-y-6">
               <Tabs defaultValue="general">
-                <TabsList className="grid w-full grid-cols-2">
+                <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="general">{t("Geral")}</TabsTrigger>
                   <TabsTrigger value="security">{t("Segurança")}</TabsTrigger>
+                  <TabsTrigger value="advanced">{t("Configurações Avançadas")}</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="general" className="space-y-4 pt-4">
@@ -871,6 +872,125 @@ export default function WidgetsManagement() {
                         {t("Para maior segurança, recomendamos que você restrinja os domínios onde seu widget pode ser utilizado.")}
                       </p>
                     </div>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="advanced" className="space-y-4 pt-4">
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={createForm.control}
+                        name="hide_minimize_button"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                            <div className="space-y-1 leading-none">
+                              <FormLabel>
+                                {t("Ocultar botão de minimizar")}
+                              </FormLabel>
+                              <FormDescription>
+                                {t("Oculta o botão de minimizar no widget de chat.")}
+                              </FormDescription>
+                            </div>
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={createForm.control}
+                        name="hide_close_button"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                            <div className="space-y-1 leading-none">
+                              <FormLabel>
+                                {t("Ocultar botão de fechar")}
+                              </FormLabel>
+                              <FormDescription>
+                                {t("Oculta o botão de fechar no widget de chat.")}
+                              </FormDescription>
+                            </div>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={createForm.control}
+                        name="default_height"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>{t("Altura padrão (px)")}</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                placeholder="500"
+                                {...field}
+                                onChange={(e) => field.onChange(e.target.value === "" ? undefined : e.target.value)}
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              {t("Altura padrão do widget em pixels. Padrão: 500px.")}
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={createForm.control}
+                        name="default_width"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>{t("Largura padrão (px)")}</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                placeholder="350"
+                                {...field}
+                                onChange={(e) => field.onChange(e.target.value === "" ? undefined : e.target.value)}
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              {t("Largura padrão do widget em pixels. Padrão: 350px.")}
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    
+                    <FormField
+                      control={createForm.control}
+                      name="custom_css"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t("CSS personalizado")}</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              placeholder={`.embedded-chat-container { box-shadow: 0 4px 20px rgba(0,0,0,0.1); }`}
+                              className="font-mono text-sm h-32"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            {t("CSS personalizado para estilizar o widget. Use com cuidado.")}
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   </div>
                 </TabsContent>
               </Tabs>
