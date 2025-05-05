@@ -36,7 +36,7 @@ export interface IStorage {
     endDate?: Date;
     provider?: string;
     userId?: number;
-    widgetId?: number;
+    widgetId?: string; // UUID para widget_id em vez de número
     limit?: number;
     success?: boolean;
   }): Promise<LlmUsageLog[]>;
@@ -214,7 +214,7 @@ export class MemStorage implements IStorage {
     endDate?: Date;
     provider?: string;
     userId?: number;
-    widgetId?: number;
+    widgetId?: string; // Atualizado para usar UUID/string
     limit?: number;
     success?: boolean;
   }): Promise<LlmUsageLog[]> {
@@ -239,7 +239,7 @@ export class MemStorage implements IStorage {
       }
       
       if (options.widgetId !== undefined) {
-        logs = logs.filter(log => log.widget_id === options.widgetId);
+        logs = logs.filter(log => String(log.widget_id) === options.widgetId);
       }
       
       if (options.success !== undefined) {
