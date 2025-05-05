@@ -487,7 +487,7 @@ export const llmUsageLogs = pgTable("llm_usage_logs", {
   provider: text("provider").notNull(),
   operation_type: text("operation_type", { enum: ["text", "image", "audio", "file", "test"] }).notNull(),
   user_id: integer("user_id").references(() => users.id),
-  widget_id: integer("widget_id").references(() => chatWidgets.id),
+  widget_id: uuid("widget_id").references(() => chatWidgets.id),
   token_count: integer("token_count").default(0),
   success: boolean("success").default(true).notNull(),
   error_message: text("error_message"),
