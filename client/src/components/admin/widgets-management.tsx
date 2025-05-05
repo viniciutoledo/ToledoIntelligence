@@ -62,7 +62,13 @@ const widgetFormSchema = z.object({
     .default("https://ui-avatars.com/api/?name=T&background=6366F1&color=fff"),
   avatar_image: z.any().optional(),
   theme_color: z.string().regex(/^#[0-9A-F]{6}$/i, "Cor deve estar no formato hexadecimal (ex: #6366F1)").default("#6366F1"),
-  allowed_domains: z.array(z.string()).optional()
+  allowed_domains: z.array(z.string()).optional(),
+  // Campos adicionais para configurações avançadas
+  hide_minimize_button: z.boolean().optional().default(false),
+  hide_close_button: z.boolean().optional().default(false),
+  default_height: z.string().optional().default("600"),
+  default_width: z.string().optional().default("350"),
+  custom_css: z.string().optional().default("")
 });
 
 type WidgetFormValues = z.infer<typeof widgetFormSchema>;
@@ -233,7 +239,13 @@ export default function WidgetsManagement() {
       greeting: "Olá! Como posso ajudar?",
       avatar_url: "https://ui-avatars.com/api/?name=T&background=6366F1&color=fff",
       theme_color: "#6366F1",
-      allowed_domains: []
+      allowed_domains: [],
+      // Configurações avançadas
+      hide_minimize_button: false,
+      hide_close_button: false,
+      default_height: "600",
+      default_width: "350",
+      custom_css: ""
     }
   });
 
@@ -257,6 +269,12 @@ export default function WidgetsManagement() {
         greeting: selectedWidget.greeting,
         avatar_url: selectedWidget.avatar_url,
         theme_color: selectedWidget.theme_color || "#6366F1",
+        // Configurações avançadas
+        hide_minimize_button: selectedWidget.hide_minimize_button || false,
+        hide_close_button: selectedWidget.hide_close_button || false,
+        default_height: selectedWidget.default_height || "600",
+        default_width: selectedWidget.default_width || "350",
+        custom_css: selectedWidget.custom_css || ""
       });
       
       setAllowedDomains(selectedWidget.allowed_domains || []);
@@ -322,6 +340,13 @@ export default function WidgetsManagement() {
     if (allowedDomains.length > 0) {
       formData.append("allowed_domains", JSON.stringify(allowedDomains));
     }
+    
+    // Adicionar configurações avançadas
+    formData.append("hide_minimize_button", String(data.hide_minimize_button || false));
+    formData.append("hide_close_button", String(data.hide_close_button || false));
+    formData.append("default_height", data.default_height || "600");
+    formData.append("default_width", data.default_width || "350");
+    formData.append("custom_css", data.custom_css || "");
     
     // Verificar se há um arquivo de avatar
     const fileInput = createFileInputRef.current;
@@ -401,6 +426,13 @@ export default function WidgetsManagement() {
     if (allowedDomains.length > 0) {
       formData.append("allowed_domains", JSON.stringify(allowedDomains));
     }
+    
+    // Adicionar configurações avançadas
+    formData.append("hide_minimize_button", String(data.hide_minimize_button || false));
+    formData.append("hide_close_button", String(data.hide_close_button || false));
+    formData.append("default_height", data.default_height || "600");
+    formData.append("default_width", data.default_width || "350");
+    formData.append("custom_css", data.custom_css || "");
     
     // Verificar se há um arquivo de avatar
     const fileInput = editFileInputRef.current;
