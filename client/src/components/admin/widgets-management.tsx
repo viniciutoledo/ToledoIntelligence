@@ -529,14 +529,29 @@ export default function WidgetsManagement() {
   };
 
   // Gerar código de incorporação para o widget
-  const getEmbedCode = (widget: ChatWidget) => {
-    return generateEmbedCode({
+  const getEmbedCode = (widget: ChatWidget): string => {
+    const result = generateEmbedCode({
       apiKey: widget.api_key,
       position: "bottom-right", // Posição padrão
       initialOpen: false,
-      width: 350,
-      height: 600
+      width: parseInt(widget.default_width || "350"),
+      height: parseInt(widget.default_height || "600")
     });
+    
+    // Forçar o tipo de retorno para string
+    return typeof result === "string" ? result : result.scriptCode;
+  };
+  
+  // Gerar o objeto completo com todos os formatos de incorporação
+  const getFullEmbedCode = (widget: ChatWidget): EmbedCodeResult => {
+    return generateEmbedCode({
+      apiKey: widget.api_key,
+      position: "bottom-right",
+      initialOpen: false,
+      width: parseInt(widget.default_width || "350"),
+      height: parseInt(widget.default_height || "600"),
+      returnFullObject: true
+    }) as EmbedCodeResult;
   };
 
   if (isLoading) {
