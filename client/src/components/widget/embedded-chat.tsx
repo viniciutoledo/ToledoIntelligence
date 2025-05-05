@@ -201,11 +201,10 @@ export function EmbeddedChat({ apiKey, initialOpen = false, hideHeader = false, 
   };
   
   // Função para enviar mensagem para a página pai para minimizar/fechar o widget
+  // Desativada a pedido do cliente
   const handleMinimize = () => {
-    setIsOpen(false);
-    if (window.parent && window.parent !== window) {
-      window.parent.postMessage("toledoia-widget-minimize", "*");
-    }
+    // Não faz nada - opção de minimizar removida
+    console.log('Minimize option disabled');
   };
   
   // Função para enviar mensagem para a página pai para fechar o widget
@@ -216,18 +215,11 @@ export function EmbeddedChat({ apiKey, initialOpen = false, hideHeader = false, 
     }
   };
   
-  // Botão de chat (quando está minimizado)
-  if (!isOpen) {
-    return (
-      <Button
-        onClick={() => setIsOpen(true)}
-        className="fixed bottom-4 right-4 rounded-full h-14 w-14 p-0 flex items-center justify-center"
-        style={{ backgroundColor: widget?.theme_color || "#6366F1" }}
-      >
-        <MessageSquare size={24} />
-      </Button>
-    );
-  }
+  // Widget sempre ficará aberto, não terá mais opção de minimizar
+  // Iniciamos sempre com isOpen = true e não permitimos minimizar
+  useEffect(() => {
+    setIsOpen(true);
+  }, []); // Executa apenas na montagem do componente
   
   // Loading state
   if (!isInitialized || isLoadingWidget) {
@@ -350,17 +342,7 @@ export function EmbeddedChat({ apiKey, initialOpen = false, hideHeader = false, 
             </div>
           </div>
           <div className="flex space-x-1">
-            {/* Botão de minimizar apenas quando não estamos em modo fullHeight E não está configurado para ocultar */}
-            {!fullHeight && !widget.hide_minimize_button && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleMinimize}
-                className="hover:bg-white/20 text-white minimize-button"
-              >
-                <Minimize2 size={18} />
-              </Button>
-            )}
+            {/* Botão de minimizar desativado a pedido do cliente */}
             {/* Botão de fechar apenas quando não está configurado para ocultar */}
             {!widget.hide_close_button && (
               <Button
