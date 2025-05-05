@@ -1430,6 +1430,131 @@ export default function WidgetsManagement() {
                     {selectedWidget && (
                       <div className="space-y-6">
                         <div>
+                          <h3 className="font-medium mb-2">{t("Controle de botões")}</h3>
+                          <p className="text-sm text-muted-foreground mb-4">
+                            {t("Personalize a visibilidade dos botões de controle do widget.")}
+                          </p>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                            <FormField
+                              control={editForm.control}
+                              name="hide_minimize_button"
+                              render={({ field }) => (
+                                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                                  <FormControl>
+                                    <Checkbox
+                                      checked={field.value}
+                                      onCheckedChange={field.onChange}
+                                    />
+                                  </FormControl>
+                                  <div className="space-y-1 leading-none">
+                                    <FormLabel>
+                                      {t("Ocultar botão de minimizar")}
+                                    </FormLabel>
+                                    <FormDescription>
+                                      {t("Oculta o botão de minimizar no widget de chat.")}
+                                    </FormDescription>
+                                  </div>
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <FormField
+                              control={editForm.control}
+                              name="hide_close_button"
+                              render={({ field }) => (
+                                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                                  <FormControl>
+                                    <Checkbox
+                                      checked={field.value}
+                                      onCheckedChange={field.onChange}
+                                    />
+                                  </FormControl>
+                                  <div className="space-y-1 leading-none">
+                                    <FormLabel>
+                                      {t("Ocultar botão de fechar")}
+                                    </FormLabel>
+                                    <FormDescription>
+                                      {t("Oculta o botão de fechar no widget de chat.")}
+                                    </FormDescription>
+                                  </div>
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="border-t pt-4">
+                          <h3 className="font-medium mb-2">{t("Dimensões do widget")}</h3>
+                          <p className="text-sm text-muted-foreground mb-4">
+                            {t("Defina o tamanho padrão do widget quando incorporado.")}
+                          </p>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField
+                              control={editForm.control}
+                              name="default_width"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>{t("Largura padrão (px)")}</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} type="number" min="200" />
+                                  </FormControl>
+                                  <FormDescription>
+                                    {t("Largura em pixels do widget quando incorporado.")}
+                                  </FormDescription>
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <FormField
+                              control={editForm.control}
+                              name="default_height"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>{t("Altura padrão (px)")}</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} type="number" min="300" />
+                                  </FormControl>
+                                  <FormDescription>
+                                    {t("Altura em pixels do widget quando incorporado.")}
+                                  </FormDescription>
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="border-t pt-4">
+                          <h3 className="font-medium mb-2">{t("CSS personalizado")}</h3>
+                          <p className="text-sm text-muted-foreground mb-4">
+                            {t("Adicione estilos CSS personalizados para modificar a aparência do widget.")}
+                          </p>
+                          
+                          <FormField
+                            control={editForm.control}
+                            name="custom_css"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormControl>
+                                  <Textarea 
+                                    {...field} 
+                                    className="font-mono text-sm h-[150px]" 
+                                    placeholder={`.embedded-chat-container {
+  /* Seus estilos personalizados aqui */
+  border-radius: 12px;
+}`}
+                                  />
+                                </FormControl>
+                                <FormDescription>
+                                  {t("Use CSS válido. As alterações serão aplicadas diretamente ao widget.")}
+                                </FormDescription>
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                          
+                        <div className="border-t pt-4">
                           <h3 className="font-medium mb-2">{t("Configurações de iframe")}</h3>
                           <p className="text-sm text-muted-foreground mb-4">
                             {t("Personalize como o widget é exibido quando incorporado via iframe.")}                            
