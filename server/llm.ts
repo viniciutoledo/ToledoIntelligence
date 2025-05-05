@@ -12,6 +12,39 @@ const DEFAULT_CLAUDE_MODEL = 'claude-3-7-sonnet-20250219';
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024
 const DEFAULT_GPT_MODEL = 'gpt-4o';
 
+// Função auxiliar para registrar o uso do LLM
+export async function logLlmUsage(
+  modelName: string, 
+  operationType: "text" | "image" | "audio" | "file" | "test", 
+  success: boolean, 
+  userId?: number, 
+  widgetId?: string, 
+  tokenCount: number = 0, 
+  errorMessage?: string
+): Promise<void> {
+  try {
+    // Extrair o provedor do nome do modelo
+    const provider = modelName.toLowerCase().startsWith('gpt') ? 'openai' : 'anthropic';
+    
+    // Registrar no sistema de armazenamento
+    await storage.logLlmUsage({
+      model_name: modelName,
+      provider,
+      operation_type: operationType,
+      user_id: userId,
+      widget_id: widgetId ? parseInt(widgetId) : undefined,
+      token_count: tokenCount,
+      success,
+      error_message: errorMessage
+    });
+    
+    console.log(`LLM usage logged: ${modelName} (${provider}) - ${operationType} - ${success ? 'Success' : 'Failed'}`);
+  } catch (error) {
+    // Não interromper o fluxo principal se o registro falhar
+    console.error('Error logging LLM usage:', error);
+  }
+}
+
 // LLM Providers
 type LlmProvider = 'anthropic' | 'openai';
 
@@ -1237,13 +1270,25 @@ export async function testConnection(apiKey: string, modelName: string): Promise
         
         if (response.choices && response.choices[0] && response.choices[0].message) {
           console.log('Conexão com OpenAI bem-sucedida');
+          
+          // Registrar o uso bem-sucedido
+          await logLlmUsage(modelName, "test", true);
+          
           return true;
         }
         
         console.log('Resposta inválida do OpenAI no teste de conexão');
+        
+        // Registrar o uso malsucedido
+        await logLlmUsage(modelName, "test", false, undefined, undefined, 0, 'Resposta inválida do OpenAI');
+        
         return false;
       } catch (openaiError) {
         console.error('Erro testando conexão com OpenAI:', openaiError);
+        
+        // Registrar o erro
+        await logLlmUsage(modelName, "test", false, undefined, undefined, 0, openaiError.message);
+        
         return false;
       }
     } else {

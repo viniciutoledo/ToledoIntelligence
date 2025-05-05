@@ -433,7 +433,52 @@ export class MemStorage implements IStorage {
       this.llmConfigs.set(configId, { ...llmConfig, is_active: configId === id });
     }
     
+    // Registrar a alteração do modelo ativo
+    await this.logLlmUsage({
+      model_name: config.model_name,
+      provider: config.model_name.split('/')[0].toLowerCase(),
+      operation_type: "test",
+      success: true
+    });
+    
     return this.llmConfigs.get(id);
+  }
+  
+  // LLM usage logging functions
+  async logLlmUsage(log: InsertLlmUsageLog): Promise<void> {
+    const id = this.currentIds.llmUsageLogId++;
+    const now = new Date();
+    
+    const usageLog: LlmUsageLog = {
+      ...log,
+      id,
+      created_at: now
+    };
+    
+    this.llmUsageLogs.set(id, usageLog);
+  }
+  
+  async getLlmUsageLogs(): Promise<LlmUsageLog[]> {
+    return Array.from(this.llmUsageLogs.values())
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  }
+  
+  async getLlmUsageLogsByModel(modelName: string): Promise<LlmUsageLog[]> {
+    return Array.from(this.llmUsageLogs.values())
+      .filter(log => log.model_name === modelName)
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  }
+  
+  async getLlmUsageLogsByProvider(provider: string): Promise<LlmUsageLog[]> {
+    return Array.from(this.llmUsageLogs.values())
+      .filter(log => log.provider === provider)
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  }
+  
+  async getLlmUsageLogsByUser(userId: number): Promise<LlmUsageLog[]> {
+    return Array.from(this.llmUsageLogs.values())
+      .filter(log => log.user_id === userId)
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   }
   
   // Avatar management

@@ -505,6 +505,9 @@ export const insertLlmUsageLogSchema = createInsertSchema(llmUsageLogs).pick({
   error_message: true,
 });
 
+export type LlmUsageLog = typeof llmUsageLogs.$inferSelect;
+export type InsertLlmUsageLog = z.infer<typeof insertLlmUsageLogSchema>;
+
 // Password schema with validation
 export const passwordSchema = z.string().min(12)
   .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
