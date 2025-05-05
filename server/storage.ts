@@ -2003,7 +2003,7 @@ export class DatabaseStorage implements IStorage {
     endDate?: Date;
     provider?: string;
     userId?: number;
-    widgetId?: number;
+    widgetId?: string; // Alterado para UUID (string)
     limit?: number;
     success?: boolean;
   }): Promise<LlmUsageLog[]> {
