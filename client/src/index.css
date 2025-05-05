@@ -110,6 +110,9 @@ html.iframe-embedded .embedded-chat-container {
   max-height: 100vh !important;
   width: 100% !important;
   max-width: 100vw !important;
+  border-radius: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 html.iframe-embedded .chat-messages-container {
@@ -119,6 +122,11 @@ html.iframe-embedded .chat-messages-container {
 html.iframe-embedded .chat-input-container {
   padding: 0.5rem !important;
   background: transparent !important;
+}
+
+/* Remover botão minimizar quando em fullHeight */
+html.iframe-embedded .full-height-embed .minimize-button {
+  display: none !important;
 }
 
 /* Ajustes para compatibilidade com plataformas específicas */
@@ -136,5 +144,27 @@ html.iframe-embedded .embedded-chat-footer {
   
   html.iframe-embedded .chat-input {
     font-size: 0.85rem !important;
+  }
+  
+  html.iframe-embedded .chat-input-container {
+    padding: 0.25rem !important;
+  }
+}
+
+/* Melhorias para espaços extremamente pequenos */
+@media (max-width: 400px) {
+  html.iframe-embedded .chat-header {
+    padding: 0.25rem 0.5rem !important;
+  }
+  
+  html.iframe-embedded .chat-avatar {
+    height: 24px !important;
+    width: 24px !important;
+  }
+  
+  html.iframe-embedded .chat-message {
+    font-size: 0.8rem !important;
+    padding: 0.35rem !important;
+    margin-bottom: 0.35rem !important;
   }
 }

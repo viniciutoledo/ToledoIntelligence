@@ -326,14 +326,17 @@ export function EmbeddedChat({ apiKey, initialOpen = false, hideHeader = false, 
             </div>
           </div>
           <div className="flex space-x-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleMinimize}
-              className="hover:bg-white/20 text-white"
-            >
-              <Minimize2 size={18} />
-            </Button>
+            {/* Botão de minimizar apenas quando não estamos em modo fullHeight */}
+            {!fullHeight && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleMinimize}
+                className="hover:bg-white/20 text-white"
+              >
+                <Minimize2 size={18} />
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="icon"
