@@ -48,7 +48,7 @@ interface LlmUsageLog {
   token_count: number | null;
   user_id: number | null;
   created_at: string;
-  widget_id: number | null;
+  widget_id: string | null; // Alterado para string (UUID)
   error_message: string | null;
 }
 
@@ -266,7 +266,7 @@ export default function LlmUsageLogs() {
               <Webhook className="h-4 w-4" /> {t("Widget ID")}
             </label>
             <Input
-              type="number"
+              type="text"
               placeholder={t("Enter Widget ID")}
               value={filters.widgetId || ""}
               onChange={(e) => handleFilterChange("widgetId", e.target.value)}
