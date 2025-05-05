@@ -13,7 +13,8 @@ import {
   chatWidgets, ChatWidget, InsertChatWidget,
   widgetChatSessions, WidgetChatSession, InsertWidgetChatSession,
   widgetChatMessages, WidgetChatMessage, InsertWidgetChatMessage,
-  knowledgeBase, KnowledgeBase, InsertKnowledgeBase
+  knowledgeBase, KnowledgeBase, InsertKnowledgeBase,
+  llmUsageLogs, LlmUsageLog, InsertLlmUsageLog
 } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
@@ -44,6 +45,13 @@ export interface IStorage {
   createLlmConfig(config: InsertLlmConfig): Promise<LlmConfig>;
   updateLlmConfig(id: number, data: Partial<LlmConfig>): Promise<LlmConfig | undefined>;
   setActiveLlmConfig(id: number): Promise<LlmConfig | undefined>;
+  
+  // LLM usage logging
+  logLlmUsage(log: InsertLlmUsageLog): Promise<void>;
+  getLlmUsageLogs(): Promise<LlmUsageLog[]>;
+  getLlmUsageLogsByModel(modelName: string): Promise<LlmUsageLog[]>;
+  getLlmUsageLogsByProvider(provider: string): Promise<LlmUsageLog[]>;
+  getLlmUsageLogsByUser(userId: number): Promise<LlmUsageLog[]>;
   
   // Avatar management
   getAvatar(id: number): Promise<Avatar | undefined>;
@@ -226,6 +234,7 @@ export class MemStorage implements IStorage {
   private widgetChatSessions: Map<number, WidgetChatSession>;
   private widgetChatMessages: Map<number, WidgetChatMessage>;
   private knowledgeBase: Map<number, KnowledgeBase>;
+  private llmUsageLogs: Map<number, LlmUsageLog>;
   
   sessionStore: session.Store;
   
@@ -247,6 +256,7 @@ export class MemStorage implements IStorage {
     widgetChatSessionId: number;
     widgetChatMessageId: number;
     knowledgeBaseId: number;
+    llmUsageLogId: number;
   };
 
   constructor() {
@@ -269,7 +279,7 @@ export class MemStorage implements IStorage {
     this.chatWidgets = new Map();
     this.widgetChatSessions = new Map();
     this.widgetChatMessages = new Map();
-    this.knowledgeBase = new Map();
+    this.llmUsageLogs = new Map();
     
     this.currentIds = {
       userId: 1,
@@ -288,7 +298,8 @@ export class MemStorage implements IStorage {
       supportTicketId: 1,
       widgetChatSessionId: 1,
       widgetChatMessageId: 1,
-      knowledgeBaseId: 1
+      knowledgeBaseId: 1,
+      llmUsageLogId: 1
     };
     
     this.sessionStore = new MemoryStore({

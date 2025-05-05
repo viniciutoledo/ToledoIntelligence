@@ -480,6 +480,31 @@ export type LoginData = {
   role: "technician" | "admin";
 };
 
+// LLM Usage Logs table para registrar o uso dos modelos
+export const llmUsageLogs = pgTable("llm_usage_logs", {
+  id: serial("id").primaryKey(),
+  model_name: text("model_name").notNull(),
+  provider: text("provider").notNull(),
+  operation_type: text("operation_type", { enum: ["text", "image", "audio", "file", "test"] }).notNull(),
+  user_id: integer("user_id").references(() => users.id),
+  widget_id: integer("widget_id").references(() => chatWidgets.id),
+  token_count: integer("token_count").default(0),
+  success: boolean("success").default(true).notNull(),
+  error_message: text("error_message"),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertLlmUsageLogSchema = createInsertSchema(llmUsageLogs).pick({
+  model_name: true,
+  provider: true,
+  operation_type: true,
+  user_id: true,
+  widget_id: true,
+  token_count: true,
+  success: true,
+  error_message: true,
+});
+
 // Password schema with validation
 export const passwordSchema = z.string().min(12)
   .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
