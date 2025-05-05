@@ -1358,7 +1358,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       if (req.query.widgetId) {
-        options.widgetId = parseInt(req.query.widgetId as string);
+        // Widget ID é UUID, não necessita conversão para número
+        options.widgetId = req.query.widgetId as string;
       }
       
       if (req.query.success !== undefined) {

@@ -26,20 +26,8 @@ export async function logLlmUsage(
     // Extrair o provedor do nome do modelo corretamente baseado na primeira parte do nome
     const provider = modelName.split('/')[0].toLowerCase();
     
-    // Converter widgetId string para number caso necessário (o schema espera number)
-    let widgetIdNumber: number | undefined = undefined;
-    if (widgetId) {
-      // Se for um UUID, deixamos undefined já que não podemos converter para número
-      if (widgetId.includes('-')) {
-        widgetIdNumber = undefined;
-      } else {
-        // Tenta converter widgetId para um número se for uma string numérica
-        const numericId = parseInt(widgetId);
-        if (!isNaN(numericId)) {
-          widgetIdNumber = numericId;
-        }
-      }
-    }
+    // Agora o widget_id é do tipo UUID no esquema, então podemos usar o valor diretamente
+    // sem necessidade de conversão
     
     // Registrar no sistema de armazenamento
     await storage.logLlmUsage({
@@ -47,7 +35,7 @@ export async function logLlmUsage(
       provider,
       operation_type: operationType,
       user_id: userId,
-      widget_id: widgetIdNumber,
+      widget_id: widgetId,
       token_count: tokenCount,
       success,
       error_message: errorMessage
