@@ -58,12 +58,7 @@ export interface IStorage {
   updateLlmConfig(id: number, data: Partial<LlmConfig>): Promise<LlmConfig | undefined>;
   setActiveLlmConfig(id: number): Promise<LlmConfig | undefined>;
   
-  // LLM usage logging
-  logLlmUsage(log: InsertLlmUsageLog): Promise<void>;
-  getLlmUsageLogs(): Promise<LlmUsageLog[]>;
-  getLlmUsageLogsByModel(modelName: string): Promise<LlmUsageLog[]>;
-  getLlmUsageLogsByProvider(provider: string): Promise<LlmUsageLog[]>;
-  getLlmUsageLogsByUser(userId: number): Promise<LlmUsageLog[]>;
+  // LLM usage logging - redundante com a declaração acima, será removida
   
   // Avatar management
   getAvatar(id: number): Promise<Avatar | undefined>;
@@ -191,6 +186,78 @@ export interface IStorage {
 }
 
 export class MemStorage implements IStorage {
+  // LLM usage tracking
+  async logLlmUsage(log: InsertLlmUsageLog): Promise<void> {
+    const id = this.currentIds.llmUsageLogId++;
+    const now = new Date();
+    
+    // Garanta que valores obrigatórios estejam presentes
+    const usageLog: LlmUsageLog = {
+      id,
+      created_at: now,
+      model_name: log.model_name,
+      provider: log.provider,
+      operation_type: log.operation_type,
+      user_id: log.user_id || null,
+      widget_id: log.widget_id || null,
+      token_count: log.token_count || 0,
+      success: log.success !== undefined ? log.success : true,
+      error_message: log.error_message || null
+    };
+    
+    this.llmUsageLogs.set(id, usageLog);
+    console.log(`Registrado uso do LLM: ${log.model_name} - ${log.operation_type} - ${log.success ? 'Sucesso' : 'Falha'}`);
+  }
+  
+  async getLlmUsageLogs(options?: {
+    startDate?: Date;
+    endDate?: Date;
+    provider?: string;
+    userId?: number;
+    widgetId?: number;
+    limit?: number;
+    success?: boolean;
+  }): Promise<LlmUsageLog[]> {
+    let logs = Array.from(this.llmUsageLogs.values());
+    
+    // Aplicar filtros
+    if (options) {
+      if (options.startDate) {
+        logs = logs.filter(log => log.created_at >= options.startDate!);
+      }
+      
+      if (options.endDate) {
+        logs = logs.filter(log => log.created_at <= options.endDate!);
+      }
+      
+      if (options.provider) {
+        logs = logs.filter(log => log.provider === options.provider);
+      }
+      
+      if (options.userId !== undefined) {
+        logs = logs.filter(log => log.user_id === options.userId);
+      }
+      
+      if (options.widgetId !== undefined) {
+        logs = logs.filter(log => log.widget_id === options.widgetId);
+      }
+      
+      if (options.success !== undefined) {
+        logs = logs.filter(log => log.success === options.success);
+      }
+      
+      // Ordenar por data (mais recente primeiro)
+      logs.sort((a, b) => b.created_at.getTime() - a.created_at.getTime());
+      
+      // Aplicar limite se especificado
+      if (options.limit) {
+        logs = logs.slice(0, options.limit);
+      }
+    }
+    
+    return logs;
+  }
+
   // Implementação do método deleteUser para MemStorage
   async deleteUser(id: number): Promise<void> {
     // Remover o usuário
@@ -1896,7 +1963,96 @@ export class DatabaseStorage implements IStorage {
       .where(eq(llmConfigs.id, id))
       .returning();
     
+    // Registrar a ativação do modelo no log de uso
+    if (activatedConfig) {
+      await this.logLlmUsage({
+        model_name: activatedConfig.model_name,
+        provider: activatedConfig.model_name.split('/')[0].toLowerCase(),
+        operation_type: "test",
+        success: true
+      });
+    }
+    
     return activatedConfig;
+  }
+  
+  // Implementação das funções de logging de uso de LLM
+  async logLlmUsage(log: InsertLlmUsageLog): Promise<void> {
+    try {
+      // Garantir que os valores obrigatórios estão presentes e lidar com valores nulos/indefinidos
+      await db.insert(llmUsageLogs).values({
+        model_name: log.model_name,
+        provider: log.provider,
+        operation_type: log.operation_type,
+        user_id: log.user_id || null,
+        widget_id: log.widget_id || null,
+        token_count: log.token_count || 0,
+        success: log.success !== undefined ? log.success : true,
+        error_message: log.error_message || null
+      });
+      
+      console.log(`Registrado uso do LLM: ${log.model_name} - ${log.operation_type} - ${log.success ? 'Sucesso' : 'Falha'}`);
+    } catch (error) {
+      console.error('Erro ao registrar uso do LLM:', error);
+      // Não propagar o erro para não interromper o fluxo principal da aplicação
+    }
+  }
+  
+  async getLlmUsageLogs(options?: {
+    startDate?: Date;
+    endDate?: Date;
+    provider?: string;
+    userId?: number;
+    widgetId?: number;
+    limit?: number;
+    success?: boolean;
+  }): Promise<LlmUsageLog[]> {
+    try {
+      let query = db.select().from(llmUsageLogs);
+      
+      // Aplicar filtros se fornecidos
+      if (options) {
+        if (options.startDate) {
+          query = query.where(gte(llmUsageLogs.created_at, options.startDate));
+        }
+        
+        if (options.endDate) {
+          query = query.where(lte(llmUsageLogs.created_at, options.endDate));
+        }
+        
+        if (options.provider) {
+          query = query.where(eq(llmUsageLogs.provider, options.provider));
+        }
+        
+        if (options.userId !== undefined) {
+          query = query.where(eq(llmUsageLogs.user_id, options.userId));
+        }
+        
+        if (options.widgetId !== undefined) {
+          query = query.where(eq(llmUsageLogs.widget_id, options.widgetId));
+        }
+        
+        if (options.success !== undefined) {
+          query = query.where(eq(llmUsageLogs.success, options.success));
+        }
+        
+        // Ordenar por data (mais recente primeiro)
+        query = query.orderBy(desc(llmUsageLogs.created_at));
+        
+        // Aplicar limite se especificado
+        if (options.limit) {
+          query = query.limit(options.limit);
+        }
+      } else {
+        // Por padrão, ordenar por data mais recente e limitar a 100 resultados
+        query = query.orderBy(desc(llmUsageLogs.created_at)).limit(100);
+      }
+      
+      return await query;
+    } catch (error) {
+      console.error('Erro ao obter logs de uso do LLM:', error);
+      return [];
+    }
   }
   
   // Avatar management

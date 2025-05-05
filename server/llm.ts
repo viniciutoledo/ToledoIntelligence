@@ -23,8 +23,23 @@ export async function logLlmUsage(
   errorMessage?: string
 ): Promise<void> {
   try {
-    // Extrair o provedor do nome do modelo
-    const provider = modelName.toLowerCase().startsWith('gpt') ? 'openai' : 'anthropic';
+    // Extrair o provedor do nome do modelo corretamente baseado na primeira parte do nome
+    const provider = modelName.split('/')[0].toLowerCase();
+    
+    // Converter widgetId string para number caso necessário (o schema espera number)
+    let widgetIdNumber: number | undefined = undefined;
+    if (widgetId) {
+      // Se for um UUID, usamos null já que não podemos converter para número
+      if (widgetId.includes('-')) {
+        widgetIdNumber = null;
+      } else {
+        // Tenta converter widgetId para um número se for uma string numérica
+        const numericId = parseInt(widgetId);
+        if (!isNaN(numericId)) {
+          widgetIdNumber = numericId;
+        }
+      }
+    }
     
     // Registrar no sistema de armazenamento
     await storage.logLlmUsage({
