@@ -277,27 +277,43 @@ export function EmbeddedChat({ apiKey, initialOpen = false, hideHeader = false, 
   
   // CSS Personalizado - injetando na página se existir
   useEffect(() => {
-    if (widget && widget.custom_css && typeof document !== 'undefined') {
+    try {
+      // Verificação adicional para evitar erros
+      if (!widget || !widget.custom_css || typeof document === 'undefined') {
+        return;
+      }
+      
       // Criando ou atualizando a tag de estilo para o CSS personalizado
       let styleTag = document.getElementById('widget-custom-css');
       
       if (!styleTag) {
         styleTag = document.createElement('style');
         styleTag.id = 'widget-custom-css';
-        document.head.appendChild(styleTag);
+        if (document.head) {
+          document.head.appendChild(styleTag);
+        }
       }
       
-      styleTag.textContent = widget.custom_css;
+      if (styleTag && typeof widget.custom_css === 'string') {
+        styleTag.textContent = widget.custom_css;
+      }
       
       // Limpeza ao desmontar
       return () => {
-        const tag = document.getElementById('widget-custom-css');
-        if (tag) {
-          document.head.removeChild(tag);
+        try {
+          const tag = document.getElementById('widget-custom-css');
+          if (tag && document.head && document.head.contains(tag)) {
+            document.head.removeChild(tag);
+          }
+        } catch (cleanupError) {
+          console.error('Erro ao limpar CSS personalizado:', cleanupError);
         }
       };
+    } catch (error) {
+      console.error('Erro ao aplicar CSS personalizado:', error);
+      return () => {}; // Retorna uma função vazia para evitar erros
     }
-  }, [widget, widget?.custom_css]);
+  }, [widget]);
   
   // Container
   const containerStyles = {
