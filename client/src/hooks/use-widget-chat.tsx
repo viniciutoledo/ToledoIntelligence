@@ -38,6 +38,11 @@ interface WidgetInfo {
   created_at: string;
   updated_at: string;
   user_id: number;
+  hide_minimize_button?: boolean;
+  hide_close_button?: boolean;
+  default_height?: string;
+  default_width?: string;
+  custom_css?: string;
 }
 
 // Interface do contexto

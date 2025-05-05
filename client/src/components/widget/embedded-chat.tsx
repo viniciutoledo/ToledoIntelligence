@@ -36,6 +36,24 @@ interface EmbeddedChatProps {
 }
 
 export function EmbeddedChat({ apiKey, initialOpen = false, hideHeader = false, fullHeight = false }: EmbeddedChatProps) {
+  // Tipagem do widget para uso na função
+  type WidgetType = {
+    id: string;
+    name: string;
+    greeting: string;
+    avatar_url: string;
+    theme_color: string;
+    is_active: boolean;
+    allowed_domains: string[];
+    created_at: string;
+    updated_at: string;
+    user_id: number;
+    hide_minimize_button?: boolean;
+    hide_close_button?: boolean;
+    default_height?: string;
+    default_width?: string;
+    custom_css?: string;
+  };
   const { t } = useTranslation();
   const { language } = useLanguage();
   const [isOpen, setIsOpen] = useState(initialOpen);
@@ -262,8 +280,8 @@ export function EmbeddedChat({ apiKey, initialOpen = false, hideHeader = false, 
     position: isInIframe || fullHeight ? "absolute" : "fixed",
     bottom: isInIframe || fullHeight ? 0 : "1rem",
     right: isInIframe || fullHeight ? 0 : "1rem",
-    height: isInIframe || fullHeight ? "100%" : "500px",
-    width: isInIframe || fullHeight ? "100%" : "350px",
+    height: isInIframe || fullHeight ? "100%" : (widget.default_height ? `${widget.default_height}px` : "500px"),
+    width: isInIframe || fullHeight ? "100%" : (widget.default_width ? `${widget.default_width}px` : "350px"),
   } as React.CSSProperties;
   
   // Format widget data for chat component
@@ -294,6 +312,28 @@ export function EmbeddedChat({ apiKey, initialOpen = false, hideHeader = false, 
       return false;
     }
   })();
+
+  // Aplicar CSS personalizado se existir
+  useEffect(() => {
+    // Se existe CSS personalizado, aplicar
+    if (widget && widget.custom_css) {
+      // Criar ou atualizar o elemento style
+      let styleElement = document.getElementById('toledoia-custom-css');
+      if (!styleElement) {
+        styleElement = document.createElement('style');
+        styleElement.id = 'toledoia-custom-css';
+        document.head.appendChild(styleElement);
+      }
+      styleElement.textContent = widget.custom_css;
+
+      // Limpeza quando componente for desmontado
+      return () => {
+        if (styleElement && document.head.contains(styleElement)) {
+          document.head.removeChild(styleElement);
+        }
+      };
+    }
+  }, [widget]);
 
   return (
     <div 
