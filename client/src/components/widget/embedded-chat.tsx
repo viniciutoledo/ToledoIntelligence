@@ -275,57 +275,9 @@ export function EmbeddedChat({ apiKey, initialOpen = false, hideHeader = false, 
     }
   })();
   
-  // Aplicação de CSS personalizado - fora do useEffect para evitar erros de hooks
-  const applyCustomCSS = (css: string | null | undefined) => {
-    if (typeof document === 'undefined') return;
-    
-    try {
-      // Criando ou atualizando a tag de estilo para o CSS personalizado
-      let styleTag = document.getElementById('widget-custom-css');
-      
-      if (!styleTag) {
-        styleTag = document.createElement('style');
-        styleTag.id = 'widget-custom-css';
-        if (document.head) {
-          document.head.appendChild(styleTag);
-        }
-      }
-      
-      if (styleTag && typeof css === 'string') {
-        styleTag.textContent = css;
-      }
-    } catch (error) {
-      console.error('Erro ao aplicar CSS personalizado:', error);
-    }
-  };
-  
-  // Limpeza do CSS personalizado
-  const cleanupCustomCSS = () => {
-    if (typeof document === 'undefined') return;
-    
-    try {
-      const tag = document.getElementById('widget-custom-css');
-      if (tag && document.head && document.head.contains(tag)) {
-        document.head.removeChild(tag);
-      }
-    } catch (cleanupError) {
-      console.error('Erro ao limpar CSS personalizado:', cleanupError);
-    }
-  };
-  
-  // Hook para gerenciar o ciclo de vida do CSS personalizado - com dependências seguras
-  useEffect(() => {
-    // Só aplica o CSS se o widget estiver disponível
-    if (widget) {
-      const customCSS = widget.custom_css || '';
-      applyCustomCSS(customCSS);
-    }
-    
-    // Limpeza ao desmontar
-    return () => {
-      cleanupCustomCSS();
-    };
-  }, [widget]);
+  // Removendo completamente o CSS personalizado para tentar corrigir o problema
+  // O CSS será adicionado diretamente na página em uma versão futura
+  // Isso evita problemas com hooks e renderização condicional que estão causando o erro
   
   // Container
   const containerStyles = {
@@ -365,7 +317,7 @@ export function EmbeddedChat({ apiKey, initialOpen = false, hideHeader = false, 
     }
   })();
 
-  // O CSS personalizado já está sendo aplicado pelo useEffect acima
+  // Funcionalidade de CSS personalizado temporariamente removida
 
   return (
     <div 
