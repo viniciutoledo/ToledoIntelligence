@@ -326,8 +326,8 @@ export function EmbeddedChat({ apiKey, initialOpen = false, hideHeader = false, 
             </div>
           </div>
           <div className="flex space-x-1">
-            {/* Botão de minimizar apenas quando não estamos em modo fullHeight */}
-            {!fullHeight && (
+            {/* Botão de minimizar apenas quando não estamos em modo fullHeight E não está configurado para ocultar */}
+            {!fullHeight && !widget.hide_minimize_button && (
               <Button
                 variant="ghost"
                 size="icon"
@@ -337,14 +337,17 @@ export function EmbeddedChat({ apiKey, initialOpen = false, hideHeader = false, 
                 <Minimize2 size={18} />
               </Button>
             )}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleClose}
-              className="hover:bg-white/20 text-white"
-            >
-              <X size={18} />
-            </Button>
+            {/* Botão de fechar apenas quando não está configurado para ocultar */}
+            {!widget.hide_close_button && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleClose}
+                className="hover:bg-white/20 text-white"
+              >
+                <X size={18} />
+              </Button>
+            )}
           </div>
         </div>
       )}

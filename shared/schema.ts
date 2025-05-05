@@ -321,9 +321,9 @@ export const chatWidgets = pgTable("chat_widgets", {
   allowed_domains: text("allowed_domains").array(),
   // Opções avançadas para customização do iframe
   hide_minimize_button: boolean("hide_minimize_button").default(false),
-  allow_close: boolean("allow_close").default(true),
-  iframe_height: text("iframe_height").default("500px"),
-  iframe_width: text("iframe_width").default("100%"),
+  hide_close_button: boolean("hide_close_button").default(false),
+  default_height: text("default_height").default("600"),
+  default_width: text("default_width").default("350"),
   custom_css: text("custom_css"),
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
@@ -340,9 +340,9 @@ export const insertChatWidgetSchema = createInsertSchema(chatWidgets)
     allowed_domains: true,
     // Opções avançadas para iframe
     hide_minimize_button: true,
-    allow_close: true,
-    iframe_height: true,
-    iframe_width: true,
+    hide_close_button: true,
+    default_height: true,
+    default_width: true,
     custom_css: true,
   })
   .partial(); // Torna todos os campos opcionais para mais flexibilidade
