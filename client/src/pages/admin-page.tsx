@@ -10,6 +10,7 @@ import { TrainingPanel } from "@/components/admin/training-panel";
 import PlanManagement from "@/components/admin/plan-management";
 import PlanPricing from "@/components/admin/plan-pricing";
 import WidgetsManagement from "@/components/admin/widgets-management";
+import LlmUsageLogs from "@/components/admin/llm-usage-logs";
 import { LlmProvider } from "@/hooks/use-llm";
 import { AvatarProvider } from "@/hooks/use-avatar";
 import { useLanguage } from "@/hooks/use-language";
@@ -110,7 +111,20 @@ export default function AdminPage() {
                   <span>Admin Panel</span>
                 </div>
               </div>
-              <AuditLogs />
+              <div className="space-y-8">
+                <div>
+                  <h2 className="text-xl font-semibold text-neutral-700 mb-4">
+                    {t("System Audit Logs")}
+                  </h2>
+                  <AuditLogs />
+                </div>
+                <div>
+                  <h2 className="text-xl font-semibold text-neutral-700 mb-4">
+                    {t("LLM Usage Logs")}
+                  </h2>
+                  <LlmUsageLogs />
+                </div>
+              </div>
             </>
           )}
           

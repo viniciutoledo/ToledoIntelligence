@@ -1,15 +1,35 @@
 import { useState, useEffect } from "react";
-import { useLanguage } from "@/hooks/use-language";
+import { useQuery } from "@tanstack/react-query";
+import { format } from "date-fns";
+import { ptBR, enUS } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest, useQuery } from "@/lib/queryClient";
-import { formatDate } from "@/lib/utils";
+import { useLanguage } from "@/hooks/use-language";
+import { Card } from "@/components/ui/card";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  AlertCircle,
+  AlertTriangle,
+  Calendar,
+  CheckCircle,
+  ChevronDown,
+  Clock,
+  Database,
+  Filter,
+  RefreshCcw,
+  Search,
+  Server,
+  User,
+  Webhook,
+} from "lucide-react";
 import {
   Table,
   TableBody,
@@ -18,474 +38,363 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Cell } from "recharts";
-import { CalendarIcon, CheckCircle, LoaderCircle, XCircle, Filter, Download } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-type LlmUsageLog = {
+interface LlmUsageLog {
   id: number;
-  created_at: string;
   model_name: string;
   provider: string;
-  operation_type: string;
-  user_id: number | null;
-  widget_id: number | null;
-  token_count: number | null;
+  operation_type: "text" | "image" | "audio" | "file" | "test";
   success: boolean;
+  token_count: number | null;
+  user_id: number | null;
+  created_at: string;
+  widget_id: number | null;
   error_message: string | null;
+}
+
+type FilterOptions = {
+  provider?: string;
+  startDate?: string;
+  endDate?: string;
+  userId?: string;
+  widgetId?: string;
+  success?: string;
 };
 
-type ChartData = {
-  name: string;
-  count: number;
-};
-
-type UsageSummary = {
-  totalRequests: number;
-  successRate: number;
-  totalTokens: number;
-  providerCounts: Record<string, number>;
-  operationTypeCounts: Record<string, number>;
-  modelCounts: Record<string, number>;
-};
-
-export function LlmUsageLogs() {
-  const { t } = useLanguage();
+export default function LlmUsageLogs() {
   const { toast } = useToast();
-  const [selectedProvider, setSelectedProvider] = useState<string>("all");
-  const [selectedStatus, setSelectedStatus] = useState<string>("all");
-  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
-  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
-  const [limit, setLimit] = useState<number>(100);
+  const { language, t } = useLanguage();
+  const locale = language === "pt" ? ptBR : enUS;
 
-  // Query logs with filters
-  const { data: logs, isLoading, refetch } = useQuery<LlmUsageLog[]>({
-    queryKey: ["/api/llm/usage-logs", selectedProvider, selectedStatus, startDate, endDate, limit],
+  const [filters, setFilters] = useState<FilterOptions>({
+    provider: "all",
+    success: "all",
+  });
+
+  // Construct query string based on filters
+  const getQueryString = () => {
+    const queryParams = new URLSearchParams();
+
+    if (filters.provider && filters.provider !== "all") {
+      queryParams.append("provider", filters.provider);
+    }
+
+    if (filters.startDate) {
+      queryParams.append("startDate", filters.startDate);
+    }
+
+    if (filters.endDate) {
+      queryParams.append("endDate", filters.endDate);
+    }
+
+    if (filters.userId) {
+      queryParams.append("userId", filters.userId);
+    }
+
+    if (filters.widgetId) {
+      queryParams.append("widgetId", filters.widgetId);
+    }
+
+    if (filters.success && filters.success !== "all") {
+      queryParams.append("success", filters.success === "success" ? "true" : "false");
+    }
+
+    return queryParams.toString();
+  };
+
+  const {
+    data: logs,
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery<LlmUsageLog[]>({
+    queryKey: ["/api/admin/llm/usage-logs", filters],
     queryFn: async () => {
-      let url = "/api/llm/usage-logs?";
+      const queryString = getQueryString();
+      const response = await fetch(`/api/admin/llm/usage-logs${queryString ? `?${queryString}` : ""}`);
       
-      if (selectedProvider !== "all") {
-        url += `provider=${selectedProvider}&`;
+      if (!response.ok) {
+        throw new Error(`Error fetching logs: ${response.statusText}`);
       }
       
-      if (selectedStatus !== "all") {
-        url += `success=${selectedStatus === "success"}&`;
-      }
-      
-      if (startDate) {
-        url += `startDate=${startDate.toISOString()}&`;
-      }
-      
-      if (endDate) {
-        url += `endDate=${endDate.toISOString()}&`;
-      }
-      
-      url += `limit=${limit}`;
-      
-      const res = await apiRequest("GET", url);
-      return await res.json();
+      return response.json();
     },
   });
 
-  // Calculate summary statistics
-  const summary: UsageSummary = logs?.reduce((acc: UsageSummary, log) => {
-    // Count requests
-    acc.totalRequests++;
-    
-    // Success rate
-    if (log.success) acc.successRate++;
-    
-    // Count tokens
-    if (log.token_count) acc.totalTokens += log.token_count;
-    
-    // Count by provider
-    if (!acc.providerCounts[log.provider]) acc.providerCounts[log.provider] = 0;
-    acc.providerCounts[log.provider]++;
-    
-    // Count by operation type
-    if (!acc.operationTypeCounts[log.operation_type]) acc.operationTypeCounts[log.operation_type] = 0;
-    acc.operationTypeCounts[log.operation_type]++;
-    
-    // Count by model
-    if (!acc.modelCounts[log.model_name]) acc.modelCounts[log.model_name] = 0;
-    acc.modelCounts[log.model_name]++;
-    
-    return acc;
-  }, { 
-    totalRequests: 0, 
-    successRate: 0, 
-    totalTokens: 0, 
-    providerCounts: {}, 
-    operationTypeCounts: {},
-    modelCounts: {}
-  }) || {
-    totalRequests: 0, 
-    successRate: 0, 
-    totalTokens: 0, 
-    providerCounts: {}, 
-    operationTypeCounts: {},
-    modelCounts: {}
+  // Handle filter changes
+  const handleFilterChange = (key: keyof FilterOptions, value: string) => {
+    setFilters(prev => ({
+      ...prev,
+      [key]: value,
+    }));
   };
-  
-  if (summary.totalRequests > 0) {
-    summary.successRate = (summary.successRate / summary.totalRequests) * 100;
-  }
 
-  // Prepare chart data
-  const providerChartData: ChartData[] = Object.entries(summary.providerCounts)
-    .map(([name, count]) => ({ name, count }));
-
-  const operationTypeChartData: ChartData[] = Object.entries(summary.operationTypeCounts)
-    .map(([name, count]) => ({ name, count }));
-
-  const modelChartData: ChartData[] = Object.entries(summary.modelCounts)
-    .map(([name, count]) => ({ name, count }));
-
-  // Export logs as CSV
-  const exportCsv = () => {
-    if (!logs || logs.length === 0) {
-      toast({
-        title: "Nenhum dado para exportar",
-        description: "Não há registros de uso para exportar.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Convert logs to CSV format
-    const headers = ["ID", "Data", "Modelo", "Provedor", "Tipo de Operação", "ID do Usuário", "ID do Widget", "Tokens", "Sucesso", "Mensagem de Erro"];
-    const csvRows = [
-      headers.join(","),
-      ...logs.map(log => {
-        const values = [
-          log.id,
-          new Date(log.created_at).toLocaleString(),
-          `"${log.model_name}"`,
-          log.provider,
-          log.operation_type,
-          log.user_id || "",
-          log.widget_id || "",
-          log.token_count || 0,
-          log.success ? "Sim" : "Não",
-          log.error_message ? `"${log.error_message.replace(/"/g, '""')}"` : ""
-        ];
-        return values.join(",");
-      })
-    ];
-
-    // Create and download the CSV file
-    const csvContent = csvRows.join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `llm-usage-logs-${new Date().toISOString().split("T")[0]}.csv`);
-    link.style.visibility = "hidden";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    toast({
-      title: "Exportação concluída", 
-      description: `${logs.length} registros exportados com sucesso.`
+  // Reset all filters
+  const resetFilters = () => {
+    setFilters({
+      provider: "all",
+      success: "all",
+      startDate: undefined,
+      endDate: undefined,
+      userId: undefined,
+      widgetId: undefined,
     });
   };
 
-  if (isLoading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("admin.llmUsageLogs")}</CardTitle>
-          <CardDescription>{t("admin.llmUsageLogsSubtitle")}</CardDescription>
-        </CardHeader>
-        <CardContent className="flex justify-center items-center py-10">
-          <LoaderCircle className="h-8 w-8 animate-spin text-primary" />
-        </CardContent>
-      </Card>
-    );
-  }
+  // Format date for display
+  const formatDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      return format(date, "PPp", { locale });
+    } catch (error) {
+      return dateString;
+    }
+  };
+
+  // Get operation type icon
+  const getOperationIcon = (type: string) => {
+    switch (type) {
+      case "text":
+        return <Database className="h-4 w-4 mr-1" />;
+      case "image":
+        return <Server className="h-4 w-4 mr-1" />;
+      case "audio":
+        return <Webhook className="h-4 w-4 mr-1" />;
+      case "file":
+        return <Database className="h-4 w-4 mr-1" />;
+      case "test":
+        return <RefreshCcw className="h-4 w-4 mr-1" />;
+      default:
+        return <AlertCircle className="h-4 w-4 mr-1" />;
+    }
+  };
+
+  // Get provider display name
+  const getProviderName = (provider: string) => {
+    switch (provider.toLowerCase()) {
+      case "openai":
+        return "OpenAI";
+      case "anthropic":
+        return "Anthropic/Claude";
+      case "deepseek":
+        return "Deepseek";
+      case "maritaca":
+        return "Maritaca";
+      case "meta":
+        return "Meta";
+      case "alibaba":
+        return "Alibaba";
+      default:
+        return provider;
+    }
+  };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Registros de Uso de LLM</CardTitle>
-        <CardDescription>Monitoramento e análise do uso de modelos de linguagem no sistema</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Tabs defaultValue="summary">
-          <TabsList className="grid w-full grid-cols-2 mb-4">
-            <TabsTrigger value="summary">Resumo</TabsTrigger>
-            <TabsTrigger value="details">Detalhes</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="summary" className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <Card>
-                <CardHeader className="py-4">
-                  <CardTitle className="text-sm font-medium">Total de Requisições</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{summary.totalRequests}</div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader className="py-4">
-                  <CardTitle className="text-sm font-medium">Taxa de Sucesso</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{summary.successRate.toFixed(1)}%</div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader className="py-4">
-                  <CardTitle className="text-sm font-medium">Total de Tokens</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{summary.totalTokens.toLocaleString()}</div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader className="py-4">
-                  <CardTitle className="text-sm font-medium">Provedores</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{Object.keys(summary.providerCounts).length}</div>
-                </CardContent>
-              </Card>
-            </div>
+    <Card className="p-6">
+      <div className="flex flex-col gap-5">
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-bold">
+            {t("LLM Usage Logs")}
+          </h2>
+          <Button variant="outline" onClick={() => refetch()}>
+            <RefreshCcw className="h-4 w-4 mr-2" />
+            {t("Refresh")}
+          </Button>
+        </div>
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-md">Uso por Provedor</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-[200px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={providerChartData}>
-                        <XAxis dataKey="name" />
-                        <YAxis />
-                        <Tooltip />
-                        <Bar dataKey="count" fill="#6366F1">
-                          {providerChartData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={index % 2 === 0 ? "#6366F1" : "#4338CA"} />
-                          ))}
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-md">Uso por Operação</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-[200px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={operationTypeChartData}>
-                        <XAxis dataKey="name" />
-                        <YAxis />
-                        <Tooltip />
-                        <Bar dataKey="count" fill="#10B981">
-                          {operationTypeChartData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={index % 2 === 0 ? "#10B981" : "#059669"} />
-                          ))}
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-md">Uso por Modelo</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-[200px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={modelChartData}>
-                        <XAxis dataKey="name" tick={false} />
-                        <YAxis />
-                        <Tooltip />
-                        <Bar dataKey="count" fill="#EC4899">
-                          {modelChartData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={index % 2 === 0 ? "#EC4899" : "#DB2777"} />
-                          ))}
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="details">
-            <div className="flex flex-col md:flex-row justify-between mb-4 gap-2">
-              <div className="flex flex-col sm:flex-row gap-2 flex-1">
-                <Select value={selectedProvider} onValueChange={setSelectedProvider}>
-                  <SelectTrigger className="w-full sm:w-[180px]">
-                    <SelectValue placeholder="Filtrar por Provedor" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos os Provedores</SelectItem>
-                    {Object.keys(summary.providerCounts).map(provider => (
-                      <SelectItem key={provider} value={provider}>{provider}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                
-                <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                  <SelectTrigger className="w-full sm:w-[180px]">
-                    <SelectValue placeholder="Filtrar por Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos os Status</SelectItem>
-                    <SelectItem value="success">Sucesso</SelectItem>
-                    <SelectItem value="failure">Falha</SelectItem>
-                  </SelectContent>
-                </Select>
-                
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-full sm:w-[180px]">
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {startDate ? (
-                        startDate.toLocaleDateString()
+        {/* Filters */}
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 bg-secondary/10 p-4 rounded-md">
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium flex items-center gap-1">
+              <Filter className="h-4 w-4" /> {t("Provider")}
+            </label>
+            <Select
+              value={filters.provider || "all"}
+              onValueChange={(value) => handleFilterChange("provider", value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={t("All Providers")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("All Providers")}</SelectItem>
+                <SelectItem value="openai">OpenAI</SelectItem>
+                <SelectItem value="anthropic">Anthropic/Claude</SelectItem>
+                <SelectItem value="deepseek">Deepseek</SelectItem>
+                <SelectItem value="maritaca">Maritaca</SelectItem>
+                <SelectItem value="meta">Meta</SelectItem>
+                <SelectItem value="alibaba">Alibaba</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium flex items-center gap-1">
+              <Calendar className="h-4 w-4" /> {t("Start Date")}
+            </label>
+            <Input
+              type="date"
+              value={filters.startDate || ""}
+              onChange={(e) => handleFilterChange("startDate", e.target.value)}
+            />
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium flex items-center gap-1">
+              <Calendar className="h-4 w-4" /> {t("End Date")}
+            </label>
+            <Input
+              type="date"
+              value={filters.endDate || ""}
+              onChange={(e) => handleFilterChange("endDate", e.target.value)}
+            />
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium flex items-center gap-1">
+              <User className="h-4 w-4" /> {t("User ID")}
+            </label>
+            <Input
+              type="number"
+              placeholder={t("Enter User ID")}
+              value={filters.userId || ""}
+              onChange={(e) => handleFilterChange("userId", e.target.value)}
+            />
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium flex items-center gap-1">
+              <Webhook className="h-4 w-4" /> {t("Widget ID")}
+            </label>
+            <Input
+              type="number"
+              placeholder={t("Enter Widget ID")}
+              value={filters.widgetId || ""}
+              onChange={(e) => handleFilterChange("widgetId", e.target.value)}
+            />
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium flex items-center gap-1">
+              <CheckCircle className="h-4 w-4" /> {t("Status")}
+            </label>
+            <Select
+              value={filters.success || "all"}
+              onValueChange={(value) => handleFilterChange("success", value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={t("All Status")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("All Status")}</SelectItem>
+                <SelectItem value="success">{t("Success")}</SelectItem>
+                <SelectItem value="failed">{t("Failed")}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="col-span-1 md:col-span-3 lg:col-span-6 flex justify-end">
+            <Button variant="outline" onClick={resetFilters}>
+              {t("Reset Filters")}
+            </Button>
+          </div>
+        </div>
+
+        {/* Logs Table */}
+        {isLoading ? (
+          <div className="flex justify-center items-center py-12">
+            <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+          </div>
+        ) : isError ? (
+          <div className="bg-destructive/10 text-destructive p-4 rounded-md flex items-center">
+            <AlertTriangle className="h-5 w-5 mr-2" />
+            {t("Error loading logs. Please try again.")}
+          </div>
+        ) : logs?.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground">
+            <Database className="h-12 w-12 mx-auto mb-4 opacity-20" />
+            <p>{t("No logs found matching your filters.")}</p>
+          </div>
+        ) : (
+          <div className="rounded-md border overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[80px]">{t("ID")}</TableHead>
+                  <TableHead>{t("Model")}</TableHead>
+                  <TableHead>{t("Provider")}</TableHead>
+                  <TableHead>{t("Operation")}</TableHead>
+                  <TableHead>{t("Status")}</TableHead>
+                  <TableHead>{t("Tokens")}</TableHead>
+                  <TableHead>{t("User")}</TableHead>
+                  <TableHead>{t("Widget")}</TableHead>
+                  <TableHead>{t("Date")}</TableHead>
+                  <TableHead>{t("Error")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {logs?.map((log) => (
+                  <TableRow key={log.id}>
+                    <TableCell className="font-mono text-xs">{log.id}</TableCell>
+                    <TableCell className="font-mono text-xs">{log.model_name}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="font-normal">
+                        {getProviderName(log.provider)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center">
+                        {getOperationIcon(log.operation_type)}
+                        {log.operation_type}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {log.success ? (
+                        <Badge variant="success" className="gap-1">
+                          <CheckCircle className="h-3 w-3" />
+                          {t("Success")}
+                        </Badge>
                       ) : (
-                        "Data Inicial"
+                        <Badge variant="destructive" className="gap-1">
+                          <AlertCircle className="h-3 w-3" />
+                          {t("Failed")}
+                        </Badge>
                       )}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={startDate}
-                      onSelect={setStartDate}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-                
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-full sm:w-[180px]">
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {endDate ? (
-                        endDate.toLocaleDateString()
+                    </TableCell>
+                    <TableCell>
+                      {log.token_count !== null ? log.token_count : "-"}
+                    </TableCell>
+                    <TableCell>
+                      {log.user_id !== null ? (
+                        <Badge variant="outline">{log.user_id}</Badge>
                       ) : (
-                        "Data Final"
+                        "-"
                       )}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={endDate}
-                      onSelect={setEndDate}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-              
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={() => refetch()} className="w-full sm:w-auto">
-                  <Filter className="mr-2 h-4 w-4" />
-                  Filtrar
-                </Button>
-                
-                <Button variant="outline" onClick={exportCsv} className="w-full sm:w-auto">
-                  <Download className="mr-2 h-4 w-4" />
-                  Exportar CSV
-                </Button>
-              </div>
-            </div>
-            
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[100px]">Data/Hora</TableHead>
-                    <TableHead>Modelo</TableHead>
-                    <TableHead>Provedor</TableHead>
-                    <TableHead>Operação</TableHead>
-                    <TableHead>Tokens</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Detalhes</TableHead>
+                    </TableCell>
+                    <TableCell>
+                      {log.widget_id !== null ? (
+                        <Badge variant="outline">{log.widget_id}</Badge>
+                      ) : (
+                        "-"
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1 text-xs">
+                        <Clock className="h-3 w-3" />
+                        {formatDate(log.created_at)}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="max-w-[200px] truncate text-xs text-destructive">
+                        {log.error_message || "-"}
+                      </div>
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {logs && logs.length > 0 ? (
-                    logs.map((log) => (
-                      <TableRow key={log.id}>
-                        <TableCell className="font-medium">
-                          {formatDate(log.created_at)}
-                        </TableCell>
-                        <TableCell title={log.model_name}>
-                          {log.model_name.length > 25 ? log.model_name.substring(0, 25) + "..." : log.model_name}
-                        </TableCell>
-                        <TableCell>{log.provider}</TableCell>
-                        <TableCell>{log.operation_type}</TableCell>
-                        <TableCell>{log.token_count || "N/A"}</TableCell>
-                        <TableCell>
-                          {log.success ? (
-                            <span className="flex items-center text-green-600">
-                              <CheckCircle className="h-4 w-4 mr-1" />
-                              Sucesso
-                            </span>
-                          ) : (
-                            <span className="flex items-center text-red-600">
-                              <XCircle className="h-4 w-4 mr-1" />
-                              Falha
-                            </span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {log.user_id && <span className="text-xs">User: {log.user_id}</span>}
-                          {log.widget_id && <span className="text-xs">Widget: {log.widget_id}</span>}
-                          {log.error_message && (
-                            <span className="text-xs text-red-500" title={log.error_message}>
-                              Erro: {log.error_message.substring(0, 30)}{log.error_message.length > 30 ? "..." : ""}
-                            </span>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={7} className="text-center py-4">
-                        Nenhum registro de uso encontrado
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </TabsContent>
-        </Tabs>
-      </CardContent>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </div>
     </Card>
   );
 }

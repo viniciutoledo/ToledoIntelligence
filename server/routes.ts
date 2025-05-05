@@ -1335,6 +1335,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(logs);
   });
   
+  // LLM Usage Logs (admin)
+  app.get("/api/admin/llm/usage-logs", isAuthenticated, checkRole("admin"), async (req, res) => {
+    try {
+      // Parse query parameters
+      const options: any = {};
+      
+      if (req.query.startDate) {
+        options.startDate = new Date(req.query.startDate as string);
+      }
+      
+      if (req.query.endDate) {
+        options.endDate = new Date(req.query.endDate as string);
+      }
+      
+      if (req.query.provider && req.query.provider !== "all") {
+        options.provider = req.query.provider as string;
+      }
+      
+      if (req.query.userId) {
+        options.userId = parseInt(req.query.userId as string);
+      }
+      
+      if (req.query.widgetId) {
+        options.widgetId = parseInt(req.query.widgetId as string);
+      }
+      
+      if (req.query.success !== undefined) {
+        options.success = req.query.success === "true";
+      }
+      
+      if (req.query.limit) {
+        options.limit = parseInt(req.query.limit as string);
+      } else {
+        // Default limit
+        options.limit = 100;
+      }
+      
+      const logs = await storage.getLlmUsageLogs(options);
+      
+      return res.json(logs);
+    } catch (error) {
+      console.error("Error fetching LLM usage logs:", error);
+      return res.status(500).json({ error: "Failed to fetch usage logs" });
+    }
+  });
+  
   // Endpoint para gerar logs de auditoria para exemplo
   app.post("/api/admin/create-example-logs", isAuthenticated, checkRole("admin"), async (req, res) => {
     // Cria logs de exemplo para visualização no painel administrativo
