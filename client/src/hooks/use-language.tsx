@@ -6,7 +6,7 @@ interface LanguageContextType {
   language: string;
   changeLanguage: (lang: string) => void;
   setLanguage: (lang: string) => void; // Alias para changeLanguage para compatibilidade
-  t: (key: string) => string;
+  t: (key: string, options?: Record<string, any>) => string;
   i18n: typeof i18n;
 }
 
