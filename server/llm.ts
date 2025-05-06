@@ -1103,7 +1103,7 @@ function estimateTokens(text: string, model: string = ''): number {
   return Math.ceil(estimatedTokens * 1.1);
 }
 
-export async function analyzeFile(filePath: string, language: string, llmConfig?: LlmFullConfig): Promise<string> {
+export async function analyzeFile(filePath: string, language: string, llmConfig?: LlmFullConfig, userId?: number, widgetId?: string): Promise<string> {
   try {
     // Verificar se é um arquivo PDF
     const extension = path.extname(filePath).toLowerCase();

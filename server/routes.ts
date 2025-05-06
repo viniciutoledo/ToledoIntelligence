@@ -3855,7 +3855,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           aiResponse = await processTextMessage(
             content,
             messageHistory,
-            formattedLlmConfig
+            formattedLlmConfig,
+            undefined,
+            widget.user_id,
+            session.widget_id
           );
         } catch (error) {
           console.error("Erro ao processar mensagem com LLM:", error);
@@ -4013,7 +4016,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           if (file.mimetype === 'application/pdf' || file.mimetype === 'text/plain') {
             // Usar a linguagem da sessão do widget em vez de tentar obter do llmConfig
-            aiResponse = await analyzeFile(file.path, session.language);
+            aiResponse = await analyzeFile(file.path, session.language, undefined, widget.user_id, session.widget_id);
           } else {
             aiResponse = "Recebi seu arquivo. Como posso ajudar com ele?";
           }
