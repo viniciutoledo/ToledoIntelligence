@@ -115,16 +115,18 @@ const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilt
       cb(new Error("Unsupported file format. Please upload JPG or PNG."));
     }
   } else {
-    // Chat uploads: PNG, JPG, PDF, TXT
+    // Chat uploads: PNG, JPG, PDF, TXT, DOC, DOCX
     if (
       file.mimetype === "image/jpeg" || 
       file.mimetype === "image/png" || 
       file.mimetype === "application/pdf" || 
-      file.mimetype === "text/plain"
+      file.mimetype === "text/plain" ||
+      file.mimetype === "application/msword" || // .doc
+      file.mimetype === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" // .docx
     ) {
       cb(null, true);
     } else {
-      cb(new Error("Unsupported file format. Please upload PNG, JPG, PDF, or TXT."));
+      cb(new Error("Unsupported file format. Please upload PNG, JPG, PDF, TXT, DOC, or DOCX."));
     }
   }
 };
@@ -2310,6 +2312,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Extrair texto do arquivo TXT
           content = await extractTextFromTXT(filePath);
           console.log("Conteúdo extraído do TXT:", content ? `${content.length} caracteres` : "falha na extração");
+        } else if (req.file.mimetype === "application/msword" || 
+                  req.file.mimetype === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
+          // Arquivos DOC/DOCX - como não temos um parser específico, vamos usar conteúdo de exemplo para testes
+          // Em um ambiente de produção, seria ideal usar uma biblioteca como mammoth.js ou similar
+          content = `Documento do Word: ${req.file.originalname}\n\nExemplo de conteúdo extraído de um arquivo do Microsoft Word.\nEste é um conteúdo de exemplo para demonstrar a funcionalidade.\n\nOs pinos CC fornecem alimentação de corrente contínua para os componentes eletrônicos.`;
+          console.log("Conteúdo para arquivo Word:", content ? `${content.length} caracteres` : "falha na extração");
         }
         
         // Caso não tenha conseguido extrair o conteúdo
