@@ -30,41 +30,80 @@ export async function testDocumentKnowledge(query: string, documentId: number) {
     // Obter o conteúdo do documento
     let content = document.content;
     
-    // Se for um documento de arquivo, ler o conteúdo do arquivo
-    if (document.document_type === "file" && document.file_url) {
+    // Se for um documento de arquivo, ler o conteúdo do arquivo ou usar conteúdo armazenado
+    if (document.document_type === "file") {
       try {
-        console.log(`Tentando acessar arquivo: ${document.file_url}`);
-        
-        // Normalizar o caminho para o arquivo
-        let filePath = document.file_url;
-        if (filePath.startsWith('/')) {
-          filePath = `.${filePath}`; // Adiciona o ponto ao início do caminho
-        } else if (!filePath.startsWith('./')) {
-          filePath = `./${filePath}`; // Adiciona './' ao início do caminho
+        // Primeira opção: usar o conteúdo armazenado no banco de dados, se existir
+        if (document.content && document.content.length > 100) {
+          console.log(`Usando conteúdo armazenado do documento ID ${document.id}`);
+          content = document.content;
         }
-        
-        // Tenta ler o conteúdo do arquivo diretamente primeiro
-        try {
-          content = await fs.promises.readFile(filePath, 'utf8');
-          console.log(`Arquivo lido com sucesso: ${filePath}`);
-        } catch (error: any) {
-          console.log(`Erro ao ler arquivo direto: ${error.message}`);
+        // Se não tiver conteúdo armazenado, tenta ler o arquivo
+        else if (document.file_url) {
+          console.log(`Tentando acessar arquivo: ${document.file_url}`);
           
-          // Se não conseguir, tenta extrair o nome do arquivo e busca-lo em ./uploads
-          const fileName = filePath.split('/').pop() || '';
-          const uploadsPath = './uploads/' + fileName;
+          // Lista de caminhos possíveis para tentar ler o arquivo
+          const possiblePaths = [];
           
-          try {
-            content = await fs.promises.readFile(uploadsPath, 'utf8');
-            console.log(`Arquivo lido de caminho alternativo: ${uploadsPath}`);
-          } catch (error: any) {
-            console.log(`Erro ao ler do diretório de uploads: ${error.message}`);
-            content = "Conteúdo do arquivo não disponível. Verifique se o arquivo ainda existe no sistema.";
+          // Normalizar o caminho para o arquivo
+          let filePath = document.file_url;
+          if (filePath.startsWith('/')) {
+            filePath = `.${filePath}`; // Adiciona o ponto ao início do caminho
+          } else if (!filePath.startsWith('./')) {
+            filePath = `./${filePath}`; // Adiciona './' ao início do caminho
           }
+          
+          // Adicionar caminhos alternativos para tentar
+          possiblePaths.push(filePath);
+          possiblePaths.push(`./uploads/${path.basename(filePath)}`);
+          possiblePaths.push(`/home/runner/workspace/uploads/${path.basename(filePath)}`);
+          possiblePaths.push(`${process.cwd()}/uploads/${path.basename(filePath)}`);
+          
+          // Nome do arquivo
+          const fileName = path.basename(filePath);
+          
+          // Se o nome do arquivo contiver um UUID ou timestamp (comum em uploads)
+          if (fileName.includes('-')) {
+            // Tenta com o nome original do arquivo (sem o UUID/timestamp)
+            const originalFileName = fileName.split('-').slice(1).join('-');
+            possiblePaths.push(`./uploads/${originalFileName}`);
+            possiblePaths.push(`/home/runner/workspace/uploads/${originalFileName}`);
+          }
+          
+          // Tentar ler o arquivo de um dos possíveis caminhos
+          let fileRead = false;
+          for (const pathToTry of possiblePaths) {
+            try {
+              console.log(`Tentando ler de: ${pathToTry}`);
+              content = await fs.promises.readFile(pathToTry, 'utf8');
+              console.log(`Arquivo lido com sucesso de: ${pathToTry}`);
+              fileRead = true;
+              break; // Sai do loop se conseguir ler
+            } catch (error: any) {
+              // Continua tentando outros caminhos
+              console.log(`Não foi possível ler de ${pathToTry}: ${error.message}`);
+            }
+          }
+          
+          // Se não conseguiu ler de nenhum caminho
+          if (!fileRead) {
+            console.log(`Não foi possível ler o arquivo de nenhum dos caminhos tentados`);
+            
+            // Usar o conteúdo do documento (mesmo que seja pequeno)
+            if (document.content) {
+              console.log(`Usando conteúdo armazenado limitado do documento ID ${document.id}`);
+              content = document.content;
+            } else {
+              // Mensagem de erro se não conseguiu recuperar conteúdo
+              content = "Não foi possível acessar o conteúdo deste arquivo. Ele pode ter sido movido ou excluído.";
+            }
+          }
+        } else {
+          content = "Este documento não tem um arquivo associado.";
         }
-      } catch (error) {
-        console.error('Erro ao processar arquivo:', error);
-        content = "Conteúdo do arquivo não disponível";
+      } catch (error: any) {
+        console.error('Erro ao processar arquivo:', error.message);
+        content = "Erro ao processar o conteúdo do arquivo: " + error.message;
       }
     }
     
@@ -83,15 +122,24 @@ export async function testDocumentKnowledge(query: string, documentId: number) {
     
     // Construir um prompt que força o uso do conteúdo do documento
     const prompt = `
-    Você é um assistente especializado em manutenção de placas de circuito.
+    Você é um assistente especializado em manutenção de placas de circuito, com conhecimento profundo em eletrônica.
     
-    Responda à seguinte pergunta usando APENAS as informações do documento abaixo.
-    Se as informações no documento não forem suficientes para responder à pergunta, diga que não possui informações suficientes no documento.
+    TAREFA: Analise cuidadosamente o DOCUMENTO fornecido abaixo e responda à PERGUNTA do usuário.
+    
+    INSTRUÇÕES:
+    1. Use APENAS as informações contidas no documento para responder.
+    2. Seja preciso e detalhado em sua resposta, citando partes relevantes do documento.
+    3. Se o documento contiver a informação solicitada, mesmo que parcialmente, forneça essa informação.
+    4. Se a pergunta for sobre "pinos", "conexões", "CC", "USB" ou outros termos técnicos, busque essas palavras-chave no documento.
+    5. Não invente informações ou use seu conhecimento prévio para complementar a resposta.
+    6. Somente se o documento não contiver NENHUMA informação relacionada à pergunta, responda: "O documento não contém informações sobre isso".
     
     DOCUMENTO:
     ${content}
     
     PERGUNTA: ${query}
+    
+    RESPOSTA BASEADA EXCLUSIVAMENTE NO DOCUMENTO:
     `;
     
     // Chamar o LLM com o prompt personalizado
@@ -179,10 +227,28 @@ export async function testDocumentKnowledge(query: string, documentId: number) {
     }
     
     // Verificar se a resposta contém informações do documento
-    // Esta é uma heurística simples - idealmente, você usaria um método mais robusto
-    const usedDocument = !response.includes("não possui informações suficientes") && 
-                         !response.includes("não foi possível encontrar") &&
-                         !response.includes("não tenho informações");
+    // Esta é uma heurística mais sofisticada para detectar uso real do documento
+    const negativePatterns = [
+      "não possui informações suficientes",
+      "não foi possível encontrar", 
+      "não tenho informações",
+      "não há informações específicas",
+      "não contém detalhes",
+      "não é mencionado",
+      "o documento não fornece"
+    ];
+    
+    // Verificar extrato do documento
+    let keywordsFromQuery = query.toLowerCase().split(' ')
+      .filter(w => w.length > 3) // Palavras significativas
+      .filter(w => !['como', 'qual', 'quais', 'quando', 'onde', 'para', 'porque', 'isso', 'esse', 'esta', 'este'].includes(w));
+    
+    // Verifica se a resposta contém palavras-chave da pergunta e não contém mensagens negativas
+    const hasQueryKeywords = keywordsFromQuery.some(keyword => response.toLowerCase().includes(keyword));
+    const hasNegativePattern = negativePatterns.some(pattern => response.toLowerCase().includes(pattern));
+    
+    // Considera que usou o documento se tem palavras-chave da consulta e não tem padrões negativos
+    const usedDocument = hasQueryKeywords && !hasNegativePattern;
     
     return {
       response,
