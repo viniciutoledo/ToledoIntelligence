@@ -2655,6 +2655,104 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Rota para gerar embeddings para documentos existentes
+  app.post("/api/training/process-embeddings", isAuthenticated, checkRole("admin"), async (req, res) => {
+    try {
+      const { documentId } = req.body;
+      
+      // Processar um documento específico
+      if (documentId) {
+        console.log(`Processando embeddings para documento específico ID: ${documentId}`);
+        // Importar o processador de embeddings
+        const { processDocumentEmbeddings } = require('./document-embedding');
+        const success = await processDocumentEmbeddings(parseInt(documentId));
+        
+        // Registrar a ação no log de auditoria
+        await logAction({
+          userId: req.user!.id,
+          action: "document_embeddings_processed",
+          details: { documentId, success },
+          ipAddress: req.ip
+        });
+        
+        if (success) {
+          return res.json({ 
+            success: true, 
+            message: `Embeddings gerados com sucesso para o documento ${documentId}` 
+          });
+        } else {
+          return res.status(500).json({ 
+            success: false, 
+            message: `Falha ao gerar embeddings para o documento ${documentId}` 
+          });
+        }
+      } 
+      // Processar todos os documentos
+      else {
+        // Buscar todos os documentos ativos
+        const documents = await storage.getTrainingDocuments();
+        const activeDocuments = documents.filter(doc => doc.is_active && doc.status === "completed");
+        
+        if (activeDocuments.length === 0) {
+          return res.status(404).json({ 
+            success: false, 
+            message: "Nenhum documento ativo encontrado para processamento" 
+          });
+        }
+        
+        // Registrar a ação no log de auditoria
+        await logAction({
+          userId: req.user!.id,
+          action: "all_documents_embeddings_processing",
+          details: { documentCount: activeDocuments.length },
+          ipAddress: req.ip
+        });
+        
+        // Iniciar processamento em background
+        res.json({ 
+          success: true, 
+          message: `Iniciando processamento de embeddings para ${activeDocuments.length} documentos`,
+          totalDocuments: activeDocuments.length
+        });
+        
+        // Processar documentos em segundo plano
+        (async () => {
+          const { processDocumentEmbeddings } = require('./document-embedding');
+          let successCount = 0;
+          let failCount = 0;
+          
+          console.log(`Iniciando processamento de embeddings para ${activeDocuments.length} documentos`);
+          
+          for (const doc of activeDocuments) {
+            try {
+              console.log(`Processando embeddings para documento ${doc.id}: ${doc.name}`);
+              const success = await processDocumentEmbeddings(doc.id);
+              
+              if (success) {
+                successCount++;
+                console.log(`Documento ${doc.id} processado com sucesso (${successCount}/${activeDocuments.length})`);
+              } else {
+                failCount++;
+                console.error(`Falha ao processar documento ${doc.id} (${failCount} falhas até agora)`);
+              }
+            } catch (error) {
+              failCount++;
+              console.error(`Erro no processamento do documento ${doc.id}:`, error);
+            }
+          }
+          
+          console.log(`Processamento de embeddings concluído: ${successCount} sucessos, ${failCount} falhas`);
+        })();
+      }
+    } catch (error) {
+      console.error("Erro ao processar embeddings:", error);
+      res.status(500).json({ 
+        success: false, 
+        error: error instanceof Error ? error.message : "Erro desconhecido"
+      });
+    }
+  });
+  
   // Rotas para relatórios de análise (exclusivos do plano intermediário)
   app.get("/api/reports", isAuthenticated, async (req, res) => {
     try {
