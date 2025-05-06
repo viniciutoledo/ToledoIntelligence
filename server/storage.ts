@@ -1846,6 +1846,18 @@ export class DatabaseStorage implements IStorage {
     return updatedEntry;
   }
   
+  async getKnowledgeEntriesBySource(sourceType: string, sourceId: number): Promise<KnowledgeBase[]> {
+    return db.select()
+      .from(knowledgeBase)
+      .where(
+        and(
+          eq(knowledgeBase.source_type, sourceType),
+          eq(knowledgeBase.source_id, sourceId)
+        )
+      )
+      .orderBy(asc(knowledgeBase.chunk_index));
+  }
+  
   async getKnowledgeEntriesBySourceType(sourceType: string, language: string): Promise<KnowledgeBase[]> {
     return db.select()
       .from(knowledgeBase)
