@@ -1272,11 +1272,11 @@ export async function analyzeFile(filePath: string, language: string, llmConfig?
 
         if (response.content && response.content[0] && response.content[0].type === 'text') {
           // Registrar uso bem-sucedido
-          await logLlmUsage(modelName, "file", true, undefined, undefined, estimatedTokens);
+          await logLlmUsage(modelName, "file", true, userId, widgetId, estimatedTokens);
           return response.content[0].text;
         } else {
           console.error('Resposta em formato inesperado do Anthropic');
-          await logLlmUsage(modelName, "file", false, undefined, undefined, 0, 'Resposta em formato inesperado');
+          await logLlmUsage(modelName, "file", false, userId, widgetId, 0, 'Resposta em formato inesperado');
           return language === 'pt'
             ? 'Erro ao analisar o arquivo. Por favor, tente novamente mais tarde.'
             : 'Error analyzing the file. Please try again later.';
@@ -1284,7 +1284,7 @@ export async function analyzeFile(filePath: string, language: string, llmConfig?
       } catch (claudeError) {
         console.error('Erro específico do Claude ao analisar arquivo:', claudeError);
         const errorMessage = claudeError instanceof Error ? claudeError.message : 'Erro desconhecido';
-        await logLlmUsage(modelName, "file", false, undefined, undefined, 0, errorMessage);
+        await logLlmUsage(modelName, "file", false, userId, widgetId, 0, errorMessage);
         return language === 'pt'
           ? 'Erro ao analisar o arquivo com Claude. Por favor, tente novamente mais tarde.'
           : 'Error analyzing the file with Claude. Please try again later.';
@@ -1316,19 +1316,19 @@ export async function analyzeFile(filePath: string, language: string, llmConfig?
 
         if (response.choices && response.choices[0] && response.choices[0].message && response.choices[0].message.content) {
           // Registrar uso bem-sucedido
-          await logLlmUsage(modelName, "file", true, undefined, undefined, estimatedTokens);
+          await logLlmUsage(modelName, "file", true, userId, widgetId, estimatedTokens);
           return response.choices[0].message.content;
         }
         
         console.error('Resposta vazia ou inválida do OpenAI');
-        await logLlmUsage(modelName, "file", false, undefined, undefined, 0, 'Resposta vazia ou inválida');
+        await logLlmUsage(modelName, "file", false, userId, widgetId, 0, 'Resposta vazia ou inválida');
         return language === 'pt'
           ? 'Sem resposta válida do modelo. Por favor, tente novamente.'
           : 'No valid response from the model. Please try again.';
       } catch (gptError) {
         console.error('Erro específico do OpenAI ao analisar arquivo:', gptError);
         const errorMessage = gptError instanceof Error ? gptError.message : 'Erro desconhecido';
-        await logLlmUsage(modelName, "file", false, undefined, undefined, 0, errorMessage);
+        await logLlmUsage(modelName, "file", false, userId, widgetId, 0, errorMessage);
         return language === 'pt'
           ? 'Erro ao analisar o arquivo com GPT. Por favor, tente novamente mais tarde.'
           : 'Error analyzing the file with GPT. Please try again later.';
