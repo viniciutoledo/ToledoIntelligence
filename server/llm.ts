@@ -608,7 +608,7 @@ function detectImageFormat(buffer: Buffer): string {
 }
 
 // Analyze image with either Anthropic or OpenAI with enhanced error handling
-export async function analyzeImage(imagePath: string, language: string): Promise<string> {
+export async function analyzeImage(imagePath: string, language: string, userId?: number, widgetId?: string): Promise<string> {
   try {
     // Declarações de erros e mensagens
     const errorMessages = {
@@ -650,6 +650,19 @@ export async function analyzeImage(imagePath: string, language: string): Promise
       // Detectar formato baseado no conteúdo real
       const detectedFormat = detectImageFormat(imageBuffer);
       console.log(`Formato de imagem detectado: ${detectedFormat}`);
+      
+      // Estimar tokens para imagens (valores aproximados, já que a contagem real depende do modelo)
+      // Imagens consomem muitos tokens - usar estimação conservadora baseada no tamanho
+      // Para imagens, consideramos o tamanho em KB * fator multiplicador
+      const imageBytes = imageBuffer.length;
+      const imageKB = Math.ceil(imageBytes / 1024);
+      // Valores aproximados: Claude usa cerca de 85 tokens por KB, GPT-4 cerca de 170 tokens por KB
+      const tokenMultiplier = provider === 'anthropic' ? 85 : 170;
+      const estimatedImageTokens = imageKB * tokenMultiplier;
+      // Adicionar tokens para prompt e outros textos (cerca de 200 tokens)
+      const estimatedTotalTokens = estimatedImageTokens + 200;
+      
+      console.log(`Tokens estimados para análise de imagem: ${estimatedTotalTokens} (imagem: ${estimatedImageTokens}, texto: 200)`);
       
       // Configurar estilo de comunicação com base no tom escolhido
       let toneStyle = '';
@@ -742,13 +755,19 @@ export async function analyzeImage(imagePath: string, language: string): Promise
           });
 
           if (response.content[0].type === 'text') {
+            // Registrar uso bem-sucedido
+            await logLlmUsage(modelName, "image", true, userId, widgetId, estimatedTotalTokens);
             return response.content[0].text;
           } else {
             console.error('Resposta do Claude em formato inesperado');
+            // Registrar erro
+            await logLlmUsage(modelName, "image", false, userId, widgetId, 0, 'Resposta em formato inesperado');
             return errorMessages.modelError;
           }
         } catch (claudeError) {
           console.error('Erro específico do Claude:', claudeError);
+          const errorMessage = claudeError instanceof Error ? claudeError.message : 'Erro desconhecido do Claude';
+          await logLlmUsage(modelName, "image", false, userId, widgetId, 0, errorMessage);
           return errorMessages.modelError;
         }
       } else {
@@ -787,22 +806,40 @@ export async function analyzeImage(imagePath: string, language: string): Promise
 
           if (!response.choices[0].message.content) {
             console.error('Resposta vazia do OpenAI');
+            await logLlmUsage(modelName, "image", false, userId, widgetId, 0, 'Resposta vazia');
             return errorMessages.modelError;
           }
           
+          // Registrar uso bem-sucedido
+          await logLlmUsage(modelName, "image", true, userId, widgetId, estimatedTotalTokens);
           return response.choices[0].message.content;
         } catch (openaiError) {
           console.error('Erro específico do OpenAI:', openaiError);
+          const errorMessage = openaiError instanceof Error ? openaiError.message : 'Erro desconhecido do OpenAI';
+          await logLlmUsage(modelName, "image", false, userId, widgetId, 0, errorMessage);
           return errorMessages.modelError;
         }
       }
     } catch (error) {
       console.error('Erro geral na análise de imagem:', error);
+      // Tenta registrar o erro mesmo sem saber qual modelo/provider foi usado
+      try {
+        const config = await getActiveLlmInfo();
+        await logLlmUsage(config.modelName, "image", false, userId, widgetId, 0, 
+          error instanceof Error ? error.message : 'Erro geral na análise de imagem');
+      } catch (logError) {
+        console.error('Falha ao registrar erro LLM:', logError);
+      }
       return errorMessages.generalError;
     }
   } catch (criticalError) {
     // Se chegamos aqui, é um erro verdadeiramente inesperado
     console.error('Erro crítico na análise de imagem:', criticalError);
+    // Tentativa final de registro, usando valor padrão para modelo
+    try {
+      await logLlmUsage("modelo_indeterminado", "image", false, userId, widgetId, 0, 
+        criticalError instanceof Error ? criticalError.message : 'Erro crítico');
+    } catch {}
     return language === 'pt'
       ? 'Ocorreu um erro crítico inesperado. Por favor, informe o administrador do sistema.'
       : 'A critical unexpected error occurred. Please inform the system administrator.';
