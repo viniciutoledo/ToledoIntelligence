@@ -1,7 +1,41 @@
 import { storage } from "./storage";
-import { getChatSession, getChatMessage } from "./storage";
 import fs from "fs";
 import path from "path";
+import { db } from "./db";
+import { chatMessages, chatSessions } from "@shared/schema";
+import { eq, and, gte } from "drizzle-orm";
+
+// Função auxiliar para buscar mensagens de uma sessão de chat
+export async function fetchChatMessages(sessionId: number) {
+  try {
+    // Usar a instância do db diretamente para fazer a consulta
+    const messages = await db.select()
+      .from(chatMessages)
+      .where(eq(chatMessages.session_id, sessionId))
+      .orderBy(chatMessages.created_at);
+    
+    return messages;
+  } catch (error: any) {
+    console.error(`Erro ao buscar mensagens para sessão ${sessionId}:`, error);
+    return [];
+  }
+}
+
+// Função auxiliar para buscar sessões recentes
+export async function fetchRecentSessions(cutoffDate: Date) {
+  try {
+    // Usar a instância do db diretamente para fazer a consulta
+    const sessions = await db.select()
+      .from(chatSessions)
+      .where(gte(chatSessions.started_at, cutoffDate))
+      .orderBy(chatSessions.started_at);
+    
+    return sessions;
+  } catch (error: any) {
+    console.error('Erro ao buscar sessões recentes:', error);
+    return [];
+  }
+}
 
 interface UserInteractionData {
   sessionId: number;
@@ -29,8 +63,8 @@ export async function extractInteractionData(sessionId: number): Promise<UserInt
       return null;
     }
     
-    // Buscar mensagens da sessão
-    const messages = await storage.getChatMessagesBySession(sessionId);
+    // Buscar mensagens da sessão usando a função auxiliar
+    const messages = await fetchChatMessages(sessionId);
     if (!messages || messages.length === 0) {
       console.log(`Nenhuma mensagem encontrada para a sessão ${sessionId}`);
       return null;
@@ -39,15 +73,15 @@ export async function extractInteractionData(sessionId: number): Promise<UserInt
     // Formatar os dados da interação
     const interactionData: UserInteractionData = {
       sessionId,
-      messages: messages.map(msg => ({
+      messages: messages.map((msg: any) => ({
         content: msg.content || "",
         role: msg.is_user ? "user" : "assistant",
         timestamp: msg.created_at
       })),
       metadata: {
         userId: session.user_id,
-        source: session.source || "chat",
-        createdAt: session.created_at
+        source: "chat", // Valor padrão
+        createdAt: session.started_at // Usar started_at em vez de created_at
       }
     };
     
@@ -84,8 +118,7 @@ export async function saveInteractionAsTrainingDocument(
       description: documentDescription,
       document_type: "text",
       content: documentContent,
-      created_by: interactionData.metadata.userId || 1, // ID 1 para administrador do sistema
-      status: "completed"
+      created_by: interactionData.metadata.userId || 1 // ID 1 para administrador do sistema
     });
     
     console.log(`Documento de treinamento criado com ID ${document.id} a partir da sessão ${interactionData.sessionId}`);
@@ -141,8 +174,8 @@ export async function processRecentInteractions(
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - daysAgo);
     
-    // Buscar sessões recentes
-    const recentSessions = await storage.getChatSessionsSince(cutoffDate);
+    // Buscar sessões recentes usando a função auxiliar
+    const recentSessions = await fetchRecentSessions(cutoffDate);
     
     if (!recentSessions || recentSessions.length === 0) {
       console.log(`Nenhuma sessão encontrada nos últimos ${daysAgo} dias`);

@@ -865,8 +865,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - daysAgo);
       
-      // Buscar sessões recentes
-      const recentSessions = await storage.getChatSessionsSince(cutoffDate);
+      // Importar função auxiliar para buscar sessões recentes
+      const { fetchRecentSessions } = require('./interaction-learning');
+      
+      // Buscar sessões recentes usando a função auxiliar
+      const recentSessions = await fetchRecentSessions(cutoffDate);
       
       res.json({
         sessions: recentSessions,
