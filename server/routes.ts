@@ -2446,14 +2446,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Processando documento de treinamento ID ${document.id}...`);
       
       try {
-        // Simular o treinamento (normalmente seria um processo mais longo)
-        // Em uma implementação real, isso seria processado em segundo plano
+        // Processar embeddings para melhorar a pesquisa semântica
+        const { processDocumentEmbeddings } = require('./document-embedding');
         
-        // Atualizar o status para "completed" pois document já está disponível para uso
+        console.log(`Iniciando processamento de embeddings para documento ${document.id}`);
+        
+        // Atualizar status para processamento
         await storage.updateTrainingDocument(document.id, {
-          status: "completed",
+          status: "processing",
           updated_at: new Date()
         });
+        
+        // Processar documento para gerar embeddings
+        const embeddingSuccess = await processDocumentEmbeddings(document.id);
+        
+        if (!embeddingSuccess) {
+          console.warn(`Falha no processamento de embeddings para documento ${document.id}. Continuando sem embeddings.`);
+          
+          // Mesmo com falha nos embeddings, o documento ainda é utilizável
+          await storage.updateTrainingDocument(document.id, {
+            status: "completed",
+            updated_at: new Date()
+          });
+        }
         
         console.log(`Documento de treinamento ID ${document.id} processado com sucesso.`);
         
