@@ -1485,7 +1485,7 @@ export class MemStorage implements IStorage {
 
 import { db, pool } from './db';
 import connectPg from "connect-pg-simple";
-import { eq, and, isNull, lt, gt, or, desc, asc, ilike } from 'drizzle-orm';
+import { eq, and, isNull, lt, gt, gte, lte, or, desc, asc, ilike } from 'drizzle-orm';
 import { 
   usersSessions, 
   trainingDocuments, 
@@ -1894,6 +1894,139 @@ export class DatabaseStorage implements IStorage {
     
     // Retornar as entradas mais similares
     return entriesWithScore.slice(0, limit).map(item => item.entry);
+  }
+  
+  // Document Chunks methods - Para RAG (Retrieval Augmented Generation)
+  async createDocumentChunk(chunk: InsertDocumentChunk): Promise<DocumentChunk> {
+    // Converter embedding para string se for um array
+    let embeddingValue = chunk.embedding;
+    if (Array.isArray(embeddingValue)) {
+      embeddingValue = JSON.stringify(embeddingValue);
+    }
+
+    const [result] = await db.insert(documentChunks).values({
+      ...chunk,
+      embedding: embeddingValue as any,
+      created_at: new Date()
+    }).returning();
+
+    // Se o embedding foi armazenado como string, convertê-lo de volta para array
+    if (result && typeof result.embedding === 'string') {
+      try {
+        const embeddingArray = JSON.parse(result.embedding);
+        if (Array.isArray(embeddingArray)) {
+          result.embedding = embeddingArray;
+        }
+      } catch (e) {
+        // Ignorar erro se não for possível converter
+      }
+    }
+    
+    return result;
+  }
+
+  async getDocumentChunk(id: number): Promise<DocumentChunk | undefined> {
+    const [chunk] = await db.select().from(documentChunks).where(eq(documentChunks.id, id));
+    
+    // Converter embedding de volta para array se for string
+    if (chunk && typeof chunk.embedding === 'string') {
+      try {
+        const embeddingArray = JSON.parse(chunk.embedding);
+        if (Array.isArray(embeddingArray)) {
+          chunk.embedding = embeddingArray;
+        }
+      } catch (e) {
+        // Manter como string se não for um JSON válido
+      }
+    }
+    
+    return chunk;
+  }
+
+  async getDocumentChunksByDocument(documentId: number): Promise<DocumentChunk[]> {
+    const chunks = await db.select()
+      .from(documentChunks)
+      .where(eq(documentChunks.document_id, documentId))
+      .orderBy(asc(documentChunks.chunk_index));
+    
+    // Converter embeddings para arrays
+    return chunks.map(chunk => {
+      if (chunk.embedding && typeof chunk.embedding === 'string') {
+        try {
+          const embeddingArray = JSON.parse(chunk.embedding);
+          if (Array.isArray(embeddingArray)) {
+            chunk.embedding = embeddingArray;
+          }
+        } catch (e) {
+          // Ignorar erro e manter como string
+        }
+      }
+      return chunk;
+    });
+  }
+
+  async deleteDocumentChunk(id: number): Promise<void> {
+    await db.delete(documentChunks).where(eq(documentChunks.id, id));
+  }
+
+  async deleteDocumentChunksByDocument(documentId: number): Promise<void> {
+    await db.delete(documentChunks).where(eq(documentChunks.document_id, documentId));
+  }
+
+  async getDocumentChunksByLanguage(language: string): Promise<DocumentChunk[]> {
+    const chunks = await db.select()
+      .from(documentChunks)
+      .where(eq(documentChunks.language, language as any));
+    
+    // Converter embeddings para arrays
+    return chunks.map(chunk => {
+      if (chunk.embedding && typeof chunk.embedding === 'string') {
+        try {
+          const embeddingArray = JSON.parse(chunk.embedding);
+          if (Array.isArray(embeddingArray)) {
+            chunk.embedding = embeddingArray;
+          }
+        } catch (e) {
+          // Ignorar erro e manter como string
+        }
+      }
+      return chunk;
+    });
+  }
+
+  async searchDocumentChunksByKeywords(keywords: string[], language: string): Promise<DocumentChunk[]> {
+    if (!keywords || keywords.length === 0) {
+      return [];
+    }
+
+    // Cria uma condição OR para cada palavra-chave
+    const conditions = keywords.map(keyword => 
+      ilike(documentChunks.content, `%${keyword}%`)
+    );
+
+    const chunks = await db.select()
+      .from(documentChunks)
+      .where(and(
+        eq(documentChunks.language, language as any),
+        or(...conditions)
+      ))
+      .orderBy(desc(documentChunks.created_at))
+      .limit(10);
+    
+    // Converter embeddings para arrays
+    return chunks.map(chunk => {
+      if (chunk.embedding && typeof chunk.embedding === 'string') {
+        try {
+          const embeddingArray = JSON.parse(chunk.embedding);
+          if (Array.isArray(embeddingArray)) {
+            chunk.embedding = embeddingArray;
+          }
+        } catch (e) {
+          // Ignorar erro e manter como string
+        }
+      }
+      return chunk;
+    });
   }
   
   // Login security - controle de tentativas de login simultâneas

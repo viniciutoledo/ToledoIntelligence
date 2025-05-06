@@ -48,26 +48,68 @@ export async function processChatWithTrainedDocuments(
       
       const response = await processQueryWithRAG(message, {
         language: 'pt',
-        model: modelName
+        model: modelName,
+        userId,
+        widgetId
       });
       
-      if (response && !response.includes("não encontrei") && !response.includes("não contém")) {
+      // Verificações adicionais para respostas negativas
+      const blockedPhrases = [
+        "não encontrei", 
+        "não contém", 
+        "não possui", 
+        "não fornece", 
+        "não disponibiliza",
+        "não menciona",
+        "não aborda",
+        "não foi possível encontrar",
+        "documento não",
+        "documentos não",
+        "não há informações"
+      ];
+      
+      // Verificar se a resposta contém frases negativas
+      const containsBlockedPhrase = blockedPhrases.some(phrase => 
+        response.toLowerCase().includes(phrase.toLowerCase())
+      );
+      
+      if (response && !containsBlockedPhrase) {
         console.log('Sucesso no processamento RAG - retornando resposta');
         
         // Registrar o uso do LLM (aproximadamente)
-        await logLlmUsage(
-          modelName,
-          'text',
-          true,
-          userId,
-          widgetId,
-          Math.floor(message.length / 4) + Math.floor(response.length / 4) + 500
-        );
+        await logLlmUsage({
+          model_name: modelName,
+          provider: provider === 'openai' ? 'openai' : 'anthropic',
+          operation_type: 'text',
+          user_id: userId,
+          widget_id: widgetId,
+          token_count: Math.floor(message.length / 4) + Math.floor(response.length / 4) + 500,
+          success: true
+        });
         
         return response;
       }
       
-      console.log('Resposta RAG inadequada, tentando método híbrido');
+      console.log('Resposta RAG inadequada, tentando método híbrido com instrução forçada');
+      
+      // Se chegarmos aqui, o RAG simples falhou - vamos tentar com instruções mais fortes
+      const forceResponse = await processQueryWithRAG(message, {
+        language: 'pt',
+        model: modelName,
+        userId,
+        widgetId,
+        forceExtraction: true  // Novo parâmetro para forçar extração de informações
+      });
+      
+      // Se a resposta forçada é melhor, use-a
+      if (forceResponse && !blockedPhrases.some(phrase => 
+        forceResponse.toLowerCase().includes(phrase.toLowerCase()))
+      ) {
+        console.log('Sucesso com processamento RAG forçado - retornando resposta');
+        return forceResponse;
+      }
+      
+      console.log('Resposta RAG forçada ainda inadequada, tentando método híbrido');
     } catch (ragError) {
       console.error('Erro no processamento RAG, recorrendo a método alternativo:', ragError);
     }

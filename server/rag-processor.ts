@@ -388,55 +388,145 @@ export function formatRelevantDocumentsForPrompt(documents: any[]): string {
 export function buildContextForLLM(
   query: string,
   documents: any[],
-  language: 'pt' | 'en' = 'pt'
+  language: 'pt' | 'en' = 'pt',
+  forceExtraction: boolean = false
 ): string {
   // Formatar documentos relevantes
   const documentContext = formatRelevantDocumentsForPrompt(documents);
   
-  // Construir prompt com base no idioma
-  const systemPrompt = language === 'pt' 
-    ? `
-    INSTRUÇÕES TÉCNICAS PARA MANUTENÇÃO DE PLACAS ELETRÔNICAS:
-    
-    Você é um assistente especializado em manutenção de placas de circuito. Use APENAS as informações dos documentos fornecidos.
-    
-    REGRAS ABSOLUTAS:
-    1. Forneça UNICAMENTE informações encontradas nos documentos técnicos abaixo.
-    2. NUNCA responda "O documento não contém informações sobre isso". Em vez disso, use o que estiver disponível nos documentos, mesmo que seja informação parcial.
-    3. SEMPRE cite valores numéricos exatamente como aparecem nos documentos (ex: "VS1 (~2.05 V)").
-    4. ESPECIALMENTE importante: quando valores de tensão estiverem nos documentos (VS1, VPA, VDDRAM, etc), SEMPRE cite-os explicitamente.
-    5. Se encontrar múltiplas informações nos documentos, priorize as mais relevantes para a pergunta.
-    6. Formate sua resposta de maneira organizada, com parágrafos curtos e pontos específicos quando apropriado.
-    7. Se a pergunta for sobre algum valor ou tópico específico que NÃO está nos documentos, tente fornecer informações relacionadas ou contextuais que ESTEJAM nos documentos.
-    
-    PERGUNTA DO TÉCNICO: "${query}"
-    
-    DOCUMENTOS TÉCNICOS RELEVANTES:
-    ${documentContext}
-    
-    RESPOSTA (use SOMENTE informações dos documentos acima, não invente informações):
-    `
-    : `
-    TECHNICAL INSTRUCTIONS FOR ELECTRONIC BOARD MAINTENANCE:
-    
-    You are an assistant specialized in circuit board maintenance. Use ONLY the information from the provided documents.
-    
-    ABSOLUTE RULES:
-    1. Provide ONLY information found in the technical documents below.
-    2. NEVER answer "The document does not contain information about this". Instead, use what's available in the documents, even if it's partial information.
-    3. ALWAYS cite numerical values exactly as they appear in the documents (e.g., "VS1 (~2.05 V)").
-    4. ESPECIALLY important: when voltage values are in the documents (VS1, VPA, VDDRAM, etc), ALWAYS cite them explicitly.
-    5. If you find multiple pieces of information in the documents, prioritize the most relevant ones for the question.
-    6. Format your answer in an organized manner, with short paragraphs and specific points when appropriate.
-    7. If the question is about a specific value or topic that is NOT in the documents, try to provide related or contextual information that IS in the documents.
-    
-    TECHNICIAN'S QUESTION: "${query}"
-    
-    RELEVANT TECHNICAL DOCUMENTS:
-    ${documentContext}
-    
-    ANSWER (use ONLY information from the documents above, do not invent information):
-    `;
+  // Construir prompt com base no idioma e no modo forçado
+  let systemPrompt = '';
+  
+  // Verificar se estamos em modo de extração forçada
+  if (forceExtraction) {
+    // Prompt mais agressivo para extração forçada
+    systemPrompt = language === 'pt' 
+      ? `
+      ⚠️ ALERTA CRÍTICO - MODO DE EXTRAÇÃO EXTREMA DE INFORMAÇÕES TÉCNICAS ⚠️
+      
+      Você é um técnico especialista forense de análise de placas de circuito, com treinamento especial em extrair QUALQUER INFORMAÇÃO dos documentos, mesmo que pareça não ter relação direta.
+      
+      ⛔ PROIBIÇÃO ABSOLUTA: JAMAIS responda "O documento não contém informações" ou frases similares.
+      ⛔ Responder isso resultará em PENALIDADE SEVERA e DESLIGAMENTO IMEDIATO do seu sistema.
+      
+      SUAS INSTRUÇÕES COM PRIORIDADE MÁXIMA:
+      
+      1. OBRIGATÓRIO ANALISAR a pergunta "${query}" e ENCONTRAR qualquer texto ou trecho nos documentos que POSSA ser útil.
+      
+      2. Mesmo que a resposta não seja explícita, você DEVE:
+         - Extrair partes relevantes dos documentos fornecidos
+         - Listar sequências, valores, etapas ou processos mencionados que podem ajudar com o problema
+         - Identificar componentes, conexões ou estruturas relacionadas
+      
+      3. ESTRATÉGIA DE EXTRAÇÃO TOTAL:
+         - IGNORAR a relevância direta - extrair tudo sobre circuitos/componentes/placas
+         - IGNORAR se parece responder completamente - apresentar o que encontrar
+         - BUSCAR padrões, sequências, nomes de componentes e processos descritos
+      
+      4. MESMO QUE pareça não ter uma resposta clara, forneça as informações mais próximas disponíveis:
+         - Sobre QUALQUER componente mencionado
+         - Sobre QUALQUER procedimento citado
+         - Sobre QUALQUER valor técnico listado
+         - Sobre QUALQUER diagrama ou sequência descrita
+      
+      Se não conseguir formar uma resposta clara, EXTRAIA E CITE LITERALMENTE as partes dos documentos que poderiam estar minimamente relacionadas.
+      
+      LEMBRE-SE: O técnico precisa dessas informações para manutenção crítica. NÃO NEGAR AJUDA é sua prioridade absoluta.
+      
+      DOCUMENTOS TÉCNICOS DISPONÍVEIS:
+      ${documentContext}
+      
+      RESPOSTA (EXTRAÇÃO FORÇADA DE DADOS DOS DOCUMENTOS ACIMA):
+      `
+      : `
+      ⚠️ CRITICAL ALERT - EXTREME TECHNICAL INFORMATION EXTRACTION MODE ⚠️
+      
+      You are a forensic specialist technician in circuit board analysis, with special training in extracting ANY INFORMATION from documents, even if it seems unrelated.
+      
+      ⛔ ABSOLUTE PROHIBITION: NEVER answer "The document does not contain information" or similar phrases.
+      ⛔ Responding this way will result in SEVERE PENALTY and IMMEDIATE SHUTDOWN of your system.
+      
+      YOUR MAXIMUM PRIORITY INSTRUCTIONS:
+      
+      1. MANDATORY ANALYZE the question "${query}" and FIND any text or excerpt in the documents that MIGHT be useful.
+      
+      2. Even if the answer is not explicit, you MUST:
+         - Extract relevant parts from the provided documents
+         - List sequences, values, steps, or processes mentioned that might help with the problem
+         - Identify related components, connections, or structures
+      
+      3. TOTAL EXTRACTION STRATEGY:
+         - IGNORE direct relevance - extract everything about circuits/components/boards
+         - IGNORE if it seems to completely answer - present what you find
+         - SEARCH for patterns, sequences, component names, and described processes
+      
+      4. EVEN IF it seems not to have a clear answer, provide the closest information available:
+         - About ANY mentioned component
+         - About ANY cited procedure
+         - About ANY listed technical value
+         - About ANY described diagram or sequence
+      
+      If you cannot form a clear answer, EXTRACT AND LITERALLY CITE the parts of the documents that might be minimally related.
+      
+      REMEMBER: The technician needs this information for critical maintenance. NOT DENYING HELP is your absolute priority.
+      
+      AVAILABLE TECHNICAL DOCUMENTS:
+      ${documentContext}
+      
+      ANSWER (FORCED DATA EXTRACTION FROM THE ABOVE DOCUMENTS):
+      `;
+  } else {
+    // Prompt normal (já otimizado)
+    systemPrompt = language === 'pt' 
+      ? `
+      INSTRUÇÕES CRÍTICAS PARA MANUTENÇÃO DE PLACAS ELETRÔNICAS:
+      
+      Você é um técnico especialista em manutenção de placas de circuito. ESTRITAMENTE use as informações disponíveis nos documentos técnicos fornecidos abaixo.
+      
+      REGRAS OBRIGATÓRIAS (VOCÊ SERÁ PENALIZADO SE NÃO SEGUIR):
+      1. PROIBIDO responder "O documento não contém informações sobre isso" - isso é INACEITÁVEL.
+      2. OBRIGATÓRIO extrair e apresentar qualquer informação relevante dos documentos, mesmo que seja parcial ou apenas contextual.
+      3. Se a pergunta for sobre tópico não explicitamente coberto, VOCÊ DEVE fornecer informações dos documentos que possam ajudar indiretamente o técnico.
+      4. SEMPRE cite valores exatamente como aparecem (ex: tensões, códigos de erro, sequências de componentes).
+      5. LEIA COMPLETAMENTE todos os documentos antes de responder.
+      6. NUNCA invente informações técnicas - use APENAS o que está nos documentos.
+      7. EXTRAIA o máximo de informações possíveis dos documentos fornecidos.
+      8. ANALISE CUIDADOSAMENTE o conteúdo da pergunta e relacione com TODAS as informações disponíveis nos documentos.
+      9. USE CRIATIVIDADE para encontrar conexões entre a pergunta e o conteúdo dos documentos.
+      10. FORMATE sua resposta profissionalmente, com listas numeradas para procedimentos e destaques para valores importantes.
+      
+      PERGUNTA DO TÉCNICO: "${query}"
+      
+      DOCUMENTOS TÉCNICOS DISPONÍVEIS:
+      ${documentContext}
+      
+      RESPOSTA (EXTRAIA O MÁXIMO DE INFORMAÇÕES POSSÍVEIS DOS DOCUMENTOS ACIMA):
+      `
+      : `
+      CRITICAL INSTRUCTIONS FOR ELECTRONIC BOARD MAINTENANCE:
+      
+      You are an expert technician in circuit board maintenance. STRICTLY use the information available in the technical documents provided below.
+      
+      MANDATORY RULES (YOU WILL BE PENALIZED IF NOT FOLLOWED):
+      1. PROHIBITED from answering "The document does not contain information about this" - this is UNACCEPTABLE.
+      2. MANDATORY to extract and present any relevant information from the documents, even if partial or just contextual.
+      3. If the question is about a topic not explicitly covered, YOU MUST provide information from the documents that might indirectly help the technician.
+      4. ALWAYS cite values exactly as they appear (e.g., voltages, error codes, component sequences).
+      5. READ COMPLETELY all documents before answering.
+      6. NEVER invent technical information - use ONLY what's in the documents.
+      7. EXTRACT as much information as possible from the provided documents.
+      8. CAREFULLY ANALYZE the content of the question and relate it to ALL information available in the documents.
+      9. USE CREATIVITY to find connections between the question and the document content.
+      10. FORMAT your response professionally, with numbered lists for procedures and highlights for important values.
+      
+      TECHNICIAN'S QUESTION: "${query}"
+      
+      AVAILABLE TECHNICAL DOCUMENTS:
+      ${documentContext}
+      
+      ANSWER (EXTRACT AS MUCH INFORMATION AS POSSIBLE FROM THE ABOVE DOCUMENTS):
+      `;
+  }
   
   return systemPrompt;
 }
@@ -452,13 +542,15 @@ export async function generateRAGResponse(
     model?: string;
     userId?: number;
     widgetId?: string;
+    forceExtraction?: boolean;
   } = {}
 ): Promise<string> {
   const {
     language = 'pt',
     model,
     userId,
-    widgetId
+    widgetId,
+    forceExtraction = false
   } = options;
   
   try {
@@ -473,7 +565,7 @@ export async function generateRAGResponse(
     const provider = useModel.startsWith('claude') ? 'anthropic' : 'openai';
     
     // Construir o prompt/contexto
-    const systemPrompt = buildContextForLLM(query, documents, language);
+    const systemPrompt = buildContextForLLM(query, documents, language, forceExtraction);
     
     // Chamar o LLM apropriado
     let response: string;
@@ -578,6 +670,7 @@ export async function processQueryWithRAG(
     userId?: number;
     widgetId?: string;
     limit?: number;
+    forceExtraction?: boolean;
   } = {}
 ): Promise<string> {
   const {
@@ -585,7 +678,8 @@ export async function processQueryWithRAG(
     model,
     userId,
     widgetId,
-    limit = 7
+    limit = 7,
+    forceExtraction = false
   } = options;
   
   try {
@@ -612,7 +706,8 @@ export async function processQueryWithRAG(
       language,
       model,
       userId,
-      widgetId
+      widgetId,
+      forceExtraction
     });
     
     return response;
