@@ -647,7 +647,7 @@ export async function analyzeImage(imagePath: string, language: string, userId?:
     
     try {
       const config = await getActiveLlmInfo();
-      const { provider, modelName, apiKey, tone, behaviorInstructions } = config;
+      const { provider, modelName, apiKey, tone, behaviorInstructions, temperature } = config;
       
       // Obter conteúdo do buffer novamente para detectar formato real
       const imageBuffer = Buffer.from(base64Image, 'base64');
@@ -737,6 +737,7 @@ export async function analyzeImage(imagePath: string, language: string, userId?:
             model: modelName,
             max_tokens: 1024,
             system: systemPrompt,
+            temperature: parseFloat(temperature || '0.3'),
             messages: [
               {
                 role: 'user',
@@ -785,6 +786,7 @@ export async function analyzeImage(imagePath: string, language: string, userId?:
           const response = await openai.chat.completions.create({
             model: actualModel, 
             max_tokens: 1024,
+            temperature: parseFloat(temperature || '0.3'),
             messages: [
               {
                 role: "system",
@@ -863,7 +865,7 @@ export async function processTextMessage(
   try {
     // Se não recebemos configuração LLM, tentar obter configurações padrão
     const config = llmConfig || await getActiveLlmInfo();
-    const { provider, modelName, apiKey, tone, behaviorInstructions, shouldUseTrained } = config;
+    const { provider, modelName, apiKey, tone, behaviorInstructions, shouldUseTrained, temperature } = config;
     
     // Se o idioma não foi especificado, detectamos a partir do histórico ou mensagem atual
     const detectedLanguage = language || detectLanguage(message, history);
@@ -938,6 +940,7 @@ export async function processTextMessage(
         model: modelName,
         max_tokens: 1024,
         system: systemPrompt,
+        temperature: parseFloat(temperature || '0.3'),
         messages
       });
 
@@ -988,6 +991,7 @@ export async function processTextMessage(
       const response = await openai.chat.completions.create({
         model: actualModel,
         max_tokens: 1024,
+        temperature: parseFloat(temperature || '0.3'),
         messages: messages
       });
 
