@@ -113,7 +113,10 @@ async function createKnowledgeBaseTable() {
           metadata JSONB DEFAULT '{}',
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           chunk_index INTEGER,
-          document_title TEXT
+          document_title TEXT,
+          language TEXT DEFAULT 'pt',
+          is_verified BOOLEAN DEFAULT FALSE,
+          relevance_score INTEGER DEFAULT 0
         )
       `);
       

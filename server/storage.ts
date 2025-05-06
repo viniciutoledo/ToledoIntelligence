@@ -1821,6 +1821,7 @@ export class DatabaseStorage implements IStorage {
     const [newEntry] = await db.insert(knowledgeBase)
       .values({
         ...entry,
+        language: entry.language || 'pt',
         created_at: new Date()
       })
       .returning();

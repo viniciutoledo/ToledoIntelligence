@@ -211,8 +211,23 @@ export async function queryRelevantDocuments(
         // Calcular similaridade de cosseno se o chunk tiver embedding
         let similarity = 0;
         
-        if (chunk.embedding && Array.isArray(chunk.embedding)) {
-          similarity = calculateCosineSimilarity(queryEmbedding, chunk.embedding);
+        try {
+          // Processar embedding armazenado como texto JSON
+          let embeddingArray: number[];
+          
+          if (typeof chunk.embedding === 'string') {
+            // Converter de string JSON para array
+            embeddingArray = JSON.parse(chunk.embedding);
+          } else if (chunk.embedding && Array.isArray(chunk.embedding)) {
+            embeddingArray = chunk.embedding;
+          } else {
+            return { ...chunk, similarity: 0 };
+          }
+          
+          similarity = calculateCosineSimilarity(queryEmbedding, embeddingArray);
+        } catch (error) {
+          console.error('Erro ao processar embedding:', error);
+          similarity = 0;
         }
         
         return {
@@ -309,11 +324,30 @@ export async function hybridSearch(
           
           if (documentChunks && documentChunks.length > 0) {
             semanticResults = documentChunks
-              .filter(chunk => chunk.embedding && Array.isArray(chunk.embedding))
-              .map(chunk => ({
-                ...chunk,
-                similarity: calculateCosineSimilarity(queryEmbedding, chunk.embedding || [])
-              }))
+              .filter(chunk => chunk.embedding)
+              .map(chunk => {
+                try {
+                  // Processar embedding armazenado como texto JSON ou array
+                  let embeddingArray: number[];
+                  
+                  if (typeof chunk.embedding === 'string') {
+                    // Converter de string JSON para array
+                    embeddingArray = JSON.parse(chunk.embedding);
+                  } else if (Array.isArray(chunk.embedding)) {
+                    embeddingArray = chunk.embedding;
+                  } else {
+                    return { ...chunk, similarity: 0 };
+                  }
+                  
+                  return {
+                    ...chunk,
+                    similarity: calculateCosineSimilarity(queryEmbedding, embeddingArray)
+                  };
+                } catch (error) {
+                  console.error('Erro ao processar embedding na busca híbrida:', error);
+                  return { ...chunk, similarity: 0 };
+                }
+              })
               .filter(chunk => chunk.similarity > 0.6)
               .sort((a, b) => b.similarity - a.similarity)
               .slice(0, Math.ceil(limit * 0.6));

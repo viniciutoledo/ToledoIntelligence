@@ -253,25 +253,40 @@ export async function searchRelevantDocuments(query: string, maxResults: number 
       
       // Cálculo manual de similaridade (menos eficiente)
       relevantChunks = knowledgeEntries
-        .filter(entry => entry.source_type === "document")
+        .filter(entry => entry.source_type === "document" && entry.embedding)
         .map(entry => {
-          // Converter string de embedding para array
-          const embedding = JSON.parse(entry.embedding);
-          
-          // Calcular similaridade de cosseno
-          const similarity = calculateCosineSimilarity(queryEmbedding, embedding);
-          
-          const metadata = typeof entry.metadata === 'string' 
-            ? JSON.parse(entry.metadata)
-            : entry.metadata || {};
+          try {
+            // Converter string de embedding para array
+            let embeddingArray: number[];
             
-          return {
-            document_id: entry.source_id,
-            document_name: metadata.document_name || "Documento sem nome",
-            content: entry.content,
-            relevance_score: similarity
-          };
+            if (typeof entry.embedding === 'string') {
+              embeddingArray = JSON.parse(entry.embedding);
+            } else if (Array.isArray(entry.embedding)) {
+              embeddingArray = entry.embedding;
+            } else {
+              console.error('Formato de embedding inválido:', typeof entry.embedding);
+              return null;
+            }
+            
+            // Calcular similaridade de cosseno
+            const similarity = calculateCosineSimilarity(queryEmbedding, embeddingArray);
+            
+            const metadata = typeof entry.metadata === 'string' 
+              ? JSON.parse(entry.metadata)
+              : entry.metadata || {};
+              
+            return {
+              document_id: entry.source_id,
+              document_name: metadata.document_name || "Documento sem nome",
+              content: entry.content,
+              relevance_score: similarity
+            };
+          } catch (error) {
+            console.error('Erro ao processar embedding:', error);
+            return null;
+          }
         })
+        .filter(Boolean) // Filtrar itens nulos
         .filter(chunk => chunk.relevance_score > 0.7) // Limiar de similaridade
         .sort((a, b) => b.relevance_score - a.relevance_score)
         .slice(0, maxResults * 2);

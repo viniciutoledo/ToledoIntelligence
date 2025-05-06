@@ -454,14 +454,16 @@ export type InsertKnowledgeBase = z.infer<typeof insertKnowledgeBaseSchema>;
 export const knowledgeBase = pgTable("knowledge_base", {
   id: serial("id").primaryKey(),
   content: text("content").notNull(),
-  embedding: text("embedding").notNull(), // Será armazenado como JSON stringificado
+  embedding: text("embedding"), // Será armazenado como JSON stringificado
   source_type: text("source_type", { enum: ["chat", "document", "widget", "training"] }).notNull(),
   source_id: integer("source_id"),
-  metadata: json("metadata"),
-  language: text("language", { enum: ["pt", "en"] }).notNull(),
+  metadata: json("metadata").default({}),
+  language: text("language", { enum: ["pt", "en"] }).default("pt").notNull(),
   created_at: timestamp("created_at").defaultNow().notNull(),
   is_verified: boolean("is_verified").default(false).notNull(),
-  relevance_score: integer("relevance_score").default(0).notNull()
+  relevance_score: integer("relevance_score").default(0).notNull(),
+  chunk_index: integer("chunk_index"),
+  document_title: text("document_title")
 });
 
 // Document Chunks table para armazenar partes de documentos (chunking)
@@ -488,6 +490,8 @@ export const insertKnowledgeBaseSchema = createInsertSchema(knowledgeBase).pick(
   language: true,
   is_verified: true,
   relevance_score: true,
+  chunk_index: true,
+  document_title: true
 });
 
 export const insertDocumentChunkSchema = createInsertSchema(documentChunks).pick({
