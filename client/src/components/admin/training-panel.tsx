@@ -5,7 +5,8 @@ import { TrainingText } from "@/components/admin/training-text";
 import { TrainingWebsite } from "@/components/admin/training-website";
 import { TrainingDocument } from "@/components/admin/training-document";
 import { TrainingVideo } from "@/components/admin/training-video";
-import { FileText, Globe, FileVideo, File, Search } from "lucide-react";
+import { GenerateEmbeddings } from "@/components/admin/generate-embeddings";
+import { FileText, Globe, FileVideo, File, Search, Database } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/use-auth";
@@ -107,6 +108,13 @@ export function TrainingPanel() {
               >
                 Vídeo
               </TabsTrigger>
+              <TabsTrigger
+                value="embeddings"
+                className="data-[state=active]:bg-primary data-[state=active]:text-white rounded-md px-3 py-1.5 text-sm font-medium"
+              >
+                <Database className="h-4 w-4 mr-1.5" />
+                Embeddings
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="text" className="mt-4 focus-visible:outline-none">
@@ -123,6 +131,10 @@ export function TrainingPanel() {
 
             <TabsContent value="video" className="mt-4 focus-visible:outline-none">
               <TrainingVideo />
+            </TabsContent>
+            
+            <TabsContent value="embeddings" className="mt-4 focus-visible:outline-none">
+              <GenerateEmbeddings />
             </TabsContent>
           </Tabs>
         </div>

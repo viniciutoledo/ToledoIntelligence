@@ -9,9 +9,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export function GenerateEmbeddings() {
   const { toast } = useToast();
-  const { documents } = useTraining();
-  const [loading, setLoading] = useState(false);
-  const [processingAll, setProcessingAll] = useState(false);
+  const { documents, processEmbeddingsMutation } = useTraining();
   const [selectedDocument, setSelectedDocument] = useState<number | null>(null);
   const [result, setResult] = useState<{
     success: boolean;
@@ -27,59 +25,24 @@ export function GenerateEmbeddings() {
     try {
       if (documentId) {
         setSelectedDocument(documentId);
-        setLoading(true);
-      } else {
-        setProcessingAll(true);
       }
       
-      const response = await fetch("/api/training/process-embeddings", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(documentId ? { documentId } : {}),
+      const data = await processEmbeddingsMutation.mutateAsync(documentId);
+      
+      setResult({
+        success: true,
+        message: data.message
       });
-
-      const data = await response.json();
-      
-      if (response.ok) {
-        setResult({
-          success: true,
-          message: data.message
-        });
-        
-        toast({
-          title: "Sucesso",
-          description: data.message,
-          variant: "default",
-        });
-      } else {
-        setResult({
-          success: false,
-          message: data.message || "Ocorreu um erro ao processar embeddings."
-        });
-        
-        toast({
-          title: "Erro",
-          description: data.message || "Ocorreu um erro ao processar embeddings.",
-          variant: "destructive",
-        });
-      }
     } catch (error) {
       console.error("Erro ao processar embeddings:", error);
+      
       setResult({
         success: false,
-        message: "Erro ao processar embeddings. Verifique o console para mais detalhes."
-      });
-      
-      toast({
-        title: "Erro",
-        description: "Erro ao processar embeddings. Verifique o console para mais detalhes.",
-        variant: "destructive",
+        message: error instanceof Error 
+          ? error.message 
+          : "Erro ao processar embeddings. Verifique o console para mais detalhes."
       });
     } finally {
-      setLoading(false);
-      setProcessingAll(false);
       setSelectedDocument(null);
     }
   };
@@ -137,7 +100,7 @@ export function GenerateEmbeddings() {
                       size="sm"
                       variant="outline"
                       onClick={() => handleGenerateEmbeddings(doc.id)}
-                      disabled={loading || processingAll || selectedDocument === doc.id}
+                      disabled={processEmbeddingsMutation.isPending || selectedDocument === doc.id}
                     >
                       {selectedDocument === doc.id ? (
                         <>
@@ -163,10 +126,10 @@ export function GenerateEmbeddings() {
         <Button
           variant="default"
           onClick={() => handleGenerateEmbeddings()}
-          disabled={loading || processingAll || activeDocuments.length === 0}
+          disabled={processEmbeddingsMutation.isPending || activeDocuments.length === 0}
           className="w-full"
         >
-          {processingAll ? (
+          {processEmbeddingsMutation.isPending ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Processando todos os documentos...

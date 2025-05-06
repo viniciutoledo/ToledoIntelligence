@@ -469,6 +469,29 @@ export function useTraining() {
     return await res.json();
   };
 
+  // Mutation para processamento de embeddings
+  const processEmbeddingsMutation = useMutation({
+    mutationFn: async (documentId?: number) => {
+      const payload = documentId ? { documentId } : {};
+      const res = await apiRequest("POST", "/api/training/process-embeddings", payload);
+      return await res.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: t("common.success"),
+        description: data.message || "Embeddings processados com sucesso",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/training/documents"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: t("common.error"),
+        description: error.message || "Erro ao processar embeddings",
+        variant: "destructive",
+      });
+    }
+  });
+
   return {
     // Documents
     documents,
@@ -496,6 +519,9 @@ export function useTraining() {
     // Document Categories
     getDocumentCategories,
     addDocumentToCategory,
-    removeDocumentFromCategory
+    removeDocumentFromCategory,
+    
+    // Embeddings
+    processEmbeddingsMutation
   };
 }
