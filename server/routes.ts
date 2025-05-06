@@ -2663,6 +2663,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Processar um documento específico
       if (documentId) {
         console.log(`Processando embeddings para documento específico ID: ${documentId}`);
+        
+        // Verificar se o documento existe antes de tentar processar
+        const document = await storage.getTrainingDocument(parseInt(documentId));
+        if (!document) {
+          return res.status(404).json({
+            success: false,
+            message: `Documento com ID ${documentId} não encontrado`
+          });
+        }
+        
+        // Verificar se o documento tem conteúdo para processar
+        if ((!document.content || document.content.trim().length === 0) && 
+            (!document.file_path || document.file_path.trim().length === 0)) {
+          
+          // Atualizar o status do documento para indicar o erro
+          await storage.updateTrainingDocument(parseInt(documentId), {
+            status: 'error',
+            error_message: 'Documento sem conteúdo para processamento'
+          });
+          
+          return res.status(400).json({
+            success: false,
+            message: `Documento ${documentId} não possui conteúdo para processamento de embeddings`
+          });
+        }
+        
         // Importar o processador de embeddings
         // Usando importação dinâmica para ES Modules
         const documentEmbedding = await import('./document-embedding.js');
@@ -2682,9 +2708,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             message: `Embeddings gerados com sucesso para o documento ${documentId}` 
           });
         } else {
+          // Buscar o documento novamente para obter a mensagem de erro
+          const updatedDoc = await storage.getTrainingDocument(parseInt(documentId));
           return res.status(500).json({ 
             success: false, 
-            message: `Falha ao gerar embeddings para o documento ${documentId}` 
+            message: updatedDoc?.error_message || `Falha ao gerar embeddings para o documento ${documentId}` 
           });
         }
       } 

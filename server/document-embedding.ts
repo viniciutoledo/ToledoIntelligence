@@ -20,7 +20,8 @@ export async function processDocumentEmbeddings(documentId: number): Promise<boo
   try {
     // Verificar se temos uma chave API
     if (!process.env.OPENAI_API_KEY) {
-      throw new Error("Chave API OpenAI não configurada nas variáveis de ambiente");
+      console.error("Chave API OpenAI não configurada nas variáveis de ambiente");
+      return false;
     }
 
     console.log(`Iniciando processamento de embeddings para documento ${documentId}`);
@@ -28,12 +29,31 @@ export async function processDocumentEmbeddings(documentId: number): Promise<boo
     // Buscar o documento
     const document = await storage.getTrainingDocument(documentId);
     if (!document) {
-      throw new Error(`Documento com ID ${documentId} não encontrado`);
+      console.error(`Documento com ID ${documentId} não encontrado`);
+      return false;
     }
     
-    // Verificar se temos conteúdo para processar
-    if (!document.content || document.content.trim().length === 0) {
-      throw new Error(`Documento ${documentId} não tem conteúdo para processamento`);
+    // Verificar se o documento tem conteúdo OU tem um arquivo associado
+    if ((!document.content || document.content.trim().length === 0) && 
+        (!document.file_path || document.file_path.trim().length === 0)) {
+      // Verificar o tipo de documento
+      if (document.document_type === 'file' && document.file_path) {
+        // Tentar extrair conteúdo do arquivo
+        try {
+          // Aqui poderíamos adicionar lógica para ler o arquivo, mas por enquanto apenas atualizamos o status
+          await storage.updateTrainingDocument(documentId, { status: 'error', error_message: 'Arquivo não possui conteúdo legível' });
+          console.error(`Documento ${documentId} tem arquivo, mas não foi possível extrair conteúdo`);
+          return false;
+        } catch (error) {
+          console.error(`Erro ao tentar processar arquivo do documento ${documentId}:`, error);
+          return false;
+        }
+      } else {
+        // Não há conteúdo nem arquivo
+        console.error(`Documento ${documentId} não tem conteúdo para processamento`);
+        await storage.updateTrainingDocument(documentId, { status: 'error', error_message: 'Documento sem conteúdo' });
+        return false;
+      }
     }
     
     // Inicializar cliente OpenAI
