@@ -1,13 +1,15 @@
 import fs from 'fs';
 import fetch from 'node-fetch';
 import path from 'path';
+import pdfParse from 'pdf-parse';
+import mammoth from 'mammoth';
 
 // Funções auxiliares para extração de texto de diferentes tipos de arquivos
 export async function extractTextFromPDF(filePath: string): Promise<string> {
   try {
-    const pdf = require('pdf-parse');
+    // Usar o pdfParse importado no topo do arquivo
     const dataBuffer = fs.readFileSync(filePath);
-    const data = await pdf(dataBuffer);
+    const data = await pdfParse(dataBuffer);
     
     // Melhorar a qualidade do texto extraído
     let text = data.text || "";
@@ -46,7 +48,7 @@ export async function extractTextFromTXT(filePath: string): Promise<string> {
 
 export async function extractTextFromDOCX(filePath: string): Promise<string> {
   try {
-    const mammoth = require('mammoth');
+    // Usar o mammoth importado no topo do arquivo
     
     // Configuração aprimorada para preservar estrutura e elementos importantes
     const options = {
