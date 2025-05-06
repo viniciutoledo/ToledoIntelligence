@@ -61,8 +61,24 @@ export async function testDocumentKnowledge(query: string, documentId: number) {
     // Obter o conteúdo do documento
     let content = document.content;
     
-    // Se for um documento de qualquer tipo, tentar usar o conteúdo armazenado primeiro
-    if (document.content && document.content.length > 100) {
+    // Verificar se o documento foi indexado
+    if (document.status === "indexed") {
+      console.log(`Documento ID ${document.id} está indexado. Usando embeddings para teste.`);
+      
+      // Buscar chunks armazenados para este documento na knowledge_base
+      const knowledgeEntries = await storage.getKnowledgeEntriesBySource("document", document.id);
+      
+      if (knowledgeEntries && knowledgeEntries.length > 0) {
+        // Combinar o conteúdo de todos os chunks
+        content = knowledgeEntries.map(entry => entry.content).join("\n\n");
+        console.log(`Reconstruído conteúdo do documento a partir de ${knowledgeEntries.length} chunks de conhecimento`);
+      } else {
+        console.log(`Nenhum chunk de conhecimento encontrado para o documento indexado ID ${document.id}`);
+      }
+    }
+    
+    // Se não encontrou conteúdo nos chunks ou o documento não está indexado, usar o conteúdo armazenado
+    if ((!content || content.length < 100) && document.content && document.content.length > 100) {
       console.log(`Usando conteúdo armazenado do documento ID ${document.id}`);
       content = document.content;
     }

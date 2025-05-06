@@ -19,7 +19,7 @@ export function TrainingTest() {
     documentName?: string;
   } | null>(null);
 
-  const testDocuments = documents?.filter(doc => doc.status === "completed") || [];
+  const testDocuments = documents?.filter(doc => doc.status === "completed" || doc.status === "indexed") || [];
 
   const handleTestQuery = async () => {
     if (!query || !selectedDocumentId) return;
