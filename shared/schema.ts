@@ -462,6 +462,19 @@ export const knowledgeBase = pgTable("knowledge_base", {
   relevance_score: integer("relevance_score").default(0).notNull()
 });
 
+// Document Chunks table para armazenar partes de documentos (chunking)
+export const documentChunks = pgTable("document_chunks", {
+  id: serial("id").primaryKey(),
+  document_id: integer("document_id").notNull().references(() => trainingDocuments.id, { onDelete: 'cascade' }),
+  chunk_index: integer("chunk_index").notNull(),
+  content: text("content").notNull(),
+  content_hash: text("content_hash").notNull(),
+  source_type: text("source_type", { enum: ["document", "chat", "widget", "training"] }).notNull().default("document"),
+  embedding_id: integer("embedding_id").references(() => knowledgeBase.id),
+  metadata: json("metadata"),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const insertKnowledgeBaseSchema = createInsertSchema(knowledgeBase).pick({
   content: true,
   embedding: true,
@@ -472,6 +485,19 @@ export const insertKnowledgeBaseSchema = createInsertSchema(knowledgeBase).pick(
   is_verified: true,
   relevance_score: true,
 });
+
+export const insertDocumentChunkSchema = createInsertSchema(documentChunks).pick({
+  document_id: true,
+  chunk_index: true,
+  content: true,
+  content_hash: true,
+  source_type: true,
+  embedding_id: true,
+  metadata: true,
+});
+
+export type DocumentChunk = typeof documentChunks.$inferSelect;
+export type InsertDocumentChunk = z.infer<typeof insertDocumentChunkSchema>;
 
 // Login data
 export type LoginData = {
