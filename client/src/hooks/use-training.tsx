@@ -292,9 +292,13 @@ export function useTraining() {
       return await res.json();
     },
     onSuccess: () => {
+      // Log para depurar
+      console.log('Chave de tradução:', 'admin.training.documentTrainingAdded');
+      console.log('Tradução:', t('admin.training.documentTrainingAdded'));
+      
       toast({
         title: t("common.success"),
-        description: t("admin.training.documentTrainingAdded"),
+        description: "Treinamento de documento adicionado com sucesso",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/training/documents"] });
     },
