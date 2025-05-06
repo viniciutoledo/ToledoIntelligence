@@ -1837,6 +1837,37 @@ export class DatabaseStorage implements IStorage {
     return entry;
   }
   
+  async getKnowledgeEntries(language: string, limit?: number): Promise<KnowledgeBase[]> {
+    try {
+      let query = db.select()
+        .from(knowledgeBase)
+        .where(eq(knowledgeBase.language, language))
+        .orderBy(desc(knowledgeBase.created_at));
+      
+      if (limit && limit > 0) {
+        query = query.limit(limit);
+      }
+      
+      const entries = await query;
+      
+      // Converter embeddings de string para array quando necessário
+      return entries.map(entry => {
+        if (entry.embedding && typeof entry.embedding === 'string') {
+          try {
+            entry.embedding = JSON.parse(entry.embedding);
+          } catch (e) {
+            console.warn(`Erro ao converter embedding para array: ${e}`);
+            // Manter como string se não for possível converter
+          }
+        }
+        return entry;
+      });
+    } catch (error) {
+      console.error('Erro ao buscar entradas de conhecimento:', error);
+      return [];
+    }
+  }
+  
   async updateKnowledgeEntry(id: number, data: Partial<KnowledgeBase>): Promise<KnowledgeBase | undefined> {
     const [updatedEntry] = await db.update(knowledgeBase)
       .set(data)

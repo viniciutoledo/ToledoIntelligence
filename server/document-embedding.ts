@@ -167,11 +167,16 @@ export async function processDocumentEmbeddings(documentId: number): Promise<boo
     
     // Atualizar o status do documento com informações de processamento
     try {
+      // Verificar a estrutura correta do documento no schema
       await storage.updateTrainingDocument(documentId, {
         status: "indexed",
         updated_at: new Date(),
-        is_indexed: true,
-        indexed_at: new Date()
+        file_metadata: {
+          chunks_count: documentChunks.length,
+          embedding_model: "text-embedding-ada-002",
+          processing_date: new Date().toISOString(),
+          processed: true
+        }
       });
       
       // Adicionar log detalhado para depuração
