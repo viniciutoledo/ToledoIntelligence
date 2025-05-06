@@ -1395,7 +1395,8 @@ export async function testConnection(apiKey: string, modelName: string): Promise
           console.log('Conexão com OpenAI bem-sucedida');
           
           // Registrar o uso bem-sucedido
-          await logLlmUsage(modelName, "test", true);
+          // O userId pode ser null para testes administrativos
+          await logLlmUsage(modelName, "test", true, null, null, 10);
           
           return true;
         }
@@ -1454,7 +1455,8 @@ export async function testConnection(apiKey: string, modelName: string): Promise
           console.log('Conexão com Anthropic bem-sucedida');
           
           // Registrar o uso bem-sucedido
-          await logLlmUsage(modelName, "test", true);
+          // O userId pode ser null para testes administrativos
+          await logLlmUsage(modelName, "test", true, null, null, 10);
           
           return true;
         }
