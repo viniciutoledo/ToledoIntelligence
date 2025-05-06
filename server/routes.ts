@@ -2482,6 +2482,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Rota para testar o conhecimento do documento
+  app.post("/api/training/test", isAuthenticated, checkRole("admin"), async (req, res) => {
+    try {
+      const { query, documentId } = req.body;
+      
+      if (!query || !documentId) {
+        return res.status(400).json({ 
+          message: "A consulta e o ID do documento são obrigatórios" 
+        });
+      }
+      
+      const result = await testDocumentKnowledge(query, parseInt(documentId));
+      
+      // Registrar o teste no log de auditoria
+      await logAction({
+        userId: req.user!.id,
+        action: "training_document_tested",
+        details: { documentId, usedDocument: result.usedDocument },
+        ipAddress: req.ip
+      });
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Erro ao testar conhecimento do documento:", error);
+      res.status(500).json({ 
+        message: "Erro ao testar conhecimento do documento", 
+        error: error instanceof Error ? error.message : "Erro desconhecido" 
+      });
+    }
+  });
+  
   // Rotas para relatórios de análise (exclusivos do plano intermediário)
   app.get("/api/reports", isAuthenticated, async (req, res) => {
     try {
