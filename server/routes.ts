@@ -2664,8 +2664,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (documentId) {
         console.log(`Processando embeddings para documento específico ID: ${documentId}`);
         // Importar o processador de embeddings
-        const { processDocumentEmbeddings } = require('./document-embedding');
-        const success = await processDocumentEmbeddings(parseInt(documentId));
+        // Usando importação dinâmica para ES Modules
+        const documentEmbedding = await import('./document-embedding.js');
+        const success = await documentEmbedding.processDocumentEmbeddings(parseInt(documentId));
         
         // Registrar a ação no log de auditoria
         await logAction({
@@ -2717,7 +2718,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Processar documentos em segundo plano
         (async () => {
-          const { processDocumentEmbeddings } = require('./document-embedding');
+          const documentEmbedding = await import('./document-embedding.js');
+          const { processDocumentEmbeddings } = documentEmbedding;
           let successCount = 0;
           let failCount = 0;
           
