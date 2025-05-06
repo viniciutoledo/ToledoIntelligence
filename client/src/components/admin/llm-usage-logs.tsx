@@ -251,11 +251,11 @@ export default function LlmUsageLogs() {
 
           <div className="flex flex-col gap-1">
             <label className="text-sm font-medium flex items-center gap-1">
-              <User className="h-4 w-4" /> {t("User ID")}
+              <User className="h-4 w-4" /> ID do Usuário
             </label>
             <Input
               type="number"
-              placeholder={t("Enter User ID")}
+              placeholder="Digite o ID do usuário"
               value={filters.userId || ""}
               onChange={(e) => handleFilterChange("userId", e.target.value)}
             />
@@ -263,11 +263,11 @@ export default function LlmUsageLogs() {
 
           <div className="flex flex-col gap-1">
             <label className="text-sm font-medium flex items-center gap-1">
-              <Webhook className="h-4 w-4" /> {t("Widget ID")}
+              <Webhook className="h-4 w-4" /> ID do Widget
             </label>
             <Input
               type="text"
-              placeholder={t("Enter Widget ID")}
+              placeholder="Digite o ID do widget"
               value={filters.widgetId || ""}
               onChange={(e) => handleFilterChange("widgetId", e.target.value)}
             />
@@ -275,26 +275,26 @@ export default function LlmUsageLogs() {
 
           <div className="flex flex-col gap-1">
             <label className="text-sm font-medium flex items-center gap-1">
-              <CheckCircle className="h-4 w-4" /> {t("Status")}
+              <CheckCircle className="h-4 w-4" /> Status
             </label>
             <Select
               value={filters.success || "all"}
               onValueChange={(value) => handleFilterChange("success", value)}
             >
               <SelectTrigger>
-                <SelectValue placeholder={t("All Status")} />
+                <SelectValue placeholder="Todos os Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{t("All Status")}</SelectItem>
-                <SelectItem value="success">{t("Success")}</SelectItem>
-                <SelectItem value="failed">{t("Failed")}</SelectItem>
+                <SelectItem value="all">Todos os Status</SelectItem>
+                <SelectItem value="success">Sucesso</SelectItem>
+                <SelectItem value="failed">Falha</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div className="col-span-1 md:col-span-3 lg:col-span-6 flex justify-end">
             <Button variant="outline" onClick={resetFilters}>
-              {t("Reset Filters")}
+              Limpar Filtros
             </Button>
           </div>
         </div>
@@ -307,28 +307,28 @@ export default function LlmUsageLogs() {
         ) : isError ? (
           <div className="bg-destructive/10 text-destructive p-4 rounded-md flex items-center">
             <AlertTriangle className="h-5 w-5 mr-2" />
-            {t("Error loading logs. Please try again.")}
+            Erro ao carregar os registros. Por favor, tente novamente.
           </div>
         ) : logs?.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
             <Database className="h-12 w-12 mx-auto mb-4 opacity-20" />
-            <p>{t("No logs found matching your filters.")}</p>
+            <p>Nenhum registro encontrado com os filtros aplicados.</p>
           </div>
         ) : (
           <div className="rounded-md border overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[80px]">{t("ID")}</TableHead>
-                  <TableHead>{t("Model")}</TableHead>
-                  <TableHead>{t("Provider")}</TableHead>
-                  <TableHead>{t("Operation")}</TableHead>
-                  <TableHead>{t("Status")}</TableHead>
-                  <TableHead>{t("Tokens")}</TableHead>
-                  <TableHead>{t("User")}</TableHead>
-                  <TableHead>{t("Widget")}</TableHead>
-                  <TableHead>{t("Date")}</TableHead>
-                  <TableHead>{t("Error")}</TableHead>
+                  <TableHead className="w-[80px]">ID</TableHead>
+                  <TableHead>Modelo</TableHead>
+                  <TableHead>Provedor</TableHead>
+                  <TableHead>Operação</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Tokens</TableHead>
+                  <TableHead>Usuário</TableHead>
+                  <TableHead>Widget</TableHead>
+                  <TableHead>Data</TableHead>
+                  <TableHead>Erro</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
