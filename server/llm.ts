@@ -1395,8 +1395,8 @@ export async function testConnection(apiKey: string, modelName: string): Promise
           console.log('Conexão com OpenAI bem-sucedida');
           
           // Registrar o uso bem-sucedido
-          // O userId pode ser null para testes administrativos
-          await logLlmUsage(modelName, "test", true, null, null, 10);
+          // Para testes administrativos não é necessário userId ou widgetId
+          await logLlmUsage(modelName, "test", true, undefined, undefined, 10);
           
           return true;
         }
@@ -1411,7 +1411,8 @@ export async function testConnection(apiKey: string, modelName: string): Promise
         console.error('Erro testando conexão com OpenAI:', openaiError);
         
         // Registrar o erro
-        await logLlmUsage(modelName, "test", false, undefined, undefined, 0, openaiError.message);
+        await logLlmUsage(modelName, "test", false, undefined, undefined, 0, 
+          openaiError instanceof Error ? openaiError.message : 'Erro desconhecido no teste OpenAI');
         
         return false;
       }
@@ -1455,8 +1456,8 @@ export async function testConnection(apiKey: string, modelName: string): Promise
           console.log('Conexão com Anthropic bem-sucedida');
           
           // Registrar o uso bem-sucedido
-          // O userId pode ser null para testes administrativos
-          await logLlmUsage(modelName, "test", true, null, null, 10);
+          // Para testes administrativos não é necessário userId ou widgetId
+          await logLlmUsage(modelName, "test", true, undefined, undefined, 10);
           
           return true;
         }
@@ -1471,7 +1472,8 @@ export async function testConnection(apiKey: string, modelName: string): Promise
         console.error('Erro testando conexão com Anthropic:', anthropicError);
         
         // Registrar o erro
-        await logLlmUsage(modelName, "test", false, undefined, undefined, 0, anthropicError.message);
+        await logLlmUsage(modelName, "test", false, undefined, undefined, 0, 
+          anthropicError instanceof Error ? anthropicError.message : 'Erro desconhecido no teste Anthropic');
         
         return false;
       }
