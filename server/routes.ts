@@ -815,6 +815,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Rotas para gestão de aprendizado de interações
+  app.post("/api/training/interactions/process", isAuthenticated, checkRole("admin"), async (req, res) => {
+    try {
+      const { daysAgo = 7, maxInteractions = 50 } = req.body;
+      
+      // Importar funções de processamento de interações
+      const { processRecentInteractions, createInteractionCategory } = require('./interaction-learning');
+      
+      // Criar ou obter categoria específica para interações
+      const categoryId = await createInteractionCategory(req.user!.id);
+      
+      // Processar interações recentes
+      const processedCount = await processRecentInteractions(
+        Number(daysAgo), 
+        Number(maxInteractions),
+        categoryId
+      );
+      
+      // Registrar no log de auditoria
+      await logAction({
+        userId: req.user!.id,
+        action: "processed_interactions_for_training",
+        details: { daysAgo, maxInteractions, processedCount },
+        ipAddress: req.ip
+      });
+      
+      res.json({ 
+        success: true, 
+        message: `Processadas ${processedCount} interações como documentos de treinamento`, 
+        processedCount,
+        categoryId
+      });
+    } catch (error: any) {
+      console.error("Erro ao processar interações para treinamento:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Erro ao processar interações", 
+        error: error.message 
+      });
+    }
+  });
+  
+  app.get("/api/training/interactions/recent-sessions", isAuthenticated, checkRole("admin"), async (req, res) => {
+    try {
+      const daysAgo = parseInt(req.query.daysAgo as string) || 7;
+      
+      // Calcular a data limite
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - daysAgo);
+      
+      // Buscar sessões recentes
+      const recentSessions = await storage.getChatSessionsSince(cutoffDate);
+      
+      res.json({
+        sessions: recentSessions,
+        count: recentSessions.length,
+        cutoffDate
+      });
+    } catch (error: any) {
+      console.error("Erro ao buscar sessões recentes:", error);
+      res.status(500).json({ 
+        message: "Erro ao buscar sessões recentes", 
+        error: error.message 
+      });
+    }
+  });
+  
   app.post("/api/admin/llm/test", isAuthenticated, checkRole("admin"), async (req, res) => {
     const schema = z.object({
       model_name: z.string(),
@@ -2300,43 +2367,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else if (document_type === "file" && req.file) {
         file_url = `/uploads/${req.file.filename}`;
         
-        // Extrair conteúdo do arquivo com base no tipo MIME
+        // Extrair conteúdo do arquivo usando os processadores de documentos
         const filePath = path.join(process.cwd(), "uploads/files", req.file.filename);
-        console.log(`Tentando extrair conteúdo do arquivo: ${filePath}`);
+        console.log(`Processando arquivo: ${filePath} - Tipo MIME: ${req.file.mimetype}`);
         
-        if (req.file.mimetype === "application/pdf") {
-          // Extrair texto do PDF
-          content = await extractTextFromPDF(filePath);
-          console.log("Conteúdo extraído do PDF:", content ? `${content.length} caracteres` : "falha na extração");
-        } else if (req.file.mimetype === "text/plain") {
-          // Extrair texto do arquivo TXT
-          content = await extractTextFromTXT(filePath);
-          console.log("Conteúdo extraído do TXT:", content ? `${content.length} caracteres` : "falha na extração");
-        } else if (req.file.mimetype === "application/msword" || 
-                  req.file.mimetype === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
-          // Extrair texto de arquivos DOC/DOCX usando mammoth.js
-          const mammoth = require('mammoth');
-          try {
-            const result = await mammoth.extractRawText({
-              path: filePath
-            });
-            content = result.value;
-            console.log("Conteúdo extraído do DOCX:", content ? `${content.length} caracteres` : "falha na extração");
-            if (result.messages && result.messages.length > 0) {
-              console.log("Mensagens de extração do DOCX:", result.messages);
-            }
-          } catch (docxError) {
-            console.error("Erro ao extrair texto do DOC/DOCX:", docxError);
-            content = `Erro ao extrair conteúdo do documento Word: ${docxError.message}`;
-          }
-        }
+        // Importar o processador de documentos
+        const { processDocumentContent } = require('./document-processors');
+        
+        // Processar o documento
+        content = await processDocumentContent("file", filePath);
         
         // Caso não tenha conseguido extrair o conteúdo
         if (!content) {
           console.warn(`Não foi possível extrair o conteúdo do arquivo ${req.file.originalname}`);
+        } else {
+          console.log(`Conteúdo extraído com sucesso: ${content.length} caracteres`);
         }
       } else if (document_type === "website") {
         website_url = req.body.website_url;
+        
+        // Se tiver URL, também extrair conteúdo do site
+        if (website_url) {
+          // Importar o processador de documentos
+          const { extractTextFromWebsite } = require('./document-processors');
+          
+          try {
+            content = await extractTextFromWebsite(website_url);
+            console.log(`Conteúdo extraído do site: ${content.length} caracteres`);
+          } catch (webError) {
+            console.error(`Erro ao extrair conteúdo do site ${website_url}:`, webError);
+            content = `Não foi possível extrair conteúdo do site: ${webError.message}`;
+          }
+        }
       }
       
       console.log("Dados para criação do documento:", {

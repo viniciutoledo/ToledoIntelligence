@@ -61,104 +61,55 @@ export async function testDocumentKnowledge(query: string, documentId: number) {
     // Obter o conteúdo do documento
     let content = document.content;
     
-    // Se for um documento de arquivo, ler o conteúdo do arquivo ou usar conteúdo armazenado
-    if (document.document_type === "file") {
+    // Se for um documento de qualquer tipo, tentar usar o conteúdo armazenado primeiro
+    if (document.content && document.content.length > 100) {
+      console.log(`Usando conteúdo armazenado do documento ID ${document.id}`);
+      content = document.content;
+    }
+    // Se não tiver conteúdo armazenado adequado, processar de acordo com o tipo
+    else {
+      // Importar o processador de documentos
+      const { processDocumentContent } = require('./document-processors');
+      
       try {
-        // Primeira opção: usar o conteúdo armazenado no banco de dados, se existir
-        if (document.content && document.content.length > 100) {
-          console.log(`Usando conteúdo armazenado do documento ID ${document.id}`);
-          content = document.content;
-        }
-        // Se não tiver conteúdo armazenado, tenta ler o arquivo
-        else if (document.file_url) {
-          console.log(`Tentando acessar arquivo: ${document.file_url}`);
-          
-          // Lista de caminhos possíveis para tentar ler o arquivo
-          const possiblePaths = [];
-          
+        if (document.document_type === "file" && document.file_url) {
           // Normalizar o caminho para o arquivo
           let filePath = document.file_url;
           if (filePath.startsWith('/')) {
-            filePath = `.${filePath}`; // Adiciona o ponto ao início do caminho
-          } else if (!filePath.startsWith('./')) {
-            filePath = `./${filePath}`; // Adiciona './' ao início do caminho
+            filePath = filePath.substring(1); // Remove a barra inicial
           }
           
-          // Adicionar caminhos alternativos para tentar
-          possiblePaths.push(filePath);
-          possiblePaths.push(`./uploads/${path.basename(filePath)}`);
-          possiblePaths.push(`/home/runner/workspace/uploads/${path.basename(filePath)}`);
-          possiblePaths.push(`${process.cwd()}/uploads/${path.basename(filePath)}`);
+          // Adicionar path.join para garantir que o caminho seja correto para o SO
+          const normalizedPath = path.join(process.cwd(), filePath);
           
-          // Adicionar caminho para a pasta files dentro de uploads
-          possiblePaths.push(`./uploads/files/${path.basename(filePath)}`);
-          possiblePaths.push(`/home/runner/workspace/uploads/files/${path.basename(filePath)}`);
-          possiblePaths.push(`${process.cwd()}/uploads/files/${path.basename(filePath)}`);
+          console.log(`Processando arquivo para teste: ${normalizedPath}`);
+          content = await processDocumentContent("file", normalizedPath);
           
-          // Nome do arquivo
-          const fileName = path.basename(filePath);
-          
-          // Se o nome do arquivo contiver um UUID ou timestamp (comum em uploads)
-          if (fileName.includes('-')) {
-            // Tenta com o nome original do arquivo (sem o UUID/timestamp)
-            const originalFileName = fileName.split('-').slice(1).join('-');
-            possiblePaths.push(`./uploads/${originalFileName}`);
-            possiblePaths.push(`/home/runner/workspace/uploads/${originalFileName}`);
+          // Se não conseguiu processar, tentar caminhos alternativos
+          if (!content || content.includes("[Erro ao processar conteúdo")) {
+            const alternativePath = path.join(process.cwd(), 'uploads/files', path.basename(filePath));
+            console.log(`Tentando caminho alternativo: ${alternativePath}`);
+            content = await processDocumentContent("file", alternativePath);
           }
-          
-          // Tentar ler o arquivo de um dos possíveis caminhos
-          let fileRead = false;
-          for (const pathToTry of possiblePaths) {
-            try {
-              console.log(`Tentando ler de: ${pathToTry}`);
-              
-              // Verificar se é um arquivo de texto ou binário
-              const isPdfFile = pathToTry.toLowerCase().endsWith('.pdf');
-              
-              if (isPdfFile) {
-                // Para PDFs, usamos o processamento binário
-                content = await processBinaryFile(pathToTry);
-                console.log(`Arquivo PDF processado com sucesso de: ${pathToTry}`);
-                fileRead = true;
-                break;
-              } else {
-                // Para arquivos de texto, leitura normal
-                content = await fs.promises.readFile(pathToTry, 'utf8');
-                console.log(`Arquivo de texto lido com sucesso de: ${pathToTry}`);
-                fileRead = true;
-                break; // Sai do loop se conseguir ler
-              }
-            } catch (error: any) {
-              // Continua tentando outros caminhos
-              console.log(`Não foi possível ler de ${pathToTry}: ${error.message}`);
-            }
-          }
-          
-          // Se não conseguiu ler de nenhum caminho
-          if (!fileRead) {
-            console.log(`Não foi possível ler o arquivo de nenhum dos caminhos tentados`);
-            
-            // Usar o conteúdo do documento (mesmo que seja pequeno)
-            if (document.content) {
-              console.log(`Usando conteúdo armazenado limitado do documento ID ${document.id}`);
-              content = document.content;
-            } else {
-              // Mensagem de erro se não conseguiu recuperar conteúdo
-              content = "Não foi possível acessar o conteúdo deste arquivo. Ele pode ter sido movido ou excluído.";
-            }
-          }
-        } else {
-          content = "Este documento não tem um arquivo associado.";
+        }
+        else if (document.document_type === "website" && document.website_url) {
+          console.log(`Processando website para teste: ${document.website_url}`);
+          content = await processDocumentContent("website", undefined, document.website_url);
+        }
+        else if (document.document_type === "text") {
+          // Para documentos de texto, o conteúdo já está armazenado no banco
+          content = document.content || "Conteúdo do documento de texto não disponível";
+        }
+        
+        // Se ainda não tiver conteúdo após todas as tentativas
+        if (!content) {
+          console.log(`Não foi possível obter conteúdo para o documento ID ${document.id}`);
+          content = "Não foi possível acessar o conteúdo deste documento. Ele pode ter sido movido ou excluído.";
         }
       } catch (error: any) {
-        console.error('Erro ao processar arquivo:', error.message);
-        content = "Erro ao processar o conteúdo do arquivo: " + error.message;
+        console.error('Erro ao processar documento para teste:', error.message);
+        content = "Erro ao processar o conteúdo do documento: " + error.message;
       }
-    }
-    
-    // Se for um documento de website, usar o conteúdo já extraído e armazenado
-    if (document.document_type === "website") {
-      content = content || "Conteúdo do website não disponível";
     }
     
     if (!content) {
