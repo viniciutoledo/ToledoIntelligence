@@ -246,6 +246,25 @@ export function LlmSettings() {
                   </FormItem>
                 )}
               />
+              
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                <div className="flex items-start">
+                  <InfoIcon className="h-5 w-5 text-amber-500 mt-0.5 mr-3 flex-shrink-0" />
+                  <div className="flex-1">
+                    <h4 className="font-medium text-amber-900">Verificação de uso dos documentos</h4>
+                    <p className="text-sm text-amber-700 mt-1">
+                      Para verificar se a IA está usando os documentos de treinamento, faça uma pergunta específica
+                      sobre o conteúdo de um documento. O sistema usará o conteúdo relevante para formular a resposta.
+                    </p>
+                    <div className="mt-3">
+                      <Button variant="outline" size="sm" className="bg-white">
+                        <SearchIcon className="h-4 w-4 mr-2" />
+                        Testar conhecimento do documento
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div className="space-y-4 pt-4">
