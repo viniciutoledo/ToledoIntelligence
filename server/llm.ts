@@ -1190,7 +1190,7 @@ export async function analyzeFile(filePath: string, language: string, llmConfig?
 
     // Obter configurações do LLM
     const activeConfig = llmConfig || await getActiveLlmInfo();
-    const { provider, modelName, apiKey, tone, behaviorInstructions } = activeConfig;
+    const { provider, modelName, apiKey, tone, behaviorInstructions, temperature } = activeConfig;
     
     // Estimar tokens com o modelo específico
     const estimatedTokens = estimateTokens(fileContent, modelName);
@@ -1270,6 +1270,7 @@ export async function analyzeFile(filePath: string, language: string, llmConfig?
           model: modelName,
           max_tokens: 1024,
           system: systemPrompt,
+          temperature: parseFloat(temperature || '0.3'),
           messages: [
             {
               role: 'user',
@@ -1310,6 +1311,7 @@ export async function analyzeFile(filePath: string, language: string, llmConfig?
         const response = await openai.chat.completions.create({
           model: actualModel,
           max_tokens: 1024,
+          temperature: parseFloat(temperature || '0.3'),
           messages: [
             {
               role: "system",

@@ -563,6 +563,7 @@ export async function generateRAGResponse(
     // Determinar qual provedor usar
     const useModel = model || llmConfig?.model_name || 'gpt-4o';
     const provider = useModel.startsWith('claude') ? 'anthropic' : 'openai';
+    const temperature = llmConfig?.temperature || '0.3';
     
     // Construir o prompt/contexto
     const systemPrompt = buildContextForLLM(query, documents, language, forceExtraction);
@@ -583,7 +584,7 @@ export async function generateRAGResponse(
       const message = await anthropic.messages.create({
         model: useModel,
         max_tokens: 1000,
-        temperature: 0.3,
+        temperature: parseFloat(temperature),
         system: systemPrompt,
         messages: [
           { role: 'user', content: query }
@@ -623,7 +624,7 @@ export async function generateRAGResponse(
           { role: 'system', content: systemPrompt },
           { role: 'user', content: query }
         ],
-        temperature: 0.3
+        temperature: parseFloat(temperature)
       });
       
       response = completion.choices[0]?.message?.content || 'Não foi possível gerar uma resposta.';
