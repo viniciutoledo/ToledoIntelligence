@@ -491,6 +491,28 @@ export function useTraining() {
       });
     }
   });
+  
+  // Mutation para resetar o status de documentos com erro
+  const resetDocumentStatusMutation = useMutation({
+    mutationFn: async (documentId: number) => {
+      const res = await apiRequest("POST", "/api/training/reset-document-status", { documentId });
+      return await res.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: t("common.success"),
+        description: data.message || "Status do documento resetado com sucesso",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/training/documents"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: t("common.error"),
+        description: error.message || "Erro ao resetar status do documento",
+        variant: "destructive",
+      });
+    }
+  });
 
   return {
     // Documents
@@ -522,6 +544,7 @@ export function useTraining() {
     removeDocumentFromCategory,
     
     // Embeddings
-    processEmbeddingsMutation
+    processEmbeddingsMutation,
+    resetDocumentStatusMutation
   };
 }

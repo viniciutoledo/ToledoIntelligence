@@ -2655,6 +2655,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Rota para resetar o status de documentos com erro ou pendentes
+  app.post("/api/training/reset-document-status", isAuthenticated, checkRole("admin"), async (req, res) => {
+    try {
+      const { documentId } = req.body;
+      
+      if (!documentId) {
+        return res.status(400).json({
+          success: false,
+          message: "ID do documento é obrigatório"
+        });
+      }
+      
+      console.log(`Resetando status do documento ID: ${documentId}`);
+      
+      // Verificar se o documento existe
+      const document = await storage.getTrainingDocument(parseInt(documentId));
+      if (!document) {
+        return res.status(404).json({
+          success: false,
+          message: `Documento com ID ${documentId} não encontrado`
+        });
+      }
+      
+      // Atualizar o status do documento para "completed" para permitir reprocessamento
+      await storage.updateTrainingDocument(parseInt(documentId), {
+        status: 'completed',
+        error_message: null,
+        updated_at: new Date()
+      });
+      
+      // Registrar a ação no log de auditoria
+      await logAction({
+        userId: req.user!.id,
+        action: "document_status_reset",
+        details: { documentId, previousStatus: document.status },
+        ipAddress: req.ip
+      });
+      
+      return res.json({
+        success: true,
+        message: `Status do documento ${documentId} resetado com sucesso`
+      });
+    } catch (error) {
+      console.error("Erro ao resetar status do documento:", error);
+      return res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : "Erro desconhecido"
+      });
+    }
+  });
+  
   // Rota para gerar embeddings para documentos existentes
   app.post("/api/training/process-embeddings", isAuthenticated, checkRole("admin"), async (req, res) => {
     try {
