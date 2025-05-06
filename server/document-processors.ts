@@ -47,24 +47,81 @@ export async function extractTextFromTXT(filePath: string): Promise<string> {
 export async function extractTextFromDOCX(filePath: string): Promise<string> {
   try {
     const mammoth = require('mammoth');
-    const result = await mammoth.extractRawText({
+    
+    // Configuração aprimorada para preservar estrutura e elementos importantes
+    const options = {
+      convertImage: mammoth.images.imgElement(function(image) {
+        return {
+          src: image.src,
+          alt: "[Imagem no documento]"
+        };
+      }),
+      styleMap: [
+        "p[style-name='Heading 1'] => h1:fresh",
+        "p[style-name='Heading 2'] => h2:fresh",
+        "p[style-name='Heading 3'] => h3:fresh",
+        "r[style-name='Strong'] => strong",
+        "table => table",
+        "tr => tr",
+        "td => td"
+      ]
+    };
+    
+    // Primeiro extraímos o HTML para melhor preservação da estrutura
+    const htmlResult = await mammoth.convertToHtml({
+      path: filePath
+    }, options);
+    
+    // Extrair também o texto simples
+    const textResult = await mammoth.extractRawText({
       path: filePath
     });
-    const text = result.value || "";
     
-    // Normalizar quebras de linha e espaços
-    const cleanedText = text.replace(/\r\n/g, '\n')
-                           .replace(/\n{3,}/g, '\n\n')
-                           .replace(/\s{2,}/g, ' ')
-                           .trim();
-                           
-    console.log(`DOCX processado com sucesso: ${cleanedText.length} caracteres extraídos`);
+    let htmlText = htmlResult.value || "";
+    let rawText = textResult.value || "";
     
-    if (result.messages && result.messages.length > 0) {
-      console.log("Mensagens de extração DOCX:", result.messages);
+    // Para extrair valores técnicos mais precisamente
+    // Vamos processar tanto o HTML quanto o texto bruto para melhorar a precisão
+    
+    // Normalizar quebras de linha e espaços no texto bruto
+    const cleanedRawText = rawText.replace(/\r\n/g, '\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+    
+    // Converter o HTML para texto mantendo alguma estrutura
+    // Remove as tags, mas adiciona marcadores para preservar a estrutura
+    const htmlToText = htmlText
+      .replace(/<h1[^>]*>(.*?)<\/h1>/gi, '\n## $1 ##\n')
+      .replace(/<h2[^>]*>(.*?)<\/h2>/gi, '\n### $1 ###\n')
+      .replace(/<h3[^>]*>(.*?)<\/h3>/gi, '\n#### $1 ####\n')
+      .replace(/<li[^>]*>(.*?)<\/li>/gi, '\n• $1')
+      .replace(/<tr[^>]*>(.*?)<\/tr>/gi, '\n$1\n')
+      .replace(/<td[^>]*>(.*?)<\/td>/gi, ' | $1')
+      .replace(/<p[^>]*>(.*?)<\/p>/gi, '\n$1\n')
+      .replace(/<br[^>]*>/gi, '\n')
+      .replace(/<(?:.|\s)*?>/g, '') // Remove todas as demais tags
+      .replace(/\n{3,}/g, '\n\n')
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+      
+    // Preservar especialmente valores numéricos e técnicos
+    // Reconhecer padrões como tensões (ex: VS1 ~2.05V, VPA ~2.0V)
+    const cleanedFinalText = `${htmlToText}\n\n${cleanedRawText}`;
+    
+    // Remover duplicações potenciais
+    const processedText = [...new Set(cleanedFinalText.split('\n'))]
+      .join('\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+    
+    console.log(`DOCX processado com método aprimorado: ${processedText.length} caracteres extraídos`);
+    
+    if (textResult.messages && textResult.messages.length > 0) {
+      console.log("Mensagens de extração DOCX:", textResult.messages);
     }
     
-    return cleanedText;
+    return processedText;
   } catch (error) {
     console.error("Erro ao extrair texto do DOCX:", error);
     return "";

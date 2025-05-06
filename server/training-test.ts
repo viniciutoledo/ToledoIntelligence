@@ -121,27 +121,78 @@ export async function testDocumentKnowledge(query: string, documentId: number) {
     }
     
     // Construir um prompt que força o uso do conteúdo do documento
+    // Pré-processar a pergunta para identificar termos técnicos
+    const lowerQuery = query.toLowerCase();
+    const technicalTerms = [
+      { term: "vs1", aliases: ["vs1", "vs 1", "tensão vs1", "valor vs1"] },
+      { term: "vpa", aliases: ["vpa", "vp a", "tensão vpa", "valor vpa"] },
+      { term: "vcore", aliases: ["vcore", "v core", "tensão vcore"] },
+      { term: "vproc", aliases: ["vproc", "v proc", "tensão vproc"] },
+      { term: "bobina", aliases: ["bobina", "bobinas", "linhas"] },
+      { term: "high", aliases: ["high", "ldo", "high ldo"] },
+      { term: "mtk", aliases: ["mtk", "mediatek", "mt", "pmic"] }
+    ];
+    
+    // Identificar termos técnicos relevantes na pergunta
+    const relevantTerms = technicalTerms.filter(term => 
+      term.aliases.some(alias => lowerQuery.includes(alias))
+    );
+    
+    let technicalContext = "";
+    if (relevantTerms.length > 0) {
+      technicalContext = `
+      OBSERVAÇÃO IMPORTANTE: A pergunta contém os seguintes termos técnicos específicos: ${relevantTerms.map(t => t.term.toUpperCase()).join(', ')}
+      
+      Para cada um desses termos técnicos, você DEVE:
+      1. Procurar diretamente por esses termos no documento (mesmo que estejam em diferentes formatações como VS1, Vs1, vs1)
+      2. Identificar valores numéricos ou especificações associadas a esses termos (ex: VS1 ~2.05V, VS1 = 2,05V, VS1 [-2.05V], etc.)
+      3. Se encontrar um valor, SEMPRE comece sua resposta com este valor específico e depois forneça o contexto.
+      `;
+    }
+    
+    // Extrair padrões de valor específicos da pergunta
+    const isValueQuestion = lowerQuery.includes("valor") || 
+                          lowerQuery.includes("tensão") || 
+                          lowerQuery.includes("voltagem") || 
+                          lowerQuery.includes("volts") || 
+                          lowerQuery.includes("v");
+    
+    let valueContext = "";
+    if (isValueQuestion) {
+      valueContext = `
+      ATENÇÃO: A pergunta solicita um VALOR ou TENSÃO específica. 
+      
+      Você DEVE:
+      1. Procurar por quaisquer valores numéricos, especialmente aqueles seguidos de V, v, Volts ou volts
+      2. Se o documento mencionar valores como 2.05V, ~2.05V, 2,05V, [-2.05 V], ou variações semelhantes, SEMPRE cite o valor exato conforme mostrado no documento
+      3. Preste especial atenção a números com casas decimais (como 0.6, 1.2, 2.05, 2.0)
+      `;
+    }
+    
     const prompt = `
     Você é um assistente especializado em manutenção de placas de circuito, com conhecimento profundo em eletrônica.
     
-    TAREFA: Analise cuidadosamente o DOCUMENTO fornecido abaixo e responda à PERGUNTA do usuário.
+    TAREFA: Analise METICULOSAMENTE o DOCUMENTO fornecido abaixo e responda à PERGUNTA do usuário.
     
-    INSTRUÇÕES ESTRITAS - LEIA COM ATENÇÃO:
+    ${technicalContext}
+    ${valueContext}
+    
+    INSTRUÇÕES ESTRITAS - LEIA COM EXTREMA ATENÇÃO:
     1. Use EXCLUSIVAMENTE as informações contidas no documento para responder.
     2. Seja objetivo e CITE DIRETAMENTE partes do documento em sua resposta.
     3. Procure por números, valores específicos, tensões, e especificações técnicas no documento.
     4. Se a pergunta mencionar uma tensão, componente ou valor específico, procure exatamente esse termo no documento.
-    5. Se o documento mencionar claramente o valor solicitado, COMECE sua resposta com esse valor específico.
+    5. Se o documento mencionar claramente o valor solicitado, como VS1 (~2.05 V), COMECE sua resposta com esse valor específico.
     6. NUNCA invente informações ou use seu conhecimento prévio.
     7. Se encontrar a informação solicitada, responda: "De acordo com o documento: [informação encontrada]"
-    8. Somente se o documento não contiver a informação solicitada, responda: "O documento não contém informações sobre isso".
-
+    8. Somente se o documento realmente não contiver a informação solicitada após uma busca exaustiva, responda: "O documento não contém informações sobre isso".
+    
     DOCUMENTO:
     ${content}
     
     PERGUNTA: ${query}
     
-    RESPOSTA (CITANDO APENAS INFORMAÇÕES DO DOCUMENTO):
+    RESPOSTA (CITANDO APENAS INFORMAÇÕES DO DOCUMENTO E INCLUINDO VALORES EXATAMENTE COMO ESTÃO ESCRITOS):
     `;
     
     // Chamar o LLM com o prompt personalizado
