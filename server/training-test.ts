@@ -5,7 +5,7 @@ import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
 
 // Esta função será usada para testar se o LLM está usando documentos de treinamento específicos
-export async function testDocumentKnowledge(query: string, documentId: string) {
+export async function testDocumentKnowledge(query: string, documentId: number) {
   try {
     // Buscar o documento pelo ID
     const document = await storage.getTrainingDocument(documentId);
@@ -18,7 +18,7 @@ export async function testDocumentKnowledge(query: string, documentId: string) {
     const llmConfig = await getActiveLlmInfo();
     
     // Verificar se o uso de documentos de treinamento está ativado
-    if (!llmConfig.should_use_training) {
+    if (!llmConfig.shouldUseTrained) {
       return {
         response: "O uso de documentos de treinamento está desativado nas configurações do LLM. Ative-o para testar o conhecimento.",
         usedDocument: false,
@@ -95,7 +95,12 @@ export async function testDocumentKnowledge(query: string, documentId: string) {
         messages: [{ role: "user", content: prompt }],
       });
       
-      response = message.content[0].text;
+      // Extrair texto da resposta da Anthropic
+      if (message.content[0] && typeof message.content[0] === 'object' && 'text' in message.content[0]) {
+        response = message.content[0].text;
+      } else {
+        response = "Erro ao processar resposta da Anthropic";
+      }
     } else {
       // Implementar outros provedores conforme necessário
       response = "Teste de documento não implementado para este provedor de LLM.";
@@ -113,10 +118,10 @@ export async function testDocumentKnowledge(query: string, documentId: string) {
       documentName: document.name,
     };
     
-  } catch (error) {
+  } catch (error: any) {
     console.error("Erro ao testar conhecimento do documento:", error);
     return {
-      response: `Erro ao testar o conhecimento: ${error.message}`,
+      response: `Erro ao testar o conhecimento: ${error.message || 'Erro desconhecido'}`,
       usedDocument: false,
     };
   }
