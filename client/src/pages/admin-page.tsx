@@ -15,6 +15,7 @@ import { LlmProvider } from "@/hooks/use-llm";
 import { AvatarProvider } from "@/hooks/use-avatar";
 import { useLanguage } from "@/hooks/use-language";
 import { useAuth } from "@/hooks/use-auth";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function AdminPage() {
   const { t } = useLanguage();
@@ -108,23 +109,35 @@ export default function AdminPage() {
                 </h1>
                 <div className="bg-white px-4 py-2 rounded-md shadow-sm text-sm text-neutral-500 flex items-center">
                   <span className="font-medium mr-1">ToledoIA</span>
-                  <span>Admin Panel</span>
+                  <span>Painel de Administração</span>
                 </div>
               </div>
-              <div className="space-y-8">
-                <div>
-                  <h2 className="text-xl font-semibold text-neutral-700 mb-4">
-                    {t("System Audit Logs")}
-                  </h2>
-                  <AuditLogs />
-                </div>
-                <div>
-                  <h2 className="text-xl font-semibold text-neutral-700 mb-4">
-                    {t("LLM Usage Logs")}
-                  </h2>
-                  <LlmUsageLogs />
-                </div>
-              </div>
+              
+              {/* Tabbed interface */}
+              <Tabs defaultValue="audit" className="mb-8">
+                <TabsList className="mb-4">
+                  <TabsTrigger value="audit">Logs de Usuários</TabsTrigger>
+                  <TabsTrigger value="llm">Logs de Uso de LLM</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="audit" className="mt-4">
+                  <div className="space-y-4">
+                    <h2 className="text-xl font-semibold text-neutral-700">
+                      Registros de Atividades do Sistema
+                    </h2>
+                    <AuditLogs />
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="llm" className="mt-4">
+                  <div className="space-y-4">
+                    <h2 className="text-xl font-semibold text-neutral-700">
+                      Registros de Uso dos Modelos LLM
+                    </h2>
+                    <LlmUsageLogs />
+                  </div>
+                </TabsContent>
+              </Tabs>
             </>
           )}
           

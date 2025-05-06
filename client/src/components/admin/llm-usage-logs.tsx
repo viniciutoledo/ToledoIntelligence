@@ -194,11 +194,11 @@ export default function LlmUsageLogs() {
       <div className="flex flex-col gap-5">
         <div className="flex justify-between items-center">
           <h2 className="text-2xl font-bold">
-            {t("LLM Usage Logs")}
+            Registros de Uso dos Modelos LLM
           </h2>
           <Button variant="outline" onClick={() => refetch()}>
             <RefreshCcw className="h-4 w-4 mr-2" />
-            {t("Refresh")}
+            Atualizar
           </Button>
         </div>
 
@@ -206,17 +206,17 @@ export default function LlmUsageLogs() {
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 bg-secondary/10 p-4 rounded-md">
           <div className="flex flex-col gap-1">
             <label className="text-sm font-medium flex items-center gap-1">
-              <Filter className="h-4 w-4" /> {t("Provider")}
+              <Filter className="h-4 w-4" /> Provedor
             </label>
             <Select
               value={filters.provider || "all"}
               onValueChange={(value) => handleFilterChange("provider", value)}
             >
               <SelectTrigger>
-                <SelectValue placeholder={t("All Providers")} />
+                <SelectValue placeholder="Todos os Provedores" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{t("All Providers")}</SelectItem>
+                <SelectItem value="all">Todos os Provedores</SelectItem>
                 <SelectItem value="openai">OpenAI</SelectItem>
                 <SelectItem value="anthropic">Anthropic/Claude</SelectItem>
                 <SelectItem value="deepseek">Deepseek</SelectItem>
@@ -229,7 +229,7 @@ export default function LlmUsageLogs() {
 
           <div className="flex flex-col gap-1">
             <label className="text-sm font-medium flex items-center gap-1">
-              <Calendar className="h-4 w-4" /> {t("Start Date")}
+              <Calendar className="h-4 w-4" /> Data Inicial
             </label>
             <Input
               type="date"
@@ -240,7 +240,7 @@ export default function LlmUsageLogs() {
 
           <div className="flex flex-col gap-1">
             <label className="text-sm font-medium flex items-center gap-1">
-              <Calendar className="h-4 w-4" /> {t("End Date")}
+              <Calendar className="h-4 w-4" /> Data Final
             </label>
             <Input
               type="date"
@@ -349,14 +349,14 @@ export default function LlmUsageLogs() {
                     </TableCell>
                     <TableCell>
                       {log.success ? (
-                        <Badge variant="success" className="gap-1">
+                        <Badge className="gap-1 bg-green-100 text-green-800 hover:bg-green-200">
                           <CheckCircle className="h-3 w-3" />
-                          {t("Success")}
+                          Sucesso
                         </Badge>
                       ) : (
                         <Badge variant="destructive" className="gap-1">
                           <AlertCircle className="h-3 w-3" />
-                          {t("Failed")}
+                          Falha
                         </Badge>
                       )}
                     </TableCell>
