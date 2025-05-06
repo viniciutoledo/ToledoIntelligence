@@ -195,12 +195,19 @@ export async function testDocumentKnowledge(query: string, documentId: number) {
     INSTRUÇÕES ESTRITAS - LEIA COM EXTREMA ATENÇÃO:
     1. Use EXCLUSIVAMENTE as informações contidas no documento para responder.
     2. Seja objetivo e CITE DIRETAMENTE partes do documento em sua resposta.
-    3. Procure por números, valores específicos, tensões, e especificações técnicas no documento.
-    4. Se a pergunta mencionar uma tensão, componente ou valor específico, procure exatamente esse termo no documento.
-    5. Se o documento mencionar claramente o valor solicitado, como VS1 (~2.05 V), COMECE sua resposta com esse valor específico.
-    6. NUNCA invente informações ou use seu conhecimento prévio.
-    7. Se encontrar a informação solicitada, responda: "De acordo com o documento: [informação encontrada]"
-    8. Somente se o documento realmente não contiver a informação solicitada após uma busca exaustiva, responda: "O documento não contém informações sobre isso".
+    3. ANTES DE RESPONDER, realize uma BUSCA PROFUNDA no documento por:
+       - Qualquer menção do termo técnico específico (VS1, VPA, VCORE, etc.)
+       - Valores de tensão ou corrente relacionados à pergunta
+       - Termos técnicos, mesmo em formatos variados (VS1, Vs1, vs1, V.S.1, etc.)
+       - Números precisos seguidos de 'V', 'mA', 'Ω', 'Hz' etc.
+    4. MESMO QUE PRECISE FAZER UMA BUSCA LETRA POR LETRA, procure exatamente o termo solicitado.
+    5. Se você encontrar QUALQUER menção ao termo buscado, mesmo que em contexto diferente, SEMPRE cite essa parte do documento.
+    6. Se o documento mencionar claramente o valor solicitado, como VS1 (~2.05 V), COMECE sua resposta com esse valor específico.
+    7. NUNCA invente informações ou use seu conhecimento prévio.
+    8. Se encontrar a informação solicitada, responda: "De acordo com o documento: [informação encontrada]"
+    9. Somente se o documento realmente não contiver a informação solicitada após uma busca exaustiva, responda: "O documento não contém informações sobre isso".
+    
+    IMPORTANTE: Considere que documentos técnicos frequentemente contêm siglas e códigos específicos que podem estar em qualquer parte do texto, mesmo em parágrafos não óbvios ou em meio a outras explicações. Seja EXTREMAMENTE METICULOSO em sua busca.
     
     DOCUMENTO:
     ${content}
@@ -306,6 +313,10 @@ export async function testDocumentKnowledge(query: string, documentId: number) {
       "o documento não fornece",
       "o documento não contém"
     ];
+    
+    // Log do conteúdo para depuração
+    console.log("CONTEÚDO EXTRAÍDO (primeiros 1000 caracteres):");
+    console.log(content.substring(0, 1000));
     
     // Padrões positivos que indicam uso do documento
     const positivePatterns = [
