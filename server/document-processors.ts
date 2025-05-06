@@ -48,16 +48,24 @@ export async function extractTextFromTXT(filePath: string): Promise<string> {
 
 export async function extractTextFromDOCX(filePath: string): Promise<string> {
   try {
-    // Usar o mammoth importado no topo do arquivo
+    console.log(`Iniciando processamento DOCX: ${filePath}`);
     
-    // Configuração aprimorada para preservar estrutura e elementos importantes
+    // Verificar existência do arquivo
+    try {
+      const fileExists = fs.existsSync(filePath);
+      if (!fileExists) {
+        console.error(`Arquivo DOCX não encontrado: ${filePath}`);
+        return "Arquivo não encontrado";
+      }
+      
+      console.log(`Arquivo DOCX encontrado: ${filePath}, tamanho: ${fs.statSync(filePath).size} bytes`);
+    } catch (checkError) {
+      console.error(`Erro ao verificar existência do arquivo DOCX: ${checkError instanceof Error ? checkError.message : 'Erro desconhecido'}`);
+      return "Erro ao verificar arquivo";
+    }
+    
+    // Configuração simplificada sem convertImage e outras opções que podem causar problemas
     const options = {
-      convertImage: mammoth.images.imgElement(function(image) {
-        return {
-          src: image.src,
-          alt: "[Imagem no documento]"
-        };
-      }),
       styleMap: [
         "p[style-name='Heading 1'] => h1:fresh",
         "p[style-name='Heading 2'] => h2:fresh",
@@ -69,15 +77,38 @@ export async function extractTextFromDOCX(filePath: string): Promise<string> {
       ]
     };
     
+    console.log(`Tentando extrair HTML do arquivo DOCX: ${filePath}`);
+    
     // Primeiro extraímos o HTML para melhor preservação da estrutura
-    const htmlResult = await mammoth.convertToHtml({
-      path: filePath
-    }, options);
+    let htmlResult;
+    try {
+      htmlResult = await mammoth.convertToHtml({
+        path: filePath
+      }, options);
+      console.log(`HTML extraído com sucesso, tamanho: ${htmlResult.value.length} caracteres`);
+    } catch (htmlError) {
+      console.error(`Erro ao extrair HTML do DOCX: ${htmlError instanceof Error ? htmlError.message : 'Erro desconhecido'}`);
+      return "Erro ao processar HTML do documento";
+    }
+    
+    console.log(`Tentando extrair texto bruto do arquivo DOCX: ${filePath}`);
     
     // Extrair também o texto simples
-    const textResult = await mammoth.extractRawText({
-      path: filePath
-    });
+    let textResult;
+    try {
+      textResult = await mammoth.extractRawText({
+        path: filePath
+      });
+      console.log(`Texto bruto extraído com sucesso, tamanho: ${textResult.value.length} caracteres`);
+    } catch (textError) {
+      console.error(`Erro ao extrair texto bruto do DOCX: ${textError instanceof Error ? textError.message : 'Erro desconhecido'}`);
+      // Se conseguimos extrair HTML, podemos continuar mesmo sem o texto bruto
+      if (htmlResult && htmlResult.value) {
+        textResult = { value: "", messages: [] };
+      } else {
+        return "Erro ao processar texto do documento";
+      }
+    }
     
     let htmlText = htmlResult.value || "";
     let rawText = textResult.value || "";
@@ -111,8 +142,16 @@ export async function extractTextFromDOCX(filePath: string): Promise<string> {
     // Reconhecer padrões como tensões (ex: VS1 ~2.05V, VPA ~2.0V)
     const cleanedFinalText = `${htmlToText}\n\n${cleanedRawText}`;
     
-    // Remover duplicações potenciais
-    const processedText = [...new Set(cleanedFinalText.split('\n'))]
+    // Remover duplicações potenciais - convertendo para array simples para evitar problemas de compatibilidade
+    const uniqueLines: string[] = [];
+    const lines = cleanedFinalText.split('\n');
+    lines.forEach(line => {
+      if (!uniqueLines.includes(line)) {
+        uniqueLines.push(line);
+      }
+    });
+    
+    const processedText = uniqueLines
       .join('\n')
       .replace(/\n{3,}/g, '\n\n')
       .trim();
@@ -125,8 +164,8 @@ export async function extractTextFromDOCX(filePath: string): Promise<string> {
     
     return processedText;
   } catch (error) {
-    console.error("Erro ao extrair texto do DOCX:", error);
-    return "";
+    console.error("Erro ao extrair texto do DOCX:", error instanceof Error ? error.message : 'Erro desconhecido');
+    return "Falha no processamento do documento DOCX. Por favor, verifique o formato do arquivo.";
   }
 }
 
@@ -156,7 +195,8 @@ export async function extractTextFromWebsite(url: string): Promise<string> {
     return textContent;
   } catch (error) {
     console.error(`Erro ao extrair texto do site ${url}:`, error);
-    return `Não foi possível extrair o conteúdo do website: ${error.message}`;
+    const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+    return `Não foi possível extrair o conteúdo do website: ${errorMessage}`;
   }
 }
 
@@ -198,6 +238,7 @@ export async function processDocumentContent(
     }
   } catch (error) {
     console.error("Erro ao processar conteúdo do documento:", error);
-    return `[Erro ao processar conteúdo: ${error.message}]`;
+    const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+    return `[Erro ao processar conteúdo: ${errorMessage}]`;
   }
 }
