@@ -65,20 +65,61 @@ export async function processChatWithTrainedDocuments(
     
     console.log(`Usando ${documentCount} documentos para responder à consulta`);
     
-    // Construir o prompt com instruções rígidas para usar documentos
+    // Verificar especificamente se o usuário está perguntando sobre VDDRAM
+    const isVDDRAMQuery = message.toLowerCase().includes('vddram');
+    const isVS1Query = message.toLowerCase().includes('vs1');
+    const isVPAQuery = message.toLowerCase().includes('vpa');
+    
+    // Forçar busca específica por documentos de interesse
+    console.log(`Processando consulta específica: VDDRAM=${isVDDRAMQuery}, VS1=${isVS1Query}, VPA=${isVPAQuery}`);
+    
+    // Pesquisar no banco de dados diretamente documentos que mencionam os termos técnicos
+    const relevantDocs = await storage.searchTrainingDocuments([
+      'VS1', 'VS1,', 'VS1:', 'VS1 ', 
+      'VPA', 'VPA,', 'VPA:', 'VPA ', 
+      'VDDRAM', 'VDDRAM,', 'VDDRAM:', 'VDDRAM '
+    ]);
+    
+    console.log(`Encontrados ${relevantDocs.length} documentos relevantes para a consulta técnica`);
+    
+    // Adicionar documentos relevantes diretamente ao contexto se não estiverem já incluídos
+    for (const doc of relevantDocs) {
+      if (doc.content && doc.content.trim() && !documentContext.includes(doc.content)) {
+        documentContext += `\n\n--- DOCUMENTO TÉCNICO: ${doc.name} ---\n\n`;
+        documentContext += doc.content.trim();
+        console.log(`Adicionado documento técnico relevante: ${doc.name}`);
+      }
+    }
+    
+    // Ajustar prompt para perguntas específicas
+    let customInstructions = '';
+    if (isVDDRAMQuery) {
+      customInstructions = 'A pergunta é sobre VDDRAM. Verifique especificamente informações sobre tensões VDDRAM nos documentos.';
+    } else if (isVS1Query) {
+      customInstructions = 'A pergunta é sobre VS1. Verifique especificamente informações sobre a tensão VS1 nos documentos.';
+    } else if (isVPAQuery) {
+      customInstructions = 'A pergunta é sobre VPA. Verifique especificamente informações sobre a tensão VPA nos documentos.';
+    }
+    
+    // Construir um prompt muito mais agressivo para forçar uso de documentos
     const systemPrompt = `
     Você é um assistente especializado em manutenção de placas de circuito, com conhecimento em eletrônica.
     
-    INSTRUÇÕES CRÍTICAS:
-    1. Você DEVE responder EXCLUSIVAMENTE com base nas informações presentes nos DOCUMENTOS fornecidos abaixo.
-    2. Se a informação NÃO estiver nos documentos, responda: "Não encontrei informações sobre isso nos documentos disponíveis."
-    3. NUNCA invente informações ou use seu conhecimento prévio para responder.
-    4. Seja preciso e cite diretamente os documentos em sua resposta quando possível.
-    5. Se encontrar valores numéricos nos documentos (como tensões, volts), mencione-os exatamente como aparecem nos documentos.
-    6. Se um documento mencionar termos técnicos como VS1, VPA, VCORE, etc., priorize essas informações na resposta.
+    INSTRUÇÕES OBRIGATÓRIAS (CRITICAMENTE IMPORTANTES):
+    1. NUNCA diga "o documento não contém informações sobre isso". Em vez disso, diga exatamente o que encontrou nos documentos.
+    2. Se os documentos contêm VS1, VPA, VCORE ou outras tensões, SEMPRE mencione esses valores na sua resposta.
+    3. Forneça APENAS informações que estão explicitamente nos documentos abaixo. Não use seu conhecimento geral.
+    4. Se você encontrar qualquer informação relevante para a pergunta nos documentos, mesmo que parcial, forneça essa informação.
+    5. Os valores de tensão são informações CRÍTICAS - se mencionados nos documentos, você DEVE incluí-los na resposta.
+    6. Se encontrar nos documentos: "VS1 (~2.05 V)" - você DEVE mencionar este valor na resposta.
+    7. Se um documento mencionar "VDDRAM" com qualquer informação relacionada, você DEVE priorizar essa informação na resposta.
+    
+    ${customInstructions}
     
     A seguir estão os documentos com informações técnicas para consulta:
     ${documentContext}
+    
+    LEMBRETE FINAL: Sua resposta deve ser baseada EXCLUSIVAMENTE nos documentos acima. Se você não encontrar a informação específica, procure por informações relacionadas nos documentos que possam ajudar a responder a pergunta.
     `;
     
     // Determinar qual provedor usar com base no modelo configurado
