@@ -93,8 +93,29 @@ export async function processDocumentEmbeddings(documentId: number): Promise<boo
     const embeddingResults = [];
     for (let i = 0; i < documentChunks.length; i++) {
       const docChunk = documentChunks[i];
+      
+      // Verificar se o chunk é válido
+      if (!docChunk || !docChunk.content) {
+        console.error(`Chunk ${i+1}/${documentChunks.length} inválido ou sem conteúdo, pulando`);
+        continue;
+      }
+      
       const chunk = docChunk.content;
+      
+      // Verificar se o metadata existe
+      if (!docChunk.metadata) {
+        console.error(`Chunk ${i+1}/${documentChunks.length} não possui metadata válido, pulando`);
+        continue;
+      }
+      
       const chunkMeta = docChunk.metadata;
+      
+      // Validar os campos essenciais do metadata
+      if (typeof chunkMeta.chunkIndex !== 'number' || 
+          typeof chunkMeta.contentHash !== 'string') {
+        console.error(`Chunk ${i+1}/${documentChunks.length} possui metadata incompleto, pulando`);
+        continue;
+      }
       
       console.log(`Processando chunk ${i+1}/${documentChunks.length} (${chunk.length} caracteres, índice: ${chunkMeta.chunkIndex})`);
       
@@ -111,21 +132,26 @@ export async function processDocumentEmbeddings(documentId: number): Promise<boo
         // Extrair o vetor embedding
         embeddingVector = embeddingResponse.data[0].embedding;
         
+        // Preparar metadata com valores seguros
+        const documentName = chunkMeta.documentName || document.name || `Documento ${document.id}`;
+        const contentHash = chunkMeta.contentHash || '';
+        const chunkIndex = typeof chunkMeta.chunkIndex === 'number' ? chunkMeta.chunkIndex : 0;
+        
         // Armazenar o embedding no banco de dados principal
         knowledgeEntry = await storage.createKnowledgeEntry({
           content: chunk,
           embedding: JSON.stringify(embeddingVector),
           source_type: "document",
           source_id: document.id,
-          chunk_index: chunkMeta.chunkIndex,
+          chunk_index: chunkIndex,
           // Usar 'pt' como padrão pois o tipo aceitável é limitado
           language: "pt",
           metadata: JSON.stringify({
-            document_name: chunkMeta.documentName || document.name,
+            document_name: documentName,
             document_type: document.document_type,
-            chunk_index: chunkMeta.chunkIndex,
+            chunk_index: chunkIndex,
             total_chunks: documentChunks.length,
-            content_hash: chunkMeta.contentHash
+            content_hash: contentHash
           }),
           is_verified: true,
           relevance_score: 1.0,
@@ -141,15 +167,21 @@ export async function processDocumentEmbeddings(documentId: number): Promise<boo
         // Opcional: armazenar no Supabase para buscas vetoriais mais rápidas
         if (embeddingVector) {
           try {
+            // Preparar metadata seguro para o Supabase também
+            const documentName = chunkMeta.documentName || document.name || `Documento ${document.id}`;
+            const documentType = document.document_type || 'unknown';
+            const contentHash = chunkMeta.contentHash || '';
+            const chunkIndex = typeof chunkMeta.chunkIndex === 'number' ? chunkMeta.chunkIndex : 0;
+            
             await supabase.from('document_embeddings').insert({
               document_id: document.id,
-              chunk_index: chunkMeta.chunkIndex,
+              chunk_index: chunkIndex,
               content: chunk,
               embedding: embeddingVector,
               metadata: {
-                document_name: chunkMeta.documentName || document.name,
-                document_type: document.document_type,
-                content_hash: chunkMeta.contentHash
+                document_name: documentName,
+                document_type: documentType,
+                content_hash: contentHash
               }
             });
             console.log(`Chunk ${i+1} armazenado com sucesso no Supabase`);
@@ -367,8 +399,12 @@ export async function searchRelevantDocuments(query: string, maxResults: number 
           }
         })
         .filter(Boolean) // Filtrar itens nulos
-        .filter(chunk => chunk.relevance_score > 0.7) // Limiar de similaridade
-        .sort((a, b) => b.relevance_score - a.relevance_score)
+        .filter(chunk => chunk && typeof chunk.relevance_score === 'number' && chunk.relevance_score > 0.7) // Limiar de similaridade
+        .sort((a, b) => {
+          // Garantir que a e b são objetos válidos com propriedade relevance_score
+          if (!a || !b) return 0;
+          return (b.relevance_score || 0) - (a.relevance_score || 0);
+        })
         .slice(0, maxResults * 2);
     }
     
@@ -382,11 +418,24 @@ export async function searchRelevantDocuments(query: string, maxResults: number 
     }>();
     
     for (const chunk of relevantChunks) {
+      // Verificar se o chunk é válido e possui todas as propriedades necessárias
+      if (!chunk || !chunk.document_id || !chunk.document_name || !chunk.content || 
+          typeof chunk.relevance_score !== 'number') {
+        console.warn('Chunk inválido ou incompleto ignorado durante o processamento');
+        continue;
+      }
+      
       const docId = chunk.document_id;
       
       if (documentMap.has(docId)) {
         // Já temos um trecho deste documento, verificar se vale a pena adicionar mais
-        const existingDoc = documentMap.get(docId)!;
+        const existingDoc = documentMap.get(docId);
+        
+        // Verificar se existingDoc é válido
+        if (!existingDoc) {
+          console.warn(`Documento com ID ${docId} no mapa, mas retornou null/undefined. Isso não deveria acontecer.`);
+          continue;
+        }
         
         // Se o novo chunk for mais relevante, atualizamos a pontuação
         if (chunk.relevance_score > existingDoc.relevance_score) {
