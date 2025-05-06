@@ -39,6 +39,7 @@ export async function processChatWithTrainedDocuments(
     // Determinar modelo a usar
     const provider = llmConfig.model_name.startsWith('gpt') ? 'openai' : 'anthropic';
     const modelName = llmConfig.model_name;
+    const temperature = llmConfig.temperature || '0.3';
     
     console.log(`USANDO NOVO PROCESSADOR RAG COM ${modelName}`);
     
@@ -216,6 +217,7 @@ export async function processChatWithTrainedDocuments(
         message,
         modelName,
         llmConfig.api_key,
+        temperature,
         userId,
         widgetId
       );
@@ -225,6 +227,7 @@ export async function processChatWithTrainedDocuments(
         message,
         modelName,
         llmConfig.api_key,
+        temperature,
         userId,
         widgetId
       );
@@ -247,6 +250,7 @@ async function processWithOpenAI(
   userMessage: string,
   modelName: string,
   apiKey: string,
+  temperature: string = '0.3',
   userId?: number,
   widgetId?: string
 ): Promise<string> {
@@ -271,7 +275,7 @@ async function processWithOpenAI(
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userMessage }
       ],
-      temperature: 0.3 // Baixo para respostas mais precisas e focadas no conteúdo dos documentos
+      temperature: parseFloat(temperature) // Usando o valor configurado
     });
     
     // Extrair a resposta do modelo
@@ -392,6 +396,7 @@ async function processRegularChat(
     const provider = llmConfig.model_name.startsWith('gpt') ? 'openai' : 'anthropic';
     const modelName = llmConfig.model_name;
     const apiKey = llmConfig.api_key;
+    const temperature = llmConfig.temperature || '0.3';
     
     // Prompt padrão para modo sem documentos
     const systemPrompt = `
@@ -406,6 +411,7 @@ async function processRegularChat(
         message,
         modelName,
         apiKey,
+        temperature,
         userId,
         widgetId
       );
@@ -415,6 +421,7 @@ async function processRegularChat(
         message,
         modelName,
         apiKey,
+        temperature,
         userId,
         widgetId
       );
