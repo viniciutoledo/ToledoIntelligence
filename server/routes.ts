@@ -2314,10 +2314,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log("Conteúdo extraído do TXT:", content ? `${content.length} caracteres` : "falha na extração");
         } else if (req.file.mimetype === "application/msword" || 
                   req.file.mimetype === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
-          // Arquivos DOC/DOCX - como não temos um parser específico, vamos usar conteúdo de exemplo para testes
-          // Em um ambiente de produção, seria ideal usar uma biblioteca como mammoth.js ou similar
-          content = `Documento do Word: ${req.file.originalname}\n\nExemplo de conteúdo extraído de um arquivo do Microsoft Word.\nEste é um conteúdo de exemplo para demonstrar a funcionalidade.\n\nOs pinos CC fornecem alimentação de corrente contínua para os componentes eletrônicos.`;
-          console.log("Conteúdo para arquivo Word:", content ? `${content.length} caracteres` : "falha na extração");
+          // Extrair texto de arquivos DOC/DOCX usando mammoth.js
+          const mammoth = require('mammoth');
+          try {
+            const result = await mammoth.extractRawText({
+              path: filePath
+            });
+            content = result.value;
+            console.log("Conteúdo extraído do DOCX:", content ? `${content.length} caracteres` : "falha na extração");
+            if (result.messages && result.messages.length > 0) {
+              console.log("Mensagens de extração do DOCX:", result.messages);
+            }
+          } catch (docxError) {
+            console.error("Erro ao extrair texto do DOC/DOCX:", docxError);
+            content = `Erro ao extrair conteúdo do documento Word: ${docxError.message}`;
+          }
         }
         
         // Caso não tenha conseguido extrair o conteúdo

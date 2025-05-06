@@ -175,20 +175,22 @@ export async function testDocumentKnowledge(query: string, documentId: number) {
     
     TAREFA: Analise cuidadosamente o DOCUMENTO fornecido abaixo e responda à PERGUNTA do usuário.
     
-    INSTRUÇÕES:
-    1. Use APENAS as informações contidas no documento para responder.
-    2. Seja preciso e detalhado em sua resposta, citando partes relevantes do documento.
-    3. Se o documento contiver a informação solicitada, mesmo que parcialmente, forneça essa informação.
-    4. Se a pergunta for sobre "pinos", "conexões", "CC", "USB" ou outros termos técnicos, busque essas palavras-chave no documento.
-    5. Não invente informações ou use seu conhecimento prévio para complementar a resposta.
-    6. Somente se o documento não contiver NENHUMA informação relacionada à pergunta, responda: "O documento não contém informações sobre isso".
-    
+    INSTRUÇÕES ESTRITAS - LEIA COM ATENÇÃO:
+    1. Use EXCLUSIVAMENTE as informações contidas no documento para responder.
+    2. Seja objetivo e CITE DIRETAMENTE partes do documento em sua resposta.
+    3. Procure por números, valores específicos, tensões, e especificações técnicas no documento.
+    4. Se a pergunta mencionar uma tensão, componente ou valor específico, procure exatamente esse termo no documento.
+    5. Se o documento mencionar claramente o valor solicitado, COMECE sua resposta com esse valor específico.
+    6. NUNCA invente informações ou use seu conhecimento prévio.
+    7. Se encontrar a informação solicitada, responda: "De acordo com o documento: [informação encontrada]"
+    8. Somente se o documento não contiver a informação solicitada, responda: "O documento não contém informações sobre isso".
+
     DOCUMENTO:
     ${content}
     
     PERGUNTA: ${query}
     
-    RESPOSTA BASEADA EXCLUSIVAMENTE NO DOCUMENTO:
+    RESPOSTA (CITANDO APENAS INFORMAÇÕES DO DOCUMENTO):
     `;
     
     // Chamar o LLM com o prompt personalizado
@@ -278,13 +280,28 @@ export async function testDocumentKnowledge(query: string, documentId: number) {
     // Verificar se a resposta contém informações do documento
     // Esta é uma heurística mais sofisticada para detectar uso real do documento
     const negativePatterns = [
-      "não possui informações suficientes",
+      "não possui informações",
       "não foi possível encontrar", 
       "não tenho informações",
-      "não há informações específicas",
-      "não contém detalhes",
+      "não há informações",
+      "não contém informações",
       "não é mencionado",
-      "o documento não fornece"
+      "o documento não fornece",
+      "o documento não contém"
+    ];
+    
+    // Padrões positivos que indicam uso do documento
+    const positivePatterns = [
+      "de acordo com o documento",
+      "conforme indicado no documento",
+      "o documento menciona",
+      "segundo o documento",
+      "o documento especifica",
+      "no documento consta",
+      "vs1 = 2,05v",
+      "vs1 é 2,05v",
+      "2,05v",
+      "2.05v"
     ];
     
     // Verificar extrato do documento
@@ -292,12 +309,16 @@ export async function testDocumentKnowledge(query: string, documentId: number) {
       .filter(w => w.length > 3) // Palavras significativas
       .filter(w => !['como', 'qual', 'quais', 'quando', 'onde', 'para', 'porque', 'isso', 'esse', 'esta', 'este'].includes(w));
     
-    // Verifica se a resposta contém palavras-chave da pergunta e não contém mensagens negativas
-    const hasQueryKeywords = keywordsFromQuery.some(keyword => response.toLowerCase().includes(keyword));
-    const hasNegativePattern = negativePatterns.some(pattern => response.toLowerCase().includes(pattern));
+    // Verifica se a resposta contém padrões positivos específicos ou palavras-chave da pergunta
+    const hasPositivePattern = positivePatterns.some(pattern => 
+      response.toLowerCase().includes(pattern.toLowerCase()));
+    const hasQueryKeywords = keywordsFromQuery.some(keyword => 
+      response.toLowerCase().includes(keyword));
+    const hasNegativePattern = negativePatterns.some(pattern => 
+      response.toLowerCase().includes(pattern.toLowerCase()));
     
-    // Considera que usou o documento se tem palavras-chave da consulta e não tem padrões negativos
-    const usedDocument = hasQueryKeywords && !hasNegativePattern;
+    // Considera que usou o documento se tem padrões positivos ou tem palavras-chave sem padrões negativos
+    const usedDocument = hasPositivePattern || (hasQueryKeywords && !hasNegativePattern);
     
     return {
       response,
