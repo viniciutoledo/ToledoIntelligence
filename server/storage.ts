@@ -1485,7 +1485,7 @@ export class MemStorage implements IStorage {
 
 import { db, pool } from './db';
 import connectPg from "connect-pg-simple";
-import { eq, and, isNull, lt, gt, or, desc, asc } from 'drizzle-orm';
+import { eq, and, isNull, lt, gt, or, desc, asc, ilike } from 'drizzle-orm';
 import { 
   usersSessions, 
   trainingDocuments, 
