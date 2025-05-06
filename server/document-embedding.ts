@@ -1,6 +1,7 @@
 import OpenAI from 'openai';
 import { storage } from './storage';
 import { createClient } from '@supabase/supabase-js';
+import { smartChunking, DocumentChunk } from './document-chunking';
 
 // Verificar credenciais do Supabase
 if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
@@ -61,72 +62,126 @@ export async function processDocumentEmbeddings(documentId: number): Promise<boo
       apiKey: process.env.OPENAI_API_KEY
     });
     
-    // Chunking: dividir o documento em partes processáveis
-    const chunks = chunkDocumentContent(document.content);
-    console.log(`Documento dividido em ${chunks.length} chunks para processamento`);
+    // Verificar se há conteúdo para processar
+    if (!document.content) {
+      console.error(`Documento ${documentId} não possui conteúdo para chunking`);
+      return false;
+    }
+    
+    // Chunking: dividir o documento em partes processáveis usando o algoritmo avançado
+    console.log(`Iniciando chunking avançado para documento ${documentId} (${document.content.length} caracteres)`);
+    
+    // Usar smart chunking para lidar melhor com documentos grandes
+    const documentChunks = smartChunking(
+      document.content,
+      document.id,
+      'document',
+      document.document_type === 'file' ? 'technical' : (document.document_type || 'manual'),
+      { 
+        maxChunkSize: 1500,
+        overlapSize: 150,
+        language: 'pt',
+        documentName: document.name
+      }
+    );
+    
+    // Extrair apenas o conteúdo dos chunks para processamento adicional
+    const chunks = documentChunks.map(chunk => chunk.content);
+    console.log(`Documento dividido em ${chunks.length} chunks para processamento usando algoritmo avançado`);
     
     // Processar cada chunk e gerar embeddings
     const embeddingResults = [];
-    for (let i = 0; i < chunks.length; i++) {
-      const chunk = chunks[i];
-      console.log(`Processando chunk ${i+1}/${chunks.length} (${chunk.length} caracteres)`);
+    for (let i = 0; i < documentChunks.length; i++) {
+      const docChunk = documentChunks[i];
+      const chunk = docChunk.content;
+      const chunkMeta = docChunk.metadata;
       
-      // Gerar embedding via OpenAI
-      const embeddingResponse = await openai.embeddings.create({
-        model: "text-embedding-ada-002",
-        input: chunk,
-      });
+      console.log(`Processando chunk ${i+1}/${documentChunks.length} (${chunk.length} caracteres, índice: ${chunkMeta.chunkIndex})`);
       
-      // Extrair o vetor embedding
-      const embedding = embeddingResponse.data[0].embedding;
+      let knowledgeEntry = null;
+      let embeddingVector = null;
       
-      // Armazenar o embedding no banco (usando o Supabase para os vetores e nosso próprio banco para o registro)
-      const knowledgeEntry = await storage.createKnowledgeEntry({
-        content: chunk,
-        embedding: JSON.stringify(embedding),
-        source_type: "document",
-        source_id: document.id,
-        language: "pt", // Assumindo português, ajustar conforme necessário
-        metadata: {
-          document_name: document.name,
-          document_type: document.document_type,
-          chunk_index: i,
-          total_chunks: chunks.length
-        },
-        is_verified: true,
-        relevance_score: 1.0,
-      });
-      
-      embeddingResults.push(knowledgeEntry);
-      
-      // Opcional: armazenar no Supabase para buscas vetoriais mais rápidas
       try {
-        await supabase.from('document_embeddings').insert({
-          document_id: document.id,
-          chunk_index: i,
-          content: chunk,
-          embedding,
-          metadata: {
-            document_name: document.name,
-            document_type: document.document_type
-          }
+        // Gerar embedding via OpenAI
+        const embeddingResponse = await openai.embeddings.create({
+          model: "text-embedding-ada-002",
+          input: chunk,
         });
-      } catch (supabaseError) {
-        console.error("Erro ao armazenar embedding no Supabase:", supabaseError);
-        // Não falhar, pois já armazenamos no nosso banco principal
+        
+        // Extrair o vetor embedding
+        embeddingVector = embeddingResponse.data[0].embedding;
+        
+        // Armazenar o embedding no banco de dados principal
+        knowledgeEntry = await storage.createKnowledgeEntry({
+          content: chunk,
+          embedding: JSON.stringify(embeddingVector),
+          source_type: "document",
+          source_id: document.id,
+          chunk_index: chunkMeta.chunkIndex,
+          // Usar 'pt' como padrão pois o tipo aceitável é limitado
+          language: "pt",
+          metadata: JSON.stringify({
+            document_name: chunkMeta.documentName || document.name,
+            document_type: document.document_type,
+            chunk_index: chunkMeta.chunkIndex,
+            total_chunks: documentChunks.length,
+            content_hash: chunkMeta.contentHash
+          }),
+          is_verified: true,
+          relevance_score: 1.0,
+        });
+        
+        console.log(`Chunk ${i+1}/${documentChunks.length} processado com sucesso`);
+        
+        // Adicionar à lista de resultados apenas se foi processado com sucesso
+        if (knowledgeEntry) {
+          embeddingResults.push(knowledgeEntry);
+        }
+        
+        // Opcional: armazenar no Supabase para buscas vetoriais mais rápidas
+        if (embeddingVector) {
+          try {
+            await supabase.from('document_embeddings').insert({
+              document_id: document.id,
+              chunk_index: chunkMeta.chunkIndex,
+              content: chunk,
+              embedding: embeddingVector,
+              metadata: {
+                document_name: chunkMeta.documentName || document.name,
+                document_type: document.document_type,
+                content_hash: chunkMeta.contentHash
+              }
+            });
+            console.log(`Chunk ${i+1} armazenado com sucesso no Supabase`);
+          } catch (supabaseError) {
+            console.error(`Erro ao armazenar chunk ${i+1} no Supabase:`, supabaseError);
+            // Não falhar, pois já armazenamos no nosso banco principal
+          }
+        }
+      } catch (error) {
+        console.error(`Erro ao processar chunk ${i+1}/${documentChunks.length}:`, error);
+        // Continuar mesmo com erro em um chunk individual
+        continue;
       }
     }
     
-    // Atualizar o status do documento
-    await storage.updateTrainingDocument(documentId, {
-      status: "indexed",
-      updated_at: new Date(),
-      metadata: {
-        chunks_count: chunks.length,
-        embedding_model: "text-embedding-ada-002",
-        processing_date: new Date().toISOString()
-      }
-    });
+    // Atualizar o status do documento com informações de processamento
+    try {
+      await storage.updateTrainingDocument(documentId, {
+        status: "indexed",
+        updated_at: new Date(),
+        is_indexed: true,
+        indexed_at: new Date()
+      });
+      
+      // Adicionar log detalhado para depuração
+      console.log(`Documento ${documentId} atualizado com status 'indexed'. ` +
+        `Total chunks processados: ${documentChunks.length}, ` +
+        `Embeddings gerados: ${embeddingResults.length}`);
+    } catch (updateError) {
+      console.error(`Erro ao atualizar status final do documento ${documentId}:`, updateError);
+      // Continuamos mesmo com erro no update de status, pois os chunks já foram processados
+    }
     
     console.log(`Processamento de embeddings concluído para documento ${documentId}. Gerados ${embeddingResults.length} vetores.`);
     return true;
