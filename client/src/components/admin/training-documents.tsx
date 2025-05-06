@@ -59,6 +59,7 @@ import {
   Globe,
   Pen,
   PlusCircle,
+  RefreshCw,
   Trash2,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -89,6 +90,7 @@ export function TrainingDocuments() {
     createDocumentMutation,
     updateDocumentMutation,
     deleteDocumentMutation,
+    resetDocumentStatusMutation,
   } = useTraining();
   
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -180,6 +182,10 @@ export function TrainingDocuments() {
   
   const handleDeleteDocument = (documentId: number) => {
     deleteDocumentMutation.mutate(documentId);
+  };
+  
+  const handleResetDocumentStatus = (documentId: number) => {
+    resetDocumentStatusMutation.mutate(documentId);
   };
   
   const getStatusBadge = (status: string) => {
@@ -438,6 +444,19 @@ export function TrainingDocuments() {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end space-x-2">
+                      {(document.status === 'error' || document.status === 'pending') && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-blue-500"
+                          onClick={() => handleResetDocumentStatus(document.id)}
+                          disabled={resetDocumentStatusMutation.isPending}
+                        >
+                          <RefreshCw className="h-4 w-4" />
+                          <span className="sr-only">{t("admin.training.resetStatus")}</span>
+                        </Button>
+                      )}
+                    
                       <Button
                         size="sm"
                         variant="ghost"
