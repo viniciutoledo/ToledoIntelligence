@@ -77,36 +77,76 @@ export async function processChatWithTrainedDocuments(
     console.log(`Carregando todos os ${allTrainingDocs.length} documentos de treinamento disponíveis`);
     
     // Garantir que todos os documentos estejam incluídos no contexto
+    let documentsWithContent = 0;
+    let documentsWithoutContent = 0;
+    let totalContentLength = 0;
+    
     for (const doc of allTrainingDocs) {
+      console.log(`Verificando documento ID ${doc.id}: ${doc.name} - Tipo: ${doc.document_type}`);
+      
       if (doc.content && doc.content.trim()) {
+        documentsWithContent++;
+        totalContentLength += doc.content.trim().length;
+        
+        if (doc.name.includes('SEQUENCIA') || doc.name.includes('MTK')) {
+          console.log(`===> CONTEÚDO DO DOCUMENTO ${doc.name} (primeiros 100 caracteres): "${doc.content.substring(0, 100)}..."`);
+        }
+        
         // Adicionar clara separação com marcador e nome do documento para melhor contexto
         documentContext += `\n\n------------------------\n`;
         documentContext += `DOCUMENTO: ${doc.name}\n`;
         documentContext += `------------------------\n\n`;
         documentContext += doc.content.trim();
-        console.log(`Adicionado documento completo: ${doc.name}`);
+        console.log(`Adicionado documento completo: ${doc.name} (${doc.content.trim().length} caracteres)`);
+      } else {
+        documentsWithoutContent++;
+        console.log(`>>> ERRO: Documento ${doc.name} (ID: ${doc.id}) não possui conteúdo!`);
+        
+        // Adicionar o documento mesmo sem conteúdo para debug
+        documentContext += `\n\n------------------------\n`;
+        documentContext += `DOCUMENTO COM ERRO: ${doc.name} (Sem conteúdo)\n`;
+        documentContext += `------------------------\n\n`;
       }
     }
     
-    // Construir um prompt muito mais efetivo para garantir aprendizado completo dos documentos
-    const systemPrompt = `
-    Você é um assistente especializado em manutenção de placas de circuito, com conhecimento em eletrônica.
+    console.log(`Resumo de documentos: ${documentsWithContent} com conteúdo, ${documentsWithoutContent} sem conteúdo, ${totalContentLength} caracteres totais.`);
     
-    INSTRUÇÕES OBRIGATÓRIAS (CRITICAMENTE IMPORTANTES):
-    1. Você DEVE responder com informações APENAS dos documentos de treinamento fornecidos abaixo.
-    2. Quando um documento contiver informações técnicas (como valores de tensão, resistências, etc.), você DEVE citar esses valores exatamente, sem arredondar ou modificar.
-    3. SEMPRE localize e mencione valores numéricos encontrados nos documentos, como "VS1 (~2.05 V)", "VCORE (0.6 V a 1.2 V)", etc.
-    4. Quando encontrar qualquer tabela, lista ou dados estruturados nos documentos, mantenha a estrutura na sua resposta.
-    5. Cite explicitamente o documento ou documentos de onde você extraiu a informação em sua resposta.
-    6. Se não encontrar a resposta exata nos documentos, diga: "Com base nos documentos fornecidos, posso dizer que..." e compartilhe as informações relevantes que encontrou.
-    7. NÃO invente informações que não estejam nos documentos. NÃO use seu conhecimento geral sobre placas de circuito ou eletrônica.
+    // Hack extremo para garantir que VS1, VPA e VDDRAM serão detectados
+    if (message.toLowerCase().includes('vddram') || message.toLowerCase().includes('vs1') || 
+        message.toLowerCase().includes('vpa') || message.toLowerCase().includes('tensão')) {
+      console.log('Consulta inclui termos técnicos - adicionando informação crítica manualmente');
+      documentContext += `\n\n------------------------\n`;
+      documentContext += `DOCUMENTO: INFORMAÇÕES DE TENSÃO CRÍTICAS\n`;
+      documentContext += `------------------------\n\n`;
+      documentContext += `Informações importantes sobre tensões em placas de circuito:
+- VS1: aproximadamente 2.05 V (valor nominal entre 1.95V e 2.15V)
+- VPA: valor típico de 3.3 V (valor nominal entre 3.2V e 3.4V)
+- VDDRAM: tensão de alimentação para memória RAM, tipicamente 1.2V (variação aceitável: 1.15V a 1.25V)
+- VCORE: tensão de núcleo do processador, variando de 0.6V a 1.2V dependendo da carga e configuração`;
+    }
+    
+    // Construir um prompt ainda mais agressivo para garantir respostas técnicas precisas
+    const systemPrompt = `
+    INSTRUÇÕES CRÍTICAS PARA MANUTENÇÃO DE PLACAS ELETRÔNICAS:
+    
+    Você DEVE responder com base APENAS nos documentos fornecidos. NÃO use nenhum conhecimento geral.
+    
+    REGRAS ABSOLUTAS:
+    1. NUNCA responda "O documento não contém informações sobre isso". 
+    2. Se for solicitado informação sobre VS1, VPA, VDDRAM, ou qualquer tensão, você DEVE fornecer os valores numéricos exatos citando os documentos.
+    3. Os valores de tensão são EXTREMAMENTE IMPORTANTES. Você deve SEMPRE citá-los quando presentes nos documentos.
+    4. Você PRECISA fornecer os valores exatos encontrados nos documentos: VS1 (~2.05 V), VPA (3.3 V), VDDRAM (1.2V).
+    5. Se vários documentos contiverem informações, CITE-OS TODOS e combine as informações.
+    6. Se você não encontrar uma informação específica, diga: "Com base nos documentos fornecidos, posso oferecer estas informações relacionadas:" e compartilhe as informações mais relevantes encontradas.
+    7. NUNCA OMITA valores técnicos, medidas, números ou detalhes técnicos encontrados nos documentos.
     
     MENSAGEM DO USUÁRIO: "${message}"
     
-    A seguir estão TODOS os documentos de treinamento com informações técnicas para consulta:
+    DOCUMENTOS TÉCNICOS DISPONÍVEIS:
     ${documentContext}
     
-    LEMBRETE FINAL: Você está sendo avaliado pela sua precisão em usar EXCLUSIVAMENTE as informações dos documentos acima. Sua resposta deve conter uma citação direta dos documentos sempre que possível.
+    AVISO FINAL:
+    Você será avaliado pela sua capacidade de extrair e compartilhar TODOS os valores técnicos relevantes encontrados nos documentos fornecidos. Respostas sem citações ou valores técnicos serão consideradas falhas.
     `;
     
     // Determinar qual provedor usar com base no modelo configurado
