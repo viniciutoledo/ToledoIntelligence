@@ -88,12 +88,58 @@ async function updateLlmConfigTable() {
   }
 }
 
+async function createKnowledgeBaseTable() {
+  console.log('Verificando e criando a tabela knowledge_base...');
+  
+  try {
+    // Verifica se a tabela knowledge_base existe
+    const checkTableExists = await pool.query(`
+      SELECT table_name 
+      FROM information_schema.tables 
+      WHERE table_name = 'knowledge_base'
+    `);
+    
+    if (checkTableExists.rows.length === 0) {
+      console.log('Criando tabela knowledge_base...');
+      
+      // Criar tabela knowledge_base com embedding como JSON
+      await pool.query(`
+        CREATE TABLE knowledge_base (
+          id SERIAL PRIMARY KEY,
+          content TEXT NOT NULL,
+          embedding TEXT, -- Armazenar embedding como texto JSON para compatibilidade
+          source_type TEXT NOT NULL,
+          source_id INTEGER,
+          metadata JSONB DEFAULT '{}',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          chunk_index INTEGER,
+          document_title TEXT
+        )
+      `);
+      
+      // Criar índice básico em source_id e source_type
+      await pool.query(`
+        CREATE INDEX idx_knowledge_base_source 
+        ON knowledge_base(source_type, source_id)
+      `);
+      
+      console.log('Tabela knowledge_base criada com sucesso!');
+    } else {
+      console.log('Tabela knowledge_base já existe.');
+    }
+  } catch (error) {
+    console.error('Erro ao criar tabela knowledge_base:', error);
+    throw error;
+  }
+}
+
 // Função principal para executar as atualizações
 async function runMigrations() {
   console.log('Iniciando atualizações do banco de dados...');
   
   try {
     await updateLlmConfigTable();
+    await createKnowledgeBaseTable();
     console.log('Todas as atualizações foram concluídas com sucesso!');
   } catch (error) {
     console.error('Erro durante o processo de atualização:', error);
