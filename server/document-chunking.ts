@@ -1,6 +1,8 @@
-import { createHash } from 'crypto';
+import crypto from 'crypto';
 
-// Tipos para os chunks
+/**
+ * Interface para os chunks de documento com metadados
+ */
 export interface DocumentChunk {
   content: string;
   metadata: {
@@ -13,351 +15,548 @@ export interface DocumentChunk {
   };
 }
 
-// Função para dividir textos em chunks com sobreposição
+/**
+ * Divide um texto em chunks de tamanho semelhante, respeitando parágrafos
+ */
 export function chunkText(
   text: string,
   documentId: number,
   sourceType: string = 'document',
   options: {
-    chunkSize?: number;
-    chunkOverlap?: number;
-    language?: string;
-    documentName?: string;
-  } = {}
-): DocumentChunk[] {
-  const {
-    chunkSize = 1000,
-    chunkOverlap = 200,
-    language = 'pt',
-    documentName
-  } = options;
-
-  if (!text || text.trim().length === 0) {
-    return [];
-  }
-
-  // Tratamento para remover caracteres de controle e normalizar espaços
-  text = text
-    .replace(/[\u0000-\u001F\u007F-\u009F]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim();
-
-  // Calcular o passo (stride) para sobreposição
-  const stride = chunkSize - chunkOverlap;
-
-  const chunks: DocumentChunk[] = [];
-  let currentIndex = 0;
-
-  // Dividir o texto em chunks
-  while (currentIndex < text.length) {
-    // Extrair chunk atual
-    let chunkText = text.substring(
-      currentIndex,
-      Math.min(currentIndex + chunkSize, text.length)
-    );
-
-    // Se não estamos no final e é possível ajustar para não cortar no meio de uma palavra
-    if (currentIndex + chunkSize < text.length) {
-      // Encontrar o último espaço antes do limite
-      const lastSpace = chunkText.lastIndexOf(' ');
-      if (lastSpace > 0) {
-        chunkText = chunkText.substring(0, lastSpace);
-      }
-    }
-
-    // Calcular hash para verificar duplicação
-    const contentHash = createHash('md5')
-      .update(chunkText)
-      .digest('hex');
-
-    // Criar o chunk e adicionar ao array
-    chunks.push({
-      content: chunkText,
-      metadata: {
-        documentId,
-        chunkIndex: chunks.length,
-        sourceType,
-        contentHash,
-        documentName,
-        language
-      }
-    });
-
-    // Atualizar o índice para o próximo chunk, considerando a sobreposição
-    const newIndex = currentIndex + chunkText.length;
-    currentIndex = newIndex > currentIndex ? newIndex - chunkOverlap : newIndex;
-  }
-
-  console.log(`Documento ${documentId} dividido em ${chunks.length} chunks`);
-  return chunks;
-}
-
-// Função para dividir um documento grande em chunks, preservando contexto semântico
-export function semanticChunking(
-  text: string,
-  documentId: number,
-  sourceType: string = 'document',
-  options: {
     maxChunkSize?: number;
+    overlapSize?: number;
     language?: string;
     documentName?: string;
   } = {}
 ): DocumentChunk[] {
   const {
     maxChunkSize = 1500,
+    overlapSize = 150,
     language = 'pt',
-    documentName
+    documentName = `Documento ${documentId}`
   } = options;
 
-  if (!text || text.trim().length === 0) {
+  // Dividir texto em parágrafos
+  const paragraphs = text.split(/\n\s*\n/).filter(p => p.trim().length > 0);
+  
+  if (paragraphs.length === 0) {
     return [];
   }
-
-  // Normalização do texto
-  text = text
-    .replace(/[\u0000-\u001F\u007F-\u009F]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim();
-
-  // Dividir o texto em parágrafos
-  const paragraphs = text
-    .split(/\n\n+/)
-    .map(p => p.trim())
-    .filter(p => p.length > 0);
-
+  
   const chunks: DocumentChunk[] = [];
   let currentChunk = '';
+  let currentParagraphs: string[] = [];
+  let chunkIndex = 0;
   
-  for (const paragraph of paragraphs) {
-    // Se o parágrafo sozinho excede o tamanho máximo, divida-o
-    if (paragraph.length > maxChunkSize) {
-      // Adicionar o chunk atual se não estiver vazio
-      if (currentChunk.length > 0) {
-        const contentHash = createHash('md5')
-          .update(currentChunk)
-          .digest('hex');
-          
-        chunks.push({
-          content: currentChunk,
-          metadata: {
-            documentId,
-            chunkIndex: chunks.length,
-            sourceType,
-            contentHash,
-            documentName,
-            language
-          }
-        });
-        currentChunk = '';
-      }
+  // Processar parágrafos
+  for (let i = 0; i < paragraphs.length; i++) {
+    const paragraph = paragraphs[i].trim();
+    
+    // Se adicionar este parágrafo faz o chunk ficar muito grande
+    if (currentChunk.length + paragraph.length + 1 > maxChunkSize && currentChunk.length > 0) {
+      // Salvar chunk atual
+      chunks.push(createChunk(
+        currentChunk, 
+        chunkIndex, 
+        documentId, 
+        sourceType, 
+        { language, documentName }
+      ));
       
-      // Dividir o parágrafo grande usando chunkText
-      const paragraphChunks = chunkText(
-        paragraph,
-        documentId,
-        sourceType,
-        {
-          chunkSize: maxChunkSize,
-          chunkOverlap: 150,
-          language,
-          documentName
-        }
-      );
-      
-      chunks.push(...paragraphChunks);
-      continue;
+      // Iniciar novo chunk com sobreposição
+      const overlapParagraphs = getOverlapParagraphs(currentParagraphs, overlapSize);
+      currentChunk = overlapParagraphs.join('\n\n');
+      currentParagraphs = [...overlapParagraphs];
+      chunkIndex++;
     }
     
-    // Se adicionar o parágrafo atual excederia o tamanho máximo
-    if (currentChunk.length + paragraph.length + 1 > maxChunkSize) {
-      // Salvar o chunk atual
-      const contentHash = createHash('md5')
-        .update(currentChunk)
-        .digest('hex');
-        
-      chunks.push({
-        content: currentChunk,
-        metadata: {
-          documentId,
-          chunkIndex: chunks.length,
-          sourceType,
-          contentHash,
-          documentName,
-          language
-        }
-      });
-      
-      // Iniciar um novo chunk com o parágrafo atual
-      currentChunk = paragraph;
-    } else {
-      // Adicionar o parágrafo ao chunk atual
-      currentChunk = currentChunk.length > 0
-        ? `${currentChunk}\n\n${paragraph}`
-        : paragraph;
+    // Adicionar parágrafo ao chunk atual
+    if (currentChunk.length > 0) {
+      currentChunk += '\n\n';
     }
+    currentChunk += paragraph;
+    currentParagraphs.push(paragraph);
   }
   
-  // Adicionar o último chunk se não estiver vazio
-  if (currentChunk.length > 0) {
-    const contentHash = createHash('md5')
-      .update(currentChunk)
-      .digest('hex');
-      
-    chunks.push({
-      content: currentChunk,
-      metadata: {
-        documentId,
-        chunkIndex: chunks.length,
-        sourceType,
-        contentHash,
-        documentName,
-        language
-      }
-    });
+  // Adicionar último chunk se não estiver vazio
+  if (currentChunk.trim().length > 0) {
+    chunks.push(createChunk(
+      currentChunk, 
+      chunkIndex, 
+      documentId, 
+      sourceType, 
+      { language, documentName }
+    ));
   }
-
-  console.log(`Documento ${documentId} dividido semanticamente em ${chunks.length} chunks`);
+  
   return chunks;
 }
 
-// Função para chunks recursivos baseados em cabeçalhos e seções
+/**
+ * Divide o documento em chunks com base na semântica do texto, 
+ * tentando manter juntos parágrafos relacionados
+ */
+export function semanticChunking(
+  text: string,
+  documentId: number,
+  sourceType: string = 'document',
+  documentType: string = 'manual',
+  options: {
+    maxChunkSize?: number;
+    overlapSize?: number;
+    language?: string;
+    documentName?: string;
+  } = {}
+): DocumentChunk[] {
+  const {
+    maxChunkSize = 1500,
+    overlapSize = 150,
+    language = 'pt',
+    documentName = `Documento ${documentId}`
+  } = options;
+  
+  // Para documentos técnicos, dividimos por seções
+  if (documentType === 'manual' || documentType === 'technical') {
+    // Identificar padrões de seções/títulos
+    const sectionPattern = /^(#{1,3}|CAPÍTULO|SEÇÃO|PARTE|MÓDULO|[0-9]+\.)\s+.+$/im;
+    
+    // Dividir por potenciais seções
+    const sections = text.split(new RegExp(`(?=${sectionPattern.source})`, 'im'))
+      .filter(section => section.trim().length > 0);
+    
+    if (sections.length > 1) {
+      // Temos seções identificáveis
+      return paragraphToChunks(sections, documentId, sourceType, {
+        maxChunkSize,
+        overlapSize,
+        language,
+        documentName
+      });
+    }
+  }
+  
+  // Para textos mais estruturados, tentar identificar pontos naturais de quebra
+  const paragraphs = text.split(/\n\s*\n/).filter(p => p.trim().length > 0);
+  
+  // Agrupar parágrafos que parecem relacionados
+  const groupedParagraphs: string[] = [];
+  let currentGroup = '';
+  
+  for (const paragraph of paragraphs) {
+    // Heurística simples: se o parágrafo é muito curto ou começa com caracteres
+    // que indicam continuação, agrupar com o anterior
+    const isContinuation = /^(•|-|\*|[a-z]|[0-9]+\.)/.test(paragraph.trim()) || 
+                           paragraph.trim().length < 50;
+    
+    if (isContinuation && currentGroup.length > 0) {
+      currentGroup += '\n\n' + paragraph;
+    } else {
+      if (currentGroup.length > 0) {
+        groupedParagraphs.push(currentGroup);
+      }
+      currentGroup = paragraph;
+    }
+  }
+  
+  if (currentGroup.length > 0) {
+    groupedParagraphs.push(currentGroup);
+  }
+  
+  return paragraphToChunks(groupedParagraphs, documentId, sourceType, {
+    maxChunkSize,
+    overlapSize,
+    language,
+    documentName
+  });
+}
+
+/**
+ * Divide o texto recursivamente, tentando manter a coesão do conteúdo
+ */
 export function recursiveChunking(
   text: string,
   documentId: number,
   sourceType: string = 'document',
   options: {
     maxChunkSize?: number;
+    overlapSize?: number;
     language?: string;
     documentName?: string;
   } = {}
 ): DocumentChunk[] {
   const {
     maxChunkSize = 1500,
+    overlapSize = 150,
     language = 'pt',
-    documentName
+    documentName = `Documento ${documentId}`
   } = options;
-
-  if (!text || text.trim().length === 0) {
-    return [];
-  }
-
-  // Detectar padrões de cabeçalho (Markdown ou formatação típica de documento)
-  const headingPatterns = [
-    /^#+\s+(.+)$/gm,                         // Markdown headings
-    /^(.+)\n[=]{2,}$/gm,                    // Underlined headers (======)
-    /^(.+)\n[-]{2,}$/gm,                    // Underlined subheaders (-----)
-    /^\d+\.\s+(.+)$/gm,                     // Numbered sections like "1. Title"
-    /^[A-Z\s]+:$/gm,                        // ALL CAPS followed by colon
-    /^[A-Z][a-z]+\s+\d+(\.\d+)*\s+(.+)$/gm  // Section numbers like "Section 1.2.3 Title"
-  ];
-
-  // Dividir o texto em seções baseadas em cabeçalhos
-  let sections = [text];
   
-  for (const pattern of headingPatterns) {
-    const newSections: string[] = [];
-    
-    for (const section of sections) {
-      const matches = [...section.matchAll(new RegExp(pattern, 'gm'))];
-      
-      if (matches.length <= 1) {
-        newSections.push(section);
-        continue;
-      }
-      
-      // Dividir esta seção nos cabeçalhos encontrados
-      let lastIndex = 0;
-      
-      for (let i = 0; i < matches.length; i++) {
-        const match = matches[i];
-        if (!match.index) continue;
-        
-        // Se não for o primeiro cabeçalho
-        if (i > 0) {
-          newSections.push(section.substring(lastIndex, match.index).trim());
-        }
-        
-        lastIndex = match.index;
-      }
-      
-      // Adicionar a última seção
-      if (lastIndex < section.length) {
-        newSections.push(section.substring(lastIndex).trim());
-      }
-    }
-    
-    if (newSections.length > sections.length) {
-      sections = newSections;
-    }
-  }
-
-  // Para cada seção, aplicar chunking semântico se for muito grande
   const chunks: DocumentChunk[] = [];
   
-  for (let i = 0; i < sections.length; i++) {
-    const section = sections[i];
-    
-    if (section.length <= maxChunkSize) {
-      // A seção cabe em um único chunk
-      const contentHash = createHash('md5')
-        .update(section)
-        .digest('hex');
-        
-      chunks.push({
-        content: section,
-        metadata: {
-          documentId,
-          chunkIndex: chunks.length,
-          sourceType,
-          contentHash,
-          documentName,
-          language
-        }
-      });
-    } else {
-      // Usar chunking semântico para esta seção
-      const sectionChunks = semanticChunking(
-        section,
+  // Função recursiva para quebrar texto
+  function splitTextRecursively(
+    textToSplit: string, 
+    chunkIndex: number,
+    depth: number = 0
+  ): number {
+    if (textToSplit.length <= maxChunkSize || depth > 5) {
+      // Se o texto cabe em um chunk ou atingimos profundidade máxima
+      chunks.push(createChunk(
+        textToSplit,
+        chunkIndex,
         documentId,
         sourceType,
-        {
-          maxChunkSize,
-          language,
-          documentName
-        }
-      );
-      
-      chunks.push(...sectionChunks);
+        { language, documentName }
+      ));
+      return chunkIndex + 1;
     }
+    
+    // Tentativa 1: Dividir por parágrafos
+    const paragraphs = textToSplit.split(/\n\s*\n/).filter(p => p.trim().length > 0);
+    
+    if (paragraphs.length > 1) {
+      let currentChunk = '';
+      let nextIndex = chunkIndex;
+      
+      for (let i = 0; i < paragraphs.length; i++) {
+        const paragraph = paragraphs[i];
+        
+        if (currentChunk.length + paragraph.length + 2 > maxChunkSize) {
+          if (currentChunk.length > 0) {
+            chunks.push(createChunk(
+              currentChunk,
+              nextIndex,
+              documentId,
+              sourceType,
+              { language, documentName }
+            ));
+            nextIndex++;
+            currentChunk = '';
+          }
+          
+          // Se um único parágrafo for maior que o tamanho máximo
+          if (paragraph.length > maxChunkSize) {
+            nextIndex = splitTextRecursively(paragraph, nextIndex, depth + 1);
+            continue;
+          }
+        }
+        
+        if (currentChunk.length > 0) {
+          currentChunk += '\n\n';
+        }
+        currentChunk += paragraph;
+      }
+      
+      if (currentChunk.length > 0) {
+        chunks.push(createChunk(
+          currentChunk,
+          nextIndex,
+          documentId,
+          sourceType,
+          { language, documentName }
+        ));
+        nextIndex++;
+      }
+      
+      return nextIndex;
+    }
+    
+    // Tentativa 2: Dividir por frases
+    const sentences = textToSplit.split(/(?<=[.!?])\s+/).filter(s => s.trim().length > 0);
+    
+    if (sentences.length > 1) {
+      let currentChunk = '';
+      let sentenceGroup: string[] = [];
+      
+      for (let i = 0; i < sentences.length; i++) {
+        const sentence = sentences[i];
+        
+        if (currentChunk.length + sentence.length + 1 > maxChunkSize) {
+          if (currentChunk.length > 0) {
+            chunks.push(createChunk(
+              currentChunk,
+              chunkIndex,
+              documentId,
+              sourceType,
+              { language, documentName }
+            ));
+            chunkIndex++;
+            
+            // Adicionar sobreposição
+            const overlapSentences = getOverlapSentences(sentenceGroup, overlapSize);
+            currentChunk = overlapSentences.join(' ');
+            sentenceGroup = [...overlapSentences];
+          }
+        }
+        
+        if (currentChunk.length > 0 && !currentChunk.endsWith(' ')) {
+          currentChunk += ' ';
+        }
+        currentChunk += sentence;
+        sentenceGroup.push(sentence);
+      }
+      
+      if (currentChunk.length > 0) {
+        chunks.push(createChunk(
+          currentChunk,
+          chunkIndex,
+          documentId,
+          sourceType,
+          { language, documentName }
+        ));
+        chunkIndex++;
+      }
+      
+      return chunkIndex;
+    }
+    
+    // Tentativa 3: Dividir no meio se tudo mais falhar
+    const midPoint = Math.floor(textToSplit.length / 2);
+    let splitPoint = midPoint;
+    
+    // Tentar encontrar um espaço próximo ao meio
+    for (let i = 0; i < 100; i++) {
+      if (midPoint + i < textToSplit.length && textToSplit[midPoint + i] === ' ') {
+        splitPoint = midPoint + i;
+        break;
+      }
+      if (midPoint - i >= 0 && textToSplit[midPoint - i] === ' ') {
+        splitPoint = midPoint - i;
+        break;
+      }
+    }
+    
+    const firstHalf = textToSplit.substring(0, splitPoint).trim();
+    const secondHalf = textToSplit.substring(splitPoint).trim();
+    
+    let nextChunkIndex = chunkIndex;
+    
+    if (firstHalf.length > 0) {
+      nextChunkIndex = splitTextRecursively(firstHalf, nextChunkIndex, depth + 1);
+    }
+    
+    if (secondHalf.length > 0) {
+      nextChunkIndex = splitTextRecursively(secondHalf, nextChunkIndex, depth + 1);
+    }
+    
+    return nextChunkIndex;
   }
-
-  console.log(`Documento ${documentId} dividido recursivamente em ${chunks.length} chunks`);
+  
+  splitTextRecursively(text, 0);
+  
   return chunks;
 }
 
-// Função para escolher a melhor estratégia de chunking baseada no tipo de documento
+/**
+ * Combina diferentes estratégias para chunking inteligente de documentos
+ */
 export function smartChunking(
   text: string,
   documentId: number,
   sourceType: string = 'document',
-  documentType: string = 'generic',
+  documentType: string = 'manual',
   options: {
     maxChunkSize?: number;
+    overlapSize?: number;
     language?: string;
     documentName?: string;
   } = {}
 ): DocumentChunk[] {
-  // Analisar o texto para determinar sua estrutura
-  const hasStructure = /^#+\s+|\n={3,}|\n-{3,}|^\d+\.\s+|^[A-Z\s]+:/.test(text);
-  const avgParagraphLength = text.split(/\n\n+/).reduce((sum, p) => sum + p.length, 0) / 
-                           Math.max(1, text.split(/\n\n+/).length);
+  // Determinar qual estratégia usar com base no tipo e tamanho do documento
   
-  // Escolher estratégia baseada em heurística
-  if (hasStructure && text.length > 3000) {
-    return recursiveChunking(text, documentId, sourceType, options);
-  } else if (avgParagraphLength > 500) {
+  // Para documentos pequenos, usar chunking simples
+  if (text.length < 3000) {
     return chunkText(text, documentId, sourceType, options);
-  } else {
-    return semanticChunking(text, documentId, sourceType, options);
   }
+  
+  // Para manuais ou documentos técnicos, tentar chunking semântico
+  if (documentType === 'manual' || documentType === 'technical') {
+    const chunks = semanticChunking(text, documentId, sourceType, documentType, options);
+    
+    // Se gerou poucos chunks, tentar com chunking recursivo
+    if (chunks.length <= 1 && text.length > options.maxChunkSize!) {
+      return recursiveChunking(text, documentId, sourceType, options);
+    }
+    
+    return chunks;
+  }
+  
+  // Para documentos gerais e longos, usar chunking recursivo
+  if (text.length > 10000) {
+    return recursiveChunking(text, documentId, sourceType, options);
+  }
+  
+  // Default para documentos médios
+  return chunkText(text, documentId, sourceType, options);
+}
+
+// Funções auxiliares
+
+function createChunk(
+  content: string, 
+  chunkIndex: number, 
+  documentId: number, 
+  sourceType: string,
+  options: { language?: string; documentName?: string } = {}
+): DocumentChunk {
+  const contentHash = crypto
+    .createHash('md5')
+    .update(content)
+    .digest('hex');
+  
+  return {
+    content,
+    metadata: {
+      documentId,
+      chunkIndex,
+      sourceType,
+      contentHash,
+      documentName: options.documentName,
+      language: options.language,
+    }
+  };
+}
+
+function getOverlapSentences(sentences: string[], overlapSize: number): string[] {
+  if (sentences.length === 0) return [];
+  
+  let totalLength = 0;
+  const result: string[] = [];
+  
+  // Adicionar frases do final até atingir o tamanho da sobreposição
+  for (let i = sentences.length - 1; i >= 0; i--) {
+    const sentence = sentences[i];
+    if (totalLength + sentence.length > overlapSize) {
+      if (result.length === 0) {
+        result.unshift(sentence);
+      }
+      break;
+    }
+    
+    totalLength += sentence.length + 1; // +1 para espaço
+    result.unshift(sentence);
+  }
+  
+  return result;
+}
+
+function getOverlapParagraphs(paragraphs: string[], overlapSize: number): string[] {
+  if (paragraphs.length === 0) return [];
+  
+  let totalLength = 0;
+  const result: string[] = [];
+  
+  // Adicionar parágrafos do final até atingir o tamanho da sobreposição
+  for (let i = paragraphs.length - 1; i >= 0; i--) {
+    const paragraph = paragraphs[i];
+    if (totalLength + paragraph.length > overlapSize) {
+      if (result.length === 0) {
+        result.unshift(paragraph);
+      }
+      break;
+    }
+    
+    totalLength += paragraph.length + 2; // +2 para \n\n
+    result.unshift(paragraph);
+  }
+  
+  return result;
+}
+
+function paragraphToChunks(
+  paragraphs: string[],
+  documentId: number,
+  sourceType: string,
+  options: {
+    maxChunkSize?: number;
+    overlapSize?: number;
+    language?: string;
+    documentName?: string;
+  } = {}
+): DocumentChunk[] {
+  const {
+    maxChunkSize = 1500,
+    overlapSize = 150,
+    language = 'pt',
+    documentName = `Documento ${documentId}`
+  } = options;
+  
+  const chunks: DocumentChunk[] = [];
+  let currentChunk = '';
+  let currentParagraphs: string[] = [];
+  let chunkIndex = 0;
+  
+  for (let i = 0; i < paragraphs.length; i++) {
+    const paragraph = paragraphs[i].trim();
+    
+    if (paragraph.length > maxChunkSize) {
+      // Parágrafo muito grande, usar chunking recursivo para ele
+      if (currentChunk.length > 0) {
+        chunks.push(createChunk(
+          currentChunk,
+          chunkIndex,
+          documentId,
+          sourceType,
+          { language, documentName }
+        ));
+        chunkIndex++;
+      }
+      
+      const subChunks = recursiveChunking(
+        paragraph,
+        documentId,
+        sourceType,
+        { maxChunkSize, overlapSize, language, documentName }
+      );
+      
+      subChunks.forEach((chunk, idx) => {
+        chunks.push({
+          ...chunk,
+          metadata: {
+            ...chunk.metadata,
+            chunkIndex: chunkIndex + idx
+          }
+        });
+      });
+      
+      chunkIndex += subChunks.length;
+      currentChunk = '';
+      currentParagraphs = [];
+      continue;
+    }
+    
+    if (currentChunk.length + paragraph.length + 2 > maxChunkSize && currentChunk.length > 0) {
+      chunks.push(createChunk(
+        currentChunk,
+        chunkIndex,
+        documentId,
+        sourceType,
+        { language, documentName }
+      ));
+      
+      // Iniciar novo chunk com sobreposição
+      const overlapParagraphs = getOverlapParagraphs(currentParagraphs, overlapSize);
+      currentChunk = overlapParagraphs.join('\n\n');
+      currentParagraphs = [...overlapParagraphs];
+      chunkIndex++;
+    }
+    
+    if (currentChunk.length > 0) {
+      currentChunk += '\n\n';
+    }
+    currentChunk += paragraph;
+    currentParagraphs.push(paragraph);
+  }
+  
+  if (currentChunk.trim().length > 0) {
+    chunks.push(createChunk(
+      currentChunk,
+      chunkIndex,
+      documentId,
+      sourceType,
+      { language, documentName }
+    ));
+  }
+  
+  return chunks;
 }

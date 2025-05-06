@@ -14,7 +14,8 @@ import {
   widgetChatSessions, WidgetChatSession, InsertWidgetChatSession,
   widgetChatMessages, WidgetChatMessage, InsertWidgetChatMessage,
   knowledgeBase, KnowledgeBase, InsertKnowledgeBase,
-  llmUsageLogs, LlmUsageLog, InsertLlmUsageLog
+  llmUsageLogs, LlmUsageLog, InsertLlmUsageLog,
+  documentChunks, DocumentChunk, InsertDocumentChunk
 } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
@@ -106,6 +107,13 @@ export interface IStorage {
   createKnowledgeEntry(entry: InsertKnowledgeBase): Promise<KnowledgeBase>;
   updateKnowledgeEntry(id: number, data: Partial<KnowledgeBase>): Promise<KnowledgeBase | undefined>;
   deleteKnowledgeEntry(id: number): Promise<void>;
+  
+  // Document Chunks - Para RAG (Retrieval Augmented Generation)
+  createDocumentChunk(chunk: InsertDocumentChunk): Promise<DocumentChunk>;
+  getDocumentChunk(id: number): Promise<DocumentChunk | undefined>;
+  getDocumentChunksByDocument(documentId: number): Promise<DocumentChunk[]>;
+  deleteDocumentChunk(id: number): Promise<void>;
+  deleteDocumentChunksByDocument(documentId: number): Promise<void>;
   getTrainingDocuments(): Promise<TrainingDocument[]>;
   createTrainingDocument(document: InsertTrainingDocument): Promise<TrainingDocument>;
   updateTrainingDocument(id: number, data: Partial<TrainingDocument>): Promise<TrainingDocument | undefined>;

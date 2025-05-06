@@ -470,8 +470,10 @@ export const documentChunks = pgTable("document_chunks", {
   content: text("content").notNull(),
   content_hash: text("content_hash").notNull(),
   source_type: text("source_type", { enum: ["document", "chat", "widget", "training"] }).notNull().default("document"),
+  embedding: text("embedding"), // Vetor de embedding como JSON stringificado
   embedding_id: integer("embedding_id").references(() => knowledgeBase.id),
   metadata: json("metadata"),
+  language: text("language", { enum: ["pt", "en"] }).default("pt").notNull(),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -492,8 +494,10 @@ export const insertDocumentChunkSchema = createInsertSchema(documentChunks).pick
   content: true,
   content_hash: true,
   source_type: true,
+  embedding: true,
   embedding_id: true,
   metadata: true,
+  language: true,
 });
 
 export type DocumentChunk = typeof documentChunks.$inferSelect;

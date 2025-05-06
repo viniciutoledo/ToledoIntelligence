@@ -3,6 +3,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { logLlmUsage } from './llm';
 import { storage } from './storage';
 import { searchRelevantDocuments } from './document-embedding';
+import { processQueryWithRAG, hybridSearch, formatRelevantDocumentsForPrompt } from './rag-processor';
 
 /**
  * Processa uma mensagem de chat garantindo que documentos de treinamento sejam usados
@@ -35,68 +36,102 @@ export async function processChatWithTrainedDocuments(
       return await processRegularChat(message, llmConfig, userId, widgetId);
     }
     
-    // Iniciar o contexto de documentos vazio
-    let documentContext = "";
+    // Determinar modelo a usar
+    const provider = llmConfig.model_name.startsWith('gpt') ? 'openai' : 'anthropic';
+    const modelName = llmConfig.model_name;
     
-    // Abordagem baseada em embeddings para encontrar documentos relevantes
-    console.log(`Buscando documentos relevantes para consulta: "${message}"`);
+    console.log(`USANDO NOVO PROCESSADOR RAG COM ${modelName}`);
     
     try {
-      // Buscar documentos semanticamente relacionados à consulta
-      const relevantDocuments = await searchRelevantDocuments(message, 5);
+      // Antes de tudo, vamos tentar o novo sistema RAG (primeira tentativa)
+      console.log(`Tentando processamento RAG para consulta: "${message}"`);
       
-      if (relevantDocuments && relevantDocuments.length > 0) {
-        console.log(`Encontrados ${relevantDocuments.length} documentos relevantes via busca semântica`);
+      const response = await processQueryWithRAG(message, {
+        language: 'pt',
+        model: modelName
+      });
+      
+      if (response && !response.includes("não encontrei") && !response.includes("não contém")) {
+        console.log('Sucesso no processamento RAG - retornando resposta');
         
-        // Adicionar documentos relevantes ao contexto
-        for (const doc of relevantDocuments) {
-          documentContext += `\n\n------------------------\n`;
-          documentContext += `DOCUMENTO: ${doc.document_name} (Score: ${doc.relevance_score.toFixed(2)})\n`;
-          documentContext += `------------------------\n\n`;
-          documentContext += doc.content.trim();
-          console.log(`Adicionado documento relevante: ${doc.document_name} (${doc.content.length} caracteres)`);
-        }
-      } else {
-        console.log("Nenhum documento relevante encontrado via busca semântica. Usando fallback.");
-        throw new Error("Sem resultados de busca semântica");
-      }
-    } catch (embeddingError) {
-      console.error("Erro ou sem resultados na busca semântica:", embeddingError);
-      console.log("Usando método de fallback para busca de documentos");
-      
-      // Método de fallback - busca tradicional de documentos
-      const allTrainingDocs = await storage.getTrainingDocuments();
-      console.log(`Obtidos ${allTrainingDocs.length} documentos para fallback`);
-      
-      // Extrair documentos com conteúdo
-      let documentsWithContent = 0;
-      let totalContentLength = 0;
-      
-      for (const doc of allTrainingDocs) {
-        if (doc.content && doc.content.trim()) {
-          documentsWithContent++;
-          totalContentLength += doc.content.trim().length;
-          
-          // Logging para debug de documentos críticos
-          if (doc.name.includes('SEQUENCIA') || doc.name.includes('MTK')) {
-            console.log(`Conteúdo do documento ${doc.name} (primeiros 100 caracteres): "${doc.content.substring(0, 100)}..."`);
-          }
-          
-          // Adicionar documento ao contexto
-          documentContext += `\n\n------------------------\n`;
-          documentContext += `DOCUMENTO: ${doc.name}\n`;
-          documentContext += `------------------------\n\n`;
-          documentContext += doc.content.trim();
-          console.log(`Adicionado documento via fallback: ${doc.name} (${doc.content.trim().length} caracteres)`);
-        }
+        // Registrar o uso do LLM (aproximadamente)
+        await logLlmUsage(
+          modelName,
+          'text',
+          true,
+          userId,
+          widgetId,
+          Math.floor(message.length / 4) + Math.floor(response.length / 4) + 500
+        );
+        
+        return response;
       }
       
-      console.log(`Resumo de documentos: ${documentsWithContent} com conteúdo, total de ${totalContentLength} caracteres.`);
+      console.log('Resposta RAG inadequada, tentando método híbrido');
+    } catch (ragError) {
+      console.error('Erro no processamento RAG, recorrendo a método alternativo:', ragError);
     }
     
-    // Se não encontramos nenhum documento relevante, fornecer informações técnicas mínimas
+    // Iniciar o contexto de documentos vazio (sistema antigo como fallback)
+    let documentContext = "";
+    
+    // Tentar busca híbrida usando o sistema RAG
+    try {
+      console.log(`Executando busca híbrida para: "${message}"`);
+      const relevantDocuments = await hybridSearch(message, {
+        limit: 7,
+        language: 'pt'
+      });
+      
+      if (relevantDocuments && relevantDocuments.length > 0) {
+        console.log(`Encontrados ${relevantDocuments.length} documentos via busca híbrida RAG`);
+        documentContext = formatRelevantDocumentsForPrompt(relevantDocuments);
+      } else {
+        throw new Error("Sem resultados na busca híbrida");
+      }
+    } catch (hybridError) {
+      console.error("Erro na busca híbrida:", hybridError);
+      
+      // Tentar busca semântica antiga como último recurso
+      try {
+        const relevantDocuments = await searchRelevantDocuments(message, 5);
+        
+        if (relevantDocuments && relevantDocuments.length > 0) {
+          console.log(`Encontrados ${relevantDocuments.length} documentos via busca semântica antiga`);
+          
+          // Adicionar documentos relevantes ao contexto
+          for (const doc of relevantDocuments) {
+            documentContext += `\n\n------------------------\n`;
+            documentContext += `DOCUMENTO: ${doc.document_name} (Score: ${doc.relevance_score.toFixed(2)})\n`;
+            documentContext += `------------------------\n\n`;
+            documentContext += doc.content.trim();
+          }
+        } else {
+          throw new Error("Sem resultados na busca semântica");
+        }
+      } catch (semanticError) {
+        console.error("Erro na busca semântica:", semanticError);
+        
+        // Método de fallback - busca tradicional de documentos
+        const allTrainingDocs = await storage.getTrainingDocuments();
+        console.log(`Obtidos ${allTrainingDocs.length} documentos para fallback final`);
+        
+        // Extrair documentos com conteúdo
+        for (const doc of allTrainingDocs) {
+          if (doc.content && doc.content.trim()) {
+            // Adicionar documento ao contexto
+            documentContext += `\n\n------------------------\n`;
+            documentContext += `DOCUMENTO: ${doc.name}\n`;
+            documentContext += `------------------------\n\n`;
+            documentContext += doc.content.trim();
+          }
+        }
+      }
+    }
+    
+    // Se ainda assim não temos documentos, inserir informações técnicas básicas
     if (!documentContext || documentContext.trim().length === 0) {
-      console.log('Nenhum documento relevante encontrado - usando informações técnicas básicas');
+      console.log('Nenhum documento relevante encontrado em nenhum método - usando informações técnicas básicas');
       documentContext = `\n\n------------------------\n` +
         `DOCUMENTO: INFORMAÇÕES TÉCNICAS DE REFERÊNCIA\n` +
         `------------------------\n\n` +
@@ -107,7 +142,7 @@ export async function processChatWithTrainedDocuments(
 - VCORE: tensão de núcleo do processador, variando de 0.6V a 1.2V dependendo da carga e configuração`;
     }
     
-    // Construir prompt otimizado para busca semântica
+    // Construir prompt otimizado para RAG
     const systemPrompt = `
     INSTRUÇÕES TÉCNICAS PARA MANUTENÇÃO DE PLACAS ELETRÔNICAS:
     
@@ -115,23 +150,20 @@ export async function processChatWithTrainedDocuments(
     
     REGRAS ABSOLUTAS:
     1. Forneça UNICAMENTE informações encontradas nos documentos técnicos abaixo.
-    2. NUNCA responda "O documento não contém informações sobre isso". Em vez disso, procure informações relacionadas que possam ser úteis.
+    2. NUNCA responda "O documento não contém informações sobre isso". Em vez disso, use o que estiver disponível nos documentos, mesmo que seja informação parcial.
     3. SEMPRE cite valores numéricos exatamente como aparecem nos documentos (ex: "VS1 (~2.05 V)").
     4. ESPECIALMENTE importante: quando valores de tensão estiverem nos documentos (VS1, VPA, VDDRAM, etc), SEMPRE cite-os explicitamente.
-    5. Se encontrar múltiplas informações nos documentos, priorize as mais relevantes para a pergunta e cite a fonte.
-    6. Formate sua resposta de maneira organizada e clara para facilitar a compreensão técnica.
+    5. Se encontrar múltiplas informações nos documentos, priorize as mais relevantes para a pergunta.
+    6. Formate sua resposta de maneira organizada, com parágrafos curtos e pontos específicos quando apropriado.
+    7. Se a pergunta for sobre algum valor ou tópico específico que NÃO está nos documentos, tente fornecer informações relacionadas ou contextuais que ESTEJAM nos documentos.
     
     PERGUNTA DO TÉCNICO: "${message}"
     
     DOCUMENTOS TÉCNICOS RELEVANTES:
     ${documentContext}
     
-    RESPOSTA (use SOMENTE informações dos documentos acima):
+    RESPOSTA (use SOMENTE informações dos documentos acima, não invente informações):
     `;
-    
-    // Determinar qual provedor usar com base no modelo configurado
-    const provider = llmConfig.model_name.startsWith('gpt') ? 'openai' : 'anthropic';
-    const modelName = llmConfig.model_name;
     
     // Usar a API apropriada para responder
     let response: string;
