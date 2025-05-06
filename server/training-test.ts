@@ -1,6 +1,7 @@
 import { getActiveLlmInfo } from "./llm";
 import { storage } from "./storage";
 import fs from "fs";
+import path from "path";
 import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
 
@@ -32,7 +33,43 @@ export async function testDocumentKnowledge(query: string, documentId: number) {
     // Se for um documento de arquivo, ler o conteúdo do arquivo
     if (document.document_type === "file" && document.file_url) {
       try {
-        const filePath = `.${document.file_url}`; // Remover o primeiro "/" do caminho
+        // Normalizar o caminho para o arquivo
+        let filePath = document.file_url;
+        if (filePath.startsWith('/')) {
+          filePath = `.${filePath}`; // Adiciona o ponto ao início do caminho
+        } else if (!filePath.startsWith('./')) {
+          filePath = `./${filePath}`; // Adiciona './' ao início do caminho
+        }
+        
+        // Verifica se o arquivo existe antes de tentar lê-lo
+        try {
+          await fs.promises.access(filePath, fs.constants.F_OK);
+        } catch (err) {
+          console.error(`Arquivo não encontrado em: ${filePath}`);
+          // Tenta alternativas de caminhos
+          const alternatives = [
+            filePath.replace('./uploads/', './'),
+            `./uploads/${path.basename(filePath)}`,
+            path.join('./uploads', path.basename(filePath))
+          ];
+          
+          let fileFound = false;
+          for (const alt of alternatives) {
+            try {
+              await fs.promises.access(alt, fs.constants.F_OK);
+              filePath = alt;
+              fileFound = true;
+              console.log(`Arquivo encontrado em caminho alternativo: ${alt}`);
+              break;
+            } catch {}
+          }
+          
+          if (!fileFound) {
+            throw new Error(`Arquivo não encontrado após tentar vários caminhos: ${filePath}`);
+          }
+        }
+        
+        // Tenta ler o conteúdo do arquivo
         content = await fs.promises.readFile(filePath, 'utf8');
       } catch (error) {
         console.error('Erro ao ler arquivo:', error);
