@@ -95,7 +95,7 @@ export async function testDocumentKnowledge(query: string, documentId: number) {
     `;
     
     // Chamar o LLM com o prompt personalizado
-    const { provider, modelName, apiKey } = llmConfig;
+    const { provider, modelName } = llmConfig;
     
     // Aqui você usaria a API do LLM para obter a resposta
     // Por exemplo, usando a OpenAI:
@@ -103,25 +103,27 @@ export async function testDocumentKnowledge(query: string, documentId: number) {
     
     if (provider === "openai") {
       try {
-        // Verifica se a chave da API está em um formato válido
-        if (!apiKey || apiKey.includes('\u2022')) {
-          console.error("Chave de API inválida ou não decodificada corretamente");
+        // Use diretamente a chave do ambiente
+        let apiKeyToUse = process.env.OPENAI_API_KEY;
+        if (apiKeyToUse) {
+          console.log("Usando chave do ambiente para teste de OpenAI");
+        } else {
+          console.error("Chave OpenAI do ambiente não está configurada");
           return {
-            response: "Erro de configuração: a chave da API OpenAI parece estar mascarada ou inválida. Verifique a configuração do LLM.",
+            response: "Erro de configuração: não foi possível acessar uma chave válida para OpenAI. Verifique as variáveis de ambiente.",
             usedDocument: false,
             documentName: document.name,
           };
         }
         
-        // Sanitiza a chave de API para garantir que esteja em um formato válido
-        const sanitizedKey = apiKey.trim();
-        
-        const openai = new OpenAI({
-          apiKey: sanitizedKey,
-        });
-        
         console.log(`Testando documento com modelo OpenAI: ${modelName}`);
         
+        // Criar cliente com chave do ambiente
+        const openai = new OpenAI({
+          apiKey: apiKeyToUse
+        });
+        
+        // Fazer chamada API
         const completion = await openai.chat.completions.create({
           model: modelName,
           messages: [{ role: "user", content: prompt }],
@@ -134,25 +136,27 @@ export async function testDocumentKnowledge(query: string, documentId: number) {
       }
     } else if (provider === "anthropic") {
       try {
-        // Verifica se a chave da API está em um formato válido
-        if (!apiKey || apiKey.includes('\u2022')) {
-          console.error("Chave de API Anthropic inválida ou não decodificada corretamente");
+        // Use diretamente a chave do ambiente
+        let apiKeyToUse = process.env.ANTHROPIC_API_KEY;
+        if (apiKeyToUse) {
+          console.log("Usando chave do ambiente para teste de Anthropic");
+        } else {
+          console.error("Chave Anthropic do ambiente não está configurada");
           return {
-            response: "Erro de configuração: a chave da API Anthropic parece estar mascarada ou inválida. Verifique a configuração do LLM.",
+            response: "Erro de configuração: não foi possível acessar uma chave válida para Anthropic. Verifique as variáveis de ambiente.",
             usedDocument: false,
             documentName: document.name,
           };
         }
         
-        // Sanitiza a chave de API para garantir que esteja em um formato válido
-        const sanitizedKey = apiKey.trim();
-        
-        const anthropic = new Anthropic({
-          apiKey: sanitizedKey,
-        });
-        
         console.log(`Testando documento com modelo Anthropic: ${modelName}`);
         
+        // Criar cliente com chave do ambiente
+        const anthropic = new Anthropic({
+          apiKey: apiKeyToUse
+        });
+        
+        // Fazer chamada API
         const message = await anthropic.messages.create({
           model: modelName,
           max_tokens: 1000,
