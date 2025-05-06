@@ -2096,7 +2096,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`Processando arquivo ${filePath} com LLM (tipo: ${messageType})`);
           
           if (messageType === "image") {
-            botResponse = await analyzeImage(filePath, session.language);
+            botResponse = await analyzeImage(filePath, session.language, req.user?.id);
           } else {
             botResponse = await analyzeFile(filePath, session.language);
           }
@@ -2116,7 +2116,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Obter configuração do LLM para processamento de texto
           const llmConfig = await getActiveLlmInfo();
-          botResponse = await processTextMessage(content, session.language, llmConfig);
+          botResponse = await processTextMessage(content, session.language, llmConfig, [], req.user?.id);
           
           console.log("Resposta da LLM recebida para mensagem de texto:", {
             length: botResponse.length,
@@ -3442,7 +3442,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         aiResponse = await processTextMessage(
           content,
           messageHistory,
-          formattedLlmConfig
+          formattedLlmConfig,
+          undefined,
+          widget.user_id,
+          session.widget_id
         );
       } catch (error) {
         console.error("Erro ao processar mensagem com LLM:", error);
@@ -4000,7 +4003,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           // Usar a linguagem da sessão do widget em vez de tentar obter do llmConfig
           // que não tem essa propriedade
-          aiResponse = await analyzeImage(file.path, session.language);
+          aiResponse = await analyzeImage(file.path, session.language, undefined, session.widget_id);
         } catch (error) {
           console.error("Erro ao analisar imagem:", error);
           aiResponse = "Desculpe, não foi possível analisar essa imagem.";
