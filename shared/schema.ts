@@ -173,7 +173,7 @@ export const trainingDocuments = pgTable("training_documents", {
   file_url: text("file_url"),
   website_url: text("website_url"),
   file_metadata: json("file_metadata"),
-  status: text("status", { enum: ["pending", "processing", "completed", "error"] }).notNull().default("pending"),
+  status: text("status", { enum: ["pending", "processing", "completed", "error", "indexed"] }).notNull().default("pending"),
   error_message: text("error_message"),
   created_by: integer("created_by").notNull().references(() => users.id),
   created_at: timestamp("created_at").defaultNow().notNull(),
