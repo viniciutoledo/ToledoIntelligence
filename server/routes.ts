@@ -4107,14 +4107,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
             apiKey: string,
             tone: 'formal' | 'normal' | 'casual',
             behaviorInstructions: string,
-            shouldUseTrained: boolean
+            shouldUseTrained: boolean,
+            temperature: string
           } = {
             provider: llmConfig.model_name.startsWith('gpt') ? "openai" : "anthropic",
             modelName: llmConfig.model_name,
             apiKey: llmConfig.api_key,
             tone: (llmConfig.tone as 'formal' | 'normal' | 'casual') || 'normal',
             behaviorInstructions: llmConfig.behavior_instructions || '',
-            shouldUseTrained: llmConfig.should_use_training !== false
+            shouldUseTrained: llmConfig.should_use_training !== false,
+            temperature: llmConfig.temperature || '0.3'
           };
 
           // Processar a mensagem com o novo processador que incorpora documentos de treinamento

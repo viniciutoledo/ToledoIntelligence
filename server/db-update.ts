@@ -104,9 +104,7 @@ async function runMigrations() {
   }
 }
 
-// Executar as migrations apenas se este arquivo for executado diretamente
-if (require.main === module) {
-  runMigrations();
-}
+// Executar as migrations automaticamente
+runMigrations().catch(err => console.error('Erro na execução de migrações:', err));
 
 export { runMigrations };
