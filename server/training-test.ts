@@ -4,6 +4,7 @@ import fs from "fs";
 import path from "path";
 import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
+import { processDocumentContent } from "./document-processors";
 
 // Função para determinar se o arquivo é de texto ou binário
 function isTextFile(filePath: string): boolean {
@@ -84,9 +85,7 @@ export async function testDocumentKnowledge(query: string, documentId: number) {
     }
     // Se não tiver conteúdo armazenado adequado, processar de acordo com o tipo
     else {
-      // Importar o processador de documentos
-      const { processDocumentContent } = require('./document-processors');
-      
+      // Usar o processador de documentos importado no topo do arquivo
       try {
         if (document.document_type === "file" && document.file_url) {
           // Normalizar o caminho para o arquivo
