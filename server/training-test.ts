@@ -33,6 +33,8 @@ export async function testDocumentKnowledge(query: string, documentId: number) {
     // Se for um documento de arquivo, ler o conteúdo do arquivo
     if (document.document_type === "file" && document.file_url) {
       try {
+        console.log(`Tentando acessar arquivo: ${document.file_url}`);
+        
         // Normalizar o caminho para o arquivo
         let filePath = document.file_url;
         if (filePath.startsWith('/')) {
@@ -41,38 +43,27 @@ export async function testDocumentKnowledge(query: string, documentId: number) {
           filePath = `./${filePath}`; // Adiciona './' ao início do caminho
         }
         
-        // Verifica se o arquivo existe antes de tentar lê-lo
+        // Tenta ler o conteúdo do arquivo diretamente primeiro
         try {
-          await fs.promises.access(filePath, fs.constants.F_OK);
-        } catch (err) {
-          console.error(`Arquivo não encontrado em: ${filePath}`);
-          // Tenta alternativas de caminhos
-          const alternatives = [
-            filePath.replace('./uploads/', './'),
-            `./uploads/${path.basename(filePath)}`,
-            path.join('./uploads', path.basename(filePath))
-          ];
+          content = await fs.promises.readFile(filePath, 'utf8');
+          console.log(`Arquivo lido com sucesso: ${filePath}`);
+        } catch (error: any) {
+          console.log(`Erro ao ler arquivo direto: ${error.message}`);
           
-          let fileFound = false;
-          for (const alt of alternatives) {
-            try {
-              await fs.promises.access(alt, fs.constants.F_OK);
-              filePath = alt;
-              fileFound = true;
-              console.log(`Arquivo encontrado em caminho alternativo: ${alt}`);
-              break;
-            } catch {}
-          }
+          // Se não conseguir, tenta extrair o nome do arquivo e busca-lo em ./uploads
+          const fileName = filePath.split('/').pop() || '';
+          const uploadsPath = './uploads/' + fileName;
           
-          if (!fileFound) {
-            throw new Error(`Arquivo não encontrado após tentar vários caminhos: ${filePath}`);
+          try {
+            content = await fs.promises.readFile(uploadsPath, 'utf8');
+            console.log(`Arquivo lido de caminho alternativo: ${uploadsPath}`);
+          } catch (error: any) {
+            console.log(`Erro ao ler do diretório de uploads: ${error.message}`);
+            content = "Conteúdo do arquivo não disponível. Verifique se o arquivo ainda existe no sistema.";
           }
         }
-        
-        // Tenta ler o conteúdo do arquivo
-        content = await fs.promises.readFile(filePath, 'utf8');
       } catch (error) {
-        console.error('Erro ao ler arquivo:', error);
+        console.error('Erro ao processar arquivo:', error);
         content = "Conteúdo do arquivo não disponível";
       }
     }
@@ -111,32 +102,72 @@ export async function testDocumentKnowledge(query: string, documentId: number) {
     let response;
     
     if (provider === "openai") {
-      const openai = new OpenAI({
-        apiKey: apiKey,
-      });
-      
-      const completion = await openai.chat.completions.create({
-        model: modelName,
-        messages: [{ role: "user", content: prompt }],
-      });
-      
-      response = completion.choices[0]?.message?.content || "Não foi possível gerar uma resposta.";
+      try {
+        // Verifica se a chave da API está em um formato válido
+        if (!apiKey || apiKey.includes('\u2022')) {
+          console.error("Chave de API inválida ou não decodificada corretamente");
+          return {
+            response: "Erro de configuração: a chave da API OpenAI parece estar mascarada ou inválida. Verifique a configuração do LLM.",
+            usedDocument: false,
+            documentName: document.name,
+          };
+        }
+        
+        // Sanitiza a chave de API para garantir que esteja em um formato válido
+        const sanitizedKey = apiKey.trim();
+        
+        const openai = new OpenAI({
+          apiKey: sanitizedKey,
+        });
+        
+        console.log(`Testando documento com modelo OpenAI: ${modelName}`);
+        
+        const completion = await openai.chat.completions.create({
+          model: modelName,
+          messages: [{ role: "user", content: prompt }],
+        });
+        
+        response = completion.choices[0]?.message?.content || "Não foi possível gerar uma resposta.";  
+      } catch (apiError: any) {
+        console.error("Erro na chamada da API OpenAI:", apiError.message);
+        response = `Erro ao consultar API OpenAI: ${apiError.message || 'Erro desconhecido'}`;
+      }
     } else if (provider === "anthropic") {
-      const anthropic = new Anthropic({
-        apiKey: apiKey,
-      });
-      
-      const message = await anthropic.messages.create({
-        model: modelName,
-        max_tokens: 1000,
-        messages: [{ role: "user", content: prompt }],
-      });
-      
-      // Extrair texto da resposta da Anthropic
-      if (message.content[0] && typeof message.content[0] === 'object' && 'text' in message.content[0]) {
-        response = message.content[0].text;
-      } else {
-        response = "Erro ao processar resposta da Anthropic";
+      try {
+        // Verifica se a chave da API está em um formato válido
+        if (!apiKey || apiKey.includes('\u2022')) {
+          console.error("Chave de API Anthropic inválida ou não decodificada corretamente");
+          return {
+            response: "Erro de configuração: a chave da API Anthropic parece estar mascarada ou inválida. Verifique a configuração do LLM.",
+            usedDocument: false,
+            documentName: document.name,
+          };
+        }
+        
+        // Sanitiza a chave de API para garantir que esteja em um formato válido
+        const sanitizedKey = apiKey.trim();
+        
+        const anthropic = new Anthropic({
+          apiKey: sanitizedKey,
+        });
+        
+        console.log(`Testando documento com modelo Anthropic: ${modelName}`);
+        
+        const message = await anthropic.messages.create({
+          model: modelName,
+          max_tokens: 1000,
+          messages: [{ role: "user", content: prompt }],
+        });
+        
+        // Extrair texto da resposta da Anthropic
+        if (message.content[0] && typeof message.content[0] === 'object' && 'text' in message.content[0]) {
+          response = message.content[0].text;
+        } else {
+          response = "Erro ao processar resposta da Anthropic";
+        }
+      } catch (apiError: any) {
+        console.error("Erro na chamada da API Anthropic:", apiError.message);
+        response = `Erro ao consultar API Anthropic: ${apiError.message || 'Erro desconhecido'}`;
       }
     } else {
       // Implementar outros provedores conforme necessário
