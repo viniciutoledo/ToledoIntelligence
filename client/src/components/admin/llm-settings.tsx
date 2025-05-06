@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2, Info, Search } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
@@ -249,7 +249,7 @@ export function LlmSettings() {
               
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
                 <div className="flex items-start">
-                  <InfoIcon className="h-5 w-5 text-amber-500 mt-0.5 mr-3 flex-shrink-0" />
+                  <Info className="h-5 w-5 text-amber-500 mt-0.5 mr-3 flex-shrink-0" />
                   <div className="flex-1">
                     <h4 className="font-medium text-amber-900">Verificação de uso dos documentos</h4>
                     <p className="text-sm text-amber-700 mt-1">
@@ -258,7 +258,7 @@ export function LlmSettings() {
                     </p>
                     <div className="mt-3">
                       <Button variant="outline" size="sm" className="bg-white">
-                        <SearchIcon className="h-4 w-4 mr-2" />
+                        <Search className="h-4 w-4 mr-2" />
                         Testar conhecimento do documento
                       </Button>
                     </div>
