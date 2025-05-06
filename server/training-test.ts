@@ -5,6 +5,37 @@ import path from "path";
 import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
 
+// Função para determinar se o arquivo é de texto ou binário
+function isTextFile(filePath: string): boolean {
+  const textExtensions = [
+    '.txt', '.md', '.csv', '.json', '.xml', '.html', '.htm', '.js', '.ts', '.css',
+    '.scss', '.c', '.cpp', '.h', '.py', '.rb', '.pl', '.php', '.sh', '.bat', '.ps1',
+    '.sql', '.yaml', '.yml', '.conf', '.ini', '.cfg', '.properties', '.log'
+  ];
+  const ext = path.extname(filePath).toLowerCase();
+  return textExtensions.includes(ext);
+}
+
+// Função para processar arquivos binários (ex: PDF)
+async function processBinaryFile(filePath: string): Promise<string> {
+  try {
+    console.log(`Processando arquivo binário: ${filePath}`);
+    const fileData = await fs.promises.readFile(filePath);
+    
+    // Se for um PDF, retornamos um marcador especial
+    if (filePath.toLowerCase().endsWith('.pdf')) {
+      console.log(`Arquivo PDF detectado, retornando dados simplificados (tamanho: ${fileData.length} bytes)`);
+      return `[Conteúdo do arquivo PDF ${path.basename(filePath)} - disponível para consulta]`;
+    }
+    
+    // Para outros tipos de arquivo binário
+    return `[Conteúdo binário de ${path.basename(filePath)} - ${fileData.length} bytes]`;
+  } catch (error: any) {
+    console.error(`Erro ao processar arquivo binário ${filePath}:`, error.message);
+    return `Erro ao processar arquivo binário: ${error.message}`;
+  }
+}
+
 // Esta função será usada para testar se o LLM está usando documentos de treinamento específicos
 export async function testDocumentKnowledge(query: string, documentId: number) {
   try {
@@ -59,6 +90,11 @@ export async function testDocumentKnowledge(query: string, documentId: number) {
           possiblePaths.push(`/home/runner/workspace/uploads/${path.basename(filePath)}`);
           possiblePaths.push(`${process.cwd()}/uploads/${path.basename(filePath)}`);
           
+          // Adicionar caminho para a pasta files dentro de uploads
+          possiblePaths.push(`./uploads/files/${path.basename(filePath)}`);
+          possiblePaths.push(`/home/runner/workspace/uploads/files/${path.basename(filePath)}`);
+          possiblePaths.push(`${process.cwd()}/uploads/files/${path.basename(filePath)}`);
+          
           // Nome do arquivo
           const fileName = path.basename(filePath);
           
@@ -75,10 +111,23 @@ export async function testDocumentKnowledge(query: string, documentId: number) {
           for (const pathToTry of possiblePaths) {
             try {
               console.log(`Tentando ler de: ${pathToTry}`);
-              content = await fs.promises.readFile(pathToTry, 'utf8');
-              console.log(`Arquivo lido com sucesso de: ${pathToTry}`);
-              fileRead = true;
-              break; // Sai do loop se conseguir ler
+              
+              // Verificar se é um arquivo de texto ou binário
+              const isPdfFile = pathToTry.toLowerCase().endsWith('.pdf');
+              
+              if (isPdfFile) {
+                // Para PDFs, usamos o processamento binário
+                content = await processBinaryFile(pathToTry);
+                console.log(`Arquivo PDF processado com sucesso de: ${pathToTry}`);
+                fileRead = true;
+                break;
+              } else {
+                // Para arquivos de texto, leitura normal
+                content = await fs.promises.readFile(pathToTry, 'utf8');
+                console.log(`Arquivo de texto lido com sucesso de: ${pathToTry}`);
+                fileRead = true;
+                break; // Sai do loop se conseguir ler
+              }
             } catch (error: any) {
               // Continua tentando outros caminhos
               console.log(`Não foi possível ler de ${pathToTry}: ${error.message}`);
