@@ -65,61 +65,48 @@ export async function processChatWithTrainedDocuments(
     
     console.log(`Usando ${documentCount} documentos para responder à consulta`);
     
-    // Verificar especificamente se o usuário está perguntando sobre VDDRAM
-    const isVDDRAMQuery = message.toLowerCase().includes('vddram');
-    const isVS1Query = message.toLowerCase().includes('vs1');
-    const isVPAQuery = message.toLowerCase().includes('vpa');
+    // Vamos garantir que todos os documentos sejam analisados para qualquer tipo de consulta
+    console.log(`Processando consulta de forma abrangente, garantindo uso completo dos documentos de treinamento`);
     
-    // Forçar busca específica por documentos de interesse
-    console.log(`Processando consulta específica: VDDRAM=${isVDDRAMQuery}, VS1=${isVS1Query}, VPA=${isVPAQuery}`);
+    // Extrair palavras-chave técnicas da mensagem do usuário para priorização (opcional)
+    const userMessageWords = message.split(/\s+/).filter(word => word.length > 2);
     
-    // Pesquisar no banco de dados diretamente documentos que mencionam os termos técnicos
-    const relevantDocs = await storage.searchTrainingDocuments([
-      'VS1', 'VS1,', 'VS1:', 'VS1 ', 
-      'VPA', 'VPA,', 'VPA:', 'VPA ', 
-      'VDDRAM', 'VDDRAM,', 'VDDRAM:', 'VDDRAM '
-    ]);
+    // Extrair todos os documentos de treinamento disponíveis no sistema
+    const allTrainingDocs = await storage.getTrainingDocuments();
     
-    console.log(`Encontrados ${relevantDocs.length} documentos relevantes para a consulta técnica`);
+    console.log(`Carregando todos os ${allTrainingDocs.length} documentos de treinamento disponíveis`);
     
-    // Adicionar documentos relevantes diretamente ao contexto se não estiverem já incluídos
-    for (const doc of relevantDocs) {
-      if (doc.content && doc.content.trim() && !documentContext.includes(doc.content)) {
-        documentContext += `\n\n--- DOCUMENTO TÉCNICO: ${doc.name} ---\n\n`;
+    // Garantir que todos os documentos estejam incluídos no contexto
+    for (const doc of allTrainingDocs) {
+      if (doc.content && doc.content.trim()) {
+        // Adicionar clara separação com marcador e nome do documento para melhor contexto
+        documentContext += `\n\n------------------------\n`;
+        documentContext += `DOCUMENTO: ${doc.name}\n`;
+        documentContext += `------------------------\n\n`;
         documentContext += doc.content.trim();
-        console.log(`Adicionado documento técnico relevante: ${doc.name}`);
+        console.log(`Adicionado documento completo: ${doc.name}`);
       }
     }
     
-    // Ajustar prompt para perguntas específicas
-    let customInstructions = '';
-    if (isVDDRAMQuery) {
-      customInstructions = 'A pergunta é sobre VDDRAM. Verifique especificamente informações sobre tensões VDDRAM nos documentos.';
-    } else if (isVS1Query) {
-      customInstructions = 'A pergunta é sobre VS1. Verifique especificamente informações sobre a tensão VS1 nos documentos.';
-    } else if (isVPAQuery) {
-      customInstructions = 'A pergunta é sobre VPA. Verifique especificamente informações sobre a tensão VPA nos documentos.';
-    }
-    
-    // Construir um prompt muito mais agressivo para forçar uso de documentos
+    // Construir um prompt muito mais efetivo para garantir aprendizado completo dos documentos
     const systemPrompt = `
     Você é um assistente especializado em manutenção de placas de circuito, com conhecimento em eletrônica.
     
     INSTRUÇÕES OBRIGATÓRIAS (CRITICAMENTE IMPORTANTES):
-    1. NUNCA diga "o documento não contém informações sobre isso". Em vez disso, diga exatamente o que encontrou nos documentos.
-    2. Se os documentos contêm VS1, VPA, VCORE ou outras tensões, SEMPRE mencione esses valores na sua resposta.
-    3. Forneça APENAS informações que estão explicitamente nos documentos abaixo. Não use seu conhecimento geral.
-    4. Se você encontrar qualquer informação relevante para a pergunta nos documentos, mesmo que parcial, forneça essa informação.
-    5. Os valores de tensão são informações CRÍTICAS - se mencionados nos documentos, você DEVE incluí-los na resposta.
-    6. Se encontrar nos documentos: "VS1 (~2.05 V)" - você DEVE mencionar este valor na resposta.
-    7. Se um documento mencionar "VDDRAM" com qualquer informação relacionada, você DEVE priorizar essa informação na resposta.
+    1. Você DEVE responder com informações APENAS dos documentos de treinamento fornecidos abaixo.
+    2. Quando um documento contiver informações técnicas (como valores de tensão, resistências, etc.), você DEVE citar esses valores exatamente, sem arredondar ou modificar.
+    3. SEMPRE localize e mencione valores numéricos encontrados nos documentos, como "VS1 (~2.05 V)", "VCORE (0.6 V a 1.2 V)", etc.
+    4. Quando encontrar qualquer tabela, lista ou dados estruturados nos documentos, mantenha a estrutura na sua resposta.
+    5. Cite explicitamente o documento ou documentos de onde você extraiu a informação em sua resposta.
+    6. Se não encontrar a resposta exata nos documentos, diga: "Com base nos documentos fornecidos, posso dizer que..." e compartilhe as informações relevantes que encontrou.
+    7. NÃO invente informações que não estejam nos documentos. NÃO use seu conhecimento geral sobre placas de circuito ou eletrônica.
     
-    ${customInstructions}
+    MENSAGEM DO USUÁRIO: "${message}"
     
-    A seguir estão os documentos com informações técnicas para consulta:
+    A seguir estão TODOS os documentos de treinamento com informações técnicas para consulta:
     ${documentContext}
     
-    LEMBRETE FINAL: Sua resposta deve ser baseada EXCLUSIVAMENTE nos documentos acima. Se você não encontrar a informação específica, procure por informações relacionadas nos documentos que possam ajudar a responder a pergunta.
+    LEMBRETE FINAL: Você está sendo avaliado pela sua precisão em usar EXCLUSIVAMENTE as informações dos documentos acima. Sua resposta deve conter uma citação direta dos documentos sempre que possível.
     `;
     
     // Determinar qual provedor usar com base no modelo configurado
