@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated, checkRole } from "./auth";
 import { analyzeImage, analyzeFile, processTextMessage, testConnection, getActiveLlmInfo, fetchOpenAIDirectly, fetchAnthropicDirectly } from "./llm";
+import { processChatWithTrainedDocuments } from "./trained-chat-processor";
 import { testDocumentKnowledge } from "./training-test";
 import { logAction } from "./audit";
 import multer from "multer";
@@ -2215,9 +2216,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
             preview: content.substring(0, 100) + (content.length > 100 ? "..." : "")
           });
           
-          // Obter configuração do LLM para processamento de texto
-          const llmConfig = await getActiveLlmInfo();
-          botResponse = await processTextMessage(content, session.language, llmConfig, [], req.user?.id);
+          // Usar o novo processador com documentos de treinamento
+          console.log("Usando processador com documentos de treinamento para interface de técnicos");
+          try {
+            // Processar mensagem com documentos de treinamento
+            botResponse = await processChatWithTrainedDocuments(content, req.user?.id);
+          } catch (trainedError) {
+            console.error("Erro ao processar com documentos de treinamento:", trainedError);
+            
+            // Fallback para processamento tradicional
+            console.log("Usando processamento regular como fallback");
+            const llmConfig = await getActiveLlmInfo();
+            botResponse = await processTextMessage(content, session.language, llmConfig, [], req.user?.id);
+          }
           
           console.log("Resposta da LLM recebida para mensagem de texto:", {
             length: botResponse.length,
@@ -4008,21 +4019,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
             shouldUseTrained: llmConfig.should_use_training !== false
           };
 
-          // Converter mensagens para o formato que a função processTextMessage espera
-          const messageHistory = messages.filter(m => m.id !== userMessage.id).map(m => ({
-            content: m.content || "",
-            role: m.is_user ? "user" : "assistant"
-          }));
-          
-          // Processar a mensagem com o LLM
-          aiResponse = await processTextMessage(
-            content,
-            messageHistory,
-            formattedLlmConfig,
-            undefined,
-            widget.user_id,
-            session.widget_id
-          );
+          // Processar a mensagem com o novo processador que incorpora documentos de treinamento
+          console.log("Usando processador com documentos de treinamento para processar mensagem do widget");
+          try {
+            // Processar a mensagem com o LLM e documentos de treinamento
+            aiResponse = await processChatWithTrainedDocuments(
+              content,
+              widget.user_id,
+              session.widget_id
+            );
+          } catch (error) {
+            console.error("Erro ao processar mensagem com documentos de treinamento:", error);
+            // Fallback para o processador original se houver algum erro
+            console.log("Usando processador original como fallback");
+            
+            // Converter mensagens para o formato antigo
+            const messageHistory = messages.filter(m => m.id !== userMessage.id).map(m => ({
+              content: m.content || "",
+              role: m.is_user ? "user" : "assistant"
+            }));
+            
+            aiResponse = await processTextMessage(
+              content,
+              session.language || "pt",
+              formattedLlmConfig,
+              messageHistory,
+              widget.user_id,
+              session.widget_id
+            );
+          }
         } catch (error) {
           console.error("Erro ao processar mensagem com LLM:", error);
           aiResponse = "Desculpe, ocorreu um erro ao processar sua mensagem. Por favor, tente novamente.";
