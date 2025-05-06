@@ -9,7 +9,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export function TrainingTest() {
-  const { documents, isLoading: documentsLoading } = useTraining();
+  const { documents, documentsLoading } = useTraining();
   const [query, setQuery] = useState("");
   const [selectedDocumentId, setSelectedDocumentId] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -19,7 +19,7 @@ export function TrainingTest() {
     documentName?: string;
   } | null>(null);
 
-  const testDocuments = documents?.filter(doc => doc.status === "processed") || [];
+  const testDocuments = documents?.filter(doc => doc.status === "completed") || [];
 
   const handleTestQuery = async () => {
     if (!query || !selectedDocumentId) return;
@@ -83,7 +83,7 @@ export function TrainingTest() {
                   </SelectItem>
                 ) : (
                   testDocuments.map(doc => (
-                    <SelectItem key={doc.id} value={doc.id}>
+                    <SelectItem key={doc.id} value={doc.id.toString()}>
                       {doc.name}
                     </SelectItem>
                   ))
