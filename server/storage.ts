@@ -103,6 +103,7 @@ export interface IStorage {
   updateTrainingDocument(id: number, data: Partial<TrainingDocument>): Promise<TrainingDocument | undefined>;
   deleteTrainingDocument(id: number): Promise<void>;
   updateTrainingDocumentStatus(id: number, status: string, errorMessage?: string): Promise<TrainingDocument | undefined>;
+  searchTrainingDocuments(terms: string[]): Promise<TrainingDocument[]>;
   
   // Training categories
   getTrainingCategory(id: number): Promise<TrainingCategory | undefined>;
@@ -779,6 +780,34 @@ export class MemStorage implements IStorage {
     return Array.from(this.trainingDocuments.values())
       .filter(doc => doc.is_active)
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  }
+  
+  async searchTrainingDocuments(terms: string[]): Promise<TrainingDocument[]> {
+    console.log(`Pesquisando documentos com termos: ${terms.join(', ')}`);
+    
+    // Obter todos os documentos ativos
+    const allDocuments = Array.from(this.trainingDocuments.values())
+      .filter(doc => doc.is_active);
+    
+    // Se não tiver termos para filtrar, retorna todos os documentos
+    if (!terms || terms.length === 0) {
+      return allDocuments;
+    }
+    
+    // Filtrar documentos que contêm pelo menos um dos termos fornecidos no conteúdo
+    const matchingDocuments = allDocuments.filter(doc => {
+      // Se não tiver conteúdo, não pode corresponder
+      if (!doc.content) return false;
+      
+      // Verificar se algum dos termos está presente no conteúdo do documento
+      return terms.some(term => 
+        doc.content?.includes(term)
+      );
+    });
+    
+    console.log(`Encontrados ${matchingDocuments.length} documentos correspondentes aos termos de pesquisa`);
+    
+    return matchingDocuments;
   }
   
   async createTrainingDocument(document: InsertTrainingDocument): Promise<TrainingDocument> {
@@ -2258,6 +2287,43 @@ export class DatabaseStorage implements IStorage {
       .from(trainingDocuments)
       .where(eq(trainingDocuments.is_active, true))
       .orderBy(desc(trainingDocuments.created_at));
+  }
+  
+  async searchTrainingDocuments(terms: string[]): Promise<TrainingDocument[]> {
+    console.log(`Pesquisando documentos no banco de dados com termos: ${terms.join(', ')}`);
+    
+    // Se não há termos, retorna todos os documentos ativos
+    if (!terms || terms.length === 0) {
+      return this.getTrainingDocuments();
+    }
+    
+    // Construir condições OR para cada termo
+    let conditions = [];
+    
+    for (const term of terms) {
+      // Adicionar condição para cada termo (verificar se o conteúdo contém o termo)
+      // Usando ilike para busca case-insensitive
+      conditions.push(sql`${trainingDocuments.content} ILIKE ${`%${term}%`}`);
+    }
+    
+    // Combinar todas as condições em um OR
+    const whereCondition = or(...conditions);
+    
+    // Executar a consulta
+    const results = await db
+      .select()
+      .from(trainingDocuments)
+      .where(
+        and(
+          eq(trainingDocuments.is_active, true),
+          whereCondition
+        )
+      )
+      .orderBy(desc(trainingDocuments.created_at));
+    
+    console.log(`Encontrados ${results.length} documentos no banco de dados que correspondem aos termos de pesquisa`);
+    
+    return results;
   }
   
   async createTrainingDocument(document: InsertTrainingDocument): Promise<TrainingDocument> {
