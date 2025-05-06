@@ -15,6 +15,20 @@ import { Switch } from "@/components/ui/switch";
 import { formatDistanceToNow, format } from "date-fns";
 import { pt, enUS } from "date-fns/locale";
 
+// Tipo para sessão de chat
+interface ChatSession {
+  id: number;
+  started_at: string;
+  language: string;
+}
+
+// Tipo para resposta de sessões recentes
+interface RecentSessionsResponse {
+  count: number;
+  cutoffDate: string;
+  sessions: ChatSession[];
+}
+
 export function InteractionTraining() {
   const { t, language } = useLanguage();
   const { toast } = useToast();
@@ -31,7 +45,7 @@ export function InteractionTraining() {
     data: recentSessions,
     isLoading: isLoadingSessions,
     refetch: refetchSessions
-  } = useQuery({
+  } = useQuery<RecentSessionsResponse>({
     queryKey: ["/api/training/interactions/recent-sessions", daysAgo],
     queryFn: async () => {
       const response = await apiRequest(
@@ -156,7 +170,7 @@ export function InteractionTraining() {
                   {recentSessions.sessions.length > 10 && (
                     <tr>
                       <td colSpan={3} className="p-2 text-center text-muted-foreground">
-                        {t("admin.andMoreSessions", { count: recentSessions.sessions.length - 10 })}
+                        {t("admin.training.andMoreSessions", { count: recentSessions.sessions.length - 10 })}
                       </td>
                     </tr>
                   )}
