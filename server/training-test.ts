@@ -300,10 +300,17 @@ export async function testDocumentKnowledge(query: string, documentId: number) {
       "segundo o documento",
       "o documento especifica",
       "no documento consta",
-      "vs1 = 2,05v",
-      "vs1 é 2,05v",
+      "vs1",
+      "2,05", 
+      "2.05",
+      "~2.05",
+      "~2,05",
       "2,05v",
-      "2.05v"
+      "2.05v",
+      "high ldo",
+      "vpa",
+      "vcore",
+      "vproc"
     ];
     
     // Verificar extrato do documento
