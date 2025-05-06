@@ -98,6 +98,14 @@ export interface IStorage {
   
   // Training documents
   getTrainingDocument(id: number): Promise<TrainingDocument | undefined>;
+  
+  // Knowledge Base - Para embeddings e busca semântica
+  getKnowledgeEntry(id: number): Promise<KnowledgeBase | undefined>;
+  getKnowledgeEntries(language: string, limit?: number): Promise<KnowledgeBase[]>;
+  getKnowledgeEntriesBySource(sourceType: string, sourceId: number): Promise<KnowledgeBase[]>;
+  createKnowledgeEntry(entry: InsertKnowledgeBase): Promise<KnowledgeBase>;
+  updateKnowledgeEntry(id: number, data: Partial<KnowledgeBase>): Promise<KnowledgeBase | undefined>;
+  deleteKnowledgeEntry(id: number): Promise<void>;
   getTrainingDocuments(): Promise<TrainingDocument[]>;
   createTrainingDocument(document: InsertTrainingDocument): Promise<TrainingDocument>;
   updateTrainingDocument(id: number, data: Partial<TrainingDocument>): Promise<TrainingDocument | undefined>;
@@ -156,7 +164,10 @@ export interface IStorage {
   // Knowledge Base management
   createKnowledgeEntry(entry: InsertKnowledgeBase): Promise<KnowledgeBase>;
   getKnowledgeEntry(id: number): Promise<KnowledgeBase | undefined>;
+  getKnowledgeEntries(language: string, limit?: number): Promise<KnowledgeBase[]>;
+  getKnowledgeEntriesBySource(sourceType: string, sourceId: number): Promise<KnowledgeBase[]>;
   updateKnowledgeEntry(id: number, data: Partial<KnowledgeBase>): Promise<KnowledgeBase | undefined>;
+  deleteKnowledgeEntry(id: number): Promise<void>;
   getKnowledgeEntriesBySourceType(sourceType: string, language: string): Promise<KnowledgeBase[]>;
   getVerifiedKnowledgeEntries(language: string): Promise<KnowledgeBase[]>;
   findSimilarKnowledge(embedding: number[], language: string, limit?: number): Promise<KnowledgeBase[]>;

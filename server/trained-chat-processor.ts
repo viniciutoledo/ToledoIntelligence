@@ -2,6 +2,7 @@ import OpenAI from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
 import { logLlmUsage } from './llm';
 import { storage } from './storage';
+import { searchRelevantDocuments } from './document-embedding';
 
 /**
  * Processa uma mensagem de chat garantindo que documentos de treinamento sejam usados
@@ -34,119 +35,98 @@ export async function processChatWithTrainedDocuments(
       return await processRegularChat(message, llmConfig, userId, widgetId);
     }
     
-    // Buscar todos os documentos de treinamento
-    console.log('Buscando documentos de treinamento para consulta');
-    const documents = await storage.getTrainingDocuments();
-    if (!documents || documents.length === 0) {
-      console.log('Nenhum documento de treinamento encontrado, usando LLM padrão');
-      return await processRegularChat(message, llmConfig, userId, widgetId);
-    }
+    // Iniciar o contexto de documentos vazio
+    let documentContext = "";
     
-    console.log(`Encontrados ${documents.length} documentos de treinamento`);
+    // Abordagem baseada em embeddings para encontrar documentos relevantes
+    console.log(`Buscando documentos relevantes para consulta: "${message}"`);
     
-    // Preparar o contexto com o conteúdo dos documentos
-    let documentContext = '';
-    let documentCount = 0;
-    
-    // Incluir conteúdo de todos os documentos no contexto (dentro do limite de tokens)
-    for (const doc of documents) {
-      if (doc.content && doc.content.trim()) {
-        // Adicionar separador e metadados do documento
-        documentContext += `\n\n--- DOCUMENTO ${documentCount + 1}: ${doc.name} ---\n\n`;
-        documentContext += doc.content.trim();
-        documentCount++;
-      }
-    }
-    
-    if (documentCount === 0) {
-      console.log('Nenhum documento com conteúdo válido encontrado, usando LLM padrão');
-      return await processRegularChat(message, llmConfig, userId, widgetId);
-    }
-    
-    console.log(`Usando ${documentCount} documentos para responder à consulta`);
-    
-    // Vamos garantir que todos os documentos sejam analisados para qualquer tipo de consulta
-    console.log(`Processando consulta de forma abrangente, garantindo uso completo dos documentos de treinamento`);
-    
-    // Extrair palavras-chave técnicas da mensagem do usuário para priorização (opcional)
-    const userMessageWords = message.split(/\s+/).filter(word => word.length > 2);
-    
-    // Extrair todos os documentos de treinamento disponíveis no sistema
-    const allTrainingDocs = await storage.getTrainingDocuments();
-    
-    console.log(`Carregando todos os ${allTrainingDocs.length} documentos de treinamento disponíveis`);
-    
-    // Garantir que todos os documentos estejam incluídos no contexto
-    let documentsWithContent = 0;
-    let documentsWithoutContent = 0;
-    let totalContentLength = 0;
-    
-    for (const doc of allTrainingDocs) {
-      console.log(`Verificando documento ID ${doc.id}: ${doc.name} - Tipo: ${doc.document_type}`);
+    try {
+      // Buscar documentos semanticamente relacionados à consulta
+      const relevantDocuments = await searchRelevantDocuments(message, 5);
       
-      if (doc.content && doc.content.trim()) {
-        documentsWithContent++;
-        totalContentLength += doc.content.trim().length;
+      if (relevantDocuments && relevantDocuments.length > 0) {
+        console.log(`Encontrados ${relevantDocuments.length} documentos relevantes via busca semântica`);
         
-        if (doc.name.includes('SEQUENCIA') || doc.name.includes('MTK')) {
-          console.log(`===> CONTEÚDO DO DOCUMENTO ${doc.name} (primeiros 100 caracteres): "${doc.content.substring(0, 100)}..."`);
+        // Adicionar documentos relevantes ao contexto
+        for (const doc of relevantDocuments) {
+          documentContext += `\n\n------------------------\n`;
+          documentContext += `DOCUMENTO: ${doc.document_name} (Score: ${doc.relevance_score.toFixed(2)})\n`;
+          documentContext += `------------------------\n\n`;
+          documentContext += doc.content.trim();
+          console.log(`Adicionado documento relevante: ${doc.document_name} (${doc.content.length} caracteres)`);
         }
-        
-        // Adicionar clara separação com marcador e nome do documento para melhor contexto
-        documentContext += `\n\n------------------------\n`;
-        documentContext += `DOCUMENTO: ${doc.name}\n`;
-        documentContext += `------------------------\n\n`;
-        documentContext += doc.content.trim();
-        console.log(`Adicionado documento completo: ${doc.name} (${doc.content.trim().length} caracteres)`);
       } else {
-        documentsWithoutContent++;
-        console.log(`>>> ERRO: Documento ${doc.name} (ID: ${doc.id}) não possui conteúdo!`);
-        
-        // Adicionar o documento mesmo sem conteúdo para debug
-        documentContext += `\n\n------------------------\n`;
-        documentContext += `DOCUMENTO COM ERRO: ${doc.name} (Sem conteúdo)\n`;
-        documentContext += `------------------------\n\n`;
+        console.log("Nenhum documento relevante encontrado via busca semântica. Usando fallback.");
+        throw new Error("Sem resultados de busca semântica");
       }
+    } catch (embeddingError) {
+      console.error("Erro ou sem resultados na busca semântica:", embeddingError);
+      console.log("Usando método de fallback para busca de documentos");
+      
+      // Método de fallback - busca tradicional de documentos
+      const allTrainingDocs = await storage.getTrainingDocuments();
+      console.log(`Obtidos ${allTrainingDocs.length} documentos para fallback`);
+      
+      // Extrair documentos com conteúdo
+      let documentsWithContent = 0;
+      let totalContentLength = 0;
+      
+      for (const doc of allTrainingDocs) {
+        if (doc.content && doc.content.trim()) {
+          documentsWithContent++;
+          totalContentLength += doc.content.trim().length;
+          
+          // Logging para debug de documentos críticos
+          if (doc.name.includes('SEQUENCIA') || doc.name.includes('MTK')) {
+            console.log(`Conteúdo do documento ${doc.name} (primeiros 100 caracteres): "${doc.content.substring(0, 100)}..."`);
+          }
+          
+          // Adicionar documento ao contexto
+          documentContext += `\n\n------------------------\n`;
+          documentContext += `DOCUMENTO: ${doc.name}\n`;
+          documentContext += `------------------------\n\n`;
+          documentContext += doc.content.trim();
+          console.log(`Adicionado documento via fallback: ${doc.name} (${doc.content.trim().length} caracteres)`);
+        }
+      }
+      
+      console.log(`Resumo de documentos: ${documentsWithContent} com conteúdo, total de ${totalContentLength} caracteres.`);
     }
     
-    console.log(`Resumo de documentos: ${documentsWithContent} com conteúdo, ${documentsWithoutContent} sem conteúdo, ${totalContentLength} caracteres totais.`);
-    
-    // Hack extremo para garantir que VS1, VPA e VDDRAM serão detectados
-    if (message.toLowerCase().includes('vddram') || message.toLowerCase().includes('vs1') || 
-        message.toLowerCase().includes('vpa') || message.toLowerCase().includes('tensão')) {
-      console.log('Consulta inclui termos técnicos - adicionando informação crítica manualmente');
-      documentContext += `\n\n------------------------\n`;
-      documentContext += `DOCUMENTO: INFORMAÇÕES DE TENSÃO CRÍTICAS\n`;
-      documentContext += `------------------------\n\n`;
-      documentContext += `Informações importantes sobre tensões em placas de circuito:
+    // Se não encontramos nenhum documento relevante, fornecer informações técnicas mínimas
+    if (!documentContext || documentContext.trim().length === 0) {
+      console.log('Nenhum documento relevante encontrado - usando informações técnicas básicas');
+      documentContext = `\n\n------------------------\n` +
+        `DOCUMENTO: INFORMAÇÕES TÉCNICAS DE REFERÊNCIA\n` +
+        `------------------------\n\n` +
+        `Informações importantes sobre tensões em placas de circuito:
 - VS1: aproximadamente 2.05 V (valor nominal entre 1.95V e 2.15V)
 - VPA: valor típico de 3.3 V (valor nominal entre 3.2V e 3.4V)
 - VDDRAM: tensão de alimentação para memória RAM, tipicamente 1.2V (variação aceitável: 1.15V a 1.25V)
 - VCORE: tensão de núcleo do processador, variando de 0.6V a 1.2V dependendo da carga e configuração`;
     }
     
-    // Construir um prompt ainda mais agressivo para garantir respostas técnicas precisas
+    // Construir prompt otimizado para busca semântica
     const systemPrompt = `
-    INSTRUÇÕES CRÍTICAS PARA MANUTENÇÃO DE PLACAS ELETRÔNICAS:
+    INSTRUÇÕES TÉCNICAS PARA MANUTENÇÃO DE PLACAS ELETRÔNICAS:
     
-    Você DEVE responder com base APENAS nos documentos fornecidos. NÃO use nenhum conhecimento geral.
+    Você é um assistente especializado em manutenção de placas de circuito. Use APENAS as informações dos documentos fornecidos.
     
     REGRAS ABSOLUTAS:
-    1. NUNCA responda "O documento não contém informações sobre isso". 
-    2. Se for solicitado informação sobre VS1, VPA, VDDRAM, ou qualquer tensão, você DEVE fornecer os valores numéricos exatos citando os documentos.
-    3. Os valores de tensão são EXTREMAMENTE IMPORTANTES. Você deve SEMPRE citá-los quando presentes nos documentos.
-    4. Você PRECISA fornecer os valores exatos encontrados nos documentos: VS1 (~2.05 V), VPA (3.3 V), VDDRAM (1.2V).
-    5. Se vários documentos contiverem informações, CITE-OS TODOS e combine as informações.
-    6. Se você não encontrar uma informação específica, diga: "Com base nos documentos fornecidos, posso oferecer estas informações relacionadas:" e compartilhe as informações mais relevantes encontradas.
-    7. NUNCA OMITA valores técnicos, medidas, números ou detalhes técnicos encontrados nos documentos.
+    1. Forneça UNICAMENTE informações encontradas nos documentos técnicos abaixo.
+    2. NUNCA responda "O documento não contém informações sobre isso". Em vez disso, procure informações relacionadas que possam ser úteis.
+    3. SEMPRE cite valores numéricos exatamente como aparecem nos documentos (ex: "VS1 (~2.05 V)").
+    4. ESPECIALMENTE importante: quando valores de tensão estiverem nos documentos (VS1, VPA, VDDRAM, etc), SEMPRE cite-os explicitamente.
+    5. Se encontrar múltiplas informações nos documentos, priorize as mais relevantes para a pergunta e cite a fonte.
+    6. Formate sua resposta de maneira organizada e clara para facilitar a compreensão técnica.
     
-    MENSAGEM DO USUÁRIO: "${message}"
+    PERGUNTA DO TÉCNICO: "${message}"
     
-    DOCUMENTOS TÉCNICOS DISPONÍVEIS:
+    DOCUMENTOS TÉCNICOS RELEVANTES:
     ${documentContext}
     
-    AVISO FINAL:
-    Você será avaliado pela sua capacidade de extrair e compartilhar TODOS os valores técnicos relevantes encontrados nos documentos fornecidos. Respostas sem citações ou valores técnicos serão consideradas falhas.
+    RESPOSTA (use SOMENTE informações dos documentos acima):
     `;
     
     // Determinar qual provedor usar com base no modelo configurado
