@@ -36,10 +36,11 @@ import {
 } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Eye, EyeOff, Loader2, Info, Search, Settings, MessageSquare, FileCog } from "lucide-react";
+import { Eye, EyeOff, Loader2, Info, Search, Settings, MessageSquare, FileCog, Thermometer } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
+import { Slider } from "@/components/ui/slider";
 import { LlmSelectionDropdown } from "./llm-selection-dropdown";
 import UniversalModelTester from "./universal-model-tester";
 import { TrainingTest } from "./training-test";
@@ -53,6 +54,7 @@ export function LlmSettings() {
     model_name: z.string().min(1, "Model is required"),
     api_key: z.string().min(1, "API key is required"),
     tone: z.enum(["formal", "normal", "casual"]).default("normal"),
+    temperature: z.string().default("0.3"),
     behavior_instructions: z.string().optional(),
     should_use_training: z.boolean().default(true),
   });
@@ -63,6 +65,7 @@ export function LlmSettings() {
       model_name: llmData?.config?.model_name || "claude-3-7-sonnet-20250219",
       api_key: llmData?.config?.api_key || "",
       tone: llmData?.config?.tone || "normal",
+      temperature: llmData?.config?.temperature || "0.3",
       behavior_instructions: llmData?.config?.behavior_instructions || "",
       should_use_training: llmData?.config?.should_use_training !== false,
     },
@@ -75,6 +78,7 @@ export function LlmSettings() {
         model_name: llmData.config.model_name,
         api_key: llmData.config.api_key || "",
         tone: llmData.config.tone || "normal",
+        temperature: llmData.config.temperature || "0.3",
         behavior_instructions: llmData.config.behavior_instructions || "",
         should_use_training: llmData.config.should_use_training !== false,
       });
@@ -227,6 +231,39 @@ export function LlmSettings() {
                         </Select>
                         <FormDescription>
                           Define como a IA se comunicará com os usuários.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="temperature"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="flex justify-between items-center">
+                          <FormLabel>Temperatura</FormLabel>
+                          <div className="bg-secondary text-secondary-foreground px-2 py-1 rounded-md">
+                            {field.value}
+                          </div>
+                        </div>
+                        <FormControl>
+                          <div className="flex items-center gap-4">
+                            <Thermometer className="h-4 w-4 text-muted-foreground" />
+                            <Slider
+                              value={[parseFloat(field.value)]}
+                              min={0}
+                              max={1}
+                              step={0.01}
+                              onValueChange={(vals) => field.onChange(vals[0].toString())}
+                              className="flex-1"
+                            />
+                          </div>
+                        </FormControl>
+                        <FormDescription>
+                          Ajuste a criatividade da IA. Valores mais baixos (0.1-0.3) produzem respostas mais consistentes e precisas, 
+                          enquanto valores mais altos (0.7-1.0) tornam as respostas mais criativas e variadas.
                         </FormDescription>
                         <FormMessage />
                       </FormItem>

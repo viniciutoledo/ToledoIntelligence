@@ -62,6 +62,25 @@ async function updateLlmConfigTable() {
       console.log('Coluna should_use_training já existe.');
     }
     
+    // Verifica se a coluna temperature existe
+    const checkTemperatureColumn = await pool.query(`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'llm_configs' AND column_name = 'temperature'
+    `);
+    
+    if (checkTemperatureColumn.rows.length === 0) {
+      console.log('Adicionando coluna temperature...');
+      await pool.query(`
+        ALTER TABLE llm_configs 
+        ADD COLUMN temperature TEXT 
+        DEFAULT '0.3' NOT NULL
+      `);
+      console.log('Coluna temperature adicionada com sucesso.');
+    } else {
+      console.log('Coluna temperature já existe.');
+    }
+    
     console.log('Atualização da tabela llm_configs concluída com sucesso!');
   } catch (error) {
     console.error('Erro ao atualizar a tabela llm_configs:', error);
