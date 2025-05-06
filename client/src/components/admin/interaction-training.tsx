@@ -56,7 +56,7 @@ export function InteractionTraining() {
     onSuccess: (data) => {
       toast({
         title: t("admin.training.interactionsProcessed"),
-        description: t("admin.training.processedCountMessage", { count: data.processedCount }),
+        description: `${data.processedCount} interactions successfully converted to training documents`,
         variant: "default"
       });
       
@@ -156,7 +156,7 @@ export function InteractionTraining() {
                   {recentSessions.sessions.length > 10 && (
                     <tr>
                       <td colSpan={3} className="p-2 text-center text-muted-foreground">
-                        {t("admin.training.andMoreSessions", { count: recentSessions.sessions.length - 10 })}
+                        {t("admin.andMoreSessions", { count: recentSessions.sessions.length - 10 })}
                       </td>
                     </tr>
                   )}
