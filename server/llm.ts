@@ -23,11 +23,29 @@ export async function logLlmUsage(
   errorMessage?: string
 ): Promise<void> {
   try {
-    // Extrair o provedor do nome do modelo corretamente baseado na primeira parte do nome
-    const provider = modelName.split('/')[0].toLowerCase();
+    // Detectar o provedor com base no nome do modelo
+    let provider = '';
     
-    // Agora o widget_id é do tipo UUID no esquema, então podemos usar o valor diretamente
-    // sem necessidade de conversão
+    // Detecção mais precisa de provedor
+    if (modelName.includes('gpt') || modelName.includes('o4') || modelName.includes('o3')) {
+      provider = 'openai';
+    } else if (modelName.includes('claude')) {
+      provider = 'anthropic';
+    } else if (modelName.includes('llama')) {
+      provider = 'meta';
+    } else if (modelName.includes('qwen')) {
+      provider = 'alibaba';
+    } else if (modelName.includes('deepseek')) {
+      provider = 'deepseek';
+    } else if (modelName.includes('maritalk')) {
+      provider = 'maritaca';
+    } else {
+      // Fallback: extrair do nome do modelo (parte antes da primeira barra, se existir)
+      provider = modelName.split('/')[0].toLowerCase();
+    }
+    
+    // Log para debug
+    console.log(`Detectado provedor '${provider}' para modelo '${modelName}'`);
     
     // Registrar no sistema de armazenamento
     await storage.logLlmUsage({
@@ -41,7 +59,7 @@ export async function logLlmUsage(
       error_message: errorMessage
     });
     
-    console.log(`LLM usage logged: ${modelName} (${provider}) - ${operationType} - ${success ? 'Success' : 'Failed'}`);
+    console.log(`LLM usage logged: ${modelName} (${provider}) - ${operationType} - ${success ? 'Success' : 'Failed'} - ${tokenCount} tokens`);
   } catch (error) {
     // Não interromper o fluxo principal se o registro falhar
     console.error('Error logging LLM usage:', error);
@@ -886,7 +904,7 @@ export async function processTextMessage(
         const responseText = response.content[0].text;
         
         // Registrar uso bem-sucedido
-        const tokenEstimate = estimateTokens(truncatedMessage) + estimateTokens(responseText);
+        const tokenEstimate = estimateTokens(truncatedMessage, modelName) + estimateTokens(responseText, modelName);
         await logLlmUsage(modelName, "text", true, userId, widgetId, tokenEstimate);
         
         return responseText;
@@ -936,7 +954,7 @@ export async function processTextMessage(
         const responseText = response.choices[0].message.content;
         
         // Registrar uso bem-sucedido
-        const tokenEstimate = estimateTokens(truncatedMessage) + estimateTokens(responseText);
+        const tokenEstimate = estimateTokens(truncatedMessage, modelName) + estimateTokens(responseText, modelName);
         await logLlmUsage(modelName, "text", true, userId, widgetId, tokenEstimate);
         
         return responseText;
@@ -1014,10 +1032,38 @@ function truncateText(text: string, maxLength: number = 10000): string {
   return truncatedText + truncationNote;
 }
 
-// Estimativa aproximada de tokens baseada em caracteres (2-4 caracteres = ~1 token)
-function estimateTokens(text: string): number {
-  // Estimativa conservadora: 1 token a cada 3 caracteres
-  return Math.ceil(text.length / 3);
+// Estimativa mais precisa de tokens baseada nos principais tokenizadores
+function estimateTokens(text: string, model: string = ''): number {
+  if (!text) return 0;
+  
+  // Diferentes modelos usam diferentes métricas de tokenização
+  let divisor = 4; // Padrão para a maioria dos modelos
+  
+  // Ajuste com base no modelo
+  if (model.includes('gpt-4') || model.includes('o4') || model.includes('o3')) {
+    divisor = 3.8; // GPT-4 e variantes têm tokenização mais densa
+  } else if (model.includes('claude')) {
+    divisor = 4.2; // Claude pode ter tokenização ligeiramente menos densa
+  }
+  
+  // Adicionar lógica para diferentes tipos de conteúdo
+  // Texto com muitos números e símbolos especiais consome mais tokens
+  const hasHighTokenDensity = /[0-9!@#$%^&*()_+\-=\[\]{};:'"|,.<>\/?]+/.test(text);
+  if (hasHighTokenDensity) {
+    divisor -= 0.5; // Reduz divisor para conteúdo com alta densidade de tokens
+  }
+  
+  // Texto em alguns idiomas (como chinês/japonês) usa menos tokens por caractere
+  const hasAsianChars = /[\u3000-\u9fff\uf900-\ufaff]+/.test(text);
+  if (hasAsianChars) {
+    divisor += 1.5; // Aumenta divisor para idiomas asiáticos
+  }
+  
+  // Calcular tokens estimados
+  const estimatedTokens = Math.ceil(text.length / divisor);
+  
+  // Adicionar um pouco de margem para garantir (10%)
+  return Math.ceil(estimatedTokens * 1.1);
 }
 
 export async function analyzeFile(filePath: string, language: string, llmConfig?: LlmFullConfig): Promise<string> {
@@ -1097,9 +1143,13 @@ export async function analyzeFile(filePath: string, language: string, llmConfig?
       }
     }
 
-    // Verificar o tamanho do arquivo (em tokens)
-    const estimatedTokens = estimateTokens(fileContent);
-    console.log(`Tamanho estimado do arquivo em tokens: ${estimatedTokens}`);
+    // Obter configurações do LLM
+    const activeConfig = llmConfig || await getActiveLlmInfo();
+    const { provider, modelName, apiKey, tone, behaviorInstructions } = activeConfig;
+    
+    // Estimar tokens com o modelo específico
+    const estimatedTokens = estimateTokens(fileContent, modelName);
+    console.log(`Tamanho estimado do arquivo em tokens: ${estimatedTokens} para o modelo ${modelName}`);
     
     // Limitar o tamanho do arquivo para evitar erros de limite de taxa
     // Deixamos margem para o sistema prompt e a resposta (10000 tokens)
@@ -1109,12 +1159,6 @@ export async function analyzeFile(filePath: string, language: string, llmConfig?
       console.log(`Arquivo muito grande (${estimatedTokens} tokens). Truncando para ${MAX_CONTENT_TOKENS} tokens`);
       fileContent = truncateText(fileContent, MAX_CONTENT_TOKENS * 3); // aproximadamente
     }
-    
-    // Esta linha será removida, já que obtemos as configurações logo abaixo
-    
-    // Obter o tom e outras configurações específicas
-    const config = llmConfig || await getActiveLlmInfo();
-    const { provider, modelName, apiKey, tone, behaviorInstructions } = config;
     
     // Configurar estilo de comunicação com base no tom escolhido
     let toneStyle = '';
@@ -1190,15 +1234,20 @@ export async function analyzeFile(filePath: string, language: string, llmConfig?
         });
 
         if (response.content && response.content[0] && response.content[0].type === 'text') {
+          // Registrar uso bem-sucedido
+          await logLlmUsage(modelName, "file", true, undefined, undefined, estimatedTokens);
           return response.content[0].text;
         } else {
           console.error('Resposta em formato inesperado do Anthropic');
+          await logLlmUsage(modelName, "file", false, undefined, undefined, 0, 'Resposta em formato inesperado');
           return language === 'pt'
             ? 'Erro ao analisar o arquivo. Por favor, tente novamente mais tarde.'
             : 'Error analyzing the file. Please try again later.';
         }
       } catch (claudeError) {
         console.error('Erro específico do Claude ao analisar arquivo:', claudeError);
+        const errorMessage = claudeError instanceof Error ? claudeError.message : 'Erro desconhecido';
+        await logLlmUsage(modelName, "file", false, undefined, undefined, 0, errorMessage);
         return language === 'pt'
           ? 'Erro ao analisar o arquivo com Claude. Por favor, tente novamente mais tarde.'
           : 'Error analyzing the file with Claude. Please try again later.';
@@ -1229,15 +1278,20 @@ export async function analyzeFile(filePath: string, language: string, llmConfig?
         });
 
         if (response.choices && response.choices[0] && response.choices[0].message && response.choices[0].message.content) {
+          // Registrar uso bem-sucedido
+          await logLlmUsage(modelName, "file", true, undefined, undefined, estimatedTokens);
           return response.choices[0].message.content;
         }
         
         console.error('Resposta vazia ou inválida do OpenAI');
+        await logLlmUsage(modelName, "file", false, undefined, undefined, 0, 'Resposta vazia ou inválida');
         return language === 'pt'
           ? 'Sem resposta válida do modelo. Por favor, tente novamente.'
           : 'No valid response from the model. Please try again.';
       } catch (gptError) {
         console.error('Erro específico do OpenAI ao analisar arquivo:', gptError);
+        const errorMessage = gptError instanceof Error ? gptError.message : 'Erro desconhecido';
+        await logLlmUsage(modelName, "file", false, undefined, undefined, 0, errorMessage);
         return language === 'pt'
           ? 'Erro ao analisar o arquivo com GPT. Por favor, tente novamente mais tarde.'
           : 'Error analyzing the file with GPT. Please try again later.';
