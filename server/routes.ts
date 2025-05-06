@@ -10,6 +10,34 @@ import crypto from "crypto";
 import path from "path";
 import fs from "fs";
 import { z } from "zod";
+import pdfParse from "pdf-parse";
+
+// Função utilitária para extrair texto de um arquivo PDF
+async function extractTextFromPDF(filePath: string): Promise<string | null> {
+  try {
+    console.log(`Tentando extrair texto do PDF: ${filePath}`);
+    const dataBuffer = fs.readFileSync(filePath);
+    const data = await pdfParse(dataBuffer);
+    console.log(`PDF processado com sucesso: ${data.text.length} caracteres extraídos`);
+    return data.text;
+  } catch (error) {
+    console.error(`Erro ao extrair texto do PDF: ${filePath}`, error);
+    return null;
+  }
+}
+
+// Função utilitária para extrair texto de arquivo TXT
+async function extractTextFromTXT(filePath: string): Promise<string | null> {
+  try {
+    console.log(`Tentando ler arquivo de texto: ${filePath}`);
+    const text = fs.readFileSync(filePath, 'utf-8');
+    console.log(`Arquivo de texto processado com sucesso: ${text.length} caracteres`);
+    return text;
+  } catch (error) {
+    console.error(`Erro ao ler arquivo de texto: ${filePath}`, error);
+    return null;
+  }
+}
 
 // Função utilitária para converter URLs relativas para absolutas
 function ensureAbsoluteUrl(url: string, req: Request): string {
@@ -2269,6 +2297,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         content = req.body.content;
       } else if (document_type === "file" && req.file) {
         file_url = `/uploads/${req.file.filename}`;
+        
+        // Extrair conteúdo do arquivo com base no tipo MIME
+        const filePath = path.join(process.cwd(), "uploads/files", req.file.filename);
+        console.log(`Tentando extrair conteúdo do arquivo: ${filePath}`);
+        
+        if (req.file.mimetype === "application/pdf") {
+          // Extrair texto do PDF
+          content = await extractTextFromPDF(filePath);
+          console.log("Conteúdo extraído do PDF:", content ? `${content.length} caracteres` : "falha na extração");
+        } else if (req.file.mimetype === "text/plain") {
+          // Extrair texto do arquivo TXT
+          content = await extractTextFromTXT(filePath);
+          console.log("Conteúdo extraído do TXT:", content ? `${content.length} caracteres` : "falha na extração");
+        }
+        
+        // Caso não tenha conseguido extrair o conteúdo
+        if (!content) {
+          console.warn(`Não foi possível extrair o conteúdo do arquivo ${req.file.originalname}`);
+        }
       } else if (document_type === "website") {
         website_url = req.body.website_url;
       }
@@ -2277,7 +2324,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         name,
         description,
         document_type,
-        content: content ? "Conteúdo existe" : null,
+        content: content ? `${content.substring(0, 50)}... (${content.length} caracteres)` : null,
         file_url,
         website_url,
         created_by: req.user?.id
