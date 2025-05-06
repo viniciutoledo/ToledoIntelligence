@@ -335,6 +335,10 @@ export function useTraining() {
   const deleteDocumentMutation = useMutation({
     mutationFn: async (id: number) => {
       const res = await apiRequest("DELETE", `/api/training/documents/${id}`);
+      // Resposta 204 não tem corpo, então não tentamos analisar como JSON
+      if (res.status === 204) {
+        return {};
+      }
       return await res.json();
     },
     onSuccess: () => {
@@ -418,6 +422,10 @@ export function useTraining() {
   const deleteCategoryMutation = useMutation({
     mutationFn: async (id: number) => {
       const res = await apiRequest("DELETE", `/api/training/categories/${id}`);
+      // Resposta 204 não tem corpo, então não tentamos analisar como JSON
+      if (res.status === 204) {
+        return {};
+      }
       return await res.json();
     },
     onSuccess: () => {
@@ -453,6 +461,11 @@ export function useTraining() {
     const res = await apiRequest("DELETE", `/api/training/documents/${documentId}/categories/${categoryId}`);
     queryClient.invalidateQueries({ queryKey: ["/api/training/documents"] });
     queryClient.invalidateQueries({ queryKey: ["/api/training/categories"] });
+    
+    // Resposta 204 não tem corpo, então não tentamos analisar como JSON
+    if (res.status === 204) {
+      return {};
+    }
     return await res.json();
   };
 
