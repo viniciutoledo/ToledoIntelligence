@@ -78,6 +78,7 @@ interface LlmFullConfig {
   modelName: string; 
   apiKey: string;
   tone: LlmTone;
+  temperature: string;
   behaviorInstructions?: string;
   shouldUseTrained: boolean;
 }
@@ -101,6 +102,7 @@ export async function getActiveLlmInfo(): Promise<LlmFullConfig> {
   let modelName = DEFAULT_CLAUDE_MODEL;
   let apiKey = process.env.ANTHROPIC_API_KEY || '';
   let tone: LlmTone = 'normal';
+  let temperature = '0.3'; // Valor padrão
   let behaviorInstructions = '';
   let shouldUseTrained = true;
   
@@ -133,6 +135,7 @@ export async function getActiveLlmInfo(): Promise<LlmFullConfig> {
     
     modelName = activeConfig.model_name;
     tone = activeConfig.tone as LlmTone || 'normal';
+    temperature = activeConfig.temperature || '0.3';
     behaviorInstructions = activeConfig.behavior_instructions || '';
     shouldUseTrained = activeConfig.should_use_training !== false;
     
@@ -163,7 +166,7 @@ export async function getActiveLlmInfo(): Promise<LlmFullConfig> {
     throw new Error('No API key available for LLM');
   }
   
-  console.log(`DIAGNÓSTICO: Configuração final - Provider: ${provider}, Modelo: ${modelName}, Tom: ${tone}`);
+  console.log(`DIAGNÓSTICO: Configuração final - Provider: ${provider}, Modelo: ${modelName}, Tom: ${tone}, Temperatura: ${temperature}`);
   
   // Retornar a configuração completa com a chave API já limpa
   return { 
@@ -171,6 +174,7 @@ export async function getActiveLlmInfo(): Promise<LlmFullConfig> {
     modelName, 
     apiKey, 
     tone, 
+    temperature,
     behaviorInstructions, 
     shouldUseTrained 
   };

@@ -314,6 +314,7 @@ async function processWithAnthropic(
   userMessage: string,
   modelName: string,
   apiKey: string,
+  temperature: string = '0.3',
   userId?: number,
   widgetId?: string
 ): Promise<string> {
@@ -335,7 +336,7 @@ async function processWithAnthropic(
     const message = await anthropic.messages.create({
       model: modelName,
       max_tokens: 1000,
-      temperature: 0.3, // Baixo para respostas mais precisas
+      temperature: parseFloat(temperature), // Usando o valor configurado
       system: systemPrompt,
       messages: [
         { role: 'user', content: userMessage }
