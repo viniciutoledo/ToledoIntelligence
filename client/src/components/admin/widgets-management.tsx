@@ -370,6 +370,9 @@ export default function WidgetsManagement() {
     formData.append("default_width", data.default_width || "350");
     formData.append("background_color", data.background_color || "#FFFFFF");
     formData.append("font_size", data.font_size || "14px");
+    formData.append("font_color", data.font_color || "#000000");
+    formData.append("bot_message_bg_color", data.bot_message_bg_color || "#F3F4F6");
+    formData.append("user_message_bg_color", data.user_message_bg_color || "#6366F1");
     formData.append("custom_css", data.custom_css || "");
     
     // Verificar se há um arquivo de avatar
@@ -458,6 +461,9 @@ export default function WidgetsManagement() {
     formData.append("default_width", data.default_width || "350");
     formData.append("background_color", data.background_color || "#FFFFFF");
     formData.append("font_size", data.font_size || "14px");
+    formData.append("font_color", data.font_color || "#000000");
+    formData.append("bot_message_bg_color", data.bot_message_bg_color || "#F3F4F6");
+    formData.append("user_message_bg_color", data.user_message_bg_color || "#6366F1");
     formData.append("custom_css", data.custom_css || "");
     
     // Verificar se há um arquivo de avatar
