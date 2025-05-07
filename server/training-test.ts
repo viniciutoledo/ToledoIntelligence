@@ -94,17 +94,53 @@ export async function testDocumentKnowledge(query: string, documentId: number) {
             filePath = filePath.substring(1); // Remove a barra inicial
           }
           
-          // Adicionar path.join para garantir que o caminho seja correto para o SO
-          const normalizedPath = path.join(process.cwd(), filePath);
+          // Detectar se o caminho já inclui /files/ ou não
+          if (!filePath.includes('/files/') && !filePath.includes('\\files\\')) {
+            // Se não inclui, vamos tentar primeiro o caminho com /files/
+            const baseFileName = path.basename(filePath);
+            const filesPath = path.join(process.cwd(), 'uploads/files', baseFileName);
+            
+            console.log(`Processando arquivo para teste (caminho com /files/): ${filesPath}`);
+            content = await processDocumentContent("file", filesPath);
+            
+            // Se não conseguiu com /files/, tenta o caminho original
+            if (!content || content.includes("[Erro ao processar conteúdo") || content.includes("[Arquivo não encontrado")) {
+              // Adicionar path.join para garantir que o caminho seja correto para o SO
+              const normalizedPath = path.join(process.cwd(), filePath);
+              
+              console.log(`Tentando caminho original: ${normalizedPath}`);
+              content = await processDocumentContent("file", normalizedPath);
+            }
+          } else {
+            // Se já inclui /files/, usar o caminho normalizado
+            const normalizedPath = path.join(process.cwd(), filePath);
+            
+            console.log(`Processando arquivo para teste: ${normalizedPath}`);
+            content = await processDocumentContent("file", normalizedPath);
+          }
           
-          console.log(`Processando arquivo para teste: ${normalizedPath}`);
-          content = await processDocumentContent("file", normalizedPath);
-          
-          // Se não conseguiu processar, tentar caminhos alternativos
-          if (!content || content.includes("[Erro ao processar conteúdo")) {
-            const alternativePath = path.join(process.cwd(), 'uploads/files', path.basename(filePath));
-            console.log(`Tentando caminho alternativo: ${alternativePath}`);
-            content = await processDocumentContent("file", alternativePath);
+          // Se ainda não conseguiu processar, tentar outras alternativas
+          if (!content || content.includes("[Erro ao processar conteúdo") || content.includes("[Arquivo não encontrado")) {
+            // Tenta caminhos alternativos
+            const alternativePaths = [
+              path.join(process.cwd(), 'uploads', path.basename(filePath)),
+              path.join(process.cwd(), 'uploads/files', path.basename(filePath))
+            ];
+            
+            for (const altPath of alternativePaths) {
+              console.log(`Tentando caminho alternativo: ${altPath}`);
+              try {
+                if (fs.existsSync(altPath)) {
+                  content = await processDocumentContent("file", altPath);
+                  if (content && !content.includes("[Erro") && !content.includes("[Arquivo não encontrado")) {
+                    console.log(`Sucesso ao processar com caminho alternativo: ${altPath}`);
+                    break;
+                  }
+                }
+              } catch (err) {
+                console.error(`Erro ao tentar caminho alternativo ${altPath}:`, err);
+              }
+            }
           }
         }
         else if (document.document_type === "website" && document.website_url) {
