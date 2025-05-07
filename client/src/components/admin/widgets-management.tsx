@@ -1660,6 +1660,60 @@ export default function WidgetsManagement() {
                               </p>
                             </div>
                           </div>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                            <div>
+                              <h4 className="font-medium mb-2">{t("Cor de fundo")}</h4>
+                              <div className="flex items-center gap-2">
+                                <Input
+                                  type="color"
+                                  value={editForm.watch("background_color") || "#FFFFFF"}
+                                  onChange={(e) => {
+                                    const value = e.target.value;
+                                    editForm.setValue("background_color", value);
+                                  }}
+                                  className="w-10 h-10 p-1 cursor-pointer"
+                                />
+                                <Input
+                                  type="text"
+                                  placeholder="#FFFFFF"
+                                  value={editForm.watch("background_color") || "#FFFFFF"}
+                                  onChange={(e) => {
+                                    const value = e.target.value;
+                                    editForm.setValue("background_color", value);
+                                  }}
+                                  className="max-w-[150px]"
+                                />
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {t("Cor de fundo do widget")}
+                              </p>
+                            </div>
+
+                            <div>
+                              <h4 className="font-medium mb-2">{t("Tamanho da fonte")}</h4>
+                              <div className="flex items-center gap-2">
+                                <Input
+                                  type="number"
+                                  placeholder="14"
+                                  value={
+                                    editForm.watch("font_size")
+                                      ? parseInt(editForm.watch("font_size").replace("px", ""))
+                                      : "14"
+                                  }
+                                  onChange={(e) => {
+                                    const value = e.target.value;
+                                    editForm.setValue("font_size", `${value}px`);
+                                  }}
+                                  className="max-w-[150px]"
+                                />
+                                <span className="text-sm text-muted-foreground">px</span>
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {t("Tamanho da fonte em pixels")}
+                              </p>
+                            </div>
+                          </div>
 
                           <div className="mb-4">
                             <h4 className="font-medium mb-2">{t("CSS personalizado")}</h4>
