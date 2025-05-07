@@ -56,6 +56,8 @@ export function EmbeddedChat({ apiKey, initialOpen = false, hideHeader = false, 
     background_color?: string;
     font_size?: string;
     font_color?: string;
+    bot_message_bg_color?: string;
+    user_message_bg_color?: string;
   };
   const { t } = useTranslation();
   const { language } = useLanguage();
@@ -378,7 +380,9 @@ export function EmbeddedChat({ apiKey, initialOpen = false, hideHeader = false, 
           customStyles={{
             backgroundColor: widget.background_color,
             fontColor: widget.font_color,
-            fontSize: widget.font_size
+            fontSize: widget.font_size,
+            botMessageBgColor: widget.bot_message_bg_color,
+            userMessageBgColor: widget.user_message_bg_color
           }}
           customTexts={customTexts}
         />

@@ -65,6 +65,8 @@ interface ChatInterfaceProps {
     backgroundColor?: string;
     fontColor?: string;
     fontSize?: string;
+    botMessageBgColor?: string;
+    userMessageBgColor?: string;
   };
   
   // Traduções customizadas (opcionais)
@@ -250,11 +252,17 @@ export function ChatInterface({
               )}
             </div>
             
-            <div className={`py-2 px-3 max-w-[80%] ${
-              msg.is_user 
-                ? "bg-primary text-white rounded-lg rounded-tr-none" 
-                : "bg-neutral-100 text-neutral-800 rounded-lg rounded-tl-none"
-            }`}>
+            <div 
+              className={`py-2 px-3 max-w-[80%] ${
+                msg.is_user 
+                  ? "text-white rounded-lg rounded-tr-none" 
+                  : "text-neutral-800 rounded-lg rounded-tl-none"
+              }`}
+              style={{
+                backgroundColor: msg.is_user 
+                  ? customStyles.userMessageBgColor || "#6366F1" // cor primária padrão 
+                  : customStyles.botMessageBgColor || "#F3F4F6" // cor neutra clara padrão
+              }}>
               {msg.message_type === "text" ? (
                 <p className="text-sm">
                   {msg.content && msg.content.startsWith('[IMAGEM_EXTERNA]') ? (
@@ -352,7 +360,9 @@ export function ChatInterface({
                 <span className="text-sm font-bold">T</span>
               )}
             </div>
-            <div className="py-2 px-3 bg-neutral-100 text-neutral-800 rounded-lg rounded-tl-none">
+            <div 
+              className="py-2 px-3 text-neutral-800 rounded-lg rounded-tl-none"
+              style={{ backgroundColor: customStyles.botMessageBgColor || "#F3F4F6" }}>
               <div className="flex space-x-1">
                 <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
                 <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>

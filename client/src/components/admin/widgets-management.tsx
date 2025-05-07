@@ -69,6 +69,8 @@ const widgetFormSchema = z.object({
   background_color: z.string().regex(/^#[0-9A-F]{6}$/i, "Cor deve estar no formato hexadecimal (ex: #FFFFFF)").default("#FFFFFF"),
   font_size: z.string().default("14px"),
   font_color: z.string().regex(/^#[0-9A-F]{6}$/i, "Cor deve estar no formato hexadecimal (ex: #000000)").default("#000000"),
+  bot_message_bg_color: z.string().regex(/^#[0-9A-F]{6}$/i, "Cor deve estar no formato hexadecimal (ex: #F3F4F6)").default("#F3F4F6"),
+  user_message_bg_color: z.string().regex(/^#[0-9A-F]{6}$/i, "Cor deve estar no formato hexadecimal (ex: #6366F1)").default("#6366F1"),
   allowed_domains: z.array(z.string()).optional(),
   // Campos adicionais para configurações avançadas
   hide_minimize_button: z.boolean().optional().default(false),
