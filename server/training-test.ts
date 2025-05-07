@@ -228,29 +228,43 @@ export async function testDocumentKnowledge(query: string, documentId: number) {
     ${technicalContext}
     ${valueContext}
     
-    INSTRUÇÕES ESTRITAS - LEIA COM EXTREMA ATENÇÃO:
+    INSTRUÇÕES CRÍTICAS COM PRIORIDADE MÁXIMA:
     1. Use EXCLUSIVAMENTE as informações contidas no documento para responder.
-    2. Seja objetivo e CITE DIRETAMENTE partes do documento em sua resposta.
-    3. ANTES DE RESPONDER, realize uma BUSCA PROFUNDA no documento por:
-       - Qualquer menção do termo técnico específico (VS1, VPA, VCORE, etc.)
+    2. PROIBIDO RESPONDER "O documento não contém informações sobre isso" ou frases similares sem antes fazer uma análise exaustiva de todo o conteúdo.
+    3. Seja objetivo e CITE DIRETAMENTE partes do documento em sua resposta, usando citações exatas.
+    4. ANTES DE RESPONDER, realize uma BUSCA EXTREMAMENTE DETALHADA no documento por:
+       - Qualquer menção do termo técnico específico (VS1, VPA, VCORE, 1,2V, 2,05V, etc.)
        - Valores de tensão ou corrente relacionados à pergunta
-       - Termos técnicos, mesmo em formatos variados (VS1, Vs1, vs1, V.S.1, etc.)
+       - Termos técnicos, mesmo em formatos variados (VS1, Vs1, vs1, V.S.1, 1.2V, 1,2V etc.)
        - Números precisos seguidos de 'V', 'mA', 'Ω', 'Hz' etc.
-    4. MESMO QUE PRECISE FAZER UMA BUSCA LETRA POR LETRA, procure exatamente o termo solicitado.
-    5. Se você encontrar QUALQUER menção ao termo buscado, mesmo que em contexto diferente, SEMPRE cite essa parte do documento.
-    6. Se o documento mencionar claramente o valor solicitado, como VS1 (~2.05 V), COMECE sua resposta com esse valor específico.
-    7. NUNCA invente informações ou use seu conhecimento prévio.
-    8. Se encontrar a informação solicitada, responda: "De acordo com o documento: [informação encontrada]"
-    9. Somente se o documento realmente não contiver a informação solicitada após uma busca exaustiva, responda: "O documento não contém informações sobre isso".
+       - Procedimentos, sequências, ou instruções técnicas
+    5. MESMO QUE PRECISE ANALISAR O DOCUMENTO PALAVRA POR PALAVRA, você DEVE encontrar qualquer informação relevante.
+    6. Se você encontrar QUALQUER menção ao termo buscado, mesmo que em contexto diferente, SEMPRE cite essa parte do documento.
+    7. Se o documento mencionar claramente um valor técnico, como "1,2 V" ou "confirmando se há 1,2 V de saída", COMECE sua resposta com esses valores específicos.
+    8. NUNCA invente informações ou use seu conhecimento prévio.
+    9. TÉCNICA DE BUSCA OBRIGATÓRIA:
+       a. Primeiro, leia o documento inteiro para entender o contexto
+       b. Depois, procure palavra por palavra por termos técnicos específicos
+       c. Busque por valores numéricos seguidos de unidades (V, mA, etc.)
+       d. Procure por procedimentos de teste ou verificação
+       e. Identifique relações entre componentes, mesmo que não sejam explícitas
     
-    IMPORTANTE: Considere que documentos técnicos frequentemente contêm siglas e códigos específicos que podem estar em qualquer parte do texto, mesmo em parágrafos não óbvios ou em meio a outras explicações. Seja EXTREMAMENTE METICULOSO em sua busca.
+    LEMBRE-SE: Documentos técnicos frequentemente contêm informações críticas em formatos não óbvios, como notas de rodapé, comentários entre parênteses, ou menções breves. É VITAL que você analise cada palavra e número do documento com extrema atenção.
+    
+    ALERTA: Se você responder que "o documento não contém informações" sobre algo que de fato está presente no documento, isso será considerado um ERRO GRAVE. É melhor extrair informação parcialmente relacionada do que declarar ausência de informação.
     
     DOCUMENTO:
     ${content}
     
     PERGUNTA: ${query}
     
-    RESPOSTA (CITANDO APENAS INFORMAÇÕES DO DOCUMENTO E INCLUINDO VALORES EXATAMENTE COMO ESTÃO ESCRITOS):
+    INSTRUÇÕES FINAIS OBRIGATÓRIAS:
+    - Se você encontrar QUALQUER menção a tensões (como "1,2 V", "~1,2V", etc.) no documento, você DEVE citá-las EXATAMENTE como aparecem.
+    - Se encontrar procedimentos técnicos, cite-os em formato de lista numerada.
+    - Não omita informações técnicas importantes, mesmo que pareçam indiretas.
+    - Procure especialmente por termos similares a: IC, pinos, esferas, CPU, tensão, linha, feedback, resistores, LDO, telefone
+    
+    RESPOSTA (CITE APENAS INFORMAÇÕES DO DOCUMENTO, INCLUINDO VALORES EXATAMENTE COMO ESTÃO ESCRITOS):
     `;
     
     // Chamar o LLM com o prompt personalizado
