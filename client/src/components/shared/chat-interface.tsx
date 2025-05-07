@@ -194,7 +194,7 @@ export function ChatInterface({
   const chatStyles = {
     color: customStyles.fontColor || '#F5F5F5',         // Texto claro para o fundo escuro
     fontSize: customStyles.fontSize || '14px',          // Tamanho padrão
-    backgroundColor: customStyles.backgroundColor || '#111111' // Fundo escuro padrão
+    backgroundColor: customStyles.backgroundColor || '#000000' // Fundo preto puro como padrão
   };
 
   return (

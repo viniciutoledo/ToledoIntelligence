@@ -283,7 +283,7 @@ export function EmbeddedChat({ apiKey, initialOpen = false, hideHeader = false, 
     right: isInIframe || fullHeight ? 0 : "1rem",
     height: isInIframe || fullHeight ? "100%" : (widget?.default_height ? `${widget.default_height}px` : "500px"),
     width: isInIframe || fullHeight ? "100%" : (widget?.default_width ? `${widget.default_width}px` : "350px"),
-    backgroundColor: widget?.background_color || "#111111", // Fundo preto/escuro como padrão (visto na imagem)
+    backgroundColor: widget?.background_color || "#000000", // Fundo totalmente preto (conforme imagem)
     color: widget?.font_color || "#F5F5F5", // Texto claro para fundo escuro
     fontSize: widget?.font_size || "14px", // Tamanho padrão
   } as React.CSSProperties;
@@ -328,7 +328,7 @@ export function EmbeddedChat({ apiKey, initialOpen = false, hideHeader = false, 
       {!shouldHideHeader && widget && (
         <div 
           className="p-3 flex items-center justify-between border-b"
-          style={{ backgroundColor: widget.theme_color || "#6366F1", color: "white" }}
+          style={{ backgroundColor: widget.theme_color || "#5B58F0", color: "white" }}
         >
           <div className="flex items-center">
             <div className="h-8 w-8 rounded-full flex-shrink-0 overflow-hidden">
@@ -378,7 +378,7 @@ export function EmbeddedChat({ apiKey, initialOpen = false, hideHeader = false, 
           onSendMessage={handleSendMessage}
           onFileUpload={handleFileUpload}
           customStyles={{
-            backgroundColor: widget?.background_color || "#111111",
+            backgroundColor: widget?.background_color || "#000000",
             fontColor: widget?.font_color || "#F5F5F5",
             fontSize: widget?.font_size || "14px",
             botMessageBgColor: widget?.bot_message_bg_color || "#F2EFE5", // Cor creme/bege claro para mensagens do bot
