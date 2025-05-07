@@ -355,11 +355,11 @@ export default function WidgetsManagement() {
         custom_css: selectedWidget.custom_css || "",
         
         // Novas opções de controle da conversa
-        allow_human_help: selectedWidget.allow_human_help !== undefined ? selectedWidget.allow_human_help : true,
-        use_emojis: selectedWidget.use_emojis !== undefined ? selectedWidget.use_emojis : true,
-        restrict_topics: selectedWidget.restrict_topics !== undefined ? selectedWidget.restrict_topics : false,
-        split_responses: selectedWidget.split_responses !== undefined ? selectedWidget.split_responses : true,
-        allow_reminders: selectedWidget.allow_reminders !== undefined ? selectedWidget.allow_reminders : false,
+        allow_human_help: selectedWidget.allow_human_help ?? true,
+        use_emojis: selectedWidget.use_emojis ?? true,
+        restrict_topics: selectedWidget.restrict_topics ?? false,
+        split_responses: selectedWidget.split_responses ?? true,
+        allow_reminders: selectedWidget.allow_reminders ?? false,
         
         // Novas opções operacionais
         response_time: selectedWidget.response_time || "immediate",
