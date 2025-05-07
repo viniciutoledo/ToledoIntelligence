@@ -69,15 +69,13 @@ app.get('/widget-docs', (req, res) => {
 });
 
 // Rota específica para o arquivo HTML de demonstração do widget
-app.get('/widget-embed-example.html', (req, res) => {
-  const path = require('path');
-  const fs = require('fs');
+app.get('/widget-embed-example.html', async (req, res) => {
+  // Usando o path já importado globalmente
+  // Usando fs.promises para compatibilidade com ES modules
   const filePath = path.join(process.cwd(), 'public', 'widget-embed-example.html');
   
-  fs.readFile(filePath, 'utf8', (err, data) => {
-    if (err) {
-      return res.status(404).send('Documentação não encontrada');
-    }
+  try {
+    const data = await fs.promises.readFile(filePath, 'utf8');
     
     // Definir cabeçalhos para permitir incorporação
     res.setHeader('Content-Type', 'text/html');
@@ -85,7 +83,9 @@ app.get('/widget-embed-example.html', (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     
     res.send(data);
-  });
+  } catch (err) {
+    return res.status(404).send('Documentação não encontrada');
+  }
 });
 
 // Rota específica para o arquivo HTML de demonstração do widget inline
