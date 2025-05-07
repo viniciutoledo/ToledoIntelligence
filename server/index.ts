@@ -6,6 +6,7 @@ import { db } from "./db";
 import { eq } from "drizzle-orm";
 import { planPricing } from "@shared/schema";
 import path from "path";
+import fs from "fs";
 
 const app = express();
 app.use(express.json());
@@ -89,15 +90,13 @@ app.get('/widget-embed-example.html', async (req, res) => {
 });
 
 // Rota específica para o arquivo HTML de demonstração do widget inline
-app.get('/widget-inline-demo.html', (req, res) => {
-  const path = require('path');
-  const fs = require('fs');
+app.get('/widget-inline-demo.html', async (req, res) => {
+  // Usando o path já importado globalmente
+  // Usando fs.promises para compatibilidade com ES modules
   const filePath = path.join(process.cwd(), 'public', 'widget-inline-demo.html');
   
-  fs.readFile(filePath, 'utf8', (err, data) => {
-    if (err) {
-      return res.status(404).send('Demonstração não encontrada');
-    }
+  try {
+    const data = await fs.promises.readFile(filePath, 'utf8');
     
     // Definir cabeçalhos para permitir incorporação
     res.setHeader('Content-Type', 'text/html');
@@ -105,7 +104,9 @@ app.get('/widget-inline-demo.html', (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     
     res.send(data);
-  });
+  } catch (err) {
+    return res.status(404).send('Demonstração não encontrada');
+  }
 });
 
 // Middleware de logging
