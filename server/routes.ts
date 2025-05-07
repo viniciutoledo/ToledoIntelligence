@@ -3327,6 +3327,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         avatar_url: z.string().optional(),
         theme_color: z.string().optional(),
         is_active: z.boolean().optional(),
+        // Campos de estilo personalizados
+        background_color: z.string().optional(),
+        font_size: z.string().optional(),
+        font_color: z.string().optional(),
+        bot_message_bg_color: z.string().optional(),
+        user_message_bg_color: z.string().optional(),
         allowed_domains: z.union([
           z.array(z.string()),
           z.string().transform(str => {
