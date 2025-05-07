@@ -1585,14 +1585,16 @@ export default function WidgetsManagement() {
                                   </p>
                                 </div>
                                 <Switch
-                                  checked={selectedWidget.hide_minimize_button || false}
+                                  checked={editForm.watch("hide_minimize_button") || false}
                                   onCheckedChange={(checked) => {
-                                    // Implemente a lógica para salvar esta configuração
+                                    // Atualizar o valor no formulário diretamente
+                                    editForm.setValue("hide_minimize_button", checked);
+                                    // Também atualizar o selectedWidget para refletir o estado do toggle
                                     if (selectedWidget) {
-                                      const updatedWidget = { ...selectedWidget, hide_minimize_button: checked };
-                                      // Note: isso será salvo quando o usuário clicar em Salvar Alterações
-                                      // Esta implementação é apenas para atualizar o estado local
-                                      // O campo hide_minimize_button será enviado junto com o resto do formulário
+                                      setSelectedWidget({
+                                        ...selectedWidget,
+                                        hide_minimize_button: checked
+                                      });
                                     }
                                   }}
                                 />
