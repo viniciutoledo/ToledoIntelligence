@@ -486,6 +486,13 @@ export function buildContextForLLM(
        - Identificar QUALQUER menção a valores numéricos (especialmente seguidos de V, mA, Ω)
        - EXTRAIR LITERALMENTE qualquer trecho que mencione procedimentos ou componentes
        - CITAR EXPLICITAMENTE os valores encontrados (ex: "1,2 V", "~2.05V", etc.)
+       
+    6. INSTRUÇÕES PARA DOCUMENTOS VISUAIS:
+       - Se o documento contiver marcadores como [DOCUMENTO VISUAL DETECTADO] ou [AVISO]
+       - Informe que sua resposta é limitada devido à natureza visual do documento
+       - Explique que há diagramas, esquemas de placas ou imagens técnicas no documento original
+       - Mesmo com limitações, extraia QUALQUER fragmento de texto, valor ou referência presente
+       - NUNCA diga que "não há informação" - em vez disso, sugira que o técnico consulte o documento original
     
     Se não conseguir formar uma resposta clara, EXTRAIA E CITE LITERALMENTE as partes dos documentos que poderiam estar minimamente relacionadas.
     
@@ -524,6 +531,20 @@ export function buildContextForLLM(
        - About ANY cited procedure
        - About ANY listed technical value
        - About ANY described diagram or sequence
+    
+    5. MANDATORY VERIFICATION TECHNIQUE:
+       - Check each document word by word
+       - Look for terms similar or related to the query
+       - Identify ANY mention of numerical values (especially followed by V, mA, Ω)
+       - LITERALLY EXTRACT any excerpt that mentions procedures or components
+       - EXPLICITLY CITE the values found (e.g., "1.2 V", "~2.05V", etc.)
+    
+    6. INSTRUCTIONS FOR VISUAL DOCUMENTS:
+       - If the document contains markers like [VISUAL DOCUMENT DETECTED] or [WARNING]
+       - Inform that your answer is limited due to the visual nature of the document
+       - Explain that there are probably diagrams, board schematics, or technical images in the original document
+       - Despite limitations, extract ANY text fragment, value, or reference present
+       - NEVER say that "there is no information" - instead, suggest that the technician consult the original document
     
     If you cannot form a clear answer, EXTRACT AND LITERALLY CITE the parts of the documents that might be minimally related.
     

@@ -129,9 +129,11 @@ export async function extractTextFromPDF(filePath: string): Promise<string> {
     }
     
     // Melhorar a qualidade do texto extraído
-    if (!data || !data.text) {
-      console.error("PDF sem texto extraível");
-      return "O PDF não contém texto extraível ou está vazio.";
+    if (!data || !data.text || data.text.trim().length === 0) {
+      console.error("PDF sem texto extraível, adicionando marcador de conteúdo visual");
+      
+      // Em vez de falhar, retornar um texto especial que indica conteúdo visual
+      return "[DOCUMENTO VISUAL DETECTADO: Este documento parece conter principalmente imagens, diagramas ou gráficos com pouco texto extraível. O sistema continuará o processamento considerando que pode haver informações visuais importantes como esquemas de placas de circuito, diagramas técnicos, valores numéricos em imagens ou outras referências visuais relevantes para manutenção técnica.]";
     }
     
     let text = data.text;
@@ -154,9 +156,13 @@ export async function extractTextFromPDF(filePath: string): Promise<string> {
       }
     } else if (text.length > 0) {
       console.log("Aviso: PDF extraído com pouco conteúdo.");
+      
+      // Adicionar informações sobre potencial conteúdo visual
+      text = `[AVISO: Este documento contém pouco texto extraível (${text.length} caracteres). É possível que contenha principalmente conteúdo visual como diagramas de placas, esquemas técnicos ou imagens com informações importantes. O sistema processará o conteúdo disponível.]\n\n${text}`;
+      
     } else {
-      console.error("PDF não contém texto extraível");
-      return "O PDF não contém texto extraível.";
+      console.error("PDF não contém texto extraível, adicionando marcador de documento visual");
+      return "[DOCUMENTO VISUAL DETECTADO: Este documento parece conter principalmente imagens, diagramas ou gráficos com pouco ou nenhum texto extraível. O sistema continuará o processamento considerando que pode haver informações visuais importantes como esquemas de placas de circuito, diagramas técnicos, valores numéricos em imagens ou outras referências visuais relevantes para manutenção técnica.]";
     }
     
     return text;
