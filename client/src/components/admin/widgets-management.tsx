@@ -1589,13 +1589,8 @@ export default function WidgetsManagement() {
                                   onCheckedChange={(checked) => {
                                     // Atualizar o valor no formulário diretamente
                                     editForm.setValue("hide_minimize_button", checked);
-                                    // Também atualizar o selectedWidget para refletir o estado do toggle
-                                    if (selectedWidget) {
-                                      setSelectedWidget({
-                                        ...selectedWidget,
-                                        hide_minimize_button: checked
-                                      });
-                                    }
+                                    // Não é necessário atualizar o selectedWidget manualmente
+                                    // pois o React Query recarregará os dados quando necessário
                                   }}
                                 />
                               </div>
@@ -1610,12 +1605,12 @@ export default function WidgetsManagement() {
                                   </p>
                                 </div>
                                 <Switch
-                                  checked={selectedWidget.hide_close_button || false}
+                                  checked={editForm.watch("hide_close_button") || false}
                                   onCheckedChange={(checked) => {
-                                    if (selectedWidget) {
-                                      const updatedWidget = { ...selectedWidget, hide_close_button: checked };
-                                      // Mesma lógica do anterior, atualização local apenas
-                                    }
+                                    // Atualizar o valor no formulário diretamente
+                                    editForm.setValue("hide_close_button", checked);
+                                    // Não é necessário atualizar o selectedWidget manualmente
+                                    // pois o React Query recarregará os dados quando necessário
                                   }}
                                 />
                               </div>
@@ -1629,13 +1624,11 @@ export default function WidgetsManagement() {
                                 <Input
                                   type="number"
                                   placeholder="600"
-                                  value={selectedWidget.default_height || "600"}
+                                  value={editForm.watch("default_height") || "600"}
                                   onChange={(e) => {
                                     const value = e.target.value;
-                                    if (selectedWidget) {
-                                      const updatedWidget = { ...selectedWidget, default_height: value };
-                                      // Mesma lógica anterior
-                                    }
+                                    // Atualizar o valor no formulário
+                                    editForm.setValue("default_height", value);
                                   }}
                                   className="max-w-[150px]"
                                 />
@@ -1652,13 +1645,11 @@ export default function WidgetsManagement() {
                                 <Input
                                   type="number"
                                   placeholder="350"
-                                  value={selectedWidget.default_width || "350"}
+                                  value={editForm.watch("default_width") || "350"}
                                   onChange={(e) => {
                                     const value = e.target.value;
-                                    if (selectedWidget) {
-                                      const updatedWidget = { ...selectedWidget, default_width: value };
-                                      // Mesma lógica anterior
-                                    }
+                                    // Atualizar o valor no formulário
+                                    editForm.setValue("default_width", value);
                                   }}
                                   className="max-w-[150px]"
                                 />
@@ -1674,13 +1665,11 @@ export default function WidgetsManagement() {
                             <h4 className="font-medium mb-2">{t("CSS personalizado")}</h4>
                             <Textarea
                               placeholder=".widget-header { background-color: #f8f8f8; }"
-                              value={selectedWidget.custom_css || ""}
+                              value={editForm.watch("custom_css") || ""}
                               onChange={(e) => {
                                 const value = e.target.value;
-                                if (selectedWidget) {
-                                  const updatedWidget = { ...selectedWidget, custom_css: value };
-                                  // Mesma lógica anterior
-                                }
+                                // Atualizar o valor no formulário
+                                editForm.setValue("custom_css", value);
                               }}
                               rows={4}
                               className="font-mono text-sm"
@@ -1701,12 +1690,12 @@ export default function WidgetsManagement() {
                             <div 
                               className="overflow-hidden bg-white rounded-lg shadow-md" 
                               style={{
-                                width: `${selectedWidget.default_width || 350}px`,
-                                height: `${selectedWidget.default_height || 600}px`,
+                                width: `${editForm.watch("default_width") || 350}px`,
+                                height: `${editForm.watch("default_height") || 600}px`,
                               }}
                             >
                               <div className="bg-primary/10 text-primary p-4 text-center border-b">
-                                <p>{t("Preview do widget")} - {selectedWidget.name}</p>
+                                <p>{t("Preview do widget")} - {editForm.watch("name") || selectedWidget.name}</p>
                               </div>
                               <div className="flex items-center justify-center h-full">
                                 <p className="text-muted-foreground text-sm text-center p-4">
