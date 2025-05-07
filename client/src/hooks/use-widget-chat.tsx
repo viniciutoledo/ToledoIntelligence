@@ -43,6 +43,11 @@ interface WidgetInfo {
   default_height?: string;
   default_width?: string;
   custom_css?: string;
+  background_color?: string;
+  font_size?: string;
+  font_color?: string;
+  bot_message_bg_color?: string;
+  user_message_bg_color?: string;
 }
 
 // Interface do contexto
