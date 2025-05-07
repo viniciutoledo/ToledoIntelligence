@@ -3336,7 +3336,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
               return [];
             }
           })
-        ]).optional()
+        ]).optional(),
+        // Adicionando suporte para as opções de iframe
+        hide_minimize_button: z.union([
+          z.boolean(),
+          z.string().transform(val => val === 'true')
+        ]).optional(),
+        hide_close_button: z.union([
+          z.boolean(),
+          z.string().transform(val => val === 'true')
+        ]).optional(),
+        default_height: z.string().optional(),
+        default_width: z.string().optional(),
+        custom_css: z.string().optional()
       });
       
       // Validar os dados
