@@ -380,7 +380,7 @@ export function EmbeddedChat({ apiKey, initialOpen = false, hideHeader = false, 
           customStyles={{
             backgroundColor: widget?.background_color || "#000000",
             fontColor: widget?.font_color || "#F5F5F5",
-            fontSize: widget?.font_size || "14px",
+            fontSize: widget?.font_size || "16px", // Aumentando tamanho padrão para 16px
             botMessageBgColor: widget?.bot_message_bg_color || "#F2EFE5", // Cor creme/bege claro para mensagens do bot
             userMessageBgColor: widget?.user_message_bg_color || "#F2EFE5" // Mesma cor para mensagens do usuário
           }}

@@ -264,7 +264,7 @@ export function ChatInterface({
                   : customStyles.botMessageBgColor || "#F2EFE5" // mesma cor para bot (da imagem)
               }}>
               {msg.message_type === "text" ? (
-                <p className="text-sm">
+                <p className="text-base" style={{ fontSize: customStyles.fontSize || '16px' }}>
                   {msg.content && msg.content.startsWith('[IMAGEM_EXTERNA]') ? (
                     <>
                       <div className="flex items-center mb-2">
@@ -296,7 +296,7 @@ export function ChatInterface({
                 <div>
                   <div className="flex items-center mb-2">
                     <Image className="h-4 w-4 mr-2" />
-                    <span className="text-sm">{msg.content || "Imagem"}</span>
+                    <span style={{ fontSize: customStyles.fontSize || '16px' }}>{msg.content || "Imagem"}</span>
                   </div>
                   <div className="image-container relative">
                     {(msg.file_url || msg.fileBase64) ? (
@@ -329,7 +329,7 @@ export function ChatInterface({
                 <div>
                   <div className="flex items-center">
                     <Paperclip className="h-4 w-4 mr-2" />
-                    <span className="text-sm">{msg.content || "Arquivo"}</span>
+                    <span style={{ fontSize: customStyles.fontSize || '16px' }}>{msg.content || "Arquivo"}</span>
                   </div>
                   <a 
                     href={getOptimizedFileUrl(msg.file_url)} 
@@ -341,7 +341,7 @@ export function ChatInterface({
                   </a>
                 </div>
               ) : (
-                <p className="text-sm text-neutral-500">{texts.messageUnavailable}</p>
+                <p style={{ fontSize: customStyles.fontSize || '16px' }} className="text-neutral-500">{texts.messageUnavailable}</p>
               )}
             </div>
           </div>
@@ -447,7 +447,7 @@ export function ChatInterface({
           </div>
         )}
         
-        <div className="text-xs text-neutral-500 mt-2 ml-1">
+        <div style={{ fontSize: "13px" }} className="text-neutral-500 mt-2 ml-1">
           {texts.supportedFormats}
         </div>
       </div>
