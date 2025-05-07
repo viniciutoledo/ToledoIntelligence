@@ -1,15 +1,39 @@
 /* Estilos específicos para os diálogos de widgets */
 
 .widgets-dialog {
-  max-width: 90vw !important;
+  max-width: 95vw !important;
   max-height: 90vh !important;
   overflow-y: auto !important;
   width: 100%;
+  padding: 1rem !important;
 }
 
 @media (min-width: 640px) {
   .widgets-dialog {
     max-width: 760px !important;
+    padding: 1.5rem !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .widgets-dialog {
+    max-width: 900px !important;
+    padding: 2rem !important;
+  }
+}
+
+/* Ajustes para o conteúdo do diálogo */
+.widgets-dialog .tabs {
+  margin-bottom: 1rem;
+}
+
+.widgets-dialog .tabs-content {
+  padding: 0.5rem;
+}
+
+@media (min-width: 640px) {
+  .widgets-dialog .tabs-content {
+    padding: 1rem;
   }
 }
 
@@ -26,19 +50,39 @@
   }
 }
 
+/* Melhorias para abas em dispositivos móveis */
+.widgets-dialog .tabs-list button {
+  padding: 0.5rem 0.25rem;
+  font-size: 0.8rem;
+}
+
+@media (min-width: 640px) {
+  .widgets-dialog .tabs-list button {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+  }
+}
+
 /* Estilo para os controles de cores */
 .color-input-container {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  width: 100%;
 }
 
 .color-preview {
-  width: 2.5rem;
+  min-width: 2.5rem;
   height: 2.5rem;
   border-radius: 0.25rem;
   cursor: pointer;
   border: 1px solid #e2e8f0;
+  transition: transform 0.15s ease;
+}
+
+.color-preview:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3);
 }
 
 /* Responsividade do preview do widget */
@@ -47,11 +91,91 @@
   overflow-x: auto;
   display: flex;
   justify-content: center;
-  padding: 1rem;
+  padding: 0.5rem;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+
+@media (min-width: 640px) {
+  .widget-preview-container {
+    padding: 1rem;
+  }
 }
 
 .widget-preview {
   border-radius: 0.5rem;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   overflow: hidden;
+  width: 100%;
+  max-width: 380px;
+}
+
+/* Melhorias para seletores de domínio */
+.domain-tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.domain-tag {
+  display: inline-flex;
+  align-items: center;
+  background-color: #f3f4f6;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+}
+
+.domain-tag button {
+  margin-left: 0.25rem;
+  color: #6b7280;
+}
+
+.domain-tag button:hover {
+  color: #ef4444;
+}
+
+/* Layout de duas colunas para a seção de estilo do widget */
+.style-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .style-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Melhorias para campos de entrada em seções */
+.widgets-dialog .form-section {
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 1.5rem;
+}
+
+.widgets-dialog .form-section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+/* Estilos para botões de ação no rodapé do diálogo */
+.widgets-dialog .dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1.5rem;
+  gap: 0.75rem;
+}
+
+@media (max-width: 639px) {
+  .widgets-dialog .dialog-footer {
+    flex-direction: column;
+  }
+  
+  .widgets-dialog .dialog-footer button {
+    width: 100%;
+  }
 }

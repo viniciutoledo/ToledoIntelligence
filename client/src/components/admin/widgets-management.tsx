@@ -1625,13 +1625,13 @@ export default function WidgetsManagement() {
                           </div>
                         </div>
                         
-                        <div className="border-t pt-4">
+                        <div className="border-t pt-4 form-section">
                           <h3 className="font-medium mb-2">{t("Estilo do widget")}</h3>
                           <p className="text-sm text-muted-foreground mb-4">
                             {t("Personalize a aparência visual do widget.")}
                           </p>
                           
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="style-grid">
                             <FormField
                               control={editForm.control}
                               name="background_color"
@@ -1698,7 +1698,7 @@ export default function WidgetsManagement() {
                           </div>
                         </div>
                         
-                        <div className="border-t pt-4">
+                        <div className="border-t pt-4 form-section">
                           <h3 className="font-medium mb-2">{t("CSS personalizado")}</h3>
                           <p className="text-sm text-muted-foreground mb-4">
                             {t("Adicione estilos CSS personalizados para modificar a aparência do widget.")}
@@ -1727,7 +1727,7 @@ export default function WidgetsManagement() {
                           />
                         </div>
                           
-                        <div className="border-t pt-4">
+                        <div className="border-t pt-4 form-section">
                           <h3 className="font-medium mb-2">{t("Configurações de iframe")}</h3>
                           <p className="text-sm text-muted-foreground mb-4">
                             {t("Personalize como o widget é exibido quando incorporado via iframe.")}                            
@@ -1892,7 +1892,7 @@ export default function WidgetsManagement() {
                           </div>
                         </div>
 
-                        <div className="border-t pt-6">
+                        <div className="border-t pt-6 form-section">
                           <h3 className="font-medium mb-2">{t("Preview do iframe")}</h3>
                           <p className="text-sm text-muted-foreground mb-4">
                             {t("Visualize como o widget será exibido quando incorporado como iframe.")}
@@ -1925,7 +1925,7 @@ export default function WidgetsManagement() {
                   </TabsContent>
                 </Tabs>
                 
-                <DialogFooter>
+                <DialogFooter className="dialog-footer">
                   <Button 
                     type="button" 
                     variant="outline" 
