@@ -36,6 +36,9 @@ import { useTranslation } from "react-i18next";
 import { ChatWidget } from "@shared/schema";
 import { generateEmbedCode, type EmbedCodeResult } from "@/components/widget/generate-embed-code";
 
+// Importar estilos específicos para o diálogo de widgets
+import "./widgets-dialog.css";
+
 // Schema para validação do formulário
 const widgetFormSchema = z.object({
   name: z.string().min(3, "Nome deve ter pelo menos 3 caracteres").max(100, "Nome não pode ter mais de 100 caracteres"),
@@ -63,6 +66,8 @@ const widgetFormSchema = z.object({
     .default("https://ui-avatars.com/api/?name=T&background=6366F1&color=fff"),
   avatar_image: z.any().optional(),
   theme_color: z.string().regex(/^#[0-9A-F]{6}$/i, "Cor deve estar no formato hexadecimal (ex: #6366F1)").default("#6366F1"),
+  background_color: z.string().regex(/^#[0-9A-F]{6}$/i, "Cor deve estar no formato hexadecimal (ex: #FFFFFF)").default("#FFFFFF"),
+  font_size: z.string().default("14px"),
   allowed_domains: z.array(z.string()).optional(),
   // Campos adicionais para configurações avançadas
   hide_minimize_button: z.boolean().optional().default(false),
@@ -240,6 +245,8 @@ export default function WidgetsManagement() {
       greeting: "Olá! Como posso ajudar?",
       avatar_url: "https://ui-avatars.com/api/?name=T&background=6366F1&color=fff",
       theme_color: "#6366F1",
+      background_color: "#FFFFFF",
+      font_size: "14px",
       allowed_domains: [],
       // Configurações avançadas
       hide_minimize_button: false,
@@ -258,6 +265,8 @@ export default function WidgetsManagement() {
       greeting: "",
       avatar_url: "",
       theme_color: "#6366F1",
+      background_color: "#FFFFFF",
+      font_size: "14px",
       allowed_domains: []
     }
   });
@@ -270,6 +279,8 @@ export default function WidgetsManagement() {
         greeting: selectedWidget.greeting,
         avatar_url: selectedWidget.avatar_url,
         theme_color: selectedWidget.theme_color || "#6366F1",
+        background_color: selectedWidget.background_color || "#FFFFFF",
+        font_size: selectedWidget.font_size || "14px",
         // Configurações avançadas
         hide_minimize_button: selectedWidget.hide_minimize_button || false,
         hide_close_button: selectedWidget.hide_close_button || false,
@@ -669,7 +680,7 @@ export default function WidgetsManagement() {
 
       {/* Modal para criar novo widget */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="widgets-dialog">
           <DialogHeader>
             <DialogTitle>{t("Criar novo Widget de Chat")}</DialogTitle>
             <DialogDescription>
@@ -941,6 +952,76 @@ export default function WidgetsManagement() {
                       />
                     </div>
                     
+                    <div className="space-y-4 mt-6">
+                      <h3 className="font-medium">{t("Estilo do Widget")}</h3>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                          control={createForm.control}
+                          name="background_color"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>{t("Cor de fundo")}</FormLabel>
+                              <div className="flex items-center space-x-2">
+                                <div 
+                                  className="w-10 h-10 border rounded color-preview"
+                                  style={{ backgroundColor: field.value || "#FFFFFF" }}
+                                  onClick={() => {
+                                    const colorInput = document.getElementById('create-background-color-input');
+                                    if (colorInput) {
+                                      (colorInput as HTMLInputElement).click();
+                                    }
+                                  }}
+                                />
+                                <FormControl>
+                                  <div className="color-input-container">
+                                    <input 
+                                      id="create-background-color-input"
+                                      type="color" 
+                                      value={field.value || "#FFFFFF"}
+                                      onChange={(e) => field.onChange(e.target.value)} 
+                                      className="hidden"
+                                    />
+                                    <Input {...field} className="flex-1" />
+                                  </div>
+                                </FormControl>
+                              </div>
+                              <FormDescription>
+                                {t("Cor de fundo da janela do chat")}
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={createForm.control}
+                          name="font_size"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>{t("Tamanho da fonte")}</FormLabel>
+                              <FormControl>
+                                <select
+                                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                  value={field.value}
+                                  onChange={(e) => field.onChange(e.target.value)}
+                                >
+                                  <option value="12px">12px - {t("Pequeno")}</option>
+                                  <option value="14px">14px - {t("Médio")}</option>
+                                  <option value="16px">16px - {t("Grande")}</option>
+                                  <option value="18px">18px - {t("Muito grande")}</option>
+                                </select>
+                              </FormControl>
+                              <FormDescription>
+                                {t("Tamanho da fonte dos textos no chat")}
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
+                    
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <FormField
                         control={createForm.control}
@@ -1036,7 +1117,7 @@ export default function WidgetsManagement() {
 
       {/* Modal para editar widget */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="widgets-dialog">
           <DialogHeader>
             <DialogTitle>{t("Editar Widget de Chat")}</DialogTitle>
             <DialogDescription>
