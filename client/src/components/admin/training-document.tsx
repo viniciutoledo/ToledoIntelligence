@@ -277,7 +277,7 @@ export function TrainingDocument() {
                     <div className="flex items-center space-x-2">
                       <div className="flex flex-col gap-1">
                         <Badge className={`px-2 py-0.5 text-xs ${
-                          doc.status === 'completed' 
+                          doc.status === 'completed' || doc.status === 'indexed'
                             ? 'bg-green-100 text-green-800 border border-green-200' 
                             : doc.status === 'processing'
                             ? 'bg-blue-100 text-blue-800 border border-blue-200'
@@ -285,14 +285,15 @@ export function TrainingDocument() {
                             ? 'bg-red-100 text-red-800 border border-red-200'
                             : 'bg-amber-100 text-amber-800 border border-amber-200'
                         }`}>
-                          {doc.status === 'completed' && <Check className="mr-1 h-3 w-3" />}
+                          {(doc.status === 'completed' || doc.status === 'indexed') && <Check className="mr-1 h-3 w-3" />}
                           {doc.status === 'completed' ? 'Concluído' : 
+                           doc.status === 'indexed' ? 'Indexado' :
                            doc.status === 'processing' ? 'Processando' : 
                            doc.status === 'error' ? 'Erro' : 'Pendente'}
                         </Badge>
                         
-                        {/* Barra de progresso para documentos em processamento */}
-                        {doc.status === 'processing' && (
+                        {/* Barra de progresso para documentos em processamento ou pendentes */}
+                        {(doc.status === 'processing' || doc.status === 'pending') && (
                           <div className="w-full mt-1">
                             <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
                               <div 
