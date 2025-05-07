@@ -323,6 +323,7 @@ export const chatWidgets = pgTable("chat_widgets", {
   theme_color: text("theme_color").default("#6366f1"),
   background_color: text("background_color").default("#FFFFFF"),
   font_size: text("font_size").default("14px"),
+  font_color: text("font_color").default("#000000"),
   allowed_domains: text("allowed_domains").array(),
   // Opções avançadas para customização do iframe
   hide_minimize_button: boolean("hide_minimize_button").default(false),
@@ -344,6 +345,7 @@ export const insertChatWidgetSchema = createInsertSchema(chatWidgets)
     theme_color: true,
     background_color: true,
     font_size: true,
+    font_color: true,
     allowed_domains: true,
     // Opções avançadas para iframe
     hide_minimize_button: true,

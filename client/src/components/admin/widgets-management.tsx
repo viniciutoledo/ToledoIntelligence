@@ -68,6 +68,7 @@ const widgetFormSchema = z.object({
   theme_color: z.string().regex(/^#[0-9A-F]{6}$/i, "Cor deve estar no formato hexadecimal (ex: #6366F1)").default("#6366F1"),
   background_color: z.string().regex(/^#[0-9A-F]{6}$/i, "Cor deve estar no formato hexadecimal (ex: #FFFFFF)").default("#FFFFFF"),
   font_size: z.string().default("14px"),
+  font_color: z.string().regex(/^#[0-9A-F]{6}$/i, "Cor deve estar no formato hexadecimal (ex: #000000)").default("#000000"),
   allowed_domains: z.array(z.string()).optional(),
   // Campos adicionais para configurações avançadas
   hide_minimize_button: z.boolean().optional().default(false),
@@ -247,6 +248,7 @@ export default function WidgetsManagement() {
       theme_color: "#6366F1",
       background_color: "#FFFFFF",
       font_size: "14px",
+      font_color: "#000000",
       allowed_domains: [],
       // Configurações avançadas
       hide_minimize_button: false,
@@ -267,6 +269,7 @@ export default function WidgetsManagement() {
       theme_color: "#6366F1",
       background_color: "#FFFFFF",
       font_size: "14px",
+      font_color: "#000000",
       allowed_domains: []
     }
   });
