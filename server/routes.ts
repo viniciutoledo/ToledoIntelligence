@@ -2398,11 +2398,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`Processando arquivo: ${filePath} - Tipo MIME: ${req.file.mimetype} - Tamanho: ${(req.file.size / (1024 * 1024)).toFixed(2)}MB`);
         
         try {
-          // Importar o processador de documentos
-          const { processDocumentContent } = require('./document-processors');
+          // Importar o processador de documentos usando dynamic import
+          const documentProcessors = await import('./document-processors');
           
           // Processar o documento com tratamento adequado de erros
-          content = await processDocumentContent("file", filePath);
+          content = await documentProcessors.processDocumentContent("file", filePath);
           
           // Caso não tenha conseguido extrair o conteúdo
           if (!content) {
@@ -2420,11 +2420,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Se tiver URL, também extrair conteúdo do site
         if (website_url) {
-          // Importar o processador de documentos
-          const { extractTextFromWebsite } = require('./document-processors');
+          // Importar o processador de documentos usando dynamic import
+          const documentProcessors = await import('./document-processors');
           
           try {
-            content = await extractTextFromWebsite(website_url);
+            content = await documentProcessors.extractTextFromWebsite(website_url);
             console.log(`Conteúdo extraído do site: ${content.length} caracteres`);
           } catch (webError) {
             console.error(`Erro ao extrair conteúdo do site ${website_url}:`, webError);
@@ -2464,8 +2464,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Processando documento de treinamento ID ${document.id}...`);
       
       try {
-        // Processar embeddings para melhorar a pesquisa semântica
-        const { processDocumentEmbeddings } = require('./document-embedding');
+        // Processar embeddings para melhorar a pesquisa semântica usando dynamic import
+        const documentEmbedding = await import('./document-embedding');
         
         console.log(`Iniciando processamento de embeddings para documento ${document.id}`);
         
