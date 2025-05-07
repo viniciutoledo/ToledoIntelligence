@@ -287,7 +287,7 @@ export function TrainingDocument() {
                         }`}>
                           {(doc.status === 'completed' || doc.status === 'indexed') && <Check className="mr-1 h-3 w-3" />}
                           {doc.status === 'completed' ? 'Concluído' : 
-                           doc.status === 'indexed' ? 'Indexado' :
+                           doc.status === 'indexed' ? 'Treinado' :
                            doc.status === 'processing' ? 'Processando' : 
                            doc.status === 'error' ? 'Erro' : 'Pendente'}
                         </Badge>

@@ -221,7 +221,8 @@ export async function processDocumentEmbeddings(documentId: number): Promise<boo
     try {
       // Verificar a estrutura correta do documento no schema
       await storage.updateTrainingDocument(documentId, {
-        status: "indexed",
+        status: "indexed", // Status "indexed" significa "Treinado" na UI
+        progress: 100, // Garantir que o progresso esteja em 100%
         updated_at: new Date(),
         file_metadata: {
           chunks_count: documentChunks.length,
