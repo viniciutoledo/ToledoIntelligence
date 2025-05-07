@@ -358,6 +358,8 @@ export default function WidgetsManagement() {
     formData.append("hide_close_button", String(data.hide_close_button || false));
     formData.append("default_height", data.default_height || "600");
     formData.append("default_width", data.default_width || "350");
+    formData.append("background_color", data.background_color || "#FFFFFF");
+    formData.append("font_size", data.font_size || "14px");
     formData.append("custom_css", data.custom_css || "");
     
     // Verificar se há um arquivo de avatar
@@ -444,6 +446,8 @@ export default function WidgetsManagement() {
     formData.append("hide_close_button", String(data.hide_close_button || false));
     formData.append("default_height", data.default_height || "600");
     formData.append("default_width", data.default_width || "350");
+    formData.append("background_color", data.background_color || "#FFFFFF");
+    formData.append("font_size", data.font_size || "14px");
     formData.append("custom_css", data.custom_css || "");
     
     // Verificar se há um arquivo de avatar
