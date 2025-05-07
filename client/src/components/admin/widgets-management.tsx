@@ -272,6 +272,8 @@ export default function WidgetsManagement() {
       background_color: "#FFFFFF",
       font_size: "14px",
       font_color: "#000000",
+      bot_message_bg_color: "#F3F4F6",
+      user_message_bg_color: "#6366F1",
       allowed_domains: []
     }
   });
@@ -286,6 +288,9 @@ export default function WidgetsManagement() {
         theme_color: selectedWidget.theme_color || "#6366F1",
         background_color: selectedWidget.background_color || "#FFFFFF",
         font_size: selectedWidget.font_size || "14px",
+        font_color: selectedWidget.font_color || "#000000",
+        bot_message_bg_color: selectedWidget.bot_message_bg_color || "#F3F4F6",
+        user_message_bg_color: selectedWidget.user_message_bg_color || "#6366F1",
         // Configurações avançadas
         hide_minimize_button: selectedWidget.hide_minimize_button || false,
         hide_close_button: selectedWidget.hide_close_button || false,
@@ -1066,6 +1071,82 @@ export default function WidgetsManagement() {
                             </FormItem>
                           )}
                         />
+
+                        <FormField
+                          control={createForm.control}
+                          name="bot_message_bg_color"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>{t("Cor de fundo das mensagens do bot")}</FormLabel>
+                              <div className="flex items-center space-x-2">
+                                <div 
+                                  className="w-10 h-10 border rounded color-preview"
+                                  style={{ backgroundColor: field.value || "#F3F4F6" }}
+                                  onClick={() => {
+                                    const colorInput = document.getElementById('create-bot-bg-color-input');
+                                    if (colorInput) {
+                                      (colorInput as HTMLInputElement).click();
+                                    }
+                                  }}
+                                />
+                                <FormControl>
+                                  <div className="color-input-container">
+                                    <input 
+                                      id="create-bot-bg-color-input"
+                                      type="color" 
+                                      value={field.value || "#F3F4F6"}
+                                      onChange={(e) => field.onChange(e.target.value)} 
+                                      className="hidden"
+                                    />
+                                    <Input {...field} className="flex-1" />
+                                  </div>
+                                </FormControl>
+                              </div>
+                              <FormDescription>
+                                {t("Cor de fundo das bolhas de mensagens enviadas pelo bot")}
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={createForm.control}
+                          name="user_message_bg_color"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>{t("Cor de fundo das mensagens do usuário")}</FormLabel>
+                              <div className="flex items-center space-x-2">
+                                <div 
+                                  className="w-10 h-10 border rounded color-preview"
+                                  style={{ backgroundColor: field.value || "#6366F1" }}
+                                  onClick={() => {
+                                    const colorInput = document.getElementById('create-user-bg-color-input');
+                                    if (colorInput) {
+                                      (colorInput as HTMLInputElement).click();
+                                    }
+                                  }}
+                                />
+                                <FormControl>
+                                  <div className="color-input-container">
+                                    <input 
+                                      id="create-user-bg-color-input"
+                                      type="color" 
+                                      value={field.value || "#6366F1"}
+                                      onChange={(e) => field.onChange(e.target.value)} 
+                                      className="hidden"
+                                    />
+                                    <Input {...field} className="flex-1" />
+                                  </div>
+                                </FormControl>
+                              </div>
+                              <FormDescription>
+                                {t("Cor de fundo das bolhas de mensagens enviadas pelo usuário")}
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
                       </div>
                     </div>
                     
@@ -1771,6 +1852,82 @@ export default function WidgetsManagement() {
                                   </div>
                                   <FormDescription>
                                     {t("Cor da fonte dos textos no chat")}
+                                  </FormDescription>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            <FormField
+                              control={editForm.control}
+                              name="bot_message_bg_color"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>{t("Cor de fundo das mensagens do bot")}</FormLabel>
+                                  <div className="flex items-center space-x-2">
+                                    <div 
+                                      className="w-10 h-10 border rounded color-preview"
+                                      style={{ backgroundColor: field.value || "#F3F4F6" }}
+                                      onClick={() => {
+                                        const colorInput = document.getElementById('edit-bot-bg-color-input');
+                                        if (colorInput) {
+                                          (colorInput as HTMLInputElement).click();
+                                        }
+                                      }}
+                                    />
+                                    <FormControl>
+                                      <div className="color-input-container">
+                                        <input 
+                                          id="edit-bot-bg-color-input"
+                                          type="color" 
+                                          value={field.value || "#F3F4F6"}
+                                          onChange={(e) => field.onChange(e.target.value)} 
+                                          className="hidden"
+                                        />
+                                        <Input {...field} className="flex-1" />
+                                      </div>
+                                    </FormControl>
+                                  </div>
+                                  <FormDescription>
+                                    {t("Cor de fundo das bolhas de mensagens enviadas pelo bot")}
+                                  </FormDescription>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            <FormField
+                              control={editForm.control}
+                              name="user_message_bg_color"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>{t("Cor de fundo das mensagens do usuário")}</FormLabel>
+                                  <div className="flex items-center space-x-2">
+                                    <div 
+                                      className="w-10 h-10 border rounded color-preview"
+                                      style={{ backgroundColor: field.value || "#6366F1" }}
+                                      onClick={() => {
+                                        const colorInput = document.getElementById('edit-user-bg-color-input');
+                                        if (colorInput) {
+                                          (colorInput as HTMLInputElement).click();
+                                        }
+                                      }}
+                                    />
+                                    <FormControl>
+                                      <div className="color-input-container">
+                                        <input 
+                                          id="edit-user-bg-color-input"
+                                          type="color" 
+                                          value={field.value || "#6366F1"}
+                                          onChange={(e) => field.onChange(e.target.value)} 
+                                          className="hidden"
+                                        />
+                                        <Input {...field} className="flex-1" />
+                                      </div>
+                                    </FormControl>
+                                  </div>
+                                  <FormDescription>
+                                    {t("Cor de fundo das bolhas de mensagens enviadas pelo usuário")}
                                   </FormDescription>
                                   <FormMessage />
                                 </FormItem>
