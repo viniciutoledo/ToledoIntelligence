@@ -874,6 +874,6 @@ function extractKeywords(query: string): string[] {
     .filter(word => word.length > 2) // Ignorar palavras muito curtas
     .filter(word => !stopwords.has(word));
   
-  // Remover duplicatas
-  return [...new Set(words)];
+  // Remover duplicatas usando Array.from para compatibilidade com TS
+  return Array.from(new Set(words));
 }
