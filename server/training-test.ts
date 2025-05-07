@@ -249,7 +249,18 @@ export async function testDocumentKnowledge(query: string, documentId: number) {
         // Fazer chamada API
         const completion = await openai.chat.completions.create({
           model: modelName,
-          messages: [{ role: "user", content: prompt }],
+          messages: [
+            { 
+              role: "system", 
+              content: "Você é um assistente focado em extrair conhecimento de documentos técnicos. " +
+                       "Seu trabalho é encontrar informações ESPECÍFICAS relacionadas à consulta do usuário, mesmo que não sejam óbvias. " +
+                       "NUNCA responda que o documento não possui informações sem antes fazer uma análise completa. " +
+                       "Procure por termos relacionados, siglas, códigos ou referências indiretas. " +
+                       "Se encontrar QUALQUER informação relevante, por mais indireta que seja, cite-a explicitamente."
+            },
+            { role: "user", content: prompt }
+          ],
+          temperature: 0.1 // Temperatura menor para ser mais focado e preciso
         });
         
         response = completion.choices[0]?.message?.content || "Não foi possível gerar uma resposta.";  
@@ -283,7 +294,13 @@ export async function testDocumentKnowledge(query: string, documentId: number) {
         const message = await anthropic.messages.create({
           model: modelName,
           max_tokens: 1000,
+          system: "Você é um assistente focado em extrair conhecimento de documentos técnicos. " +
+                 "Seu trabalho é encontrar informações ESPECÍFICAS relacionadas à consulta do usuário, mesmo que não sejam óbvias. " +
+                 "NUNCA responda que o documento não possui informações sem antes fazer uma análise completa. " +
+                 "Procure por termos relacionados, siglas, códigos ou referências indiretas. " +
+                 "Se encontrar QUALQUER informação relevante, por mais indireta que seja, cite-a explicitamente.",
           messages: [{ role: "user", content: prompt }],
+          temperature: 0.1, // Temperatura menor para ser mais focado e preciso
         });
         
         // Extrair texto da resposta da Anthropic

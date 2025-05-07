@@ -395,22 +395,30 @@ export function formatRelevantDocumentsForPrompt(documents: any[]): string {
   documents.forEach((doc, index) => {
     formattedText += `\n\n------------------------\n`;
     
-    // Incluir informações do documento
-    if (doc.document_name) {
-      formattedText += `DOCUMENTO ${index + 1}: ${doc.document_name}`;
-    } else {
-      formattedText += `DOCUMENTO ${index + 1}`;
-    }
+    // Incluir informações do documento de forma mais visível para o LLM
+    const docName = doc.document_name || `Documento sem nome ${index + 1}`;
+    formattedText += `DOCUMENTO ${index + 1}: "${docName}"`;
     
     // Adicionar score de relevância se disponível
     if (doc.similarity) {
-      formattedText += ` (Score: ${doc.similarity.toFixed(2)})`;
+      formattedText += ` (Relevância: ${doc.similarity.toFixed(2)})`;
     }
     
     formattedText += `\n------------------------\n\n`;
     
+    // Log para ajudar na depuração
+    console.log(`[RAG] Adicionando documento "${docName}" ao prompt (${(doc.content || doc.text || '').length} caracteres)`);
+    
     // Adicionar conteúdo do documento
-    formattedText += doc.content || doc.text || '';
+    const docContent = doc.content || doc.text || '';
+    
+    // Limitar o tamanho para evitar exceder os limites de tokens (50,000 caracteres é um limite seguro)
+    const maxContentLength = 50000;
+    const truncatedContent = docContent.length > maxContentLength 
+      ? docContent.substring(0, maxContentLength) + `\n[...Conteúdo truncado, excede ${maxContentLength} caracteres]` 
+      : docContent;
+    
+    formattedText += truncatedContent;
   });
   
   return formattedText;
