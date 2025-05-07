@@ -132,12 +132,23 @@ const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilt
   }
 };
 
-// Create multer upload instance
+// Create multer upload instance with higher limits for training documents
 const upload = multer({ 
   storage: storageConfig, 
   fileFilter,
   limits: {
-    fileSize: 50 * 1024 * 1024, // 50MB max for chat uploads
+    fileSize: 100 * 1024 * 1024, // 100MB max para uploads gerais e documentos de treinamento
+    files: 1, // Limitar a um arquivo por vez para evitar sobrecarga de memória
+  }
+});
+
+// Instância dedicada para documentos de treinamento grandes com limites adequados
+const trainingDocumentUpload = multer({
+  storage: storageConfig,
+  fileFilter,
+  limits: {
+    fileSize: 100 * 1024 * 1024, // 100MB para documentos de treinamento
+    files: 1, // Apenas um arquivo por vez
   }
 });
 
@@ -147,6 +158,7 @@ const avatarUpload = multer({
   fileFilter,
   limits: {
     fileSize: 5 * 1024 * 1024, // 5MB max for avatars
+    files: 1,
   }
 });
 
