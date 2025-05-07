@@ -433,6 +433,18 @@ export function buildContextForLLM(
   language: 'pt' | 'en' = 'pt',
   forceExtraction: boolean = false
 ): string {
+  // Verificar se temos documentos e logar para depuração
+  if (!documents || documents.length === 0) {
+    console.warn("ALERTA: Tentando construir contexto LLM sem documentos!");
+    return language === 'pt' 
+      ? `Você é um assistente técnico. Por favor responda que não há documentos técnicos disponíveis para responder à pergunta: "${query}"`
+      : `You are a technical assistant. Please respond that there are no technical documents available to answer the question: "${query}"`;
+  }
+  
+  // Extrair palavras-chave da consulta para focar a LLM
+  const queryKeywords = extractKeywords(query);
+  console.log(`Palavras-chave extraídas da consulta: ${queryKeywords.join(', ')}`);
+  
   // Formatar documentos relevantes
   const documentContext = formatRelevantDocumentsForPrompt(documents);
   
@@ -728,15 +740,61 @@ export async function processQueryWithRAG(
   try {
     console.log(`Processando consulta RAG: "${query}"`);
     
+    // Verificar se temos documentos treinados
+    const trainingDocuments = await storage.getTrainingDocuments();
+    console.log(`Verificando documentos treinados: ${trainingDocuments.length} documentos disponíveis no total`);
+    
+    if (trainingDocuments.length === 0) {
+      console.log("ALERTA: Não há documentos treinados disponíveis para RAG");
+      
+      if (language === 'pt') {
+        return "Desculpe, mas não há nenhum documento de referência treinado disponível. Por favor, contate o administrador para adicionar documentos.";
+      } else {
+        return "Sorry, but there are no trained reference documents available. Please contact the administrator to add documents.";
+      }
+    }
+    
     // Realizar busca híbrida para obter documentos relevantes
     const relevantDocuments = await hybridSearch(query, { 
       language, 
       limit 
     });
     
-    console.log(`Encontrados ${relevantDocuments.length} documentos relevantes`);
+    console.log(`Encontrados ${relevantDocuments.length} documentos relevantes através de busca híbrida`);
     
+    // Verificar se temos conteúdo nos documentos retornados
+    const documentsWithContent = relevantDocuments.filter(doc => doc.content && doc.content.trim().length > 0);
+    console.log(`Documentos com conteúdo: ${documentsWithContent.length}`);
+    
+    if (documentsWithContent.length === 0) {
+      console.log("ALERTA: Nenhum documento relevante com conteúdo foi encontrado, tentando busca por ID");
+      
+      // Como fallback, pegar os documentos mais recentes se não encontrarmos nada relevante
+      const topTrainingDocs = trainingDocuments
+        .filter((doc: any) => doc.status === 'completed')
+        .slice(0, 3);
+      
+      if (topTrainingDocs.length > 0) {
+        console.log(`Usando ${topTrainingDocs.length} documentos de fallback como último recurso`);
+        
+        // Criar estrutura similar à esperada para documentos relevantes
+        for (const doc of topTrainingDocs) {
+          if (doc.content && doc.content.trim().length > 0) {
+            relevantDocuments.push({
+              content: doc.content,
+              document_name: doc.name,
+              similarity: 0.5, // Similaridade artificial para fallback
+              document_id: doc.id
+            });
+          }
+        }
+      }
+    }
+    
+    // Verificar novamente se temos documentos após o fallback
     if (relevantDocuments.length === 0) {
+      console.log("ERRO: Nenhum documento relevante encontrado mesmo após fallback");
+      
       if (language === 'pt') {
         return "Não encontrei documentos relevantes para responder à sua pergunta. Por favor, seja mais específico ou reformule sua pergunta.";
       } else {
