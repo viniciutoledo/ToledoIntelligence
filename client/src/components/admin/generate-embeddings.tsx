@@ -17,8 +17,9 @@ export function GenerateEmbeddings() {
   } | null>(null);
 
   // Filtrar apenas documentos ativos e com processamento completo
+  // Também exibir documentos em status "indexed" como já processados
   const activeDocuments = documents?.filter(doc => 
-    doc.is_active && doc.status === "completed"
+    doc.is_active && (doc.status === "completed" || doc.status === "indexed")
   ) || [];
 
   const handleGenerateEmbeddings = async (documentId?: number) => {
