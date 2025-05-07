@@ -1026,6 +1026,44 @@ export default function WidgetsManagement() {
                             </FormItem>
                           )}
                         />
+
+                        <FormField
+                          control={createForm.control}
+                          name="font_color"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>{t("Cor da fonte")}</FormLabel>
+                              <div className="flex items-center space-x-2">
+                                <div 
+                                  className="w-10 h-10 border rounded color-preview"
+                                  style={{ backgroundColor: field.value || "#000000" }}
+                                  onClick={() => {
+                                    const colorInput = document.getElementById('create-font-color-input');
+                                    if (colorInput) {
+                                      (colorInput as HTMLInputElement).click();
+                                    }
+                                  }}
+                                />
+                                <FormControl>
+                                  <div className="color-input-container">
+                                    <input 
+                                      id="create-font-color-input"
+                                      type="color" 
+                                      value={field.value || "#000000"}
+                                      onChange={(e) => field.onChange(e.target.value)} 
+                                      className="hidden"
+                                    />
+                                    <Input {...field} className="flex-1" />
+                                  </div>
+                                </FormControl>
+                              </div>
+                              <FormDescription>
+                                {t("Cor da fonte dos textos no chat")}
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
                       </div>
                     </div>
                     
@@ -1693,6 +1731,44 @@ export default function WidgetsManagement() {
                                   </FormControl>
                                   <FormDescription>
                                     {t("Tamanho da fonte dos textos no chat")}
+                                  </FormDescription>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <FormField
+                              control={editForm.control}
+                              name="font_color"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>{t("Cor da fonte")}</FormLabel>
+                                  <div className="flex items-center space-x-2">
+                                    <div 
+                                      className="w-10 h-10 border rounded color-preview"
+                                      style={{ backgroundColor: field.value || "#000000" }}
+                                      onClick={() => {
+                                        const colorInput = document.getElementById('edit-font-color-input');
+                                        if (colorInput) {
+                                          (colorInput as HTMLInputElement).click();
+                                        }
+                                      }}
+                                    />
+                                    <FormControl>
+                                      <div className="color-input-container">
+                                        <input 
+                                          id="edit-font-color-input"
+                                          type="color" 
+                                          value={field.value || "#000000"}
+                                          onChange={(e) => field.onChange(e.target.value)} 
+                                          className="hidden"
+                                        />
+                                        <Input {...field} className="flex-1" />
+                                      </div>
+                                    </FormControl>
+                                  </div>
+                                  <FormDescription>
+                                    {t("Cor da fonte dos textos no chat")}
                                   </FormDescription>
                                   <FormMessage />
                                 </FormItem>
