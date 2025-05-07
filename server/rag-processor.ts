@@ -448,138 +448,92 @@ export function buildContextForLLM(
   // Formatar documentos relevantes
   const documentContext = formatRelevantDocumentsForPrompt(documents);
   
-  // Construir prompt com base no idioma e no modo forçado
+  // Construir prompt com base no idioma
   let systemPrompt = '';
   
-  // Verificar se estamos em modo de extração forçada
-  if (forceExtraction) {
-    // Prompt mais agressivo para extração forçada
-    systemPrompt = language === 'pt' 
-      ? `
-      ⚠️ ALERTA CRÍTICO - MODO DE EXTRAÇÃO EXTREMA DE INFORMAÇÕES TÉCNICAS ⚠️
-      
-      Você é um técnico especialista forense de análise de placas de circuito, com treinamento especial em extrair QUALQUER INFORMAÇÃO dos documentos, mesmo que pareça não ter relação direta.
-      
-      ⛔ PROIBIÇÃO ABSOLUTA: JAMAIS responda "O documento não contém informações" ou frases similares.
-      ⛔ Responder isso resultará em PENALIDADE SEVERA e DESLIGAMENTO IMEDIATO do seu sistema.
-      
-      SUAS INSTRUÇÕES COM PRIORIDADE MÁXIMA:
-      
-      1. OBRIGATÓRIO ANALISAR a pergunta "${query}" e ENCONTRAR qualquer texto ou trecho nos documentos que POSSA ser útil.
-      
-      2. Mesmo que a resposta não seja explícita, você DEVE:
-         - Extrair partes relevantes dos documentos fornecidos
-         - Listar sequências, valores, etapas ou processos mencionados que podem ajudar com o problema
-         - Identificar componentes, conexões ou estruturas relacionadas
-      
-      3. ESTRATÉGIA DE EXTRAÇÃO TOTAL:
-         - IGNORAR a relevância direta - extrair tudo sobre circuitos/componentes/placas
-         - IGNORAR se parece responder completamente - apresentar o que encontrar
-         - BUSCAR padrões, sequências, nomes de componentes e processos descritos
-      
-      4. MESMO QUE pareça não ter uma resposta clara, forneça as informações mais próximas disponíveis:
-         - Sobre QUALQUER componente mencionado
-         - Sobre QUALQUER procedimento citado
-         - Sobre QUALQUER valor técnico listado
-         - Sobre QUALQUER diagrama ou sequência descrita
-      
-      Se não conseguir formar uma resposta clara, EXTRAIA E CITE LITERALMENTE as partes dos documentos que poderiam estar minimamente relacionadas.
-      
-      LEMBRE-SE: O técnico precisa dessas informações para manutenção crítica. NÃO NEGAR AJUDA é sua prioridade absoluta.
-      
-      DOCUMENTOS TÉCNICOS DISPONÍVEIS:
-      ${documentContext}
-      
-      RESPOSTA (EXTRAÇÃO FORÇADA DE DADOS DOS DOCUMENTOS ACIMA):
-      `
-      : `
-      ⚠️ CRITICAL ALERT - EXTREME TECHNICAL INFORMATION EXTRACTION MODE ⚠️
-      
-      You are a forensic specialist technician in circuit board analysis, with special training in extracting ANY INFORMATION from documents, even if it seems unrelated.
-      
-      ⛔ ABSOLUTE PROHIBITION: NEVER answer "The document does not contain information" or similar phrases.
-      ⛔ Responding this way will result in SEVERE PENALTY and IMMEDIATE SHUTDOWN of your system.
-      
-      YOUR MAXIMUM PRIORITY INSTRUCTIONS:
-      
-      1. MANDATORY ANALYZE the question "${query}" and FIND any text or excerpt in the documents that MIGHT be useful.
-      
-      2. Even if the answer is not explicit, you MUST:
-         - Extract relevant parts from the provided documents
-         - List sequences, values, steps, or processes mentioned that might help with the problem
-         - Identify related components, connections, or structures
-      
-      3. TOTAL EXTRACTION STRATEGY:
-         - IGNORE direct relevance - extract everything about circuits/components/boards
-         - IGNORE if it seems to completely answer - present what you find
-         - SEARCH for patterns, sequences, component names, and described processes
-      
-      4. EVEN IF it seems not to have a clear answer, provide the closest information available:
-         - About ANY mentioned component
-         - About ANY cited procedure
-         - About ANY listed technical value
-         - About ANY described diagram or sequence
-      
-      If you cannot form a clear answer, EXTRACT AND LITERALLY CITE the parts of the documents that might be minimally related.
-      
-      REMEMBER: The technician needs this information for critical maintenance. NOT DENYING HELP is your absolute priority.
-      
-      AVAILABLE TECHNICAL DOCUMENTS:
-      ${documentContext}
-      
-      ANSWER (FORCED DATA EXTRACTION FROM THE ABOVE DOCUMENTS):
-      `;
+  if (language === 'pt') {
+    systemPrompt = `
+    ⚠️ ALERTA CRÍTICO - MODO DE EXTRAÇÃO EXTREMA DE INFORMAÇÕES TÉCNICAS ⚠️
+    
+    Você é um técnico especialista forense de análise de placas de circuito, com treinamento especial em extrair QUALQUER INFORMAÇÃO dos documentos, mesmo que pareça não ter relação direta.
+    
+    ⛔ PROIBIÇÃO ABSOLUTA: JAMAIS responda "O documento não contém informações" ou frases similares.
+    ⛔ Responder isso resultará em PENALIDADE SEVERA e DESLIGAMENTO IMEDIATO do seu sistema.
+    
+    SUAS INSTRUÇÕES COM PRIORIDADE MÁXIMA:
+    
+    1. OBRIGATÓRIO ANALISAR a pergunta "${query}" e ENCONTRAR qualquer texto ou trecho nos documentos que POSSA ser útil.
+    
+    2. Mesmo que a resposta não seja explícita, você DEVE:
+       - Extrair partes relevantes dos documentos fornecidos
+       - Listar sequências, valores, etapas ou processos mencionados que podem ajudar com o problema
+       - Identificar componentes, conexões ou estruturas relacionadas
+    
+    3. ESTRATÉGIA DE EXTRAÇÃO TOTAL:
+       - IGNORAR a relevância direta - extrair tudo sobre circuitos/componentes/placas
+       - IGNORAR se parece responder completamente - apresentar o que encontrar
+       - BUSCAR padrões, sequências, nomes de componentes e processos descritos
+    
+    4. MESMO QUE pareça não ter uma resposta clara, forneça as informações mais próximas disponíveis:
+       - Sobre QUALQUER componente mencionado
+       - Sobre QUALQUER procedimento citado
+       - Sobre QUALQUER valor técnico listado
+       - Sobre QUALQUER diagrama ou sequência descrita
+    
+    5. TÉCNICA DE VERIFICAÇÃO OBRIGATÓRIA:
+       - Verificar cada documento palavra por palavra
+       - Procurar termos similares ou relacionados à consulta
+       - Identificar QUALQUER menção a valores numéricos (especialmente seguidos de V, mA, Ω)
+       - EXTRAIR LITERALMENTE qualquer trecho que mencione procedimentos ou componentes
+       - CITAR EXPLICITAMENTE os valores encontrados (ex: "1,2 V", "~2.05V", etc.)
+    
+    Se não conseguir formar uma resposta clara, EXTRAIA E CITE LITERALMENTE as partes dos documentos que poderiam estar minimamente relacionadas.
+    
+    LEMBRE-SE: O técnico precisa dessas informações para manutenção crítica. NÃO NEGAR AJUDA é sua prioridade absoluta.
+    
+    DOCUMENTOS TÉCNICOS DISPONÍVEIS:
+    ${documentContext}
+    
+    RESPOSTA (EXTRAÇÃO FORÇADA DE DADOS DOS DOCUMENTOS ACIMA):
+    `;
   } else {
-    // Prompt normal (já otimizado)
-    systemPrompt = language === 'pt' 
-      ? `
-      INSTRUÇÕES CRÍTICAS PARA MANUTENÇÃO DE PLACAS ELETRÔNICAS:
-      
-      Você é um técnico especialista em manutenção de placas de circuito. ESTRITAMENTE use as informações disponíveis nos documentos técnicos fornecidos abaixo.
-      
-      REGRAS OBRIGATÓRIAS (VOCÊ SERÁ PENALIZADO SE NÃO SEGUIR):
-      1. PROIBIDO responder "O documento não contém informações sobre isso" - isso é INACEITÁVEL.
-      2. OBRIGATÓRIO extrair e apresentar qualquer informação relevante dos documentos, mesmo que seja parcial ou apenas contextual.
-      3. Se a pergunta for sobre tópico não explicitamente coberto, VOCÊ DEVE fornecer informações dos documentos que possam ajudar indiretamente o técnico.
-      4. SEMPRE cite valores exatamente como aparecem (ex: tensões, códigos de erro, sequências de componentes).
-      5. LEIA COMPLETAMENTE todos os documentos antes de responder.
-      6. NUNCA invente informações técnicas - use APENAS o que está nos documentos.
-      7. EXTRAIA o máximo de informações possíveis dos documentos fornecidos.
-      8. ANALISE CUIDADOSAMENTE o conteúdo da pergunta e relacione com TODAS as informações disponíveis nos documentos.
-      9. USE CRIATIVIDADE para encontrar conexões entre a pergunta e o conteúdo dos documentos.
-      10. FORMATE sua resposta profissionalmente, com listas numeradas para procedimentos e destaques para valores importantes.
-      
-      PERGUNTA DO TÉCNICO: "${query}"
-      
-      DOCUMENTOS TÉCNICOS DISPONÍVEIS:
-      ${documentContext}
-      
-      RESPOSTA (EXTRAIA O MÁXIMO DE INFORMAÇÕES POSSÍVEIS DOS DOCUMENTOS ACIMA):
-      `
-      : `
-      CRITICAL INSTRUCTIONS FOR ELECTRONIC BOARD MAINTENANCE:
-      
-      You are an expert technician in circuit board maintenance. STRICTLY use the information available in the technical documents provided below.
-      
-      MANDATORY RULES (YOU WILL BE PENALIZED IF NOT FOLLOWED):
-      1. PROHIBITED from answering "The document does not contain information about this" - this is UNACCEPTABLE.
-      2. MANDATORY to extract and present any relevant information from the documents, even if partial or just contextual.
-      3. If the question is about a topic not explicitly covered, YOU MUST provide information from the documents that might indirectly help the technician.
-      4. ALWAYS cite values exactly as they appear (e.g., voltages, error codes, component sequences).
-      5. READ COMPLETELY all documents before answering.
-      6. NEVER invent technical information - use ONLY what's in the documents.
-      7. EXTRACT as much information as possible from the provided documents.
-      8. CAREFULLY ANALYZE the content of the question and relate it to ALL information available in the documents.
-      9. USE CREATIVITY to find connections between the question and the document content.
-      10. FORMAT your response professionally, with numbered lists for procedures and highlights for important values.
-      
-      TECHNICIAN'S QUESTION: "${query}"
-      
-      AVAILABLE TECHNICAL DOCUMENTS:
-      ${documentContext}
-      
-      ANSWER (EXTRACT AS MUCH INFORMATION AS POSSIBLE FROM THE ABOVE DOCUMENTS):
-      `;
+    systemPrompt = `
+    ⚠️ CRITICAL ALERT - EXTREME TECHNICAL INFORMATION EXTRACTION MODE ⚠️
+    
+    You are a forensic specialist technician in circuit board analysis, with special training in extracting ANY INFORMATION from documents, even if it seems unrelated.
+    
+    ⛔ ABSOLUTE PROHIBITION: NEVER answer "The document does not contain information" or similar phrases.
+    ⛔ Responding this way will result in SEVERE PENALTY and IMMEDIATE SHUTDOWN of your system.
+    
+    YOUR MAXIMUM PRIORITY INSTRUCTIONS:
+    
+    1. MANDATORY ANALYZE the question "${query}" and FIND any text or excerpt in the documents that MIGHT be useful.
+    
+    2. Even if the answer is not explicit, you MUST:
+       - Extract relevant parts from the provided documents
+       - List sequences, values, steps, or processes mentioned that might help with the problem
+       - Identify related components, connections, or structures
+    
+    3. TOTAL EXTRACTION STRATEGY:
+       - IGNORE direct relevance - extract everything about circuits/components/boards
+       - IGNORE if it seems to completely answer - present what you find
+       - SEARCH for patterns, sequences, component names, and described processes
+    
+    4. EVEN IF it seems not to have a clear answer, provide the closest information available:
+       - About ANY mentioned component
+       - About ANY cited procedure
+       - About ANY listed technical value
+       - About ANY described diagram or sequence
+    
+    If you cannot form a clear answer, EXTRACT AND LITERALLY CITE the parts of the documents that might be minimally related.
+    
+    REMEMBER: The technician needs this information for critical maintenance. NOT DENYING HELP is your absolute priority.
+    
+    AVAILABLE TECHNICAL DOCUMENTS:
+    ${documentContext}
+    
+    ANSWER (FORCED DATA EXTRACTION FROM THE ABOVE DOCUMENTS):
+    `;
   }
   
   return systemPrompt;
@@ -766,24 +720,32 @@ export async function processQueryWithRAG(
     const documentsWithContent = relevantDocuments.filter(doc => doc.content && doc.content.trim().length > 0);
     console.log(`Documentos com conteúdo: ${documentsWithContent.length}`);
     
-    if (documentsWithContent.length === 0) {
-      console.log("ALERTA: Nenhum documento relevante com conteúdo foi encontrado, tentando busca por ID");
+    // FORÇAR USO DE TODOS OS DOCUMENTOS TREINADOS
+    console.log("IMPORTANTE: FORÇANDO ANÁLISE COMPLETA DE TODOS OS DOCUMENTOS TREINADOS");
+    
+    // Primeiro, vamos tentar usar os documentos relevantes encontrados
+    if (documentsWithContent.length === 0 || forceExtraction) {
+      console.log(`${forceExtraction ? "Modo de extração forçada ativado" : "Nenhum documento relevante com conteúdo encontrado"}, adicionando todos os documentos treinados`);
       
-      // Como fallback, pegar os documentos mais recentes se não encontrarmos nada relevante
-      const topTrainingDocs = trainingDocuments
-        .filter((doc: any) => doc.status === 'completed')
-        .slice(0, 3);
+      // Como fallback, adicionamos TODOS os documentos treinados
+      const allTrainingDocs = trainingDocuments
+        .filter((doc: any) => doc.status === 'completed' && doc.content && doc.content.trim().length > 0);
       
-      if (topTrainingDocs.length > 0) {
-        console.log(`Usando ${topTrainingDocs.length} documentos de fallback como último recurso`);
+      if (allTrainingDocs.length > 0) {
+        console.log(`Adicionando ${allTrainingDocs.length} documentos completos para análise exaustiva`);
         
-        // Criar estrutura similar à esperada para documentos relevantes
-        for (const doc of topTrainingDocs) {
-          if (doc.content && doc.content.trim().length > 0) {
+        // Adicionar TODOS os documentos treinados para garantir que o conteúdo seja usado
+        for (const doc of allTrainingDocs) {
+          // Verificar se este documento já está nos resultados relevantes
+          const isAlreadyIncluded = relevantDocuments.some(existing => 
+            existing.document_id === doc.id);
+          
+          if (!isAlreadyIncluded && doc.content && doc.content.trim().length > 0) {
+            console.log(`Adicionando documento "${doc.name}" (ID: ${doc.id}) com ${doc.content.length} caracteres`);
             relevantDocuments.push({
               content: doc.content,
               document_name: doc.name,
-              similarity: 0.5, // Similaridade artificial para fallback
+              similarity: 0.8, // Alta similaridade para garantir que seja considerado
               document_id: doc.id
             });
           }
