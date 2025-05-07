@@ -1622,6 +1622,79 @@ export default function WidgetsManagement() {
                         </div>
                         
                         <div className="border-t pt-4">
+                          <h3 className="font-medium mb-2">{t("Estilo do widget")}</h3>
+                          <p className="text-sm text-muted-foreground mb-4">
+                            {t("Personalize a aparência visual do widget.")}
+                          </p>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField
+                              control={editForm.control}
+                              name="background_color"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>{t("Cor de fundo")}</FormLabel>
+                                  <div className="flex items-center space-x-2">
+                                    <div 
+                                      className="w-10 h-10 border rounded color-preview"
+                                      style={{ backgroundColor: field.value || "#FFFFFF" }}
+                                      onClick={() => {
+                                        const colorInput = document.getElementById('edit-background-color-input');
+                                        if (colorInput) {
+                                          (colorInput as HTMLInputElement).click();
+                                        }
+                                      }}
+                                    />
+                                    <FormControl>
+                                      <div className="color-input-container">
+                                        <input 
+                                          id="edit-background-color-input"
+                                          type="color" 
+                                          value={field.value || "#FFFFFF"}
+                                          onChange={(e) => field.onChange(e.target.value)} 
+                                          className="hidden"
+                                        />
+                                        <Input {...field} className="flex-1" />
+                                      </div>
+                                    </FormControl>
+                                  </div>
+                                  <FormDescription>
+                                    {t("Cor de fundo da janela do chat")}
+                                  </FormDescription>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <FormField
+                              control={editForm.control}
+                              name="font_size"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>{t("Tamanho da fonte")}</FormLabel>
+                                  <FormControl>
+                                    <select
+                                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                      value={field.value}
+                                      onChange={(e) => field.onChange(e.target.value)}
+                                    >
+                                      <option value="12px">12px - {t("Pequeno")}</option>
+                                      <option value="14px">14px - {t("Médio")}</option>
+                                      <option value="16px">16px - {t("Grande")}</option>
+                                      <option value="18px">18px - {t("Muito grande")}</option>
+                                    </select>
+                                  </FormControl>
+                                  <FormDescription>
+                                    {t("Tamanho da fonte dos textos no chat")}
+                                  </FormDescription>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="border-t pt-4">
                           <h3 className="font-medium mb-2">{t("CSS personalizado")}</h3>
                           <p className="text-sm text-muted-foreground mb-4">
                             {t("Adicione estilos CSS personalizados para modificar a aparência do widget.")}
