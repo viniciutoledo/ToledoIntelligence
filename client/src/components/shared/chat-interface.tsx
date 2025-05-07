@@ -190,11 +190,11 @@ export function ChatInterface({
     }
   };
 
-  // Aplicar estilos personalizados ao componente
+  // Aplicar estilos personalizados ao componente com valores padrão alinhados com o design
   const chatStyles = {
-    color: customStyles.fontColor || '',
-    fontSize: customStyles.fontSize || '',
-    backgroundColor: customStyles.backgroundColor || ''
+    color: customStyles.fontColor || '#F5F5F5',         // Texto claro para o fundo escuro
+    fontSize: customStyles.fontSize || '14px',          // Tamanho padrão
+    backgroundColor: customStyles.backgroundColor || '#111111' // Fundo escuro padrão
   };
 
   return (
@@ -255,13 +255,13 @@ export function ChatInterface({
             <div 
               className={`py-2 px-3 max-w-[80%] ${
                 msg.is_user 
-                  ? "text-white rounded-lg rounded-tr-none" 
+                  ? "text-neutral-800 rounded-lg rounded-tr-none" // Mudando texto para escuro nas mensagens do usuário
                   : "text-neutral-800 rounded-lg rounded-tl-none"
               }`}
               style={{
                 backgroundColor: msg.is_user 
-                  ? customStyles.userMessageBgColor || "#6366F1" // cor primária padrão 
-                  : customStyles.botMessageBgColor || "#F3F4F6" // cor neutra clara padrão
+                  ? customStyles.userMessageBgColor || "#F2EFE5" // cor creme/bege claro para usuário (da imagem)
+                  : customStyles.botMessageBgColor || "#F2EFE5" // mesma cor para bot (da imagem)
               }}>
               {msg.message_type === "text" ? (
                 <p className="text-sm">
@@ -362,7 +362,7 @@ export function ChatInterface({
             </div>
             <div 
               className="py-2 px-3 text-neutral-800 rounded-lg rounded-tl-none"
-              style={{ backgroundColor: customStyles.botMessageBgColor || "#F3F4F6" }}>
+              style={{ backgroundColor: customStyles.botMessageBgColor || "#F2EFE5" }}>
               <div className="flex space-x-1">
                 <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
                 <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
