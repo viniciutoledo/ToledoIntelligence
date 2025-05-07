@@ -834,13 +834,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { daysAgo = 7, maxInteractions = 50 } = req.body;
       
       // Importar funções de processamento de interações
-      const { processRecentInteractions, createInteractionCategory } = require('./interaction-learning');
+      // Importar usando dynamic import (ES Modules)
+      const interactionLearning = await import('./interaction-learning');
       
       // Criar ou obter categoria específica para interações
-      const categoryId = await createInteractionCategory(req.user!.id);
+      const categoryId = await interactionLearning.createInteractionCategory(req.user!.id);
       
       // Processar interações recentes
-      const processedCount = await processRecentInteractions(
+      const processedCount = await interactionLearning.processRecentInteractions(
         Number(daysAgo), 
         Number(maxInteractions),
         categoryId
@@ -878,11 +879,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - daysAgo);
       
-      // Importar função auxiliar para buscar sessões recentes
-      const { fetchRecentSessions } = require('./interaction-learning');
+      // Importar função auxiliar para buscar sessões recentes usando dynamic import
+      const interactionLearning = await import('./interaction-learning');
       
       // Buscar sessões recentes usando a função auxiliar
-      const recentSessions = await fetchRecentSessions(cutoffDate);
+      const recentSessions = await interactionLearning.fetchRecentSessions(cutoffDate);
       
       res.json({
         sessions: recentSessions,
@@ -2476,7 +2477,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
         
         // Processar documento para gerar embeddings
-        const embeddingSuccess = await processDocumentEmbeddings(document.id);
+        const embeddingSuccess = await documentEmbedding.processDocumentEmbeddings(document.id);
         
         if (!embeddingSuccess) {
           console.warn(`Falha no processamento de embeddings para documento ${document.id}. Continuando sem embeddings.`);
@@ -3224,12 +3225,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Se tiver arquivo de avatar, processar e armazenar em base64
       if (req.file) {
         // Ler o arquivo e converter para base64
-        const fs = require('fs');
+        // Importar fs usando dynamic import (ES Modules)
+        const fs = await import('fs');
         const filePath = req.file.path;
         
         try {
-          // Ler o arquivo
-          const fileData = fs.readFileSync(filePath);
+          // Ler o arquivo usando fs.promises para ES Modules
+          const fileData = await fs.promises.readFile(filePath);
           // Converter para base64
           const base64Data = fileData.toString('base64');
           
@@ -3240,8 +3242,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Usamos uma URL genérica inicialmente - o ID será atualizado após a criação
           widgetData.avatar_url = "/api/widgets/avatar";
           
-          // Remover arquivo temporário do sistema de arquivos
-          fs.unlinkSync(filePath);
+          // Remover arquivo temporário do sistema de arquivos usando fs.promises
+          await fs.promises.unlink(filePath);
         } catch (e) {
           console.error("Erro ao processar arquivo de avatar:", e);
           // Em caso de erro, usar avatar padrão
