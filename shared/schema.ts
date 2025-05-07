@@ -333,16 +333,19 @@ export const chatWidgets = pgTable("chat_widgets", {
   default_height: text("default_height").default("600"),
   default_width: text("default_width").default("350"),
   custom_css: text("custom_css"),
-  // Novas opções de conversa
+  
+  // Opções de controle de conversa
   allow_human_help: boolean("allow_human_help").default(true),
-  use_emojis: boolean("use_emojis").default(true), 
+  use_emojis: boolean("use_emojis").default(true),
   restrict_topics: boolean("restrict_topics").default(false),
   split_responses: boolean("split_responses").default(true),
   allow_reminders: boolean("allow_reminders").default(false),
-  response_time: text("response_time").default("immediate"), // immediate, 1s, 2s, 3s
+  
+  // Opções operacionais
+  response_time: text("response_time").default("immediate"), // immediate, slow, variable
   agent_timezone: text("agent_timezone").default("America/Sao_Paulo"),
   max_interactions: integer("max_interactions").default(20),
-  interaction_limit_action: text("interaction_limit_action").default("block_5m"), // block_5m, block_30m, block_1h, end_chat
+  interaction_limit_action: text("interaction_limit_action").default("block_5m"), // block_5m, block_1h, block_24h, ask_email, restart
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
 });

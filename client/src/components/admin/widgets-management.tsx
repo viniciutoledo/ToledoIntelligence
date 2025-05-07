@@ -1891,6 +1891,255 @@ export default function WidgetsManagement() {
                     </div>
                   </TabsContent>
                   
+                  <TabsContent value="conversation" className="space-y-4 pt-4">
+                    <div className="space-y-4">
+                      <h3 className="font-medium mb-2">{t("Controle de Conversa")}</h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        {t("Configure como o assistente se comporta durante a conversa com o usuário.")}
+                      </p>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                          control={editForm.control}
+                          name="allow_human_help"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                />
+                              </FormControl>
+                              <div className="space-y-1 leading-none">
+                                <FormLabel>
+                                  {t("Permitir ajuda humana")}
+                                </FormLabel>
+                                <FormDescription>
+                                  {t("Permite que o usuário solicite falar com um atendente humano.")}
+                                </FormDescription>
+                              </div>
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={editForm.control}
+                          name="use_emojis"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                />
+                              </FormControl>
+                              <div className="space-y-1 leading-none">
+                                <FormLabel>
+                                  {t("Usar emojis")}
+                                </FormLabel>
+                                <FormDescription>
+                                  {t("Permite que o assistente use emojis nas respostas.")}
+                                </FormDescription>
+                              </div>
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={editForm.control}
+                          name="restrict_topics"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                />
+                              </FormControl>
+                              <div className="space-y-1 leading-none">
+                                <FormLabel>
+                                  {t("Restringir tópicos")}
+                                </FormLabel>
+                                <FormDescription>
+                                  {t("Limita as conversas apenas a tópicos relacionados ao seu negócio.")}
+                                </FormDescription>
+                              </div>
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={editForm.control}
+                          name="split_responses"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                />
+                              </FormControl>
+                              <div className="space-y-1 leading-none">
+                                <FormLabel>
+                                  {t("Dividir respostas longas")}
+                                </FormLabel>
+                                <FormDescription>
+                                  {t("Divide respostas longas em partes menores para melhor legibilidade.")}
+                                </FormDescription>
+                              </div>
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={editForm.control}
+                          name="allow_reminders"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                />
+                              </FormControl>
+                              <div className="space-y-1 leading-none">
+                                <FormLabel>
+                                  {t("Permitir lembretes")}
+                                </FormLabel>
+                                <FormDescription>
+                                  {t("Permite que o assistente crie lembretes para os usuários.")}
+                                </FormDescription>
+                              </div>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
+                  </TabsContent>
+                  
+                  <TabsContent value="operational" className="space-y-4 pt-4">
+                    <div className="space-y-4">
+                      <h3 className="font-medium mb-2">{t("Configurações Operacionais")}</h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        {t("Configure como o widget opera em termos de tempo de resposta, fusos horários e limites de interação.")}
+                      </p>
+                      
+                      <FormField
+                        control={editForm.control}
+                        name="response_time"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>{t("Tempo de resposta")}</FormLabel>
+                            <Select
+                              value={field.value}
+                              onValueChange={field.onChange}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder={t("Selecione um tempo de resposta")} />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="immediate">{t("Imediato")}</SelectItem>
+                                <SelectItem value="slow">{t("Lento (simula digitação)")}</SelectItem>
+                                <SelectItem value="variable">{t("Variável (baseado no tamanho da resposta)")}</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormDescription>
+                              {t("Define como as respostas são mostradas em termos de tempo.")}
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={editForm.control}
+                        name="agent_timezone"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>{t("Fuso horário")}</FormLabel>
+                            <Select
+                              value={field.value}
+                              onValueChange={field.onChange}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder={t("Selecione um fuso horário")} />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="America/Sao_Paulo">{t("Brasília (GMT-3)")}</SelectItem>
+                                <SelectItem value="America/Manaus">{t("Manaus (GMT-4)")}</SelectItem>
+                                <SelectItem value="America/New_York">{t("Nova York (GMT-5/GMT-4)")}</SelectItem>
+                                <SelectItem value="Europe/Lisbon">{t("Lisboa (GMT+0/GMT+1)")}</SelectItem>
+                                <SelectItem value="Europe/London">{t("Londres (GMT+0/GMT+1)")}</SelectItem>
+                                <SelectItem value="UTC">{t("UTC (GMT+0)")}</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormDescription>
+                              {t("Define o fuso horário usado pelo agente ao mencionar horários.")}
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={editForm.control}
+                        name="max_interactions"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>{t("Limite de interações por chat")}</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                min="1"
+                                {...field}
+                                onChange={(e) => field.onChange(Number(e.target.value))}
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              {t("Número máximo de trocas de mensagens em uma única sessão.")}
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={editForm.control}
+                        name="interaction_limit_action"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>{t("Ação quando limite atingido")}</FormLabel>
+                            <Select
+                              value={field.value}
+                              onValueChange={field.onChange}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder={t("Selecione uma ação")} />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="block_5m">{t("Bloquear por 5 minutos")}</SelectItem>
+                                <SelectItem value="block_1h">{t("Bloquear por 1 hora")}</SelectItem>
+                                <SelectItem value="block_24h">{t("Bloquear por 24 horas")}</SelectItem>
+                                <SelectItem value="ask_email">{t("Solicitar email")}</SelectItem>
+                                <SelectItem value="restart">{t("Reiniciar conversa")}</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormDescription>
+                              {t("O que acontece quando o usuário atinge o limite de interações.")}
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </TabsContent>
+                  
                   <TabsContent value="embed" className="space-y-4 pt-4">
                     {selectedWidget && (
                       <div className="space-y-6">
