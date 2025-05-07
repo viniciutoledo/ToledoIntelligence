@@ -34,6 +34,14 @@ export async function processDocumentEmbeddings(documentId: number): Promise<boo
       return false;
     }
     
+    // Atualizar o status para "processing" e progresso inicial para 0
+    await storage.updateTrainingDocument(documentId, {
+      status: "processing",
+      progress: 0,
+      error_message: null
+    });
+    console.log(`Status do documento ${documentId} atualizado para 'processing' com progresso 0%`);
+    
     // Verificar se o documento tem conteúdo OU tem um arquivo associado
     if ((!document.content || document.content.trim().length === 0) && 
         (!document.file_path || document.file_path.trim().length === 0)) {

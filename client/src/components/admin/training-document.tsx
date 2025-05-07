@@ -292,8 +292,8 @@ export function TrainingDocument() {
                            doc.status === 'error' ? 'Erro' : 'Pendente'}
                         </Badge>
                         
-                        {/* Barra de progresso para documentos em processamento ou pendentes */}
-                        {(doc.status === 'processing' || doc.status === 'pending') && (
+                        {/* Barra de progresso para documentos em processamento */}
+                        {doc.status === 'processing' && (
                           <div className="w-full mt-1">
                             <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
                               <div 
@@ -302,6 +302,13 @@ export function TrainingDocument() {
                               />
                             </div>
                             <div className="text-xs text-gray-500 mt-0.5 text-right">{doc.progress || 0}%</div>
+                          </div>
+                        )}
+                        
+                        {/* Mensagem para documentos pendentes */}
+                        {doc.status === 'pending' && (
+                          <div className="text-xs text-gray-500 mt-0.5">
+                            Aguardando processamento...
                           </div>
                         )}
                       </div>

@@ -2763,6 +2763,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
         
+        // Iniciar processamento do documento - atualizar status imediatamente
+        await storage.updateTrainingDocument(parseInt(documentId), {
+          status: 'processing',
+          progress: 0,
+          error_message: null
+        });
+          
         // Verificar se o documento tem conteúdo para processar
         if ((!document.content || document.content.trim().length === 0) && 
             (!document.file_path || document.file_path.trim().length === 0)) {
@@ -2770,6 +2777,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Atualizar o status do documento para indicar o erro
           await storage.updateTrainingDocument(parseInt(documentId), {
             status: 'error',
+            progress: 0,
             error_message: 'Documento sem conteúdo para processamento'
           });
           
