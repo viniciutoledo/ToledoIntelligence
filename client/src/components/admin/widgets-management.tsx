@@ -129,6 +129,11 @@ export default function WidgetsManagement() {
         greeting: data.greeting || "Olá! Como posso ajudar?",
         avatar_url: data.avatar_url || "https://ui-avatars.com/api/?name=T&background=6366F1&color=fff",
         theme_color: data.theme_color || "#6366F1",
+        background_color: data.background_color || "#FFFFFF",
+        font_size: data.font_size || "14px",
+        font_color: data.font_color || "#000000",
+        bot_message_bg_color: data.bot_message_bg_color || "#F3F4F6",
+        user_message_bg_color: data.user_message_bg_color || "#6366F1",
         allowed_domains: allowedDomains
       };
       
