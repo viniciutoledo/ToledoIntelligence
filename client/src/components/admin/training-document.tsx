@@ -275,20 +275,35 @@ export function TrainingDocument() {
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <Badge className={`px-2 py-0.5 text-xs ${
-                        doc.status === 'completed' 
-                          ? 'bg-green-100 text-green-800 border border-green-200' 
-                          : doc.status === 'processing'
-                          ? 'bg-blue-100 text-blue-800 border border-blue-200'
-                          : doc.status === 'error'
-                          ? 'bg-red-100 text-red-800 border border-red-200'
-                          : 'bg-amber-100 text-amber-800 border border-amber-200'
-                      }`}>
-                        {doc.status === 'completed' && <Check className="mr-1 h-3 w-3" />}
-                        {doc.status === 'completed' ? 'Concluído' : 
-                         doc.status === 'processing' ? 'Processando' : 
-                         doc.status === 'error' ? 'Erro' : 'Pendente'}
-                      </Badge>
+                      <div className="flex flex-col gap-1">
+                        <Badge className={`px-2 py-0.5 text-xs ${
+                          doc.status === 'completed' 
+                            ? 'bg-green-100 text-green-800 border border-green-200' 
+                            : doc.status === 'processing'
+                            ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                            : doc.status === 'error'
+                            ? 'bg-red-100 text-red-800 border border-red-200'
+                            : 'bg-amber-100 text-amber-800 border border-amber-200'
+                        }`}>
+                          {doc.status === 'completed' && <Check className="mr-1 h-3 w-3" />}
+                          {doc.status === 'completed' ? 'Concluído' : 
+                           doc.status === 'processing' ? 'Processando' : 
+                           doc.status === 'error' ? 'Erro' : 'Pendente'}
+                        </Badge>
+                        
+                        {/* Barra de progresso para documentos em processamento */}
+                        {doc.status === 'processing' && (
+                          <div className="w-full mt-1">
+                            <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
+                              <div 
+                                className="h-full bg-blue-500 rounded-full transition-all duration-500"
+                                style={{ width: `${doc.progress || 0}%` }}
+                              />
+                            </div>
+                            <div className="text-xs text-gray-500 mt-0.5 text-right">{doc.progress || 0}%</div>
+                          </div>
+                        )}
+                      </div>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="sm" className="h-8 w-8 p-0">

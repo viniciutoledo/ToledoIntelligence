@@ -94,6 +94,18 @@ export async function processDocumentEmbeddings(documentId: number): Promise<boo
     for (let i = 0; i < documentChunks.length; i++) {
       const docChunk = documentChunks[i];
       
+      // Calcular e atualizar o progresso do documento
+      const progress = Math.floor((i / documentChunks.length) * 100);
+      
+      // Atualizar o progresso do documento a cada 5% ou pelo menos a cada 5 chunks em documentos pequenos
+      if (i === 0 || i === documentChunks.length - 1 || i % Math.max(1, Math.min(5, Math.floor(documentChunks.length / 20))) === 0) {
+        await storage.updateTrainingDocument(documentId, { 
+          progress,
+          status: "processing" 
+        });
+        console.log(`Progresso do documento ${documentId}: ${progress}%`);
+      }
+      
       // Verificar se o chunk é válido
       if (!docChunk || !docChunk.content) {
         console.error(`Chunk ${i+1}/${documentChunks.length} inválido ou sem conteúdo, pulando`);

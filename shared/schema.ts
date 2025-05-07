@@ -175,6 +175,7 @@ export const trainingDocuments = pgTable("training_documents", {
   file_metadata: json("file_metadata"),
   status: text("status", { enum: ["pending", "processing", "completed", "error", "indexed"] }).notNull().default("pending"),
   error_message: text("error_message"),
+  progress: integer("progress").default(0), // Valor percentual de 0 a 100
   created_by: integer("created_by").notNull().references(() => users.id),
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
