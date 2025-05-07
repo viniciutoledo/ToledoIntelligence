@@ -7,12 +7,58 @@ import mammoth from 'mammoth';
 // Funções auxiliares para extração de texto de diferentes tipos de arquivos
 export async function extractTextFromPDF(filePath: string): Promise<string> {
   try {
-    // Usar o pdfParse importado no topo do arquivo
-    const dataBuffer = fs.readFileSync(filePath);
-    const data = await pdfParse(dataBuffer);
+    console.log(`Iniciando processamento de PDF: ${filePath}`);
+    
+    // Verificar existência e tamanho do arquivo
+    if (!fs.existsSync(filePath)) {
+      console.error(`Arquivo PDF não encontrado: ${filePath}`);
+      return "Arquivo não encontrado";
+    }
+    
+    const fileStats = fs.statSync(filePath);
+    const fileSizeMB = fileStats.size / (1024 * 1024);
+    console.log(`Arquivo PDF encontrado: ${filePath}, tamanho: ${fileSizeMB.toFixed(2)} MB`);
+    
+    // Para PDFs muito grandes, considerar um processamento em partes
+    if (fileSizeMB > 10) {
+      console.log(`PDF grande detectado (${fileSizeMB.toFixed(2)} MB). Usando processamento otimizado.`);
+    }
+    
+    // Carregar o arquivo como buffer
+    let dataBuffer;
+    try {
+      dataBuffer = fs.readFileSync(filePath);
+      console.log(`PDF carregado em buffer: ${dataBuffer.length} bytes`);
+    } catch (readError) {
+      console.error("Erro ao ler arquivo PDF:", readError instanceof Error ? readError.message : 'Erro desconhecido');
+      return "Erro ao ler o arquivo PDF";
+    }
+    
+    // Configurações de timeout e limites mais generosos para PDFs grandes
+    const options = {
+      max: 0,  // sem limite de páginas
+      pagerender: undefined, // renderização padrão
+      version: 'v1.10.100' // versão específica para estabilidade
+    };
+    
+    // Extrair o texto
+    let data;
+    try {
+      console.log("Iniciando extração de texto do PDF...");
+      data = await pdfParse(dataBuffer, options);
+      console.log(`Texto extraído do PDF: ${data.text?.length || 0} caracteres em ${data.numpages || 0} páginas`);
+    } catch (parseError) {
+      console.error("Erro ao fazer parse do PDF:", parseError instanceof Error ? parseError.message : 'Erro desconhecido');
+      return "Erro ao analisar o conteúdo do PDF. O arquivo pode estar corrompido ou protegido.";
+    }
     
     // Melhorar a qualidade do texto extraído
-    let text = data.text || "";
+    if (!data || !data.text) {
+      console.error("PDF sem texto extraível");
+      return "O PDF não contém texto extraível ou está vazio.";
+    }
+    
+    let text = data.text;
     
     // Remover quebras de página e normalizar espaçamento
     text = text.replace(/\f/g, '\n')
@@ -20,11 +66,27 @@ export async function extractTextFromPDF(filePath: string): Promise<string> {
                .replace(/\n{3,}/g, '\n\n')
                .trim();
                
-    console.log(`PDF processado com sucesso: ${text.length} caracteres extraídos`);
+    console.log(`PDF processado com sucesso: ${text.length} caracteres extraídos em ${data.numpages} páginas`);
+    
+    // Sinal claro de sucesso quando temos texto suficiente extraído
+    if (text.length > 100) {
+      console.log("Extração de PDF bem-sucedida com conteúdo significativo.");
+    } else if (text.length > 0) {
+      console.log("Aviso: PDF extraído com pouco conteúdo.");
+    } else {
+      console.error("PDF não contém texto extraível");
+      return "O PDF não contém texto extraível.";
+    }
+    
     return text;
   } catch (error) {
-    console.error("Erro ao extrair texto do PDF:", error);
-    return "";
+    console.error("Erro não tratado ao extrair texto do PDF:", error instanceof Error ? error.message : 'Erro desconhecido');
+    
+    if (error instanceof Error && error.message.includes("memory")) {
+      return "Falha ao processar: o PDF é muito grande ou complexo. Por favor, tente dividi-lo em arquivos menores.";
+    }
+    
+    return "Falha na extração do PDF. Por favor, verifique se o arquivo é válido e não está protegido.";
   }
 }
 
@@ -208,13 +270,59 @@ export async function processDocumentContent(
   textContent?: string
 ): Promise<string> {
   try {
+    console.log(`Iniciando processamento de documento do tipo: ${documentType}`);
+    
+    // Adicionar verificação mais detalhada dos parâmetros
+    if (!documentType) {
+      console.error("Erro: documentType não fornecido");
+      throw new Error("Tipo de documento não especificado");
+    }
+    
     // Processar com base no tipo de documento
-    if (documentType === "text" && textContent) {
+    if (documentType === "text") {
+      if (!textContent) {
+        console.error("Erro: conteúdo de texto não fornecido para tipo 'text'");
+        return "[Conteúdo de texto não fornecido]";
+      }
+      console.log(`Processando conteúdo de texto: ${textContent.length} caracteres`);
       return textContent.trim();
     } 
-    else if (documentType === "file" && filePath) {
+    else if (documentType === "file") {
+      if (!filePath) {
+        console.error("Erro: caminho do arquivo não fornecido para tipo 'file'");
+        return "[Caminho do arquivo não fornecido]";
+      }
+      
+      // Verificar existência do arquivo
+      if (!fs.existsSync(filePath)) {
+        console.error(`Erro: arquivo não encontrado: ${filePath}`);
+        return `[Arquivo não encontrado: ${path.basename(filePath)}]`;
+      }
+      
+      const fileStats = fs.statSync(filePath);
+      const fileSizeMB = fileStats.size / (1024 * 1024);
+      console.log(`Arquivo encontrado: ${filePath}, tamanho: ${fileSizeMB.toFixed(2)} MB`);
+      
       // Verificar o tipo de arquivo baseado na extensão
       const extension = path.extname(filePath).toLowerCase();
+      
+      // Limitar tamanhos de arquivo por tipo para segurança
+      const maxSizes: Record<string, number> = {
+        ".pdf": 20,    // 20 MB
+        ".txt": 5,     // 5 MB
+        ".docx": 10,   // 10 MB
+        ".doc": 10     // 10 MB
+      };
+      
+      const maxSizeForType = maxSizes[extension] || 5; // padrão 5 MB para tipos desconhecidos
+      
+      if (fileSizeMB > maxSizeForType) {
+        console.error(`Arquivo muito grande (${fileSizeMB.toFixed(2)} MB). Limite é ${maxSizeForType} MB para ${extension}`);
+        return `[Arquivo muito grande (${fileSizeMB.toFixed(2)} MB). Por favor, divida o documento em partes menores.]`;
+      }
+      
+      // Processar conteúdo do arquivo baseado no tipo
+      console.log(`Processando arquivo ${extension}: ${filePath}`);
       
       if (extension === ".pdf") {
         return await extractTextFromPDF(filePath);
@@ -230,15 +338,33 @@ export async function processDocumentContent(
         return `[Conteúdo não processável para arquivo do tipo ${extension}]`;
       }
     } 
-    else if (documentType === "website" && websiteUrl) {
+    else if (documentType === "website") {
+      if (!websiteUrl) {
+        console.error("Erro: URL do website não fornecida para tipo 'website'");
+        return "[URL do website não fornecida]";
+      }
+      console.log(`Processando website: ${websiteUrl}`);
       return await extractTextFromWebsite(websiteUrl);
     } 
+    else if (documentType === "video") {
+      console.warn("Processamento de vídeo não implementado");
+      return "[Processamento de vídeo não implementado]";
+    }
     else {
-      return "[Conteúdo indisponível ou tipo de documento não suportado]";
+      console.error(`Tipo de documento não suportado: ${documentType}`);
+      return `[Tipo de documento não suportado: ${documentType}]`;
     }
   } catch (error) {
     console.error("Erro ao processar conteúdo do documento:", error);
     const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
-    return `[Erro ao processar conteúdo: ${errorMessage}]`;
+    
+    // Melhores mensagens de erro para o usuário
+    if (errorMessage.includes("memory")) {
+      return "[Erro: Memória insuficiente para processar este documento. Por favor, divida-o em partes menores.]";
+    } else if (errorMessage.includes("timeout")) {
+      return "[Erro: Tempo limite excedido ao processar o documento. O arquivo pode ser muito complexo.]";
+    } else {
+      return `[Erro ao processar conteúdo: ${errorMessage}]`;
+    }
   }
 }
