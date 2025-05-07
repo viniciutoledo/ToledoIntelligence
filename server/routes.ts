@@ -2376,7 +2376,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.post("/api/training/documents", isAuthenticated, checkRole("admin"), upload.single("file"), async (req, res) => {
+  app.post("/api/training/documents", isAuthenticated, checkRole("admin"), trainingDocumentUpload.single("file"), async (req, res) => {
     try {
       console.log("Criando novo documento de treinamento. Usuário:", req.user?.id, req.user?.email);
       console.log("Body recebido:", req.body);
@@ -2395,19 +2395,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Extrair conteúdo do arquivo usando os processadores de documentos
         const filePath = path.join(process.cwd(), "uploads/files", req.file.filename);
-        console.log(`Processando arquivo: ${filePath} - Tipo MIME: ${req.file.mimetype}`);
+        console.log(`Processando arquivo: ${filePath} - Tipo MIME: ${req.file.mimetype} - Tamanho: ${(req.file.size / (1024 * 1024)).toFixed(2)}MB`);
         
-        // Importar o processador de documentos
-        const { processDocumentContent } = require('./document-processors');
-        
-        // Processar o documento
-        content = await processDocumentContent("file", filePath);
-        
-        // Caso não tenha conseguido extrair o conteúdo
-        if (!content) {
-          console.warn(`Não foi possível extrair o conteúdo do arquivo ${req.file.originalname}`);
-        } else {
-          console.log(`Conteúdo extraído com sucesso: ${content.length} caracteres`);
+        try {
+          // Importar o processador de documentos
+          const { processDocumentContent } = require('./document-processors');
+          
+          // Processar o documento com tratamento adequado de erros
+          content = await processDocumentContent("file", filePath);
+          
+          // Caso não tenha conseguido extrair o conteúdo
+          if (!content) {
+            console.warn(`Não foi possível extrair o conteúdo do arquivo ${req.file.originalname}`);
+          } else {
+            console.log(`Conteúdo extraído com sucesso: ${content.length} caracteres`);
+          }
+        } catch (extractionError) {
+          console.error(`Erro ao extrair conteúdo do arquivo ${req.file.originalname}:`, extractionError);
+          // Armazenar a mensagem de erro no conteúdo para que o documento ainda possa ser salvo
+          content = `[ERRO DE EXTRAÇÃO] Não foi possível extrair o conteúdo do arquivo: ${extractionError instanceof Error ? extractionError.message : 'Erro desconhecido'}`;
         }
       } else if (document_type === "website") {
         website_url = req.body.website_url;
@@ -2502,7 +2508,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.status(201).json(errorDocument);
       }
     } catch (error) {
-      res.status(500).json({ message: "Error creating training document" });
+      console.error("Erro completo ao criar documento de treinamento:", error);
+      res.status(500).json({ 
+        message: "Erro ao criar documento de treinamento", 
+        error: error instanceof Error ? error.message : "Erro desconhecido",
+        details: "Verifique o console para mais informações"
+      });
     }
   });
   
