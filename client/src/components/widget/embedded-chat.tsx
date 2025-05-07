@@ -53,6 +53,9 @@ export function EmbeddedChat({ apiKey, initialOpen = false, hideHeader = false, 
     default_height?: string;
     default_width?: string;
     custom_css?: string;
+    background_color?: string;
+    font_size?: string;
+    font_color?: string;
   };
   const { t } = useTranslation();
   const { language } = useLanguage();
@@ -278,6 +281,9 @@ export function EmbeddedChat({ apiKey, initialOpen = false, hideHeader = false, 
     right: isInIframe || fullHeight ? 0 : "1rem",
     height: isInIframe || fullHeight ? "100%" : (widget?.default_height ? `${widget.default_height}px` : "500px"),
     width: isInIframe || fullHeight ? "100%" : (widget?.default_width ? `${widget.default_width}px` : "350px"),
+    backgroundColor: widget?.background_color || "",
+    color: widget?.font_color || "",
+    fontSize: widget?.font_size || "",
   } as React.CSSProperties;
   
   // Format widget data for chat component
@@ -369,6 +375,11 @@ export function EmbeddedChat({ apiKey, initialOpen = false, hideHeader = false, 
           isProcessingLlm={isProcessingLlm}
           onSendMessage={handleSendMessage}
           onFileUpload={handleFileUpload}
+          customStyles={{
+            backgroundColor: widget.background_color,
+            fontColor: widget.font_color,
+            fontSize: widget.font_size
+          }}
           customTexts={customTexts}
         />
       </div>

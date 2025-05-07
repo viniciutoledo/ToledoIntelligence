@@ -60,6 +60,13 @@ interface ChatInterfaceProps {
   onSendMessage: (content: string) => void;
   onFileUpload: (file: File) => void;
   
+  // Estilos personalizados (opcionais)
+  customStyles?: {
+    backgroundColor?: string;
+    fontColor?: string;
+    fontSize?: string;
+  };
+  
   // Traduções customizadas (opcionais)
   customTexts?: {
     typeMessage?: string;
@@ -100,6 +107,7 @@ export function ChatInterface({
   isProcessingLlm = false,
   onSendMessage,
   onFileUpload,
+  customStyles = {},
   customTexts = {}
 }: ChatInterfaceProps) {
   const { t } = useLanguage();
@@ -180,8 +188,17 @@ export function ChatInterface({
     }
   };
 
+  // Aplicar estilos personalizados ao componente
+  const chatStyles = {
+    color: customStyles.fontColor || '',
+    fontSize: customStyles.fontSize || '',
+    backgroundColor: customStyles.backgroundColor || ''
+  };
+
   return (
-    <div className={`flex flex-col ${isWidget ? 'h-full' : 'h-[80vh]'}`}>
+    <div 
+      className={`flex flex-col ${isWidget ? 'h-full' : 'h-[80vh]'}`}
+      style={chatStyles}>
       {/* Chat Header */}
       <div className="px-4 py-3 border-b flex items-center">
         <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 mr-3">
