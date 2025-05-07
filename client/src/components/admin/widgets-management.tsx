@@ -67,17 +67,31 @@ const widgetFormSchema = z.object({
   avatar_image: z.any().optional(),
   theme_color: z.string().regex(/^#[0-9A-F]{6}$/i, "Cor deve estar no formato hexadecimal (ex: #6366F1)").default("#6366F1"),
   background_color: z.string().regex(/^#[0-9A-F]{6}$/i, "Cor deve estar no formato hexadecimal (ex: #FFFFFF)").default("#FFFFFF"),
-  font_size: z.string().default("14px"),
+  font_size: z.string().default("16px"), // Atualizado para 16px por padrão
   font_color: z.string().regex(/^#[0-9A-F]{6}$/i, "Cor deve estar no formato hexadecimal (ex: #000000)").default("#000000"),
   bot_message_bg_color: z.string().regex(/^#[0-9A-F]{6}$/i, "Cor deve estar no formato hexadecimal (ex: #F3F4F6)").default("#F3F4F6"),
   user_message_bg_color: z.string().regex(/^#[0-9A-F]{6}$/i, "Cor deve estar no formato hexadecimal (ex: #6366F1)").default("#6366F1"),
   allowed_domains: z.array(z.string()).optional(),
+  
   // Campos adicionais para configurações avançadas
   hide_minimize_button: z.boolean().optional().default(false),
   hide_close_button: z.boolean().optional().default(false),
   default_height: z.string().optional().default("600"),
   default_width: z.string().optional().default("350"),
-  custom_css: z.string().optional().default("")
+  custom_css: z.string().optional().default(""),
+  
+  // Novas opções de controle da conversa
+  allow_human_help: z.boolean().optional().default(true),
+  use_emojis: z.boolean().optional().default(true),
+  restrict_topics: z.boolean().optional().default(false),
+  split_responses: z.boolean().optional().default(true),
+  allow_reminders: z.boolean().optional().default(false),
+  
+  // Novas opções operacionais
+  response_time: z.string().optional().default("immediate"),
+  agent_timezone: z.string().optional().default("America/Sao_Paulo"),
+  max_interactions: z.number().min(1).optional().default(20),
+  interaction_limit_action: z.string().optional().default("block_5m")
 });
 
 type WidgetFormValues = z.infer<typeof widgetFormSchema>;
@@ -254,15 +268,30 @@ export default function WidgetsManagement() {
       avatar_url: "https://ui-avatars.com/api/?name=T&background=6366F1&color=fff",
       theme_color: "#6366F1",
       background_color: "#FFFFFF",
-      font_size: "14px",
+      font_size: "16px",
       font_color: "#000000",
+      bot_message_bg_color: "#F3F4F6",
+      user_message_bg_color: "#6366F1",
       allowed_domains: [],
       // Configurações avançadas
       hide_minimize_button: false,
       hide_close_button: false,
       default_height: "600",
       default_width: "350",
-      custom_css: ""
+      custom_css: "",
+      
+      // Novas opções de controle da conversa
+      allow_human_help: true,
+      use_emojis: true,
+      restrict_topics: false,
+      split_responses: true,
+      allow_reminders: false,
+      
+      // Novas opções operacionais
+      response_time: "immediate",
+      agent_timezone: "America/Sao_Paulo",
+      max_interactions: 20,
+      interaction_limit_action: "block_5m"
     }
   });
 
@@ -275,11 +304,31 @@ export default function WidgetsManagement() {
       avatar_url: "",
       theme_color: "#6366F1",
       background_color: "#FFFFFF",
-      font_size: "14px",
+      font_size: "16px",
       font_color: "#000000",
       bot_message_bg_color: "#F3F4F6",
       user_message_bg_color: "#6366F1",
-      allowed_domains: []
+      allowed_domains: [],
+      
+      // Configurações avançadas
+      hide_minimize_button: false,
+      hide_close_button: false,
+      default_height: "600",
+      default_width: "350",
+      custom_css: "",
+      
+      // Novas opções de controle da conversa
+      allow_human_help: true,
+      use_emojis: true,
+      restrict_topics: false,
+      split_responses: true,
+      allow_reminders: false,
+      
+      // Novas opções operacionais
+      response_time: "immediate",
+      agent_timezone: "America/Sao_Paulo",
+      max_interactions: 20,
+      interaction_limit_action: "block_5m"
     }
   });
 
@@ -292,16 +341,30 @@ export default function WidgetsManagement() {
         avatar_url: selectedWidget.avatar_url,
         theme_color: selectedWidget.theme_color || "#6366F1",
         background_color: selectedWidget.background_color || "#FFFFFF",
-        font_size: selectedWidget.font_size || "14px",
+        font_size: selectedWidget.font_size || "16px",
         font_color: selectedWidget.font_color || "#000000",
         bot_message_bg_color: selectedWidget.bot_message_bg_color || "#F3F4F6",
         user_message_bg_color: selectedWidget.user_message_bg_color || "#6366F1",
+        
         // Configurações avançadas
         hide_minimize_button: selectedWidget.hide_minimize_button || false,
         hide_close_button: selectedWidget.hide_close_button || false,
         default_height: selectedWidget.default_height || "600",
         default_width: selectedWidget.default_width || "350",
-        custom_css: selectedWidget.custom_css || ""
+        custom_css: selectedWidget.custom_css || "",
+        
+        // Novas opções de controle da conversa
+        allow_human_help: selectedWidget.allow_human_help !== undefined ? selectedWidget.allow_human_help : true,
+        use_emojis: selectedWidget.use_emojis !== undefined ? selectedWidget.use_emojis : true,
+        restrict_topics: selectedWidget.restrict_topics !== undefined ? selectedWidget.restrict_topics : false,
+        split_responses: selectedWidget.split_responses !== undefined ? selectedWidget.split_responses : true,
+        allow_reminders: selectedWidget.allow_reminders !== undefined ? selectedWidget.allow_reminders : false,
+        
+        // Novas opções operacionais
+        response_time: selectedWidget.response_time || "immediate",
+        agent_timezone: selectedWidget.agent_timezone || "America/Sao_Paulo",
+        max_interactions: selectedWidget.max_interactions || 20,
+        interaction_limit_action: selectedWidget.interaction_limit_action || "block_5m"
       });
       
       setAllowedDomains(selectedWidget.allowed_domains || []);
@@ -374,11 +437,24 @@ export default function WidgetsManagement() {
     formData.append("default_height", data.default_height || "600");
     formData.append("default_width", data.default_width || "350");
     formData.append("background_color", data.background_color || "#FFFFFF");
-    formData.append("font_size", data.font_size || "14px");
+    formData.append("font_size", data.font_size || "16px");
     formData.append("font_color", data.font_color || "#000000");
     formData.append("bot_message_bg_color", data.bot_message_bg_color || "#F3F4F6");
     formData.append("user_message_bg_color", data.user_message_bg_color || "#6366F1");
     formData.append("custom_css", data.custom_css || "");
+    
+    // Adicionar opções de controle da conversa
+    formData.append("allow_human_help", String(data.allow_human_help !== undefined ? data.allow_human_help : true));
+    formData.append("use_emojis", String(data.use_emojis !== undefined ? data.use_emojis : true));
+    formData.append("restrict_topics", String(data.restrict_topics !== undefined ? data.restrict_topics : false));
+    formData.append("split_responses", String(data.split_responses !== undefined ? data.split_responses : true));
+    formData.append("allow_reminders", String(data.allow_reminders !== undefined ? data.allow_reminders : false));
+    
+    // Adicionar opções operacionais
+    formData.append("response_time", data.response_time || "immediate");
+    formData.append("agent_timezone", data.agent_timezone || "America/Sao_Paulo");
+    formData.append("max_interactions", String(data.max_interactions || 20));
+    formData.append("interaction_limit_action", data.interaction_limit_action || "block_5m");
     
     // Verificar se há um arquivo de avatar
     const fileInput = createFileInputRef.current;
@@ -465,11 +541,24 @@ export default function WidgetsManagement() {
     formData.append("default_height", data.default_height || "600");
     formData.append("default_width", data.default_width || "350");
     formData.append("background_color", data.background_color || "#FFFFFF");
-    formData.append("font_size", data.font_size || "14px");
+    formData.append("font_size", data.font_size || "16px");
     formData.append("font_color", data.font_color || "#000000");
     formData.append("bot_message_bg_color", data.bot_message_bg_color || "#F3F4F6");
     formData.append("user_message_bg_color", data.user_message_bg_color || "#6366F1");
     formData.append("custom_css", data.custom_css || "");
+    
+    // Adicionar opções de controle da conversa
+    formData.append("allow_human_help", String(data.allow_human_help !== undefined ? data.allow_human_help : true));
+    formData.append("use_emojis", String(data.use_emojis !== undefined ? data.use_emojis : true));
+    formData.append("restrict_topics", String(data.restrict_topics !== undefined ? data.restrict_topics : false));
+    formData.append("split_responses", String(data.split_responses !== undefined ? data.split_responses : true));
+    formData.append("allow_reminders", String(data.allow_reminders !== undefined ? data.allow_reminders : false));
+    
+    // Adicionar opções operacionais
+    formData.append("response_time", data.response_time || "immediate");
+    formData.append("agent_timezone", data.agent_timezone || "America/Sao_Paulo");
+    formData.append("max_interactions", String(data.max_interactions || 20));
+    formData.append("interaction_limit_action", data.interaction_limit_action || "block_5m");
     
     // Verificar se há um arquivo de avatar
     const fileInput = editFileInputRef.current;
@@ -716,10 +805,12 @@ export default function WidgetsManagement() {
           <Form {...createForm}>
             <form onSubmit={createForm.handleSubmit(handleCreateSubmit)} className="space-y-6">
               <Tabs defaultValue="general">
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="grid w-full grid-cols-5">
                   <TabsTrigger value="general">{t("Geral")}</TabsTrigger>
                   <TabsTrigger value="security">{t("Segurança")}</TabsTrigger>
-                  <TabsTrigger value="advanced">{t("Configurações Avançadas")}</TabsTrigger>
+                  <TabsTrigger value="conversation">{t("Conversa")}</TabsTrigger>
+                  <TabsTrigger value="operational">{t("Operacional")}</TabsTrigger>
+                  <TabsTrigger value="advanced">{t("Avançado")}</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="general" className="space-y-4 pt-4">
