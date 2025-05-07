@@ -283,9 +283,9 @@ export function EmbeddedChat({ apiKey, initialOpen = false, hideHeader = false, 
     right: isInIframe || fullHeight ? 0 : "1rem",
     height: isInIframe || fullHeight ? "100%" : (widget?.default_height ? `${widget.default_height}px` : "500px"),
     width: isInIframe || fullHeight ? "100%" : (widget?.default_width ? `${widget.default_width}px` : "350px"),
-    backgroundColor: widget?.background_color || "",
-    color: widget?.font_color || "",
-    fontSize: widget?.font_size || "",
+    backgroundColor: widget?.background_color || "#111111", // Fundo preto/escuro como padrão (visto na imagem)
+    color: widget?.font_color || "#F5F5F5", // Texto claro para fundo escuro
+    fontSize: widget?.font_size || "14px", // Tamanho padrão
   } as React.CSSProperties;
   
   // Format widget data for chat component
@@ -378,11 +378,11 @@ export function EmbeddedChat({ apiKey, initialOpen = false, hideHeader = false, 
           onSendMessage={handleSendMessage}
           onFileUpload={handleFileUpload}
           customStyles={{
-            backgroundColor: widget.background_color,
-            fontColor: widget.font_color,
-            fontSize: widget.font_size,
-            botMessageBgColor: widget.bot_message_bg_color,
-            userMessageBgColor: widget.user_message_bg_color
+            backgroundColor: widget?.background_color || "#111111",
+            fontColor: widget?.font_color || "#F5F5F5",
+            fontSize: widget?.font_size || "14px",
+            botMessageBgColor: widget?.bot_message_bg_color || "#F2EFE5", // Cor creme/bege claro para mensagens do bot
+            userMessageBgColor: widget?.user_message_bg_color || "#F2EFE5" // Mesma cor para mensagens do usuário
           }}
           customTexts={customTexts}
         />
