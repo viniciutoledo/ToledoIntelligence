@@ -9,6 +9,7 @@ import { WidgetChatProvider } from "@/hooks/use-widget-chat";
 import { ProtectedRoute } from "@/lib/protected-route";
 import NotFound from "@/pages/not-found";
 import AuthPage from "@/pages/auth-page";
+import ProfilePage from "@/pages/profile-page";
 import TechnicianPage from "@/pages/technician-page";
 import AdminPage from "@/pages/admin-page";
 import SubscriptionPage from "@/pages/subscription-page";
@@ -53,6 +54,7 @@ function Router() {
       <ProtectedRoute path="/admin" component={AdminPage} roles={["admin"]} />
       <ProtectedRoute path="/subscription" component={SubscriptionPage} />
       <ProtectedRoute path="/dashboard" component={TechnicianPage} roles={["technician", "admin"]} />
+      <ProtectedRoute path="/profile" component={ProfilePage} />
       
       {/* Subscription success/cancel pages */}
       <ProtectedRoute 
