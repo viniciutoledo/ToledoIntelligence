@@ -587,8 +587,24 @@ export async function generateRAGResponse(
     const provider = useModel.startsWith('claude') ? 'anthropic' : 'openai';
     const temperature = llmConfig?.temperature || '0.3';
     
+    // Obter instruções de comportamento da configuração do LLM
+    const behaviorInstructions = llmConfig?.behavior_instructions || '';
+    console.log(`Usando instruções de comportamento: ${behaviorInstructions ? 'Sim' : 'Não'}`);
+    
     // Construir o prompt/contexto
-    const systemPrompt = buildContextForLLM(query, documents, language, forceExtraction);
+    let systemPrompt = buildContextForLLM(query, documents, language, forceExtraction);
+    
+    // Adicionar instruções de comportamento específicas se existirem
+    if (behaviorInstructions && behaviorInstructions.trim().length > 0) {
+      console.log('Adicionando instruções de comportamento personalizadas ao prompt');
+      
+      // Adicionar ao início do prompt
+      systemPrompt = `
+INSTRUÇÕES DE COMPORTAMENTO:
+${behaviorInstructions}
+
+${systemPrompt}`;
+    }
     
     // Chamar o LLM apropriado
     let response: string;
