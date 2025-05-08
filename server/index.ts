@@ -7,6 +7,7 @@ import { eq } from "drizzle-orm";
 import { planPricing } from "@shared/schema";
 import path from "path";
 import fs from "fs";
+import { startDocumentMonitor } from "./document-monitor";
 
 const app = express();
 app.use(express.json());
@@ -214,5 +215,8 @@ app.use((req, res, next) => {
     reusePort: true,
   }, () => {
     log(`serving on port ${port}`);
+    
+    // Iniciar monitoramento automático de documentos (verificação a cada 15 minutos)
+    startDocumentMonitor(15);
   });
 })();
