@@ -584,3 +584,19 @@ export const passwordSchema = z.string().min(12)
   .regex(/[a-z]/, "Password must contain at least one lowercase letter")
   .regex(/[0-9]/, "Password must contain at least one number")
   .regex(/[^A-Za-z0-9]/, "Password must contain at least one special character");
+
+// Tabela para armazenar tópicos técnicos adicionais (aprendidos do uso)
+export const technicalTopics = pgTable("technical_topics", {
+  id: serial("id").primaryKey(),
+  topic: text("topic").notNull().unique(),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+  usage_count: integer("usage_count").notNull().default(1),
+  last_used: timestamp("last_used").defaultNow().notNull(),
+});
+
+export const insertTechnicalTopicSchema = createInsertSchema(technicalTopics).pick({
+  topic: true,
+});
+
+export type TechnicalTopic = typeof technicalTopics.$inferSelect;
+export type InsertTechnicalTopic = z.infer<typeof insertTechnicalTopicSchema>;

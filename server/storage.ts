@@ -30,6 +30,11 @@ export interface IStorage {
   getUsers(): Promise<User[]>;
   getUsersBySubscriptionTier(tier: "none" | "basic" | "intermediate"): Promise<User[]>;
   
+  // Tópicos técnicos para busca externa
+  getAdditionalTechnicalTopics(): Promise<string[]>;
+  addTechnicalTopic(topic: string): Promise<boolean>;
+  updateTechnicalTopicUsage(topic: string): Promise<boolean>;
+  
   // LLM model usage tracking
   logLlmUsage(log: InsertLlmUsageLog): Promise<void>;
   getLlmUsageLogs(options?: {
@@ -206,6 +211,21 @@ export interface IStorage {
 }
 
 export class MemStorage implements IStorage {
+  // Implementar métodos para tópicos técnicos
+  async getAdditionalTechnicalTopics(): Promise<string[]> {
+    return [];
+  }
+  
+  async addTechnicalTopic(topic: string): Promise<boolean> {
+    console.log(`[MemStorage] Simulando adição de tópico técnico: ${topic}`);
+    return true;
+  }
+  
+  async updateTechnicalTopicUsage(topic: string): Promise<boolean> {
+    console.log(`[MemStorage] Simulando atualização de uso de tópico técnico: ${topic}`);
+    return true;
+  }
+  
   // LLM usage tracking
   async logLlmUsage(log: InsertLlmUsageLog): Promise<void> {
     const id = this.currentIds.llmUsageLogId++;
@@ -3056,6 +3076,86 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error(`Error getting users by subscription tier (${tier}):`, error);
       return [];
+    }
+  }
+  
+  // Implementação dos métodos para gerenciar tópicos técnicos
+  
+  async getAdditionalTechnicalTopics(): Promise<string[]> {
+    try {
+      const topics = await db
+        .select({ topic: technicalTopics.topic })
+        .from(technicalTopics)
+        .orderBy(desc(technicalTopics.usage_count));
+      
+      return topics.map(t => t.topic);
+    } catch (error) {
+      console.error("Erro ao obter tópicos técnicos adicionais:", error);
+      return [];
+    }
+  }
+  
+  async addTechnicalTopic(topic: string): Promise<boolean> {
+    try {
+      const normalizedTopic = topic.trim().toLowerCase();
+      
+      // Verificar se o tópico já existe
+      const existingTopic = await db
+        .select()
+        .from(technicalTopics)
+        .where(eq(technicalTopics.topic, normalizedTopic))
+        .limit(1);
+      
+      if (existingTopic.length > 0) {
+        // O tópico já existe, atualizar a contagem de uso
+        await this.updateTechnicalTopicUsage(normalizedTopic);
+        return true;
+      }
+      
+      // O tópico não existe, inserir novo
+      await db.insert(technicalTopics).values({
+        topic: normalizedTopic,
+        usage_count: 1,
+        last_used: new Date()
+      });
+      
+      console.log(`Novo tópico técnico adicionado: ${normalizedTopic}`);
+      return true;
+    } catch (error) {
+      console.error("Erro ao adicionar tópico técnico:", error);
+      return false;
+    }
+  }
+  
+  async updateTechnicalTopicUsage(topic: string): Promise<boolean> {
+    try {
+      const normalizedTopic = topic.trim().toLowerCase();
+      
+      // Verificar se o tópico existe
+      const existingTopic = await db
+        .select()
+        .from(technicalTopics)
+        .where(eq(technicalTopics.topic, normalizedTopic))
+        .limit(1);
+      
+      if (existingTopic.length === 0) {
+        // O tópico não existe, adicionar novo
+        return await this.addTechnicalTopic(normalizedTopic);
+      }
+      
+      // O tópico existe, incrementar a contagem de uso
+      await db
+        .update(technicalTopics)
+        .set({
+          usage_count: existingTopic[0].usage_count + 1,
+          last_used: new Date()
+        })
+        .where(eq(technicalTopics.topic, normalizedTopic));
+      
+      return true;
+    } catch (error) {
+      console.error("Erro ao atualizar uso de tópico técnico:", error);
+      return false;
     }
   }
 }
