@@ -598,5 +598,25 @@ export const insertTechnicalTopicSchema = createInsertSchema(technicalTopics).pi
   topic: true,
 });
 
+// Tabela para armazenar configurações do sistema
+export const systemSettings = pgTable("system_settings", {
+  id: serial("id").primaryKey(),
+  key: text("key").notNull().unique(),
+  value: text("value").notNull(),
+  updated_by: integer("updated_by").references(() => users.id),
+  updated_at: timestamp("updated_at").defaultNow().notNull(),
+  description: text("description"),
+});
+
+export const insertSystemSettingSchema = createInsertSchema(systemSettings).pick({
+  key: true,
+  value: true,
+  updated_by: true,
+  description: true,
+});
+
+export type SystemSetting = typeof systemSettings.$inferSelect;
+export type InsertSystemSetting = z.infer<typeof insertSystemSettingSchema>;
+
 export type TechnicalTopic = typeof technicalTopics.$inferSelect;
 export type InsertTechnicalTopic = z.infer<typeof insertTechnicalTopicSchema>;
