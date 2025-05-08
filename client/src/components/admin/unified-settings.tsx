@@ -4,6 +4,7 @@ import { useAvatar } from "@/hooks/use-avatar";
 import { useLlm } from "@/hooks/use-llm";
 import { useWidgets } from "@/hooks/use-widgets";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import { 
   Loader2, 
   Settings, 
@@ -63,45 +64,115 @@ export function UnifiedSettings() {
   
   // Estados para guardar configurações do sistema
   const [autoRegisterTechnicians, setAutoRegisterTechnicians] = useState(false);
-  const [require2FA, setRequire2FA] = useState(true);
+  const [require2FA, setRequire2FA] = useState(false);
   const [logLevel, setLogLevel] = useState("medium");
   const [logRetention, setLogRetention] = useState("90");
+  const [isLoadingSystem, setIsLoadingSystem] = useState(false);
+  
+  // Carregar configurações do sistema
+  useEffect(() => {
+    const fetchSystemSettings = async () => {
+      try {
+        const response = await apiRequest("GET", "/api/admin/system/settings");
+        if (response.ok) {
+          const data = await response.json();
+          setLogLevel(data.logLevel || "medium");
+          setLogRetention(data.logRetention || "90");
+          setAutoRegisterTechnicians(data.autoRegisterTechnicians || false);
+          setRequire2FA(data.require2FA || false);
+        }
+      } catch (error) {
+        console.error("Erro ao carregar configurações do sistema:", error);
+        showMessage("Não foi possível carregar as configurações do sistema", "error");
+      }
+    };
+    
+    fetchSystemSettings();
+  }, []);
   
   // Funções para operações de sistema
-  const verifyDatabaseIntegrity = () => {
-    showMessage("Verificação de integridade iniciada...");
-    
-    // Simula uma operação assíncrona
-    setTimeout(() => {
-      showMessage("Nenhum problema de integridade encontrado no banco de dados.", "success");
-    }, 1500);
+  const verifyDatabaseIntegrity = async () => {
+    try {
+      setIsLoadingSystem(true);
+      showMessage("Verificação de integridade iniciada...");
+      
+      const response = await apiRequest("POST", "/api/admin/system/verify-db");
+      const data = await response.json();
+      
+      if (data.success) {
+        showMessage(data.message, "success");
+      } else {
+        showMessage(data.message, "error");
+      }
+    } catch (error) {
+      console.error("Erro ao verificar integridade do banco de dados:", error);
+      showMessage("Erro ao verificar integridade do banco de dados", "error");
+    } finally {
+      setIsLoadingSystem(false);
+    }
   };
   
-  const optimizeIndexes = () => {
-    showMessage("Otimização de índices iniciada...");
-    
-    // Simula uma operação assíncrona
-    setTimeout(() => {
-      showMessage("Índices do banco de dados otimizados com sucesso.", "success");
-    }, 2000);
+  const optimizeIndexes = async () => {
+    try {
+      setIsLoadingSystem(true);
+      showMessage("Otimização de índices iniciada...");
+      
+      const response = await apiRequest("POST", "/api/admin/system/optimize-indexes");
+      const data = await response.json();
+      
+      if (data.success) {
+        showMessage(data.message, "success");
+      } else {
+        showMessage(data.message, "error");
+      }
+    } catch (error) {
+      console.error("Erro ao otimizar índices:", error);
+      showMessage("Erro ao otimizar índices", "error");
+    } finally {
+      setIsLoadingSystem(false);
+    }
   };
   
-  const clearCache = () => {
-    showMessage("Limpeza de cache iniciada...");
-    
-    // Simula uma operação assíncrona
-    setTimeout(() => {
-      showMessage("Cache do sistema limpo com sucesso.", "success");
-    }, 1000);
+  const clearCache = async () => {
+    try {
+      setIsLoadingSystem(true);
+      showMessage("Limpeza de cache iniciada...");
+      
+      const response = await apiRequest("POST", "/api/admin/system/clear-cache");
+      const data = await response.json();
+      
+      if (data.success) {
+        showMessage(data.message, "success");
+      } else {
+        showMessage(data.message, "error");
+      }
+    } catch (error) {
+      console.error("Erro ao limpar cache:", error);
+      showMessage("Erro ao limpar cache", "error");
+    } finally {
+      setIsLoadingSystem(false);
+    }
   };
   
-  const rebuildIndexes = () => {
-    showMessage("Reconstrução de índices iniciada...");
-    
-    // Simula uma operação assíncrona
-    setTimeout(() => {
-      showMessage("Índices de busca reconstruídos com sucesso.", "success");
-    }, 3000);
+  const rebuildIndexes = async () => {
+    try {
+      setIsLoadingSystem(true);
+      showMessage("Reconstrução de índices iniciada...");
+      
+      const response = await apiRequest("POST", "/api/admin/system/rebuild-indexes");
+      const data = await response.json();
+      
+      if (data.success) {
+        showMessage(data.message, "success");
+      } else {
+        showMessage(data.message, "error");
+      }
+    } catch (error) {
+      console.error("Erro ao reconstruir índices:", error);
+      showMessage("Erro ao reconstruir índices", "error");
+    } finally {
+      setIsLoadingSystem(false);
+    }
   };
   
   const openAdvancedPanel = () => {
@@ -118,6 +189,102 @@ export function UnifiedSettings() {
   
   const advancedSecuritySettings = () => {
     showMessage("Configurações avançadas de segurança em desenvolvimento. Estará disponível na próxima atualização.");
+  };
+  
+  const handleLogLevelChange = async (level: string) => {
+    try {
+      setIsLoadingSystem(true);
+      
+      const response = await apiRequest("POST", "/api/admin/system/log-level", {
+        level
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setLogLevel(level);
+        showMessage(data.message, "success");
+      } else {
+        showMessage(data.message, "error");
+      }
+    } catch (error) {
+      console.error("Erro ao alterar nível de log:", error);
+      showMessage("Erro ao alterar nível de log", "error");
+    } finally {
+      setIsLoadingSystem(false);
+    }
+  };
+  
+  const handleLogRetentionChange = async (days: string) => {
+    try {
+      setIsLoadingSystem(true);
+      
+      const response = await apiRequest("POST", "/api/admin/system/log-retention", {
+        days: Number(days)
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setLogRetention(days);
+        showMessage(data.message, "success");
+      } else {
+        showMessage(data.message, "error");
+      }
+    } catch (error) {
+      console.error("Erro ao alterar período de retenção de logs:", error);
+      showMessage("Erro ao alterar período de retenção de logs", "error");
+    } finally {
+      setIsLoadingSystem(false);
+    }
+  };
+  
+  const toggleAutoRegister = async (enabled: boolean) => {
+    try {
+      setIsLoadingSystem(true);
+      
+      const response = await apiRequest("POST", "/api/admin/system/toggle-auto-register", {
+        enabled
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setAutoRegisterTechnicians(enabled);
+        showMessage(data.message, "success");
+      } else {
+        showMessage(data.message, "error");
+      }
+    } catch (error) {
+      console.error("Erro ao alterar configuração de auto-registro:", error);
+      showMessage("Erro ao alterar configuração de auto-registro", "error");
+    } finally {
+      setIsLoadingSystem(false);
+    }
+  };
+  
+  const toggleRequire2FA = async (enabled: boolean) => {
+    try {
+      setIsLoadingSystem(true);
+      
+      const response = await apiRequest("POST", "/api/admin/system/toggle-require-2fa", {
+        enabled
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setRequire2FA(enabled);
+        showMessage(data.message, "success");
+      } else {
+        showMessage(data.message, "error");
+      }
+    } catch (error) {
+      console.error("Erro ao alterar configuração de 2FA:", error);
+      showMessage("Erro ao alterar configuração de 2FA", "error");
+    } finally {
+      setIsLoadingSystem(false);
+    }
   };
   
   if (isLoadingAvatar || isLoadingLlm || isLoadingWidgets) {
@@ -437,8 +604,7 @@ export function UnifiedSettings() {
                               className={`relative inline-block w-10 h-5 transition duration-200 ${autoRegisterTechnicians ? 'bg-primary' : 'bg-gray-300'} rounded-full cursor-pointer`}
                               onClick={() => {
                                 const newValue = !autoRegisterTechnicians;
-                                setAutoRegisterTechnicians(newValue);
-                                showMessage(`Auto-registro de técnicos ${newValue ? 'ativado' : 'desativado'}`);
+                                toggleAutoRegister(newValue);
                               }}
                             >
                               <span 
@@ -456,8 +622,7 @@ export function UnifiedSettings() {
                               className={`relative inline-block w-10 h-5 transition duration-200 ${require2FA ? 'bg-primary' : 'bg-gray-300'} rounded-full cursor-pointer`}
                               onClick={() => {
                                 const newValue = !require2FA;
-                                setRequire2FA(newValue);
-                                showMessage(`Autenticação de dois fatores ${newValue ? 'exigida' : 'opcional'} para administradores`);
+                                toggleRequire2FA(newValue);
                               }}
                             >
                               <span 
@@ -499,8 +664,7 @@ export function UnifiedSettings() {
                                 className="pl-3 pr-8 py-1 border rounded text-sm appearance-none bg-white"
                                 value={logLevel}
                                 onChange={(e) => {
-                                  setLogLevel(e.target.value);
-                                  showMessage(`Nível de detalhe dos logs alterado para ${e.target.value === 'low' ? 'Básico' : e.target.value === 'medium' ? 'Médio' : 'Detalhado'}`);
+                                  handleLogLevelChange(e.target.value);
                                 }}
                               >
                                 <option value="low">Básico</option>

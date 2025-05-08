@@ -881,6 +881,249 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Admin routes
   
+  // Sistema de manutenção e configuração (admin only)
+  app.post("/api/admin/system/verify-db", isAuthenticated, checkRole("admin"), async (req, res) => {
+    try {
+      const result = await systemMaintenanceService.verifyDatabaseIntegrity();
+      
+      // Log da ação
+      await logAction({
+        userId: req.user!.id,
+        action: "system_db_integrity_check",
+        details: { success: result.success },
+        ipAddress: req.ip
+      });
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Erro ao verificar integridade do banco de dados:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Erro ao verificar integridade do banco de dados" 
+      });
+    }
+  });
+  
+  app.post("/api/admin/system/optimize-indexes", isAuthenticated, checkRole("admin"), async (req, res) => {
+    try {
+      const result = await systemMaintenanceService.optimizeIndexes();
+      
+      // Log da ação
+      await logAction({
+        userId: req.user!.id,
+        action: "system_optimize_indexes",
+        details: { success: result.success },
+        ipAddress: req.ip
+      });
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Erro ao otimizar índices:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Erro ao otimizar índices" 
+      });
+    }
+  });
+  
+  app.post("/api/admin/system/clear-cache", isAuthenticated, checkRole("admin"), async (req, res) => {
+    try {
+      const result = await systemMaintenanceService.clearCache();
+      
+      // Log da ação
+      await logAction({
+        userId: req.user!.id,
+        action: "system_clear_cache",
+        details: { success: result.success },
+        ipAddress: req.ip
+      });
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Erro ao limpar cache:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Erro ao limpar cache" 
+      });
+    }
+  });
+  
+  app.post("/api/admin/system/rebuild-indexes", isAuthenticated, checkRole("admin"), async (req, res) => {
+    try {
+      const result = await systemMaintenanceService.rebuildIndexes();
+      
+      // Log da ação
+      await logAction({
+        userId: req.user!.id,
+        action: "system_rebuild_indexes",
+        details: { success: result.success },
+        ipAddress: req.ip
+      });
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Erro ao reconstruir índices:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Erro ao reconstruir índices" 
+      });
+    }
+  });
+  
+  app.post("/api/admin/system/log-level", isAuthenticated, checkRole("admin"), async (req, res) => {
+    try {
+      const { level } = req.body;
+      
+      if (!level || !['low', 'medium', 'high'].includes(level)) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Nível de log inválido" 
+        });
+      }
+      
+      const result = await systemMaintenanceService.setLogLevel(level, req.user!.id);
+      res.json(result);
+    } catch (error) {
+      console.error("Erro ao definir nível de log:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Erro ao definir nível de log" 
+      });
+    }
+  });
+  
+  app.post("/api/admin/system/log-retention", isAuthenticated, checkRole("admin"), async (req, res) => {
+    try {
+      const { days } = req.body;
+      
+      if (!days || ![30, 90, 180, 365].includes(Number(days))) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Período de retenção inválido" 
+        });
+      }
+      
+      const result = await systemMaintenanceService.setLogRetention(Number(days), req.user!.id);
+      res.json(result);
+    } catch (error) {
+      console.error("Erro ao definir período de retenção:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Erro ao definir período de retenção" 
+      });
+    }
+  });
+  
+  app.get("/api/admin/system/settings", isAuthenticated, checkRole("admin"), async (req, res) => {
+    try {
+      // Buscar configurações do sistema (nível de log, período de retenção, etc.)
+      const logLevel = await db.execute(sql`
+        SELECT value FROM system_settings WHERE key = 'log_level'
+      `);
+      
+      const logRetention = await db.execute(sql`
+        SELECT value FROM system_settings WHERE key = 'log_retention_days'
+      `);
+      
+      const autoRegisterTechnicians = await db.execute(sql`
+        SELECT value FROM system_settings WHERE key = 'auto_register_technicians'
+      `);
+      
+      const require2FA = await db.execute(sql`
+        SELECT value FROM system_settings WHERE key = 'require_2fa_for_admins'
+      `);
+      
+      res.json({
+        logLevel: logLevel.rows && logLevel.rows.length > 0 ? logLevel.rows[0].value : 'medium',
+        logRetention: logRetention.rows && logRetention.rows.length > 0 ? logRetention.rows[0].value : '90',
+        autoRegisterTechnicians: autoRegisterTechnicians.rows && autoRegisterTechnicians.rows.length > 0 
+          ? autoRegisterTechnicians.rows[0].value === 'true' : false,
+        require2FA: require2FA.rows && require2FA.rows.length > 0 
+          ? require2FA.rows[0].value === 'true' : false,
+      });
+    } catch (error) {
+      console.error("Erro ao buscar configurações do sistema:", error);
+      res.status(500).json({ 
+        logLevel: 'medium',
+        logRetention: '90',
+        autoRegisterTechnicians: false,
+        require2FA: false
+      });
+    }
+  });
+  
+  app.post("/api/admin/system/toggle-auto-register", isAuthenticated, checkRole("admin"), async (req, res) => {
+    try {
+      const { enabled } = req.body;
+      
+      // Atualizar configuração no banco de dados
+      await db.execute(sql`
+        INSERT INTO system_settings (key, value, updated_by, updated_at)
+        VALUES ('auto_register_technicians', ${enabled ? 'true' : 'false'}, ${req.user!.id}, NOW())
+        ON CONFLICT (key) DO UPDATE
+        SET value = ${enabled ? 'true' : 'false'}, updated_by = ${req.user!.id}, updated_at = NOW()
+      `);
+      
+      // Log da ação
+      await logAction({
+        userId: req.user!.id,
+        action: "system_config_update",
+        details: { 
+          setting: 'auto_register_technicians', 
+          value: enabled ? 'true' : 'false' 
+        },
+        ipAddress: req.ip
+      });
+      
+      res.json({ 
+        success: true, 
+        message: `Auto-registro de técnicos ${enabled ? 'ativado' : 'desativado'}` 
+      });
+    } catch (error) {
+      console.error("Erro ao alterar configuração de auto-registro:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Erro ao alterar configuração de auto-registro" 
+      });
+    }
+  });
+  
+  app.post("/api/admin/system/toggle-require-2fa", isAuthenticated, checkRole("admin"), async (req, res) => {
+    try {
+      const { enabled } = req.body;
+      
+      // Atualizar configuração no banco de dados
+      await db.execute(sql`
+        INSERT INTO system_settings (key, value, updated_by, updated_at)
+        VALUES ('require_2fa_for_admins', ${enabled ? 'true' : 'false'}, ${req.user!.id}, NOW())
+        ON CONFLICT (key) DO UPDATE
+        SET value = ${enabled ? 'true' : 'false'}, updated_by = ${req.user!.id}, updated_at = NOW()
+      `);
+      
+      // Log da ação
+      await logAction({
+        userId: req.user!.id,
+        action: "system_config_update",
+        details: { 
+          setting: 'require_2fa_for_admins', 
+          value: enabled ? 'true' : 'false' 
+        },
+        ipAddress: req.ip
+      });
+      
+      res.json({ 
+        success: true, 
+        message: `Autenticação de dois fatores ${enabled ? 'exigida' : 'opcional'} para administradores` 
+      });
+    } catch (error) {
+      console.error("Erro ao alterar configuração de 2FA:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Erro ao alterar configuração de autenticação de dois fatores" 
+      });
+    }
+  });
+  
   // Technical topics testing routes
   app.post("/api/admin/technical-topics/test", isAuthenticated, checkRole("admin"), async (req, res) => {
     try {
