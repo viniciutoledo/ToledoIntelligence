@@ -766,6 +766,12 @@ export function UnifiedSettings() {
           </TabsContent>
         </Tabs>
       </CardContent>
+      
+      {/* Componente modal de configurações avançadas de segurança */}
+      <AdvancedSecuritySettings 
+        open={showAdvancedSecuritySettings} 
+        onClose={() => setShowAdvancedSecuritySettings(false)} 
+      />
     </Card>
   );
 }
