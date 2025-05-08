@@ -3,7 +3,21 @@ import { useLanguage } from "@/hooks/use-language";
 import { useAvatar } from "@/hooks/use-avatar";
 import { useLlm } from "@/hooks/use-llm";
 import { useWidgets } from "@/hooks/use-widgets";
-import { Loader2, Settings, MessageSquare, Palette, User, BrainCircuit, FileCode, Globe } from "lucide-react";
+import { 
+  Loader2, 
+  Settings, 
+  MessageSquare, 
+  Palette, 
+  User, 
+  BrainCircuit, 
+  FileCode, 
+  Globe, 
+  Cog, 
+  AlertCircle, 
+  InfoIcon, 
+  ExternalLink,
+  Wrench
+} from "lucide-react";
 import {
   Card,
   CardContent,
