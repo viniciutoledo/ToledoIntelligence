@@ -376,7 +376,10 @@ export function UnifiedSettings() {
                               <h4 className="font-medium">Idioma Principal</h4>
                               <p className="text-sm text-muted-foreground">Selecione o idioma padrão do sistema</p>
                             </div>
-                            <div className="bg-gray-100 text-sm px-3 py-1 rounded border">
+                            <div 
+                              className="bg-gray-100 text-sm px-3 py-1 rounded border cursor-pointer hover:bg-gray-200"
+                              onClick={() => showMessage("O idioma principal do sistema é Português (Brasil)")}
+                            >
                               Português
                             </div>
                           </div>
@@ -420,13 +423,17 @@ export function UnifiedSettings() {
                               <h4 className="font-medium">Auto-registro de Técnicos</h4>
                               <p className="text-sm text-muted-foreground">Permitir que técnicos se registrem sem aprovação</p>
                             </div>
-                            <div className="relative inline-block w-10 h-5 transition duration-200 bg-gray-300 rounded-full cursor-pointer">
-                              <input 
-                                type="checkbox" 
-                                className="absolute w-0 h-0 opacity-0" 
-                                onChange={() => alert("Funcionalidade em desenvolvimento")}
+                            <div 
+                              className={`relative inline-block w-10 h-5 transition duration-200 ${autoRegisterTechnicians ? 'bg-primary' : 'bg-gray-300'} rounded-full cursor-pointer`}
+                              onClick={() => {
+                                const newValue = !autoRegisterTechnicians;
+                                setAutoRegisterTechnicians(newValue);
+                                showMessage(`Auto-registro de técnicos ${newValue ? 'ativado' : 'desativado'}`);
+                              }}
+                            >
+                              <span 
+                                className={`absolute ${autoRegisterTechnicians ? 'right-1' : 'left-1'} top-1 w-3 h-3 transition duration-200 bg-white rounded-full`} 
                               />
-                              <span className="absolute left-1 top-1 w-3 h-3 transition duration-200 bg-white rounded-full" />
                             </div>
                           </div>
                           
@@ -435,20 +442,23 @@ export function UnifiedSettings() {
                               <h4 className="font-medium">Autenticação de Dois Fatores</h4>
                               <p className="text-sm text-muted-foreground">Exigir 2FA para administradores</p>
                             </div>
-                            <div className="relative inline-block w-10 h-5 transition duration-200 bg-primary rounded-full cursor-pointer">
-                              <input 
-                                type="checkbox" 
-                                className="absolute w-0 h-0 opacity-0" 
-                                defaultChecked={true} 
-                                onChange={() => alert("Funcionalidade em desenvolvimento")}
+                            <div 
+                              className={`relative inline-block w-10 h-5 transition duration-200 ${require2FA ? 'bg-primary' : 'bg-gray-300'} rounded-full cursor-pointer`}
+                              onClick={() => {
+                                const newValue = !require2FA;
+                                setRequire2FA(newValue);
+                                showMessage(`Autenticação de dois fatores ${newValue ? 'exigida' : 'opcional'} para administradores`);
+                              }}
+                            >
+                              <span 
+                                className={`absolute ${require2FA ? 'right-1' : 'left-1'} top-1 w-3 h-3 transition duration-200 bg-white rounded-full`} 
                               />
-                              <span className="absolute right-1 top-1 w-3 h-3 transition duration-200 bg-white rounded-full" />
                             </div>
                           </div>
                           
                           <button 
                             className="w-full px-4 py-2 border border-gray-300 rounded-md text-sm"
-                            onClick={() => alert("Funcionalidade em desenvolvimento")}
+                            onClick={advancedSecuritySettings}
                           >
                             Configurações Avançadas
                           </button>
@@ -475,9 +485,16 @@ export function UnifiedSettings() {
                               <p className="text-sm text-muted-foreground">Controle a quantidade de informações registradas</p>
                             </div>
                             <div className="relative">
-                              <select className="pl-3 pr-8 py-1 border rounded text-sm appearance-none bg-white">
+                              <select 
+                                className="pl-3 pr-8 py-1 border rounded text-sm appearance-none bg-white"
+                                value={logLevel}
+                                onChange={(e) => {
+                                  setLogLevel(e.target.value);
+                                  showMessage(`Nível de detalhe dos logs alterado para ${e.target.value === 'low' ? 'Básico' : e.target.value === 'medium' ? 'Médio' : 'Detalhado'}`);
+                                }}
+                              >
                                 <option value="low">Básico</option>
-                                <option value="medium" selected>Médio</option>
+                                <option value="medium">Médio</option>
                                 <option value="high">Detalhado</option>
                               </select>
                             </div>
@@ -489,9 +506,19 @@ export function UnifiedSettings() {
                               <p className="text-sm text-muted-foreground">Período de armazenamento dos registros</p>
                             </div>
                             <div className="relative">
-                              <select className="pl-3 pr-8 py-1 border rounded text-sm appearance-none bg-white">
+                              <select 
+                                className="pl-3 pr-8 py-1 border rounded text-sm appearance-none bg-white"
+                                value={logRetention}
+                                onChange={(e) => {
+                                  setLogRetention(e.target.value);
+                                  const periodText = e.target.value === '30' ? '30 dias' : 
+                                                    e.target.value === '90' ? '90 dias' : 
+                                                    e.target.value === '180' ? '6 meses' : '1 ano';
+                                  showMessage(`Período de retenção de logs alterado para ${periodText}`);
+                                }}
+                              >
                                 <option value="30">30 dias</option>
-                                <option value="90" selected>90 dias</option>
+                                <option value="90">90 dias</option>
                                 <option value="180">6 meses</option>
                                 <option value="365">1 ano</option>
                               </select>
@@ -526,13 +553,13 @@ export function UnifiedSettings() {
                             <div className="grid grid-cols-2 gap-2">
                               <button 
                                 className="px-3 py-1 border border-gray-300 rounded-md text-sm"
-                                onClick={() => alert("Verificando integridade... Nenhum problema encontrado.")}
+                                onClick={verifyDatabaseIntegrity}
                               >
                                 Verificar Integridade
                               </button>
                               <button 
                                 className="px-3 py-1 border border-gray-300 rounded-md text-sm"
-                                onClick={() => alert("Otimização de índices concluída com sucesso.")}
+                                onClick={optimizeIndexes}
                               >
                                 Otimizar Índices
                               </button>
@@ -544,13 +571,13 @@ export function UnifiedSettings() {
                             <div className="grid grid-cols-2 gap-2">
                               <button 
                                 className="px-3 py-1 border border-gray-300 rounded-md text-sm"
-                                onClick={() => alert("Cache limpo com sucesso.")}
+                                onClick={clearCache}
                               >
                                 Limpar Cache
                               </button>
                               <button 
                                 className="px-3 py-1 border border-gray-300 rounded-md text-sm"
-                                onClick={() => alert("Índices reconstruídos com sucesso.")}
+                                onClick={rebuildIndexes}
                               >
                                 Reconstruir Índices
                               </button>
@@ -559,7 +586,7 @@ export function UnifiedSettings() {
                           
                           <button 
                             className="w-full px-4 py-2 bg-primary text-white rounded-md text-sm"
-                            onClick={() => alert("Painel de manutenção avançada em desenvolvimento.")}
+                            onClick={openAdvancedPanel}
                           >
                             Painel de Manutenção Avançada
                           </button>
