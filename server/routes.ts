@@ -4458,21 +4458,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
           aiResponse = "Desculpe, ocorreu um erro ao processar sua mensagem. Por favor, tente novamente.";
         }
         
-        // Criar a mensagem da IA
-        const aiMessage = await storage.createWidgetChatMessage({
-          session_id,
-          content: aiResponse,
-          message_type: "text",
-          is_user: false
-        });
+        // Verificar se o widget tem a opção de dividir respostas longas ativada
+        const shouldSplitResponses = widget.split_responses === true;
         
-        // Incrementar contagem de mensagens para o usuário
-        await storage.incrementMessageCount(widget.user_id);
-        
-        res.json({
-          userMessage,
-          aiMessage
-        });
+        if (shouldSplitResponses && aiResponse.length > 300) {
+          console.log("Dividindo resposta longa em partes menores...");
+          
+          // Dividir a resposta em partes
+          const responseParts = splitLongMessage(aiResponse);
+          
+          // Criar uma mensagem para cada parte da resposta
+          const aiMessages = [];
+          
+          for (let i = 0; i < responseParts.length; i++) {
+            const part = responseParts[i];
+            
+            // Criar a mensagem da IA para esta parte
+            const aiMessage = await storage.createWidgetChatMessage({
+              session_id,
+              content: part,
+              message_type: "text",
+              is_user: false
+            });
+            
+            aiMessages.push(aiMessage);
+            
+            // Incrementar contagem de mensagens para o usuário (apenas uma vez por resposta)
+            if (i === 0) {
+              await storage.incrementMessageCount(widget.user_id);
+            }
+          }
+          
+          // Responder com a mensagem do usuário e a primeira parte da resposta da IA
+          res.json({
+            userMessage,
+            aiMessage: aiMessages[0],
+            hasMoreParts: aiMessages.length > 1
+          });
+        } else {
+          // Comportamento padrão - resposta única
+          // Criar a mensagem da IA
+          const aiMessage = await storage.createWidgetChatMessage({
+            session_id,
+            content: aiResponse,
+            message_type: "text",
+            is_user: false
+          });
+          
+          // Incrementar contagem de mensagens para o usuário
+          await storage.incrementMessageCount(widget.user_id);
+          
+          res.json({
+            userMessage,
+            aiMessage
+          });
+        }
       } else {
         // Se não for do usuário, só retorna a mensagem criada
         res.json(userMessage);
@@ -4619,20 +4659,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Criar a mensagem da IA com a resposta
-      const aiMessage = await storage.createWidgetChatMessage({
-        session_id: parseInt(sessionId),
-        content: aiResponse,
-        message_type: "text",
-        is_user: false
-      });
+      // Verificar se o widget tem a opção de dividir respostas longas ativada
+      const shouldSplitResponses = widget.split_responses === true;
       
-      // Incrementar contagem de mensagens para o usuário
-      await storage.incrementMessageCount(widget.user_id);
+      let aiMessages = [];
+      
+      if (shouldSplitResponses && aiResponse.length > 300) {
+        console.log("Dividindo resposta longa em partes menores (upload de arquivo)...");
+        
+        // Dividir a resposta em partes
+        const responseParts = splitLongMessage(aiResponse);
+        
+        // Criar uma mensagem para cada parte da resposta
+        for (let i = 0; i < responseParts.length; i++) {
+          const part = responseParts[i];
+          
+          // Criar a mensagem da IA para esta parte
+          const aiMessage = await storage.createWidgetChatMessage({
+            session_id: parseInt(sessionId),
+            content: part,
+            message_type: "text",
+            is_user: false
+          });
+          
+          aiMessages.push(aiMessage);
+          
+          // Incrementar contagem de mensagens para o usuário (apenas uma vez por resposta)
+          if (i === 0) {
+            await storage.incrementMessageCount(widget.user_id);
+          }
+        }
+      } else {
+        // Comportamento padrão - resposta única
+        // Criar a mensagem da IA com a resposta
+        const aiMessage = await storage.createWidgetChatMessage({
+          session_id: parseInt(sessionId),
+          content: aiResponse,
+          message_type: "text",
+          is_user: false
+        });
+        
+        aiMessages.push(aiMessage);
+        
+        // Incrementar contagem de mensagens para o usuário
+        await storage.incrementMessageCount(widget.user_id);
+      }
       
       // Buscar as mensagens completas e atualizadas do banco
       const updatedUserMessage = await storage.getWidgetChatMessage(userMessage.id);
-      const updatedAiMessage = await storage.getWidgetChatMessage(aiMessage.id);
+      
+      // Para a mensagem da IA, pegar a primeira se houver várias
+      const aiMessageId = aiMessages.length > 0 ? aiMessages[0].id : null;
+      const updatedAiMessage = aiMessageId ? await storage.getWidgetChatMessage(aiMessageId) : null;
       
       // Criar objeto completo da mensagem do usuário para resposta
       // Assegurando que a URL do arquivo esteja sempre presente e correta
@@ -4644,19 +4722,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
       
       // Certificar-se de que a mensagem AI tenha os campos corretos
-      const aiMessageFinal = updatedAiMessage || aiMessage;
+      const aiMessageFinal = updatedAiMessage || (aiMessages.length > 0 ? aiMessages[0] : null);
       
       // Log para debug
       console.log("Enviando resposta com mensagem do usuário:", {
         id: userMessageWithFile.id,
         tipo: userMessageWithFile.message_type,
-        url: userMessageWithFile.file_url
+        url: userMessageWithFile.file_url,
+        aiMessages: aiMessages.length
       });
       
       // Incluir base64 diretamente na mensagem do usuário se for uma imagem
       if (isImage && fileBase64) {
         userMessageWithFile.fileBase64 = fileBase64;
       }
+      
+      // Verificar se temos múltiplas partes da resposta
+      const hasMoreParts = aiMessages.length > 1;
       
       // Montar objeto de resposta
       const responseObj = {
@@ -4666,7 +4748,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         fileUrl: fileUrl,
         // Incluir base64 também no objeto principal para manter compatibilidade
         // com código que espera encontrá-lo aqui
-        fileBase64: isImage ? fileBase64 : null
+        fileBase64: isImage ? fileBase64 : null,
+        // Indicar se há mais partes da resposta
+        hasMoreParts: hasMoreParts
       };
       
       res.json(responseObj);
