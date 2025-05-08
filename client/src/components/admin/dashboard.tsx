@@ -34,13 +34,34 @@ export function AdminDashboard() {
     // Removido initialData para forçar a busca real dos dados
   });
 
-  if (isLoading) {
+  if (isLoading || !stats) {
     return (
       <div className="flex justify-center items-center p-8">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
+  
+  // Valores iniciais para quando a API não retornar dados
+  const defaultStats: DashboardStats = {
+    userCount: 0,
+    technicianCount: 0,
+    adminCount: 0,
+    activeUsers: 0,
+    blockedUsers: 0,
+    totalChatSessions: 0,
+    activeChatSessions: 0,
+    messageCount: 0,
+    averageResponseTime: 0,
+    widgetCount: 0,
+    activeWidgets: 0,
+    widgetSessions: 0, 
+    widgetMessages: 0,
+    widgetUsersImpacted: 0,
+  };
+  
+  // Combina os valores retornados pela API com os valores padrão
+  const displayStats = { ...defaultStats, ...stats };
 
   return (
     <div className="space-y-6">

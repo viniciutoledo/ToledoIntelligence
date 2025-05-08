@@ -1547,18 +1547,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Dashboard stats (admin)
   app.get("/api/admin/stats", isAuthenticated, checkRole("admin"), async (req, res) => {
     try {
+      // Obter usuários
       const allUsers = await storage.getUsers();
       
-      // Obter estatísticas de chat
-      const chatSessions = await storage.getChatSessions();
-      const activeSessions = chatSessions.filter(session => !session.ended_at);
-      const chatMessages = await storage.getAllChatMessages();
-      
       // Obter estatísticas de widgets
-      const widgets = await storage.getAllChatWidgets();
+      let widgets = [];
+      let widgetSessions = [];
+      let widgetMessages = [];
+      
+      try {
+        widgets = await storage.getAllChatWidgets();
+        // Buscar apenas as sessões dos widgets (evita inconsistências)
+        const widgetIds = widgets.map(widget => widget.id);
+        widgetSessions = [];
+        
+        // Para cada widget, buscar suas sessões
+        for (const widgetId of widgetIds) {
+          const sessions = await storage.getWidgetChatSessions(widgetId);
+          widgetSessions = [...widgetSessions, ...sessions];
+        }
+        
+        // Para cada sessão, buscar suas mensagens
+        widgetMessages = [];
+        for (const session of widgetSessions) {
+          const messages = await storage.getWidgetSessionMessages(session.id);
+          widgetMessages = [...widgetMessages, ...messages];
+        }
+      } catch (err) {
+        console.error("Erro ao obter dados de widgets:", err);
+      }
+      
+      // Calcular estatísticas de chat
+      let chatSessions = [];
+      let chatMessages = [];
+      
+      try {
+        // Buscar sessões de cada usuário
+        for (const user of allUsers) {
+          const userSessions = await storage.getUserChatSessions(user.id);
+          chatSessions = [...chatSessions, ...userSessions];
+          
+          // Para cada sessão, buscar suas mensagens
+          for (const session of userSessions) {
+            const messages = await storage.getSessionMessages(session.id);
+            chatMessages = [...chatMessages, ...messages];
+          }
+        }
+      } catch (err) {
+        console.error("Erro ao obter dados de chat:", err);
+      }
+      
+      const activeSessions = chatSessions.filter(session => !session.ended_at);
       const activeWidgets = widgets.filter(widget => widget.is_active);
-      const widgetSessions = await storage.getAllWidgetChatSessions();
-      const widgetMessages = await storage.getAllWidgetChatMessages();
       
       // Calcular usuários impactados pelos widgets (visitantes únicos)
       const uniqueVisitorIds = new Set(widgetSessions.map(session => session.visitor_id));
@@ -1597,7 +1637,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Erro ao obter estatísticas:", error);
       res.status(500).json({ 
         message: "Erro ao obter estatísticas",
-        error: error.message
+        error: error instanceof Error ? error.message : String(error)
       });
     }
   });
