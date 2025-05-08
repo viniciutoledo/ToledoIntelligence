@@ -188,7 +188,7 @@ export function TrainingDocuments() {
     resetDocumentStatusMutation.mutate(documentId);
   };
   
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string, document?: any) => {
     switch (status) {
       case "pending":
         return (
@@ -198,14 +198,32 @@ export function TrainingDocuments() {
         );
       case "processing":
         return (
-          <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">
-            <CircleDashed className="h-3 w-3 mr-1" /> {t("admin.training.statusTypes.processing")}
-          </Badge>
+          <div className="flex flex-col gap-1">
+            <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">
+              <CircleDashed className="h-3 w-3 mr-1" /> {t("admin.training.statusTypes.processing")} {document?.progress ? `(${document.progress}%)` : ''}
+            </Badge>
+            {document?.progress !== null && document?.progress !== undefined && (
+              <div className="w-full">
+                <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-blue-500 rounded-full transition-all duration-500"
+                    style={{ width: `${document.progress || 0}%` }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
         );
       case "completed":
         return (
           <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
             <CircleCheck className="h-3 w-3 mr-1" /> {t("admin.training.statusTypes.completed")}
+          </Badge>
+        );
+      case "indexed":
+        return (
+          <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100">
+            <CircleCheck className="h-3 w-3 mr-1" /> {t("admin.training.statusTypes.indexed") || "Treinado"}
           </Badge>
         );
       case "error":
@@ -438,7 +456,7 @@ export function TrainingDocuments() {
                       {t(`admin.training.${document.document_type}Type`)}
                     </div>
                   </TableCell>
-                  <TableCell>{getStatusBadge(document.status)}</TableCell>
+                  <TableCell>{getStatusBadge(document.status, document)}</TableCell>
                   <TableCell>
                     {format(new Date(document.created_at), "dd/MM/yyyy HH:mm")}
                   </TableCell>
