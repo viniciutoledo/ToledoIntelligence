@@ -8,6 +8,7 @@ import { planPricing } from "@shared/schema";
 import path from "path";
 import fs from "fs";
 import { startDocumentMonitor } from "./document-monitor";
+import { initializeSecuritySettings } from "./security-settings";
 
 const app = express();
 app.use(express.json());
@@ -181,6 +182,13 @@ app.use((req, res, next) => {
       console.log('Preços dos planos verificados/inicializados com sucesso');
     } catch (error) {
       console.error('Erro ao inicializar preços dos planos:', error);
+    }
+    
+    // Inicializar configurações de segurança
+    try {
+      await initializeSecuritySettings();
+    } catch (error) {
+      console.error('Erro ao inicializar configurações de segurança:', error);
     }
   } catch (error) {
     console.error('Erro ao sincronizar o esquema do banco de dados:', error);
