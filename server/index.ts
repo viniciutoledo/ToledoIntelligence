@@ -216,7 +216,7 @@ app.use((req, res, next) => {
   }, () => {
     log(`serving on port ${port}`);
     
-    // Iniciar monitoramento automático de documentos (verificação a cada 15 minutos)
-    startDocumentMonitor(15);
+    // Iniciar monitoramento automático de documentos (verificação a cada 2 minutos para testes)
+    startDocumentMonitor(2);
   });
 })();

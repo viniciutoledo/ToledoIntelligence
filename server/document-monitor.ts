@@ -9,7 +9,8 @@ import { storage } from './storage';
 import { logAction } from './audit';
 
 // Tempo máximo (em minutos) que um documento pode ficar em estado "processing"
-const MAX_PROCESSING_TIME_MINUTES = 30; 
+// Para testes, estamos usando um valor temporariamente baixo
+const MAX_PROCESSING_TIME_MINUTES = 5; // Normalmente seria 30 
 
 /**
  * Verifica documentos travados em processamento e tenta recuperá-los
@@ -88,13 +89,13 @@ export function startDocumentMonitor(intervalMinutes = 10) {
   
   console.log(`Iniciando monitoramento automático de documentos travados a cada ${intervalMinutes} minutos`);
   
-  // Executar uma verificação inicial após 1 minuto
+  // Executar uma verificação inicial mais rápido (após 10 segundos)
   setTimeout(() => {
     checkStuckDocuments();
     
     // Configurar intervalo regular após a verificação inicial
     setInterval(checkStuckDocuments, interval);
-  }, 60 * 1000);
+  }, 10 * 1000);
   
   return true;
 }
