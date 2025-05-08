@@ -51,7 +51,7 @@ export async function checkStuckDocuments() {
       
       // Registrar no log de auditoria
       await logAction({
-        userId: 0, // Sistema
+        userId: null, // Sistema (usando null para representar o sistema)
         action: "document_auto_recovery",
         details: { 
           documentId: doc.id, 
