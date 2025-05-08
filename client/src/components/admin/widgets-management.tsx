@@ -98,7 +98,7 @@ const widgetFormSchema = z.object({
 type WidgetFormValues = z.infer<typeof widgetFormSchema>;
 
 // Componente principal
-export default function WidgetsManagement() {
+export function WidgetsManagement() {
   const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -2822,3 +2822,4 @@ export default function WidgetsManagement() {
     </div>
   );
 }
+

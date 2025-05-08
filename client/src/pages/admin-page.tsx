@@ -9,7 +9,7 @@ import { AdminDashboard } from "@/components/admin/dashboard";
 import { TrainingPanel } from "@/components/admin/training-panel";
 import PlanManagement from "@/components/admin/plan-management";
 import PlanPricing from "@/components/admin/plan-pricing";
-import WidgetsManagement from "@/components/admin/widgets-management";
+import { WidgetsManagement } from "@/components/admin/widgets-management";
 import LlmUsageLogs from "@/components/admin/llm-usage-logs";
 import { UnifiedSettings } from "@/components/admin/unified-settings";
 import { LlmProvider } from "@/hooks/use-llm";
