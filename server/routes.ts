@@ -4760,6 +4760,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Rota para obter partes adicionais de uma resposta longa
+  app.get("/api/widgets/message-parts", async (req, res) => {
+    try {
+      const messageId = req.query.message_id as string;
+      const sessionId = req.query.session_id as string;
+      
+      if (!messageId || !sessionId) {
+        return res.status(400).json({ 
+          message: "message_id e session_id são obrigatórios" 
+        });
+      }
+      
+      // Converter para números e verificar se são válidos
+      const message_id = parseInt(messageId);
+      const session_id = parseInt(sessionId);
+      
+      if (isNaN(message_id) || isNaN(session_id)) {
+        return res.status(400).json({ 
+          message: "message_id ou session_id inválidos" 
+        });
+      }
+      
+      // Buscar a mensagem original para verificar se é uma resposta da IA
+      const originalMessage = await storage.getWidgetChatMessage(message_id);
+      if (!originalMessage) {
+        return res.status(404).json({ message: "Mensagem não encontrada" });
+      }
+      
+      if (originalMessage.is_user) {
+        return res.status(400).json({ 
+          message: "Apenas mensagens da IA podem ter partes adicionais" 
+        });
+      }
+      
+      if (originalMessage.session_id !== session_id) {
+        return res.status(403).json({ 
+          message: "A mensagem não pertence à sessão informada" 
+        });
+      }
+      
+      // Buscar todas as mensagens da sessão
+      const allMessages = await storage.getWidgetSessionMessages(session_id);
+      
+      // Filtrar para obter apenas as mensagens da IA que vieram DEPOIS da mensagem original
+      const subsequentAiMessages = allMessages
+        .filter(msg => 
+          !msg.is_user && 
+          msg.id > originalMessage.id && 
+          msg.message_type === "text"
+        )
+        .sort((a, b) => a.id - b.id); // Ordenar por ID para garantir a sequência correta
+      
+      // Retornar as partes adicionais
+      res.json({
+        originalMessage,
+        additionalParts: subsequentAiMessages,
+        hasMoreParts: subsequentAiMessages.length > 0
+      });
+    } catch (error) {
+      console.error("Erro ao buscar partes adicionais de mensagem:", error);
+      res.status(500).json({ message: "Erro ao buscar partes adicionais" });
+    }
+  });
+  
   // ===== FIM DAS ROTAS DE WIDGETS =====
 
   const httpServer = createServer(app);
