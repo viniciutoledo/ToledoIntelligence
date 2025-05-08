@@ -33,6 +33,8 @@ export interface IStorage {
   
   // Tópicos técnicos para busca externa
   getAdditionalTechnicalTopics(): Promise<string[]>;
+  getTechnicalTopics(): Promise<TechnicalTopic[]>;
+  getTechnicalTopicByName(topic: string): Promise<TechnicalTopic | undefined>;
   addTechnicalTopic(topic: string): Promise<boolean>;
   updateTechnicalTopicUsage(topic: string): Promise<boolean>;
   
@@ -215,6 +217,16 @@ export class MemStorage implements IStorage {
   // Implementar métodos para tópicos técnicos
   async getAdditionalTechnicalTopics(): Promise<string[]> {
     return [];
+  }
+  
+  async getTechnicalTopics(): Promise<TechnicalTopic[]> {
+    console.log('[MemStorage] Simulando obtenção de tópicos técnicos');
+    return [];
+  }
+  
+  async getTechnicalTopicByName(topic: string): Promise<TechnicalTopic | undefined> {
+    console.log(`[MemStorage] Simulando obtenção de tópico técnico por nome: ${topic}`);
+    return undefined;
   }
   
   async addTechnicalTopic(topic: string): Promise<boolean> {
