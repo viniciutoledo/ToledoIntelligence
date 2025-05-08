@@ -14,7 +14,7 @@ import {
   Globe, 
   Cog, 
   AlertCircle, 
-  InfoIcon, 
+  Info, 
   ExternalLink,
   Wrench
 } from "lucide-react";
@@ -189,7 +189,7 @@ export function UnifiedSettings() {
                 <div className="space-y-6">
                   <div className="bg-blue-50 p-4 rounded-md mb-4">
                     <h3 className="font-medium text-blue-700 flex items-center mb-2">
-                      <InfoIcon className="h-4 w-4 mr-2" />
+                      <Info className="h-4 w-4 mr-2" />
                       Sobre esta configuração
                     </h3>
                     <p className="text-sm text-blue-600">

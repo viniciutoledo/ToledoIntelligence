@@ -709,77 +709,86 @@ export function WidgetsManagement() {
 
       {/* Lista de widgets */}
       {widgets && widgets.length > 0 ? (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>{t("Nome")}</TableHead>
-              <TableHead>{t("Status")}</TableHead>
-              <TableHead>{t("Criado em")}</TableHead>
-              <TableHead>{t("Domínios permitidos")}</TableHead>
-              <TableHead className="w-[100px]">{t("Ações")}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {widgets.map((widget) => (
-              <TableRow key={widget.id}>
-                <TableCell className="font-medium">{widget.name}</TableCell>
-                <TableCell>
-                  <Badge variant={widget.is_active ? "default" : "secondary"}>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {widgets.map((widget) => (
+            <Card key={widget.id} className="overflow-hidden">
+              <CardHeader className="p-4 pb-2 bg-gradient-to-r from-primary-50 to-accent-50">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <CardTitle className="text-lg">{widget.name}</CardTitle>
+                    <CardDescription>
+                      {t("Criado em")} {new Date(widget.created_at).toLocaleDateString()}
+                    </CardDescription>
+                  </div>
+                  <Badge variant={widget.is_active ? "default" : "secondary"} className="ml-2">
                     {widget.is_active ? t("Ativo") : t("Inativo")}
                   </Badge>
-                </TableCell>
-                <TableCell>
-                  {new Date(widget.created_at).toLocaleDateString()}
-                </TableCell>
-                <TableCell>
-                  {widget.allowed_domains && widget.allowed_domains.length > 0 
-                    ? widget.allowed_domains.length 
-                    : t("Todos")}
-                </TableCell>
-                <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="h-8 w-8 p-0">
-                        <span className="sr-only">{t("Abrir menu")}</span>
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleEditWidget(widget.id)}>
-                        <Edit className="mr-2 h-4 w-4" />
-                        {t("Editar")}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={() => handleToggleWidgetStatus(widget.id, widget.is_active)}
+                </div>
+              </CardHeader>
+              <CardContent className="p-4 pt-2">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center text-sm text-muted-foreground">
+                      <Globe className="h-4 w-4 mr-1" />
+                      <span>
+                        {widget.allowed_domains && widget.allowed_domains.length > 0 
+                          ? `${widget.allowed_domains.length} ${t("domínios")}` 
+                          : t("Todos os domínios")}
+                      </span>
+                    </div>
+                    
+                    <div className="flex gap-2">
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        onClick={() => copyToClipboard(widget.api_key, t("API key copiada"))}
+                        title={t("Copiar API Key")}
                       >
-                        <Globe className="mr-2 h-4 w-4" />
-                        {widget.is_active ? t("Desativar") : t("Ativar")}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => copyToClipboard(widget.api_key, t("API key copiada para a área de transferência"))}>
-                        <Copy className="mr-2 h-4 w-4" />
-                        {t("Copiar API Key")}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={() => copyToClipboard(getFullEmbedCode(widget).scriptCode, t("Código de incorporação copiado"))}
+                        <Key className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        onClick={() => copyToClipboard(getFullEmbedCode(widget).scriptCode, t("Código copiado"))}
+                        title={t("Copiar código HTML")}
                         className="text-blue-600"
                       >
-                        <Copy className="mr-2 h-4 w-4" />
-                        {t("Copiar código HTML")}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={() => handleDeleteWidget(widget.id)}
-                        className="text-red-600"
+                        <Code2 className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        onClick={() => handleEditWidget(widget.id)}
+                        title={t("Editar widget")}
                       >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        {t("Excluir")}
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-between mt-4">
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => handleToggleWidgetStatus(widget.id, widget.is_active)}
+                      className="w-[48%]"
+                    >
+                      {widget.is_active ? t("Desativar") : t("Ativar")}
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => handleDeleteWidget(widget.id)}
+                      className="w-[48%] text-red-600 hover:text-red-700 hover:bg-red-50"
+                    >
+                      {t("Excluir")}
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       ) : (
         <Card>
           <CardContent className="py-10 flex flex-col items-center justify-center">
