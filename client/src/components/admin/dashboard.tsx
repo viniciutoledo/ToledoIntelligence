@@ -80,10 +80,10 @@ export function AdminDashboard() {
                   <div>
                     <CardDescription>{t("admin.users")}</CardDescription>
                     <CardTitle className="text-3xl font-bold mt-2">
-                      {stats.userCount}
+                      {displayStats.userCount}
                     </CardTitle>
                     <div className="text-sm text-neutral-500 mt-1">
-                      {stats.technicianCount} {t("auth.technician")} / {stats.adminCount} {t("auth.admin")}
+                      {displayStats.technicianCount} {t("auth.technician")} / {displayStats.adminCount} {t("auth.admin")}
                     </div>
                   </div>
                   <div className="bg-blue-100 p-3 rounded-full">
@@ -93,11 +93,11 @@ export function AdminDashboard() {
                 <div className="mt-4 text-sm">
                   <div className="flex justify-between">
                     <span>{t("admin.active")}</span>
-                    <span className="font-medium">{stats.activeUsers}</span>
+                    <span className="font-medium">{displayStats.activeUsers}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>{t("admin.blocked")}</span>
-                    <span className="font-medium">{stats.blockedUsers}</span>
+                    <span className="font-medium">{displayStats.blockedUsers}</span>
                   </div>
                 </div>
               </CardContent>
@@ -110,10 +110,10 @@ export function AdminDashboard() {
                   <div>
                     <CardDescription>{t("admin.chatSessions")}</CardDescription>
                     <CardTitle className="text-3xl font-bold mt-2">
-                      {stats.totalChatSessions}
+                      {displayStats.totalChatSessions}
                     </CardTitle>
                     <div className="text-sm text-neutral-500 mt-1">
-                      {stats.activeChatSessions} {t("admin.activeSessions")}
+                      {displayStats.activeChatSessions} {t("admin.activeSessions")}
                     </div>
                   </div>
                   <div className="bg-green-100 p-3 rounded-full">
@@ -130,7 +130,7 @@ export function AdminDashboard() {
                   <div>
                     <CardDescription>{t("admin.totalMessages")}</CardDescription>
                     <CardTitle className="text-3xl font-bold mt-2">
-                      {stats.messageCount}
+                      {displayStats.messageCount}
                     </CardTitle>
                   </div>
                   <div className="bg-purple-100 p-3 rounded-full">
@@ -147,8 +147,8 @@ export function AdminDashboard() {
                   <div>
                     <CardDescription>{t("admin.avgResponseTime")}</CardDescription>
                     <CardTitle className="text-3xl font-bold mt-2">
-                      {stats.averageResponseTime > 0 
-                        ? `${stats.averageResponseTime.toFixed(1)}s` 
+                      {displayStats.averageResponseTime > 0 
+                        ? `${displayStats.averageResponseTime.toFixed(1)}s` 
                         : "-"}
                     </CardTitle>
                   </div>
@@ -170,10 +170,10 @@ export function AdminDashboard() {
                   <div>
                     <CardDescription>{t("admin.widgetsTotal")}</CardDescription>
                     <CardTitle className="text-3xl font-bold mt-2">
-                      {stats.widgetCount}
+                      {displayStats.widgetCount}
                     </CardTitle>
                     <div className="text-sm text-neutral-500 mt-1">
-                      {stats.activeWidgets} {t("admin.active")}
+                      {displayStats.activeWidgets} {t("admin.active")}
                     </div>
                   </div>
                   <div className="bg-indigo-100 p-3 rounded-full">
@@ -190,10 +190,10 @@ export function AdminDashboard() {
                   <div>
                     <CardDescription>{t("admin.widgetSessions")}</CardDescription>
                     <CardTitle className="text-3xl font-bold mt-2">
-                      {stats.widgetSessions}
+                      {displayStats.widgetSessions}
                     </CardTitle>
                     <div className="text-sm text-neutral-500 mt-1">
-                      {stats.widgetUsersImpacted} {t("admin.uniqueVisitors")}
+                      {displayStats.widgetUsersImpacted} {t("admin.uniqueVisitors")}
                     </div>
                   </div>
                   <div className="bg-cyan-100 p-3 rounded-full">
@@ -210,7 +210,7 @@ export function AdminDashboard() {
                   <div>
                     <CardDescription>{t("admin.widgetMessages")}</CardDescription>
                     <CardTitle className="text-3xl font-bold mt-2">
-                      {stats.widgetMessages}
+                      {displayStats.widgetMessages}
                     </CardTitle>
                     <div className="text-sm text-neutral-500 mt-1">
                       {t("admin.widgetInteractions")}
