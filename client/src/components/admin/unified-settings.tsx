@@ -69,6 +69,92 @@ export function UnifiedSettings() {
   const [logRetention, setLogRetention] = useState("90");
   const [isLoadingSystem, setIsLoadingSystem] = useState(false);
   
+  // Handlers para os controles da aba Sistema
+  const toggleRequire2FA = async (newValue: boolean) => {
+    try {
+      setIsLoadingSystem(true);
+      setRequire2FA(newValue);
+      
+      const response = await apiRequest("POST", "/api/admin/system/settings", {
+        key: "require2FA",
+        value: newValue.toString()
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        showMessage(`Autenticação de dois fatores ${newValue ? 'exigida' : 'opcional'} para administradores`, "success");
+      } else {
+        showMessage(data.message || "Erro ao atualizar configuração", "error");
+        // Reverter mudança visual se a API falhar
+        setRequire2FA(!newValue);
+      }
+    } catch (error) {
+      console.error("Erro ao atualizar configuração 2FA:", error);
+      showMessage("Erro ao atualizar configuração de autenticação", "error");
+      // Reverter mudança visual se ocorrer erro
+      setRequire2FA(!newValue);
+    } finally {
+      setIsLoadingSystem(false);
+    }
+  };
+  
+  const handleLogLevelChange = async (newLevel: string) => {
+    try {
+      setIsLoadingSystem(true);
+      const oldLevel = logLevel;
+      setLogLevel(newLevel);
+      
+      const response = await apiRequest("POST", "/api/admin/system/log-level", {
+        level: newLevel
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        const nivelTexto = newLevel === 'low' ? 'Básico' : newLevel === 'medium' ? 'Médio' : 'Detalhado';
+        showMessage(`Nível de detalhe dos logs alterado para ${nivelTexto}`, "success");
+      } else {
+        showMessage(data.message || "Erro ao atualizar nível de logs", "error");
+        setLogLevel(oldLevel); // Reverter em caso de erro
+      }
+    } catch (error) {
+      console.error("Erro ao atualizar nível de logs:", error);
+      showMessage("Erro ao atualizar nível de logs", "error");
+    } finally {
+      setIsLoadingSystem(false);
+    }
+  };
+  
+  const handleLogRetentionChange = async (newRetention: string) => {
+    try {
+      setIsLoadingSystem(true);
+      const oldRetention = logRetention;
+      setLogRetention(newRetention);
+      
+      const response = await apiRequest("POST", "/api/admin/system/log-retention", {
+        days: parseInt(newRetention)
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        const periodText = newRetention === '30' ? '30 dias' : 
+                          newRetention === '90' ? '90 dias' : 
+                          newRetention === '180' ? '6 meses' : '1 ano';
+        showMessage(`Período de retenção de logs alterado para ${periodText}`, "success");
+      } else {
+        showMessage(data.message || "Erro ao atualizar período de retenção", "error");
+        setLogRetention(oldRetention); // Reverter em caso de erro
+      }
+    } catch (error) {
+      console.error("Erro ao atualizar período de retenção:", error);
+      showMessage("Erro ao atualizar período de retenção de logs", "error");
+    } finally {
+      setIsLoadingSystem(false);
+    }
+  };
+  
   // Carregar configurações do sistema
   useEffect(() => {
     const fetchSystemSettings = async () => {
@@ -191,54 +277,6 @@ export function UnifiedSettings() {
     showMessage("Configurações avançadas de segurança em desenvolvimento. Estará disponível na próxima atualização.");
   };
   
-  const handleLogLevelChange = async (level: string) => {
-    try {
-      setIsLoadingSystem(true);
-      
-      const response = await apiRequest("POST", "/api/admin/system/log-level", {
-        level
-      });
-      
-      const data = await response.json();
-      
-      if (data.success) {
-        setLogLevel(level);
-        showMessage(data.message, "success");
-      } else {
-        showMessage(data.message, "error");
-      }
-    } catch (error) {
-      console.error("Erro ao alterar nível de log:", error);
-      showMessage("Erro ao alterar nível de log", "error");
-    } finally {
-      setIsLoadingSystem(false);
-    }
-  };
-  
-  const handleLogRetentionChange = async (days: string) => {
-    try {
-      setIsLoadingSystem(true);
-      
-      const response = await apiRequest("POST", "/api/admin/system/log-retention", {
-        days: Number(days)
-      });
-      
-      const data = await response.json();
-      
-      if (data.success) {
-        setLogRetention(days);
-        showMessage(data.message, "success");
-      } else {
-        showMessage(data.message, "error");
-      }
-    } catch (error) {
-      console.error("Erro ao alterar período de retenção de logs:", error);
-      showMessage("Erro ao alterar período de retenção de logs", "error");
-    } finally {
-      setIsLoadingSystem(false);
-    }
-  };
-  
   const toggleAutoRegister = async (enabled: boolean) => {
     try {
       setIsLoadingSystem(true);
@@ -258,30 +296,6 @@ export function UnifiedSettings() {
     } catch (error) {
       console.error("Erro ao alterar configuração de auto-registro:", error);
       showMessage("Erro ao alterar configuração de auto-registro", "error");
-    } finally {
-      setIsLoadingSystem(false);
-    }
-  };
-  
-  const toggleRequire2FA = async (enabled: boolean) => {
-    try {
-      setIsLoadingSystem(true);
-      
-      const response = await apiRequest("POST", "/api/admin/system/toggle-require-2fa", {
-        enabled
-      });
-      
-      const data = await response.json();
-      
-      if (data.success) {
-        setRequire2FA(enabled);
-        showMessage(data.message, "success");
-      } else {
-        showMessage(data.message, "error");
-      }
-    } catch (error) {
-      console.error("Erro ao alterar configuração de 2FA:", error);
-      showMessage("Erro ao alterar configuração de 2FA", "error");
     } finally {
       setIsLoadingSystem(false);
     }

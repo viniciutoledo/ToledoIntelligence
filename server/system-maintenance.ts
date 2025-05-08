@@ -183,11 +183,11 @@ export class PostgresSystemMaintenanceService implements SystemMaintenanceServic
         success: true,
         message: `Período de retenção de logs alterado para ${periodText}`
       };
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Erro ao definir retenção de log:', error);
       return {
         success: false,
-        message: `Erro ao definir retenção de log: ${error.message}`
+        message: `Erro ao definir retenção de log: ${error instanceof Error ? error.message : String(error)}`
       };
     }
   }
