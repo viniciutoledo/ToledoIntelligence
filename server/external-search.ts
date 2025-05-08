@@ -111,7 +111,8 @@ export async function searchExternalKnowledge(
   widgetId?: string
 ): Promise<string | null> {
   // Verificar se a consulta deve usar busca externa
-  if (!shouldUseExternalSearch(query)) {
+  const shouldSearch = await shouldUseExternalSearch(query);
+  if (!shouldSearch) {
     console.log('Consulta não se qualifica para busca externa:', query);
     return null;
   }
@@ -237,14 +238,19 @@ export async function searchExternalKnowledge(
       if (!result.trim()) {
         console.log('Nenhuma busca externa retornou resultados úteis. Gerando resposta de fallback.');
         
-        // Identificar temas técnicos na consulta para personalizar a resposta
-        const temas = technicalTopicsInQuery(query);
-        
-        if (temas.length > 0) {
-          // Criar uma resposta de fallback personalizada
-          result = generateFallbackResponse(query, temas, language);
-        } else {
-          console.log('Nenhum tema técnico identificado para fallback. Retornando null.');
+        try {
+          // Identificar temas técnicos na consulta para personalizar a resposta
+          const temas = await technicalTopicsInQuery(query);
+          
+          if (temas.length > 0) {
+            // Criar uma resposta de fallback personalizada
+            result = generateFallbackResponse(query, temas, language);
+          } else {
+            console.log('Nenhum tema técnico identificado para fallback. Retornando null.');
+            return null;
+          }
+        } catch (error) {
+          console.error('Erro ao identificar temas técnicos para fallback:', error);
           return null;
         }
       }
@@ -371,13 +377,21 @@ async function searchWithSearx(query: string, language: 'pt' | 'en' = 'pt'): Pro
  * @param query A consulta a ser verificada
  * @returns true se a consulta deve usar busca externa, false caso contrário
  */
-export function shouldUseExternalSearch(query: string): boolean {
-  // Verificar se a consulta contém algum dos temas técnicos
-  const lowerQuery = query.toLowerCase();
-  return getTechnicalTopics().some(topic => 
-    lowerQuery.includes(topic) || 
-    lowerQuery.includes(topic + 's')  // Plural
-  );
+export async function shouldUseExternalSearch(query: string): Promise<boolean> {
+  try {
+    // Verificar se a consulta contém algum dos temas técnicos
+    const lowerQuery = query.toLowerCase();
+    const topics = await getTechnicalTopics();
+    
+    return topics.some((topic: string) => 
+      lowerQuery.includes(topic) || 
+      lowerQuery.includes(topic + 's')  // Plural
+    );
+  } catch (error) {
+    console.error('Erro ao verificar se consulta deve usar busca externa:', error);
+    // Em caso de erro, assumir que não deve usar busca externa
+    return false;
+  }
 }
 
 /**
@@ -386,12 +400,20 @@ export function shouldUseExternalSearch(query: string): boolean {
  * @param query A consulta a ser analisada
  * @returns Array com os temas técnicos encontrados na consulta
  */
-function technicalTopicsInQuery(query: string): string[] {
-  const lowerQuery = query.toLowerCase();
-  return getTechnicalTopics().filter(topic => 
-    lowerQuery.includes(topic) || 
-    lowerQuery.includes(topic + 's')  // Plural
-  );
+async function technicalTopicsInQuery(query: string): Promise<string[]> {
+  try {
+    const lowerQuery = query.toLowerCase();
+    const topics = await getTechnicalTopics();
+    
+    return topics.filter((topic: string) => 
+      lowerQuery.includes(topic) || 
+      lowerQuery.includes(topic + 's')  // Plural
+    );
+  } catch (error) {
+    console.error('Erro ao identificar temas técnicos na consulta:', error);
+    // Em caso de erro, retornar array vazio
+    return [];
+  }
 }
 
 /**
@@ -434,13 +456,24 @@ function generateFallbackResponse(query: string, topics: string[], language: 'pt
   return response;
 }
 
+// Importar o módulo de armazenamento para salvar/recuperar tópicos adicionais
+import { storage } from './storage';
+
+/**
+ * Cache em memória para tópicos técnicos adicionais
+ * Será carregado do banco de dados na primeira chamada
+ */
+let additionalTopicsCache: string[] | null = null;
+
 /**
  * Retorna a lista de temas técnicos usados para identificar consultas que podem se beneficiar de buscas externas
+ * Combina a lista estática com tópicos adicionais aprendidos do banco de dados
  * 
  * @returns Array com todos os temas técnicos cadastrados
  */
-function getTechnicalTopics(): string[] {
-  return [
+async function getTechnicalTopics(): Promise<string[]> {
+  // Lista base estática de tópicos técnicos
+  const baseTopics = [
     // Componentes eletrônicos
     'componente',
     'circuito', 
@@ -525,6 +558,131 @@ function getTechnicalTopics(): string[] {
     'library',
     'código',
     'programação',
-    'debugger'
+    'debugger',
+    
+    // Componentes modernos
+    'iot',
+    'módulo',
+    'nodemcu',
+    'display',
+    'lcd',
+    'oled',
+    'tft',
+    'servo',
+    'motor',
+    'stepper',
+    'step-motor',
+    'servo-motor',
+    'brushless',
+    'dc-motor',
+    'shield',
+    'hat',
+    'expansão',
+    'rtc',
+    'relógio',
+    
+    // Novos padrões de comunicação
+    'lorawan',
+    'lora',
+    'sigfox',
+    'zigbee',
+    'thread',
+    'z-wave',
+    'mqtt',
+    'coap',
+    'websocket',
+    'bluetooth-le',
+    'ble',
+    'nfc',
+    'rf',
+    'infravermelho',
+    
+    // Componentes e termos específicos de PCB
+    'pcb',
+    'placa de circuito',
+    'trilha',
+    'via',
+    'pad',
+    'footprint',
+    'máscara',
+    'silkscreen',
+    'serigrafia',
+    'smd',
+    'pth',
+    'through-hole',
+    'montagem',
+    'dip',
+    'soic',
+    'qfp',
+    'bga',
+    
+    // Ferramentas
+    'osciloscópio',
+    'analisador lógico',
+    'analisador de espectro',
+    'gerador de sinais',
+    'fonte de alimentação',
+    'estação de solda',
+    'retrabalho',
   ];
+  
+  try {
+    // Carregar tópicos adicionais do banco de dados se ainda não estiverem em cache
+    if (additionalTopicsCache === null) {
+      const additionalTopics = await storage.getAdditionalTechnicalTopics();
+      
+      // Filtrar para remover duplicatas e tópicos vazios
+      if (additionalTopics && additionalTopics.length > 0) {
+        additionalTopicsCache = additionalTopics
+          .filter(topic => topic && topic.trim() !== '' && !baseTopics.includes(topic.trim().toLowerCase()));
+      } else {
+        additionalTopicsCache = [];
+      }
+    }
+    
+    // Combinar os tópicos base com os adicionais do cache
+    return [...baseTopics, ...additionalTopicsCache];
+  } catch (error) {
+    console.error('Erro ao recuperar tópicos técnicos adicionais:', error);
+    // Em caso de erro, retornar apenas a lista base
+    return baseTopics;
+  }
+}
+
+/**
+ * Adiciona um novo tópico técnico ao sistema para uso em futuras detecções
+ * 
+ * @param topic O novo tópico técnico a ser adicionado
+ * @returns true se o tópico foi adicionado com sucesso, false caso contrário
+ */
+export async function addTechnicalTopic(topic: string): Promise<boolean> {
+  if (!topic || topic.trim() === '') {
+    return false;
+  }
+  
+  const normalizedTopic = topic.trim().toLowerCase();
+  
+  try {
+    // Verificar se o tópico já existe na lista base ou na lista adicional
+    const allTopics = await getTechnicalTopics();
+    
+    if (allTopics.includes(normalizedTopic)) {
+      console.log(`Tópico "${normalizedTopic}" já existe na lista de tópicos técnicos`);
+      return false;
+    }
+    
+    // Adicionar o tópico ao banco de dados
+    await storage.addTechnicalTopic(normalizedTopic);
+    
+    // Atualizar o cache
+    if (additionalTopicsCache !== null) {
+      additionalTopicsCache.push(normalizedTopic);
+    }
+    
+    console.log(`Novo tópico técnico adicionado: "${normalizedTopic}"`);
+    return true;
+  } catch (error) {
+    console.error('Erro ao adicionar novo tópico técnico:', error);
+    return false;
+  }
 }
