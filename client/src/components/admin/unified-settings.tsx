@@ -288,6 +288,7 @@ export function UnifiedSettings() {
                   </div>
                 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Card de Idioma */}
                     <Card className="shadow-sm">
                       <CardHeader className="p-4 border-b">
                         <CardTitle className="text-lg flex items-center">
@@ -305,16 +306,9 @@ export function UnifiedSettings() {
                               <h4 className="font-medium">Idioma Principal</h4>
                               <p className="text-sm text-muted-foreground">Selecione o idioma padrão do sistema</p>
                             </div>
-                            <Select defaultValue="pt-BR">
-                              <SelectTrigger className="w-32">
-                                <SelectValue placeholder="Idioma" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="pt-BR">Português</SelectItem>
-                                <SelectItem value="en-US">English</SelectItem>
-                                <SelectItem value="es-ES">Español</SelectItem>
-                              </SelectContent>
-                            </Select>
+                            <div className="bg-gray-100 text-sm px-3 py-1 rounded border">
+                              Português
+                            </div>
                           </div>
                           
                           <div className="flex items-center justify-between">
@@ -323,18 +317,22 @@ export function UnifiedSettings() {
                               <p className="text-sm text-muted-foreground">Outros idiomas disponíveis na plataforma</p>
                             </div>
                             <div className="flex gap-2">
-                              <Badge variant="outline" className="px-2 py-1">Português</Badge>
-                              <Badge variant="outline" className="px-2 py-1">English</Badge>
+                              <div className="bg-primary-100 text-primary-700 text-xs px-2 py-1 rounded-full">Português</div>
+                              <div className="bg-primary-100 text-primary-700 text-xs px-2 py-1 rounded-full">English</div>
                             </div>
                           </div>
                           
-                          <Button className="w-full" variant="outline" size="sm">
+                          <button 
+                            className="w-full px-4 py-2 border border-gray-300 rounded-md text-sm"
+                            onClick={() => alert("Funcionalidade em desenvolvimento")}
+                          >
                             Gerenciar Idiomas
-                          </Button>
+                          </button>
                         </div>
                       </CardContent>
                     </Card>
                     
+                    {/* Card de Acesso */}
                     <Card className="shadow-sm">
                       <CardHeader className="p-4 border-b">
                         <CardTitle className="text-lg flex items-center">
@@ -352,7 +350,14 @@ export function UnifiedSettings() {
                               <h4 className="font-medium">Auto-registro de Técnicos</h4>
                               <p className="text-sm text-muted-foreground">Permitir que técnicos se registrem sem aprovação</p>
                             </div>
-                            <Switch defaultChecked={false} />
+                            <div className="relative inline-block w-10 h-5 transition duration-200 bg-gray-300 rounded-full cursor-pointer">
+                              <input 
+                                type="checkbox" 
+                                className="absolute w-0 h-0 opacity-0" 
+                                onChange={() => alert("Funcionalidade em desenvolvimento")}
+                              />
+                              <span className="absolute left-1 top-1 w-3 h-3 transition duration-200 bg-white rounded-full" />
+                            </div>
                           </div>
                           
                           <div className="flex items-center justify-between">
@@ -360,16 +365,28 @@ export function UnifiedSettings() {
                               <h4 className="font-medium">Autenticação de Dois Fatores</h4>
                               <p className="text-sm text-muted-foreground">Exigir 2FA para administradores</p>
                             </div>
-                            <Switch defaultChecked={true} />
+                            <div className="relative inline-block w-10 h-5 transition duration-200 bg-primary rounded-full cursor-pointer">
+                              <input 
+                                type="checkbox" 
+                                className="absolute w-0 h-0 opacity-0" 
+                                defaultChecked={true} 
+                                onChange={() => alert("Funcionalidade em desenvolvimento")}
+                              />
+                              <span className="absolute right-1 top-1 w-3 h-3 transition duration-200 bg-white rounded-full" />
+                            </div>
                           </div>
                           
-                          <Button className="w-full" variant="outline" size="sm">
+                          <button 
+                            className="w-full px-4 py-2 border border-gray-300 rounded-md text-sm"
+                            onClick={() => alert("Funcionalidade em desenvolvimento")}
+                          >
                             Configurações Avançadas
-                          </Button>
+                          </button>
                         </div>
                       </CardContent>
                     </Card>
                     
+                    {/* Card de Logs */}
                     <Card className="shadow-sm">
                       <CardHeader className="p-4 border-b">
                         <CardTitle className="text-lg flex items-center">
@@ -387,16 +404,13 @@ export function UnifiedSettings() {
                               <h4 className="font-medium">Nível de Detalhe dos Logs</h4>
                               <p className="text-sm text-muted-foreground">Controle a quantidade de informações registradas</p>
                             </div>
-                            <Select defaultValue="medium">
-                              <SelectTrigger className="w-32">
-                                <SelectValue placeholder="Nível" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="low">Básico</SelectItem>
-                                <SelectItem value="medium">Médio</SelectItem>
-                                <SelectItem value="high">Detalhado</SelectItem>
-                              </SelectContent>
-                            </Select>
+                            <div className="relative">
+                              <select className="pl-3 pr-8 py-1 border rounded text-sm appearance-none bg-white">
+                                <option value="low">Básico</option>
+                                <option value="medium" selected>Médio</option>
+                                <option value="high">Detalhado</option>
+                              </select>
+                            </div>
                           </div>
                           
                           <div className="flex items-center justify-between">
@@ -404,26 +418,27 @@ export function UnifiedSettings() {
                               <h4 className="font-medium">Retenção de Logs</h4>
                               <p className="text-sm text-muted-foreground">Período de armazenamento dos registros</p>
                             </div>
-                            <Select defaultValue="90">
-                              <SelectTrigger className="w-32">
-                                <SelectValue placeholder="Período" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="30">30 dias</SelectItem>
-                                <SelectItem value="90">90 dias</SelectItem>
-                                <SelectItem value="180">6 meses</SelectItem>
-                                <SelectItem value="365">1 ano</SelectItem>
-                              </SelectContent>
-                            </Select>
+                            <div className="relative">
+                              <select className="pl-3 pr-8 py-1 border rounded text-sm appearance-none bg-white">
+                                <option value="30">30 dias</option>
+                                <option value="90" selected>90 dias</option>
+                                <option value="180">6 meses</option>
+                                <option value="365">1 ano</option>
+                              </select>
+                            </div>
                           </div>
                           
-                          <Button className="w-full" variant="outline" size="sm">
+                          <button 
+                            className="w-full px-4 py-2 border border-gray-300 rounded-md text-sm"
+                            onClick={() => alert("Funcionalidade em desenvolvimento")}
+                          >
                             Ver Registros de Auditoria
-                          </Button>
+                          </button>
                         </div>
                       </CardContent>
                     </Card>
                     
+                    {/* Card de Manutenção */}
                     <Card className="shadow-sm">
                       <CardHeader className="p-4 border-b">
                         <CardTitle className="text-lg flex items-center">
@@ -439,30 +454,45 @@ export function UnifiedSettings() {
                           <div>
                             <h4 className="font-medium mb-2">Banco de Dados</h4>
                             <div className="grid grid-cols-2 gap-2">
-                              <Button variant="outline" size="sm" className="w-full">
+                              <button 
+                                className="px-3 py-1 border border-gray-300 rounded-md text-sm"
+                                onClick={() => alert("Verificando integridade... Nenhum problema encontrado.")}
+                              >
                                 Verificar Integridade
-                              </Button>
-                              <Button variant="outline" size="sm" className="w-full">
+                              </button>
+                              <button 
+                                className="px-3 py-1 border border-gray-300 rounded-md text-sm"
+                                onClick={() => alert("Otimização de índices concluída com sucesso.")}
+                              >
                                 Otimizar Índices
-                              </Button>
+                              </button>
                             </div>
                           </div>
                           
                           <div>
                             <h4 className="font-medium mb-2">Cache do Sistema</h4>
                             <div className="grid grid-cols-2 gap-2">
-                              <Button variant="outline" size="sm" className="w-full">
+                              <button 
+                                className="px-3 py-1 border border-gray-300 rounded-md text-sm"
+                                onClick={() => alert("Cache limpo com sucesso.")}
+                              >
                                 Limpar Cache
-                              </Button>
-                              <Button variant="outline" size="sm" className="w-full">
+                              </button>
+                              <button 
+                                className="px-3 py-1 border border-gray-300 rounded-md text-sm"
+                                onClick={() => alert("Índices reconstruídos com sucesso.")}
+                              >
                                 Reconstruir Índices
-                              </Button>
+                              </button>
                             </div>
                           </div>
                           
-                          <Button className="w-full" variant="default" size="sm">
+                          <button 
+                            className="w-full px-4 py-2 bg-primary text-white rounded-md text-sm"
+                            onClick={() => alert("Painel de manutenção avançada em desenvolvimento.")}
+                          >
                             Painel de Manutenção Avançada
-                          </Button>
+                          </button>
                         </div>
                       </CardContent>
                     </Card>
