@@ -265,7 +265,18 @@ async function processWithOpenAI(
       }
     }
     
-    // Inicializar cliente OpenAI
+    // Limpar a chave API de possíveis prefixos 'Bearer' ou aspas
+    if (typeof apiKey === 'string') {
+      // Remover prefixo 'Bearer' e aspas
+      apiKey = apiKey.replace(/^bearer\s+/i, '').replace(/["']/g, '').trim();
+      
+      // Verificar se a chave tem formato válido após limpeza
+      if (!apiKey.startsWith('sk-')) {
+        console.warn('AVISO: Chave OpenAI não começa com sk-, formato potencialmente inválido');
+      }
+    }
+    
+    // Inicializar cliente OpenAI com a chave limpa
     const openai = new OpenAI({ apiKey });
     
     // Realizar a chamada à API
@@ -333,7 +344,18 @@ async function processWithAnthropic(
       }
     }
     
-    // Inicializar cliente Anthropic
+    // Limpar a chave API de possíveis prefixos 'Bearer' ou aspas
+    if (typeof apiKey === 'string') {
+      // Remover prefixo 'Bearer' e aspas
+      apiKey = apiKey.replace(/^bearer\s+/i, '').replace(/["']/g, '').trim();
+      
+      // Verificar se a chave tem formato válido após limpeza
+      if (!apiKey.startsWith('sk-ant-')) {
+        console.warn('AVISO: Chave Anthropic não começa com sk-ant-, formato potencialmente inválido');
+      }
+    }
+    
+    // Inicializar cliente Anthropic com a chave limpa
     const anthropic = new Anthropic({ apiKey });
     
     // Realizar a chamada à API
