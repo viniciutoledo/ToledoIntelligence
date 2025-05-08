@@ -185,8 +185,12 @@ export async function processChatWithTrainedDocuments(
 - VCORE: tensão de núcleo do processador, variando de 0.6V a 1.2V dependendo da carga e configuração`;
     }
     
+    // Obter instruções de comportamento da configuração do LLM
+    const behaviorInstructions = llmConfig.behavior_instructions || '';
+    console.log(`Incorporando instruções de comportamento: ${behaviorInstructions ? 'Sim' : 'Não'}`);
+    
     // Construir prompt otimizado para RAG
-    const systemPrompt = `
+    let systemPrompt = `
     INSTRUÇÕES TÉCNICAS PARA MANUTENÇÃO DE PLACAS ELETRÔNICAS:
     
     Você é um assistente especializado em manutenção de placas de circuito. Use APENAS as informações dos documentos fornecidos.
@@ -207,6 +211,18 @@ export async function processChatWithTrainedDocuments(
     
     RESPOSTA (use SOMENTE informações dos documentos acima, não invente informações):
     `;
+    
+    // Adicionar instruções de comportamento se existirem
+    if (behaviorInstructions && behaviorInstructions.trim().length > 0) {
+      console.log('Adicionando instruções de comportamento personalizadas ao prompt');
+      
+      // Adicionar ao início do prompt para dar prioridade máxima
+      systemPrompt = `
+INSTRUÇÕES DE COMPORTAMENTO E PERSONALIDADE:
+${behaviorInstructions}
+
+${systemPrompt}`;
+    }
     
     // Usar a API apropriada para responder
     let response: string;
@@ -271,8 +287,12 @@ export async function processChatWithTrainedDocuments(
         if (externalInfo) {
           console.log('Busca externa retornou informações. Gerando resposta combinada');
           
+          // Obter instruções de comportamento da configuração do LLM para busca externa
+          const behaviorInstructions = llmConfig.behavior_instructions || '';
+          console.log(`Busca Externa - Incorporando instruções de comportamento: ${behaviorInstructions ? 'Sim' : 'Não'}`);
+          
           // Criar um prompt para combinar as informações externas com uma resposta
-          const combinedPrompt = `
+          let combinedPrompt = `
           Você é um assistente especializado em manutenção de placas de circuito.
           
           A pergunta original foi: "${message}"
@@ -287,6 +307,18 @@ export async function processChatWithTrainedDocuments(
           Mantenha um tom profissional e técnico.
           Mencione que as informações vieram de fontes externas.
           `;
+          
+          // Adicionar instruções de comportamento se existirem
+          if (behaviorInstructions && behaviorInstructions.trim().length > 0) {
+            console.log('Busca Externa - Adicionando instruções de comportamento personalizadas');
+            
+            // Adicionar ao início do prompt para dar prioridade máxima
+            combinedPrompt = `
+INSTRUÇÕES DE COMPORTAMENTO E PERSONALIDADE:
+${behaviorInstructions}
+
+${combinedPrompt}`;
+          }
           
           // Reprocessar com o prompt combinado
           let combinedResponse: string;
@@ -530,11 +562,27 @@ async function processRegularChat(
     const apiKey = llmConfig.api_key;
     const temperature = llmConfig.temperature || '0.3';
     
+    // Obter instruções de comportamento da configuração do LLM
+    const behaviorInstructions = llmConfig.behavior_instructions || '';
+    console.log(`Chat Regular - Incorporando instruções de comportamento: ${behaviorInstructions ? 'Sim' : 'Não'}`);
+    
     // Prompt padrão para modo sem documentos
-    const systemPrompt = `
+    let systemPrompt = `
     Você é um assistente especializado em manutenção de placas de circuito, com conhecimento em eletrônica.
     Responda às perguntas do usuário com base em seu conhecimento geral.
     `;
+    
+    // Adicionar instruções de comportamento se existirem
+    if (behaviorInstructions && behaviorInstructions.trim().length > 0) {
+      console.log('Chat Regular - Adicionando instruções de comportamento personalizadas');
+      
+      // Adicionar ao início do prompt para dar prioridade máxima
+      systemPrompt = `
+INSTRUÇÕES DE COMPORTAMENTO E PERSONALIDADE:
+${behaviorInstructions}
+
+${systemPrompt}`;
+    }
     
     // Usar o provedor apropriado
     if (provider === 'openai') {
