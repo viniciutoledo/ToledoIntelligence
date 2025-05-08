@@ -390,8 +390,18 @@ export function UnifiedSettings() {
                               <p className="text-sm text-muted-foreground">Outros idiomas disponíveis na plataforma</p>
                             </div>
                             <div className="flex gap-2">
-                              <div className="bg-primary-100 text-primary-700 text-xs px-2 py-1 rounded-full">Português</div>
-                              <div className="bg-primary-100 text-primary-700 text-xs px-2 py-1 rounded-full">English</div>
+                              <div 
+                                className="bg-primary-100 text-primary-700 text-xs px-2 py-1 rounded-full cursor-pointer hover:bg-primary-200"
+                                onClick={() => showMessage("Português (Brasil) já é o idioma principal")}
+                              >
+                                Português
+                              </div>
+                              <div 
+                                className="bg-primary-100 text-primary-700 text-xs px-2 py-1 rounded-full cursor-pointer hover:bg-primary-200"
+                                onClick={() => showMessage("Você pode alternar para inglês nas configurações de conta")}
+                              >
+                                English
+                              </div>
                             </div>
                           </div>
                           
