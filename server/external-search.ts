@@ -6,6 +6,45 @@ import fetch from 'node-fetch';
 // Importar apenas funções essenciais para logging, sem depender do arquivo de auditoria
 import { logLlmUsage } from './llm';
 
+// Instâncias públicas do Searx (podem mudar com o tempo)
+const SEARX_INSTANCES = [
+  'https://searx.be',  
+  'https://search.mdosch.de',
+  'https://search.disroot.org',
+  'https://search.unlocked.link'
+];
+
+// Interface para os resultados da API do Searx
+interface SearxResult {
+  query: string;
+  number_of_results: number;
+  results: Array<{
+    title: string;
+    url: string;
+    content: string;
+    engine: string;
+    score?: number;
+    category?: string;
+    pretty_url?: string;
+    published_date?: string;
+  }>;
+  answers?: string[];
+  corrections?: string[];
+  infoboxes?: Array<{
+    infobox: string;
+    id: string;
+    content: string;
+    img_src?: string;
+    urls?: Array<{
+      title: string;
+      url: string;
+    }>;
+    attributes?: Record<string, string>;
+  }>;
+  suggestions?: string[];
+  unresponsive_engines?: string[];
+}
+
 // Interface para os resultados da API do DuckDuckGo
 interface DuckDuckGoResult {
   Abstract: string;
@@ -57,7 +96,7 @@ interface DuckDuckGoResult {
 }
 
 /**
- * Realiza uma busca externa usando a DuckDuckGo Instant Answer API
+ * Realiza uma busca externa usando Searx e DuckDuckGo como fallback
  * 
  * @param query A consulta a ser buscada
  * @param language Idioma da consulta ('pt' ou 'en')
@@ -76,8 +115,34 @@ export async function searchExternalKnowledge(
     console.log('Consulta não se qualifica para busca externa:', query);
     return null;
   }
+  
   try {
-    console.log(`Executando busca externa via DuckDuckGo para: "${query}"`);
+    // Primeiro tentar usar o Searx
+    console.log(`Tentando busca externa via Searx para: "${query}"`);
+    const searxResult = await searchWithSearx(query, language);
+    
+    if (searxResult) {
+      console.log('Busca Searx retornou resultados úteis');
+      
+      // Registrar o uso da busca externa via logLlmUsage
+      if (userId) {
+        const tokenEstimate = Math.floor(query.length / 4) + Math.floor(searxResult.length / 4);
+        await logLlmUsage(
+          "external-search-searx",
+          "text",
+          true,
+          userId,
+          widgetId,
+          tokenEstimate,
+          undefined
+        );
+      }
+      
+      return searxResult;
+    }
+    
+    // Se o Searx não retornou resultados, tentar o DuckDuckGo
+    console.log('Searx não retornou resultados úteis, tentando DuckDuckGo');
     
     // Adicionar indicadores de idioma à consulta se for português
     const formattedQuery = language === 'pt' 
@@ -94,7 +159,7 @@ export async function searchExternalKnowledge(
     const response = await fetch(url);
     
     if (!response.ok) {
-      throw new Error(`Erro na busca externa: ${response.statusText}`);
+      throw new Error(`Erro na busca DuckDuckGo: ${response.statusText}`);
     }
     
     // Processar a resposta
@@ -144,7 +209,7 @@ export async function searchExternalKnowledge(
     
     // Se não encontrou nada relevante, tentar extrair informações dos dados brutos
     if (!result.trim()) {
-      console.log('Busca não retornou resultados estruturados, tentando extrair de resultados brutos...');
+      console.log('Busca DuckDuckGo não retornou resultados estruturados, tentando extrair de resultados brutos...');
       
       // Tentar extrair de Results se disponível
       if (data.Results && data.Results.length > 0) {
@@ -170,7 +235,7 @@ export async function searchExternalKnowledge(
       
       // Se ainda não tiver resultados úteis, gerar uma resposta de fallback
       if (!result.trim()) {
-        console.log('Busca externa não retornou resultados úteis após processamento adicional. Gerando resposta de fallback.');
+        console.log('Nenhuma busca externa retornou resultados úteis. Gerando resposta de fallback.');
         
         // Identificar temas técnicos na consulta para personalizar a resposta
         const temas = technicalTopicsInQuery(query);
@@ -186,11 +251,11 @@ export async function searchExternalKnowledge(
     }
     
     // Registrar o uso da busca externa via logLlmUsage
-    if (userId) {
+    if (userId && result.trim()) {
       const tokenEstimate = Math.floor(query.length / 4) + Math.floor(result.length / 4);
       // Usar a função logLlmUsage com o formato correto
       await logLlmUsage(
-        "external-search",
+        "external-search-ddg",
         "text",
         true,
         userId,
@@ -204,6 +269,98 @@ export async function searchExternalKnowledge(
     return result.trim();
   } catch (error: any) {
     console.error('Erro ao executar busca externa:', error);
+    return null;
+  }
+}
+
+/**
+ * Realiza uma busca usando o Searx
+ * 
+ * @param query A consulta a ser buscada
+ * @param language Idioma da consulta ('pt' ou 'en')
+ * @returns Informações relevantes encontradas ou null se nada for encontrado
+ */
+async function searchWithSearx(query: string, language: 'pt' | 'en' = 'pt'): Promise<string | null> {
+  try {
+    console.log(`Executando busca via Searx para: "${query}"`);
+    
+    // Adicionar indicadores de idioma à consulta se for português
+    const formattedQuery = language === 'pt' 
+      ? `${query} português`
+      : query;
+    
+    // Codificar a consulta para uso na URL
+    const encodedQuery = encodeURIComponent(formattedQuery);
+    
+    // Tentar as instâncias do Searx em ordem até encontrar uma que responda
+    for (const baseUrl of SEARX_INSTANCES) {
+      try {
+        // Montar a URL para a API do Searx
+        const url = `${baseUrl}/search?q=${encodedQuery}&format=json&language=${language === 'pt' ? 'pt-BR' : 'en-US'}&categories=general`;
+        
+        // Realizar a requisição
+        const response = await fetch(url, { 
+          headers: {
+            'User-Agent': 'ToledoIA Search/1.0',
+            'Accept': 'application/json'
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Erro na busca Searx: ${response.statusText}`);
+        }
+        
+        // Processar a resposta
+        const data = await response.json() as SearxResult;
+        
+        // Construir o resultado formatado com as informações encontradas
+        let result = '';
+        
+        // Adicionar respostas diretas se disponíveis
+        if (data.answers && data.answers.length > 0) {
+          result += `Resposta: ${data.answers[0]}\n\n`;
+        }
+        
+        // Adicionar infoboxes se disponíveis
+        if (data.infoboxes && data.infoboxes.length > 0) {
+          const infobox = data.infoboxes[0];
+          result += `${infobox.infobox}: ${infobox.content}\n\n`;
+        }
+        
+        // Adicionar resultados da busca
+        if (data.results && data.results.length > 0) {
+          result += "Resultados encontrados:\n";
+          
+          // Limitar a 5 resultados para não sobrecarregar a resposta
+          const resultsToShow = data.results.slice(0, 5);
+          
+          for (const item of resultsToShow) {
+            result += `- ${item.title}\n  ${item.content.substring(0, 150)}${item.content.length > 150 ? '...' : ''}\n\n`;
+          }
+        }
+        
+        // Adicionar sugestões de termos relacionados
+        if (data.suggestions && data.suggestions.length > 0) {
+          result += "Termos relacionados: ";
+          result += data.suggestions.slice(0, 5).join(", ");
+          result += "\n\n";
+        }
+        
+        if (result.trim()) {
+          console.log('Busca Searx concluída com sucesso');
+          return result.trim();
+        }
+      } catch (error) {
+        console.warn(`Erro ao usar instância Searx ${baseUrl}:`, error);
+        // Continuar tentando com a próxima instância
+        continue;
+      }
+    }
+    
+    console.log('Nenhuma instância Searx retornou resultados úteis');
+    return null;
+  } catch (error) {
+    console.error('Erro ao executar busca Searx:', error);
     return null;
   }
 }
