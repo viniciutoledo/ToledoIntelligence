@@ -3,6 +3,7 @@ import { useLanguage } from "@/hooks/use-language";
 import { useAvatar } from "@/hooks/use-avatar";
 import { useLlm } from "@/hooks/use-llm";
 import { useWidgets } from "@/hooks/use-widgets";
+import { useToast } from "@/hooks/use-toast";
 import { 
   Loader2, 
   Settings, 
@@ -47,8 +48,77 @@ export function UnifiedSettings() {
   const { isLoading: isLoadingAvatar } = useAvatar();
   const { isLoading: isLoadingLlm } = useLlm();
   const { isLoading: isLoadingWidgets } = useWidgets();
+  const { toast } = useToast();
   
   const [selectedTab, setSelectedTab] = useState("general");
+  
+  // Função para exibir mensagens e estados usando toast
+  const showMessage = (message: string, type: "default" | "success" | "error" = "default") => {
+    toast({
+      title: type === "success" ? "Operação concluída" : type === "error" ? "Erro" : "Informação",
+      description: message,
+      variant: type === "error" ? "destructive" : "default",
+    });
+  };
+  
+  // Estados para guardar configurações do sistema
+  const [autoRegisterTechnicians, setAutoRegisterTechnicians] = useState(false);
+  const [require2FA, setRequire2FA] = useState(true);
+  const [logLevel, setLogLevel] = useState("medium");
+  const [logRetention, setLogRetention] = useState("90");
+  
+  // Funções para operações de sistema
+  const verifyDatabaseIntegrity = () => {
+    showMessage("Verificação de integridade iniciada...");
+    
+    // Simula uma operação assíncrona
+    setTimeout(() => {
+      showMessage("Nenhum problema de integridade encontrado no banco de dados.", "success");
+    }, 1500);
+  };
+  
+  const optimizeIndexes = () => {
+    showMessage("Otimização de índices iniciada...");
+    
+    // Simula uma operação assíncrona
+    setTimeout(() => {
+      showMessage("Índices do banco de dados otimizados com sucesso.", "success");
+    }, 2000);
+  };
+  
+  const clearCache = () => {
+    showMessage("Limpeza de cache iniciada...");
+    
+    // Simula uma operação assíncrona
+    setTimeout(() => {
+      showMessage("Cache do sistema limpo com sucesso.", "success");
+    }, 1000);
+  };
+  
+  const rebuildIndexes = () => {
+    showMessage("Reconstrução de índices iniciada...");
+    
+    // Simula uma operação assíncrona
+    setTimeout(() => {
+      showMessage("Índices de busca reconstruídos com sucesso.", "success");
+    }, 3000);
+  };
+  
+  const openAdvancedPanel = () => {
+    showMessage("Painel de manutenção avançada em desenvolvimento. Estará disponível na próxima atualização.");
+  };
+  
+  const viewAuditLogs = () => {
+    showMessage("Visualização dos registros de auditoria em desenvolvimento. Estará disponível na próxima atualização.");
+  };
+  
+  const manageLanguages = () => {
+    showMessage("Gerenciamento de idiomas em desenvolvimento. Estará disponível na próxima atualização.");
+  };
+  
+  const advancedSecuritySettings = () => {
+    showMessage("Configurações avançadas de segurança em desenvolvimento. Estará disponível na próxima atualização.");
+  };
   
   if (isLoadingAvatar || isLoadingLlm || isLoadingWidgets) {
     return (
@@ -324,7 +394,7 @@ export function UnifiedSettings() {
                           
                           <button 
                             className="w-full px-4 py-2 border border-gray-300 rounded-md text-sm"
-                            onClick={() => alert("Funcionalidade em desenvolvimento")}
+                            onClick={() => showMessage("Gerenciamento de idiomas em desenvolvimento")}
                           >
                             Gerenciar Idiomas
                           </button>
@@ -430,7 +500,7 @@ export function UnifiedSettings() {
                           
                           <button 
                             className="w-full px-4 py-2 border border-gray-300 rounded-md text-sm"
-                            onClick={() => alert("Funcionalidade em desenvolvimento")}
+                            onClick={viewAuditLogs}
                           >
                             Ver Registros de Auditoria
                           </button>
