@@ -7,6 +7,7 @@ import { processChatWithTrainedDocuments } from "./trained-chat-processor";
 import { testDocumentKnowledge } from "./training-test";
 import { testTopicsLearning, addTechnicalTopic } from "./external-search";
 import { logAction } from "./audit";
+import { systemMaintenanceService } from "./system-maintenance";
 import multer from "multer";
 import crypto from "crypto";
 import path from "path";
