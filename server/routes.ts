@@ -778,6 +778,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Admin routes
+  
+  // Technical topics testing routes
+  app.post("/api/admin/technical-topics/test", isAuthenticated, checkRole("admin"), async (req, res) => {
+    try {
+      const { query } = req.body;
+      
+      if (!query || typeof query !== 'string') {
+        return res.status(400).json({ message: "Uma consulta de texto válida é necessária" });
+      }
+      
+      // Testar a identificação de tópicos técnicos
+      const result = await testTopicsLearning(query);
+      
+      // Retornar o resultado completo
+      res.json(result);
+      
+    } catch (error) {
+      console.error("Erro ao testar sistema de tópicos técnicos:", error);
+      res.status(500).json({ message: "Erro interno ao processar a consulta" });
+    }
+  });
+  
+  // Rota para listar todos os tópicos técnicos
+  app.get("/api/admin/technical-topics", isAuthenticated, checkRole("admin"), async (req, res) => {
+    try {
+      const topics = await storage.getTechnicalTopics();
+      res.json(topics);
+    } catch (error) {
+      console.error("Erro ao buscar tópicos técnicos:", error);
+      res.status(500).json({ message: "Erro ao buscar tópicos técnicos" });
+    }
+  });
+  
+  // Rota para adicionar manualmente um tópico técnico
+  app.post("/api/admin/technical-topics", isAuthenticated, checkRole("admin"), async (req, res) => {
+    try {
+      const { topic } = req.body;
+      
+      if (!topic || typeof topic !== 'string') {
+        return res.status(400).json({ message: "Um tópico válido é necessário" });
+      }
+      
+      const success = await storage.addTechnicalTopic(topic);
+      
+      if (success) {
+        res.status(201).json({ message: "Tópico técnico adicionado com sucesso" });
+      } else {
+        res.status(500).json({ message: "Não foi possível adicionar o tópico técnico" });
+      }
+      
+    } catch (error) {
+      console.error("Erro ao adicionar tópico técnico:", error);
+      res.status(500).json({ message: "Erro ao adicionar tópico técnico" });
+    }
+  });
+  
   // LLM Configuration
   app.get("/api/admin/llm", isAuthenticated, checkRole("admin"), async (req, res) => {
     const activeLlm = await storage.getActiveLlmConfig();
