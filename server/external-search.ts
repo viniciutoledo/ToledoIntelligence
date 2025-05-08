@@ -109,8 +109,11 @@ interface DuckDuckGoResult {
   };
 }
 
+// Importar o módulo de busca Perplexity
+import { searchWithPerplexity } from './perplexity-search';
+
 /**
- * Realiza uma busca externa usando Searx e DuckDuckGo como fallback
+ * Realiza uma busca externa usando Perplexity, Searx e DuckDuckGo em cascata
  * 
  * @param query A consulta a ser buscada
  * @param language Idioma da consulta ('pt' ou 'en')
@@ -132,7 +135,18 @@ export async function searchExternalKnowledge(
   }
   
   try {
-    // Primeiro tentar usar o Searx
+    // Primeiro tentar usar a API Perplexity (se disponível)
+    if (process.env.PERPLEXITY_API_KEY) {
+      console.log(`Tentando busca avançada via Perplexity para: "${query}"`);
+      const perplexityResult = await searchWithPerplexity(query, language, userId, widgetId);
+      
+      if (perplexityResult) {
+        console.log('Busca Perplexity retornou resultados úteis');
+        return perplexityResult;
+      }
+    }
+    
+    // Se não tiver API Perplexity ou falhar, tentar usar o Searx
     console.log(`Tentando busca externa via Searx para: "${query}"`);
     const searxResult = await searchWithSearx(query, language);
     
