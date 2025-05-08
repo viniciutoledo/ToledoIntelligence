@@ -20,6 +20,7 @@ import {
   ExternalLink,
   Wrench
 } from "lucide-react";
+import { AdvancedSecuritySettings } from "./advanced-security-settings";
 import {
   Card,
   CardContent,
@@ -283,8 +284,10 @@ export function UnifiedSettings() {
     showMessage("Gerenciamento de idiomas em desenvolvimento. Estará disponível na próxima atualização.");
   };
   
+  const [showAdvancedSecuritySettings, setShowAdvancedSecuritySettings] = useState(false);
+  
   const advancedSecuritySettings = () => {
-    showMessage("Configurações avançadas de segurança em desenvolvimento. Estará disponível na próxima atualização.");
+    setShowAdvancedSecuritySettings(true);
   };
   
   if (isLoadingAvatar || isLoadingLlm || isLoadingWidgets) {
