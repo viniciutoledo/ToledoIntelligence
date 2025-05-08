@@ -32,7 +32,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, MoreHorizontal, Plus, Edit, Trash2, Copy, Globe, Upload, Link } from "lucide-react";
+import { Loader2, MoreHorizontal, Plus, Edit, Trash2, Copy, Globe, Upload, Link, Key, Code2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { ChatWidget } from "@shared/schema";
 import { generateEmbedCode, type EmbedCodeResult } from "@/components/widget/generate-embed-code";
