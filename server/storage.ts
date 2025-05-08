@@ -15,7 +15,8 @@ import {
   widgetChatMessages, WidgetChatMessage, InsertWidgetChatMessage,
   knowledgeBase, KnowledgeBase, InsertKnowledgeBase,
   llmUsageLogs, LlmUsageLog, InsertLlmUsageLog,
-  documentChunks, DocumentChunk, InsertDocumentChunk
+  documentChunks, DocumentChunk, InsertDocumentChunk,
+  technicalTopics, TechnicalTopic, InsertTechnicalTopic
 } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
