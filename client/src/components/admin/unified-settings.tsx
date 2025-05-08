@@ -58,22 +58,26 @@ export function UnifiedSettings() {
       </CardHeader>
       <CardContent className="p-6">
         <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
-          <TabsList className="grid grid-cols-4 mb-8 w-full">
+          <TabsList className="grid grid-cols-5 mb-8 w-full">
             <TabsTrigger value="general">
               <Settings className="h-4 w-4 mr-2" />
               Visão Geral
-            </TabsTrigger>
-            <TabsTrigger value="avatar">
-              <User className="h-4 w-4 mr-2" />
-              Avatar
             </TabsTrigger>
             <TabsTrigger value="llm">
               <BrainCircuit className="h-4 w-4 mr-2" />
               Modelo de IA
             </TabsTrigger>
+            <TabsTrigger value="tech-chat">
+              <User className="h-4 w-4 mr-2" />
+              Chat Técnicos
+            </TabsTrigger>
             <TabsTrigger value="widget">
               <FileCode className="h-4 w-4 mr-2" />
-              Widget de Chat
+              Widgets Externos
+            </TabsTrigger>
+            <TabsTrigger value="system">
+              <Cog className="h-4 w-4 mr-2" />
+              Sistema
             </TabsTrigger>
           </TabsList>
 
@@ -84,17 +88,17 @@ export function UnifiedSettings() {
                 <CardHeader className="p-4">
                   <CardTitle className="text-lg flex items-center">
                     <User className="h-5 w-5 mr-2 text-primary" />
-                    Configurações do Avatar
+                    Chat para Técnicos
                   </CardTitle>
-                  <CardDescription>Personalize a aparência e comportamento do assistente</CardDescription>
+                  <CardDescription>Configure o chat usado pelos técnicos</CardDescription>
                 </CardHeader>
                 <CardContent className="p-4 pt-0">
-                  <p className="text-sm text-gray-600">Defina a aparência visual e mensagem de boas-vindas do seu assistente de IA.</p>
+                  <p className="text-sm text-gray-600">Defina a aparência visual, avatar e mensagem de boas-vindas do assistente na interface principal.</p>
                   <button 
                     className="mt-4 px-4 py-2 bg-primary-100 text-primary-700 rounded-md hover:bg-primary-200 transition-colors duration-200"
-                    onClick={() => setSelectedTab("avatar")}
+                    onClick={() => setSelectedTab("tech-chat")}
                   >
-                    Configurar Avatar
+                    Configurar Chat Técnicos
                   </button>
                 </CardContent>
               </Card>
@@ -157,18 +161,126 @@ export function UnifiedSettings() {
           </TabsContent>
 
           {/* Aba do Avatar */}
-          <TabsContent value="avatar">
-            <AvatarSettings />
+          {/* Aba do Chat para Técnicos */}
+          <TabsContent value="tech-chat">
+            <Card className="shadow-md">
+              <CardHeader className="bg-gradient-to-r from-primary-50 to-accent-50 border-b">
+                <CardTitle className="flex items-center text-xl">
+                  <User className="h-5 w-5 mr-2" />
+                  <span className="text-primary">Configuração do Chat para Técnicos</span>
+                </CardTitle>
+                <CardDescription>Personalize o chat principal usado por técnicos na plataforma</CardDescription>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="space-y-6">
+                  <div className="bg-blue-50 p-4 rounded-md mb-4">
+                    <h3 className="font-medium text-blue-700 flex items-center mb-2">
+                      <InfoIcon className="h-4 w-4 mr-2" />
+                      Sobre esta configuração
+                    </h3>
+                    <p className="text-sm text-blue-600">
+                      Estas configurações se aplicam apenas ao chat principal usado pelos técnicos na plataforma ToledoIA. 
+                      Elas não afetam os widgets incorporáveis em sites externos.
+                    </p>
+                  </div>
+                
+                  <AvatarSettings />
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Aba do Modelo de IA */}
           <TabsContent value="llm">
-            <LlmSettings />
+            <Card className="shadow-md">
+              <CardHeader className="bg-gradient-to-r from-primary-50 to-accent-50 border-b">
+                <CardTitle className="flex items-center text-xl">
+                  <BrainCircuit className="h-5 w-5 mr-2" />
+                  <span className="text-primary">Configuração do Modelo de IA</span>
+                </CardTitle>
+                <CardDescription>Configure o comportamento do modelo de IA para todos os chats</CardDescription>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="space-y-6">
+                  <div className="bg-amber-50 p-4 rounded-md mb-4">
+                    <h3 className="font-medium text-amber-700 flex items-center mb-2">
+                      <AlertCircle className="h-4 w-4 mr-2" />
+                      Configuração Global
+                    </h3>
+                    <p className="text-sm text-amber-600">
+                      Estas configurações afetam o comportamento da IA em todas as interfaces (chat principal e widgets)
+                    </p>
+                  </div>
+                
+                  <LlmSettings />
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
-          {/* Aba do Widget */}
+          {/* Aba dos Widgets Externos */}
           <TabsContent value="widget">
-            <WidgetsManagement />
+            <Card className="shadow-md">
+              <CardHeader className="bg-gradient-to-r from-primary-50 to-accent-50 border-b">
+                <CardTitle className="flex items-center text-xl">
+                  <FileCode className="h-5 w-5 mr-2" />
+                  <span className="text-primary">Configuração de Widgets Externos</span>
+                </CardTitle>
+                <CardDescription>Configure os widgets para incorporação em sites externos</CardDescription>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="space-y-6">
+                  <div className="bg-green-50 p-4 rounded-md mb-4">
+                    <h3 className="font-medium text-green-700 flex items-center mb-2">
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Widgets para Sites Externos
+                    </h3>
+                    <p className="text-sm text-green-600">
+                      Estas configurações controlam a aparência e o comportamento dos widgets incorporáveis em sites externos.
+                      Cada widget pode ter seu próprio visual, avatar e configurações de segurança.
+                    </p>
+                  </div>
+                
+                  <WidgetsManagement />
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          {/* Aba de Sistema */}
+          <TabsContent value="system">
+            <Card className="shadow-md">
+              <CardHeader className="bg-gradient-to-r from-primary-50 to-accent-50 border-b">
+                <CardTitle className="flex items-center text-xl">
+                  <Cog className="h-5 w-5 mr-2" />
+                  <span className="text-primary">Configurações do Sistema</span>
+                </CardTitle>
+                <CardDescription>Configure os aspectos gerais do sistema</CardDescription>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="space-y-6">
+                  <div className="bg-gray-50 p-4 rounded-md mb-4">
+                    <h3 className="font-medium text-gray-700 flex items-center mb-2">
+                      <Settings className="h-4 w-4 mr-2" />
+                      Configurações Globais
+                    </h3>
+                    <p className="text-sm text-gray-600">
+                      Estas configurações afetam o comportamento geral do sistema. Alterações podem afetar todos os usuários.
+                    </p>
+                  </div>
+                
+                  <div className="text-center py-12">
+                    <div className="bg-primary-50 rounded-full h-16 w-16 flex items-center justify-center mx-auto mb-4">
+                      <Wrench className="h-8 w-8 text-primary" />
+                    </div>
+                    <h3 className="text-xl font-medium mb-2">Em desenvolvimento</h3>
+                    <p className="text-gray-500 max-w-md mx-auto">
+                      Esta seção está sendo implementada e estará disponível em breve.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </CardContent>
