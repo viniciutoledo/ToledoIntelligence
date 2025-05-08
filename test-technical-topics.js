@@ -4,7 +4,7 @@
  */
 
 import { execSync } from 'child_process';
-import { testTopicsLearning, addTechnicalTopic } from './server/external-search.js';
+import { testTopicsLearning, addTechnicalTopic } from './server/external-search.ts';
 
 async function runTest() {
   try {
