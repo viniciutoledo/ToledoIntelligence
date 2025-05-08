@@ -3108,6 +3108,37 @@ export class DatabaseStorage implements IStorage {
     }
   }
   
+  async getTechnicalTopics(): Promise<TechnicalTopic[]> {
+    try {
+      const topics = await db
+        .select()
+        .from(technicalTopics)
+        .orderBy(desc(technicalTopics.usage_count));
+      
+      return topics;
+    } catch (error) {
+      console.error("Erro ao obter todos os tópicos técnicos:", error);
+      return [];
+    }
+  }
+  
+  async getTechnicalTopicByName(topic: string): Promise<TechnicalTopic | undefined> {
+    try {
+      const normalizedTopic = topic.trim().toLowerCase();
+      
+      const results = await db
+        .select()
+        .from(technicalTopics)
+        .where(eq(technicalTopics.topic, normalizedTopic))
+        .limit(1);
+      
+      return results.length > 0 ? results[0] : undefined;
+    } catch (error) {
+      console.error(`Erro ao obter tópico técnico por nome (${topic}):`, error);
+      return undefined;
+    }
+  }
+  
   async addTechnicalTopic(topic: string): Promise<boolean> {
     try {
       const normalizedTopic = topic.trim().toLowerCase();
