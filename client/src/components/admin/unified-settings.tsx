@@ -32,6 +32,10 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 // Importando os componentes de configuração
 import { AvatarSettings } from "./avatar-settings";
@@ -283,14 +287,185 @@ export function UnifiedSettings() {
                     </p>
                   </div>
                 
-                  <div className="text-center py-12">
-                    <div className="bg-primary-50 rounded-full h-16 w-16 flex items-center justify-center mx-auto mb-4">
-                      <Wrench className="h-8 w-8 text-primary" />
-                    </div>
-                    <h3 className="text-xl font-medium mb-2">Em desenvolvimento</h3>
-                    <p className="text-gray-500 max-w-md mx-auto">
-                      Esta seção está sendo implementada e estará disponível em breve.
-                    </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <Card className="shadow-sm">
+                      <CardHeader className="p-4 border-b">
+                        <CardTitle className="text-lg flex items-center">
+                          <Globe className="h-4 w-4 mr-2 text-primary" />
+                          Configurações de Idioma
+                        </CardTitle>
+                        <CardDescription>
+                          Configure os idiomas disponíveis no sistema
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="p-4">
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h4 className="font-medium">Idioma Principal</h4>
+                              <p className="text-sm text-muted-foreground">Selecione o idioma padrão do sistema</p>
+                            </div>
+                            <Select defaultValue="pt-BR">
+                              <SelectTrigger className="w-32">
+                                <SelectValue placeholder="Idioma" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="pt-BR">Português</SelectItem>
+                                <SelectItem value="en-US">English</SelectItem>
+                                <SelectItem value="es-ES">Español</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h4 className="font-medium">Idiomas Adicionais</h4>
+                              <p className="text-sm text-muted-foreground">Outros idiomas disponíveis na plataforma</p>
+                            </div>
+                            <div className="flex gap-2">
+                              <Badge variant="outline" className="px-2 py-1">Português</Badge>
+                              <Badge variant="outline" className="px-2 py-1">English</Badge>
+                            </div>
+                          </div>
+                          
+                          <Button className="w-full" variant="outline" size="sm">
+                            Gerenciar Idiomas
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card className="shadow-sm">
+                      <CardHeader className="p-4 border-b">
+                        <CardTitle className="text-lg flex items-center">
+                          <Settings className="h-4 w-4 mr-2 text-primary" />
+                          Acesso e Permissões
+                        </CardTitle>
+                        <CardDescription>
+                          Gerencie o nível de acesso dos usuários
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="p-4">
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h4 className="font-medium">Auto-registro de Técnicos</h4>
+                              <p className="text-sm text-muted-foreground">Permitir que técnicos se registrem sem aprovação</p>
+                            </div>
+                            <Switch defaultChecked={false} />
+                          </div>
+                          
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h4 className="font-medium">Autenticação de Dois Fatores</h4>
+                              <p className="text-sm text-muted-foreground">Exigir 2FA para administradores</p>
+                            </div>
+                            <Switch defaultChecked={true} />
+                          </div>
+                          
+                          <Button className="w-full" variant="outline" size="sm">
+                            Configurações Avançadas
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card className="shadow-sm">
+                      <CardHeader className="p-4 border-b">
+                        <CardTitle className="text-lg flex items-center">
+                          <AlertCircle className="h-4 w-4 mr-2 text-primary" />
+                          Logs e Auditoria
+                        </CardTitle>
+                        <CardDescription>
+                          Configure os registros de atividades do sistema
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="p-4">
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h4 className="font-medium">Nível de Detalhe dos Logs</h4>
+                              <p className="text-sm text-muted-foreground">Controle a quantidade de informações registradas</p>
+                            </div>
+                            <Select defaultValue="medium">
+                              <SelectTrigger className="w-32">
+                                <SelectValue placeholder="Nível" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="low">Básico</SelectItem>
+                                <SelectItem value="medium">Médio</SelectItem>
+                                <SelectItem value="high">Detalhado</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h4 className="font-medium">Retenção de Logs</h4>
+                              <p className="text-sm text-muted-foreground">Período de armazenamento dos registros</p>
+                            </div>
+                            <Select defaultValue="90">
+                              <SelectTrigger className="w-32">
+                                <SelectValue placeholder="Período" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="30">30 dias</SelectItem>
+                                <SelectItem value="90">90 dias</SelectItem>
+                                <SelectItem value="180">6 meses</SelectItem>
+                                <SelectItem value="365">1 ano</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          
+                          <Button className="w-full" variant="outline" size="sm">
+                            Ver Registros de Auditoria
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card className="shadow-sm">
+                      <CardHeader className="p-4 border-b">
+                        <CardTitle className="text-lg flex items-center">
+                          <Wrench className="h-4 w-4 mr-2 text-primary" />
+                          Manutenção do Sistema
+                        </CardTitle>
+                        <CardDescription>
+                          Ferramentas de manutenção e otimização
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="p-4">
+                        <div className="space-y-4">
+                          <div>
+                            <h4 className="font-medium mb-2">Banco de Dados</h4>
+                            <div className="grid grid-cols-2 gap-2">
+                              <Button variant="outline" size="sm" className="w-full">
+                                Verificar Integridade
+                              </Button>
+                              <Button variant="outline" size="sm" className="w-full">
+                                Otimizar Índices
+                              </Button>
+                            </div>
+                          </div>
+                          
+                          <div>
+                            <h4 className="font-medium mb-2">Cache do Sistema</h4>
+                            <div className="grid grid-cols-2 gap-2">
+                              <Button variant="outline" size="sm" className="w-full">
+                                Limpar Cache
+                              </Button>
+                              <Button variant="outline" size="sm" className="w-full">
+                                Reconstruir Índices
+                              </Button>
+                            </div>
+                          </div>
+                          
+                          <Button className="w-full" variant="default" size="sm">
+                            Painel de Manutenção Avançada
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
                   </div>
                 </div>
               </CardContent>
