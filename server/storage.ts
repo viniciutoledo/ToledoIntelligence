@@ -2518,6 +2518,24 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(trainingDocuments.created_at));
   }
   
+  /**
+   * Busca documentos de treinamento por status específico
+   * @param status Status dos documentos a serem retornados (ex: 'processing', 'completed', 'error')
+   * @returns Array de documentos que possuem o status especificado
+   */
+  async getTrainingDocumentsByStatus(status: string): Promise<TrainingDocument[]> {
+    return db
+      .select()
+      .from(trainingDocuments)
+      .where(
+        and(
+          eq(trainingDocuments.is_active, true),
+          eq(trainingDocuments.status as any, status)
+        )
+      )
+      .orderBy(desc(trainingDocuments.created_at));
+  }
+  
   async searchTrainingDocuments(terms: string[]): Promise<TrainingDocument[]> {
     console.log(`Pesquisando documentos no banco de dados com termos: ${terms.join(', ')}`);
     

@@ -27,6 +27,11 @@ export async function logAction(params: AuditLogParams): Promise<void> {
 // Get audit log entry text based on action and language
 export function getAuditLogText(action: string, details: Record<string, any>, language: string): string {
   switch (action) {
+    case "document_auto_recovery":
+      return language === "pt"
+        ? `Documento recuperado automaticamente: ${details.documentName} (ID: ${details.documentId}), progresso: ${details.progress || 0}%`
+        : `Document auto-recovered: ${details.documentName} (ID: ${details.documentId}), progress: ${details.progress || 0}%`;
+    
     case "user_registered":
       return language === "pt"
         ? `Usuário registrado: ${details.email}`
