@@ -14,6 +14,107 @@ import fs from "fs";
 import { z } from "zod";
 import pdfParse from "pdf-parse";
 
+/**
+ * Utilitário para dividir mensagens longas em partes menores
+ * para melhor legibilidade e experiência do usuário.
+ * 
+ * @param text Texto a ser dividido
+ * @param options Opções de configuração
+ * @returns Array com as partes do texto
+ */
+function splitLongMessage(text: string, options: {
+  maxParagraphsPerPart?: number,
+  maxCharsPerPart?: number,
+  maxPartsTotal?: number
+} = {}): string[] {
+  // Configurações padrão
+  const maxParagraphsPerPart = options.maxParagraphsPerPart || 3;
+  const maxCharsPerPart = options.maxCharsPerPart || 600;
+  const maxPartsTotal = options.maxPartsTotal || 5;
+
+  // Texto muito curto não precisa ser dividido
+  if (text.length <= maxCharsPerPart) {
+    return [text];
+  }
+
+  // Dividir o texto em parágrafos (por quebras de linha)
+  let paragraphs = text.split(/\n\s*\n/);
+  
+  // Se houver apenas um parágrafo muito longo, dividir por sentenças
+  if (paragraphs.length === 1 && text.length > maxCharsPerPart) {
+    // Dividir por sentenças (ponto seguido de espaço ou nova linha)
+    const sentences = text.split(/(?<=[.!?])\s+/);
+    
+    const parts: string[] = [];
+    let currentPart = '';
+    
+    for (const sentence of sentences) {
+      // Se a sentença for muito longa sozinha, incluir mesmo que exceda o limite
+      if (sentence.length > maxCharsPerPart) {
+        if (currentPart) {
+          parts.push(currentPart);
+          currentPart = '';
+        }
+        parts.push(sentence);
+        continue;
+      }
+      
+      // Verificar se adicionar essa sentença excederia o limite
+      if (currentPart && (currentPart.length + sentence.length > maxCharsPerPart)) {
+        parts.push(currentPart);
+        currentPart = sentence;
+      } else {
+        currentPart += (currentPart ? ' ' : '') + sentence;
+      }
+    }
+    
+    // Adicionar a última parte se existir
+    if (currentPart) {
+      parts.push(currentPart);
+    }
+    
+    // Limitar o número total de partes
+    return parts.slice(0, maxPartsTotal);
+  }
+  
+  // Dividir em grupos de parágrafos
+  const parts: string[] = [];
+  let currentPart: string[] = [];
+  let currentPartLength = 0;
+  
+  for (const paragraph of paragraphs) {
+    // Se esse parágrafo sozinho exceder o limite, tratá-lo como uma parte própria
+    if (paragraph.length > maxCharsPerPart) {
+      if (currentPart.length > 0) {
+        parts.push(currentPart.join('\n\n'));
+        currentPart = [];
+        currentPartLength = 0;
+      }
+      parts.push(paragraph);
+      continue;
+    }
+    
+    // Verificar se adicionar esse parágrafo excederia os limites
+    if (currentPart.length >= maxParagraphsPerPart || 
+        currentPartLength + paragraph.length > maxCharsPerPart) {
+      parts.push(currentPart.join('\n\n'));
+      currentPart = [paragraph];
+      currentPartLength = paragraph.length;
+    } else {
+      currentPart.push(paragraph);
+      currentPartLength += paragraph.length;
+    }
+  }
+  
+  // Adicionar a última parte se existir
+  if (currentPart.length > 0) {
+    parts.push(currentPart.join('\n\n'));
+  }
+  
+  // Limitar o número total de partes
+  return parts.slice(0, maxPartsTotal);
+}
+
 // Função utilitária para extrair texto de um arquivo PDF
 async function extractTextFromPDF(filePath: string): Promise<string | null> {
   try {
