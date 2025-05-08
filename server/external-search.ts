@@ -3,7 +3,8 @@
  * Utiliza a DuckDuckGo Instant Answer API para obter informações da web
  */
 import fetch from 'node-fetch';
-import { logAction } from './audit-log';
+// Importar apenas funções essenciais para logging, sem depender do arquivo de auditoria
+import { logLlmUsage } from './llm';
 
 // Interface para os resultados da API do DuckDuckGo
 interface DuckDuckGoResult {
@@ -94,19 +95,6 @@ export async function searchExternalKnowledge(
     // Processar a resposta
     const data = await response.json() as DuckDuckGoResult;
     
-    // Registrar o uso da busca externa
-    if (userId) {
-      await logAction({
-        userId,
-        action: "external_search",
-        details: { 
-          query,
-          widget_id: widgetId || null,
-          found_results: Boolean(data.AbstractText || data.Answer || data.RelatedTopics.length > 0)
-        }
-      });
-    }
-    
     // Construir o resultado formatado com as informações encontradas
     let result = '';
     
@@ -153,6 +141,21 @@ export async function searchExternalKnowledge(
     if (!result.trim()) {
       console.log('Busca externa não retornou resultados úteis.');
       return null;
+    }
+    
+    // Registrar o uso da busca externa via logLlmUsage
+    if (userId) {
+      const tokenEstimate = Math.floor(query.length / 4) + Math.floor(result.length / 4);
+      // Usar a função logLlmUsage com o formato correto
+      await logLlmUsage(
+        "external-search",
+        "text",
+        true,
+        userId,
+        widgetId,
+        tokenEstimate,
+        undefined
+      );
     }
     
     console.log('Busca externa concluída com sucesso');

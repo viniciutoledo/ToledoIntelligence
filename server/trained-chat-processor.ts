@@ -79,15 +79,14 @@ export async function processChatWithTrainedDocuments(
         console.log('Sucesso no processamento RAG - retornando resposta');
         
         // Registrar o uso do LLM (aproximadamente)
-        await logLlmUsage({
-          model_name: modelName,
-          provider: provider === 'openai' ? 'openai' : 'anthropic',
-          operation_type: 'text',
-          user_id: userId,
-          widget_id: widgetId,
-          token_count: Math.floor(message.length / 4) + Math.floor(response.length / 4) + 500,
-          success: true
-        });
+        await logLlmUsage(
+          modelName,
+          'text',
+          true,
+          userId,
+          widgetId,
+          Math.floor(message.length / 4) + Math.floor(response.length / 4) + 500
+        );
         
         return response;
       }
@@ -234,6 +233,95 @@ export async function processChatWithTrainedDocuments(
       );
     }
     
+    // Verificar se a resposta indica falta de conhecimento
+    const noInfoPhrases = [
+      "não encontrei", 
+      "não contém", 
+      "não possui", 
+      "não fornece", 
+      "não disponibiliza",
+      "não menciona",
+      "não aborda",
+      "não foi possível encontrar",
+      "documento não",
+      "documentos não",
+      "não há informações",
+      "não tenho informações",
+      "não temos documentos",
+      "sem informações"
+    ];
+    
+    const needsExternalSearch = noInfoPhrases.some(phrase => 
+      response.toLowerCase().includes(phrase.toLowerCase())
+    );
+    
+    // Se a resposta indica que não temos informações e a consulta pode se beneficiar de busca externa
+    if (needsExternalSearch && shouldUseExternalSearch(message)) {
+      console.log('Resposta indicou falta de conhecimento. Tentando busca externa');
+      
+      try {
+        // Tentar busca externa
+        const externalInfo = await searchExternalKnowledge(
+          message, 
+          'pt', 
+          userId, 
+          widgetId
+        );
+        
+        if (externalInfo) {
+          console.log('Busca externa retornou informações. Gerando resposta combinada');
+          
+          // Criar um prompt para combinar as informações externas com uma resposta
+          const combinedPrompt = `
+          Você é um assistente especializado em manutenção de placas de circuito.
+          
+          A pergunta original foi: "${message}"
+          
+          Sua resposta anterior foi: "${response}"
+          
+          Encontramos as seguintes informações adicionais em fontes externas:
+          
+          ${externalInfo}
+          
+          Por favor, forneça uma resposta mais completa com base nestas novas informações.
+          Mantenha um tom profissional e técnico.
+          Mencione que as informações vieram de fontes externas.
+          `;
+          
+          // Reprocessar com o prompt combinado
+          let combinedResponse: string;
+          
+          if (provider === 'openai') {
+            combinedResponse = await processWithOpenAI(
+              combinedPrompt,
+              message,
+              modelName,
+              llmConfig.api_key,
+              temperature,
+              userId,
+              widgetId
+            );
+          } else {
+            combinedResponse = await processWithAnthropic(
+              combinedPrompt,
+              message,
+              modelName,
+              llmConfig.api_key,
+              temperature,
+              userId,
+              widgetId
+            );
+          }
+          
+          console.log('Resposta gerada combinando conhecimento interno e busca externa');
+          return combinedResponse;
+        }
+      } catch (externalError) {
+        console.error('Erro ao tentar busca externa:', externalError);
+        // Continuar com a resposta original em caso de erro
+      }
+    }
+    
     console.log('Resposta gerada com documentos de treinamento');
     return response;
     
@@ -300,7 +388,8 @@ async function processWithOpenAI(
       true,
       userId,
       widgetId,
-      completion.usage?.total_tokens || 0
+      completion.usage?.total_tokens || 0,
+      undefined
     );
     
     return response;
@@ -377,13 +466,15 @@ async function processWithAnthropic(
     }
     
     // Registrar o uso do LLM
+    const totalTokens = (message.usage?.input_tokens || 0) + (message.usage?.output_tokens || 0);
     await logLlmUsage(
       modelName,
       'text',
       true,
       userId,
       widgetId,
-      message.usage?.input_tokens || 0 + message.usage?.output_tokens || 0
+      totalTokens,
+      undefined
     );
     
     return response;
