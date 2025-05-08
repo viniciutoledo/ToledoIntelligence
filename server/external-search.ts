@@ -6,6 +6,20 @@ import fetch from 'node-fetch';
 // Importar apenas funções essenciais para logging, sem depender do arquivo de auditoria
 import { logLlmUsage } from './llm';
 
+// Para testes
+export async function testTopicsLearning(query: string): Promise<{
+  shouldSearch: boolean;
+  topicsFound: string[];
+}> {
+  const shouldSearch = await shouldUseExternalSearch(query);
+  const topicsFound = await technicalTopicsInQuery(query);
+  
+  return {
+    shouldSearch,
+    topicsFound
+  };
+}
+
 // Instâncias públicas do Searx (podem mudar com o tempo)
 const SEARX_INSTANCES = [
   'https://searx.be',  

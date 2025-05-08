@@ -5,6 +5,7 @@ import { setupAuth, isAuthenticated, checkRole } from "./auth";
 import { analyzeImage, analyzeFile, processTextMessage, testConnection, getActiveLlmInfo, fetchOpenAIDirectly, fetchAnthropicDirectly } from "./llm";
 import { processChatWithTrainedDocuments } from "./trained-chat-processor";
 import { testDocumentKnowledge } from "./training-test";
+import { testTopicsLearning, addTechnicalTopic } from "./external-search";
 import { logAction } from "./audit";
 import multer from "multer";
 import crypto from "crypto";
