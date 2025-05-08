@@ -684,11 +684,7 @@ export function UnifiedSettings() {
                                 className="pl-3 pr-8 py-1 border rounded text-sm appearance-none bg-white"
                                 value={logRetention}
                                 onChange={(e) => {
-                                  setLogRetention(e.target.value);
-                                  const periodText = e.target.value === '30' ? '30 dias' : 
-                                                    e.target.value === '90' ? '90 dias' : 
-                                                    e.target.value === '180' ? '6 meses' : '1 ano';
-                                  showMessage(`Período de retenção de logs alterado para ${periodText}`);
+                                  handleLogRetentionChange(e.target.value);
                                 }}
                               >
                                 <option value="30">30 dias</option>

@@ -34,11 +34,11 @@ export class PostgresSystemMaintenanceService implements SystemMaintenanceServic
       } finally {
         client.release();
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Erro ao verificar integridade do banco de dados:', error);
       return {
         success: false,
-        message: `Erro ao verificar integridade: ${error.message}`
+        message: `Erro ao verificar integridade: ${error instanceof Error ? error.message : String(error)}`
       };
     }
   }
@@ -59,11 +59,11 @@ export class PostgresSystemMaintenanceService implements SystemMaintenanceServic
       } finally {
         client.release();
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Erro ao otimizar índices do banco de dados:', error);
       return {
         success: false,
-        message: `Erro ao otimizar índices: ${error.message}`
+        message: `Erro ao otimizar índices: ${error instanceof Error ? error.message : String(error)}`
       };
     }
   }
@@ -80,11 +80,11 @@ export class PostgresSystemMaintenanceService implements SystemMaintenanceServic
         success: true,
         message: 'Cache do sistema limpo com sucesso.'
       };
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Erro ao limpar cache do sistema:', error);
       return {
         success: false,
-        message: `Erro ao limpar cache: ${error.message}`
+        message: `Erro ao limpar cache: ${error instanceof Error ? error.message : String(error)}`
       };
     }
   }
@@ -108,11 +108,11 @@ export class PostgresSystemMaintenanceService implements SystemMaintenanceServic
       } finally {
         client.release();
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Erro ao reconstruir índices de busca:', error);
       return {
         success: false,
-        message: `Erro ao reconstruir índices: ${error.message}`
+        message: `Erro ao reconstruir índices: ${error instanceof Error ? error.message : String(error)}`
       };
     }
   }
@@ -143,11 +143,11 @@ export class PostgresSystemMaintenanceService implements SystemMaintenanceServic
         success: true,
         message: `Nível de detalhe dos logs alterado para ${nivelTexto}`
       };
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Erro ao definir nível de log:', error);
       return {
         success: false,
-        message: `Erro ao definir nível de log: ${error.message}`
+        message: `Erro ao definir nível de log: ${error instanceof Error ? error.message : String(error)}`
       };
     }
   }

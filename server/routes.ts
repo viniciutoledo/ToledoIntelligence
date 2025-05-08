@@ -13,6 +13,8 @@ import crypto from "crypto";
 import path from "path";
 import fs from "fs";
 import { z } from "zod";
+import { db } from "./db";
+import { sql } from "drizzle-orm";
 import pdfParse from "pdf-parse";
 
 /**
