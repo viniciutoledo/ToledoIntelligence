@@ -28,23 +28,10 @@ export function AdminDashboard() {
   // Consulta as estatísticas do dashboard
   const { data: stats, isLoading } = useQuery<DashboardStats>({
     queryKey: ["/api/admin/stats"],
-    // Fallback para valores iniciais enquanto a API de estatísticas estiver em desenvolvimento
-    initialData: {
-      userCount: 0,
-      technicianCount: 0,
-      adminCount: 0,
-      activeUsers: 0,
-      blockedUsers: 0,
-      totalChatSessions: 0,
-      activeChatSessions: 0,
-      messageCount: 0,
-      averageResponseTime: 0,
-      widgetCount: 0,
-      activeWidgets: 0,
-      widgetSessions: 0,
-      widgetMessages: 0,
-      widgetUsersImpacted: 0,
-    }
+    refetchOnMount: true, // Sempre atualizar ao montar o componente
+    refetchOnWindowFocus: true, // Atualizar quando a janela ganhar foco
+    staleTime: 30000, // Considerar dados obsoletos após 30 segundos
+    // Removido initialData para forçar a busca real dos dados
   });
 
   if (isLoading) {
