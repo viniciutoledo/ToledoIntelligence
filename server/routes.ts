@@ -1028,11 +1028,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       `);
       
       const autoRegisterTechnicians = await db.execute(sql`
-        SELECT value FROM system_settings WHERE key = 'auto_register_technicians'
+        SELECT value FROM system_settings WHERE key = 'autoRegisterTechnicians'
       `);
       
       const require2FA = await db.execute(sql`
-        SELECT value FROM system_settings WHERE key = 'require_2fa_for_admins'
+        SELECT value FROM system_settings WHERE key = 'require2FA'
       `);
       
       res.json({
@@ -1061,7 +1061,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Atualizar configuração no banco de dados
       await db.execute(sql`
         INSERT INTO system_settings (key, value, updated_by, updated_at)
-        VALUES ('auto_register_technicians', ${enabled ? 'true' : 'false'}, ${req.user!.id}, NOW())
+        VALUES ('autoRegisterTechnicians', ${enabled ? 'true' : 'false'}, ${req.user!.id}, NOW())
         ON CONFLICT (key) DO UPDATE
         SET value = ${enabled ? 'true' : 'false'}, updated_by = ${req.user!.id}, updated_at = NOW()
       `);
@@ -1071,7 +1071,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId: req.user!.id,
         action: "system_config_update",
         details: { 
-          setting: 'auto_register_technicians', 
+          setting: 'autoRegisterTechnicians', 
           value: enabled ? 'true' : 'false' 
         },
         ipAddress: req.ip
@@ -1097,7 +1097,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Atualizar configuração no banco de dados
       await db.execute(sql`
         INSERT INTO system_settings (key, value, updated_by, updated_at)
-        VALUES ('require_2fa_for_admins', ${enabled ? 'true' : 'false'}, ${req.user!.id}, NOW())
+        VALUES ('require2FA', ${enabled ? 'true' : 'false'}, ${req.user!.id}, NOW())
         ON CONFLICT (key) DO UPDATE
         SET value = ${enabled ? 'true' : 'false'}, updated_by = ${req.user!.id}, updated_at = NOW()
       `);
@@ -1107,7 +1107,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId: req.user!.id,
         action: "system_config_update",
         details: { 
-          setting: 'require_2fa_for_admins', 
+          setting: 'require2FA', 
           value: enabled ? 'true' : 'false' 
         },
         ipAddress: req.ip
