@@ -669,7 +669,7 @@ export function setupAuth(app: Express) {
       }
       
       // Enable 2FA
-      await storage.updateUser(user.id, { twofa_enabled: true });
+      const updatedUser = await storage.updateUser(user.id, { twofa_enabled: true });
       
       // Log the action
       await logAction({
@@ -679,9 +679,16 @@ export function setupAuth(app: Express) {
         ipAddress: req.ip
       });
       
-      res.json({ success: true });
+      // Return user without sensitive data
+      if (updatedUser) {
+        const { password, twofa_secret, ...safeUser } = updatedUser;
+        res.status(200).json(safeUser);
+      } else {
+        res.status(500).json({ message: "Failed to enable 2FA" });
+      }
     } catch (error) {
-      res.status(400).json({ message: "Invalid request" });
+      console.error("Error enabling 2FA:", error);
+      res.status(400).json({ message: error instanceof Error ? error.message : "Invalid request" });
     }
   });
 
@@ -696,7 +703,7 @@ export function setupAuth(app: Express) {
       }
       
       // Disable 2FA
-      await storage.updateUser(user.id, { 
+      const updatedUser = await storage.updateUser(user.id, { 
         twofa_enabled: false,
         twofa_secret: null
       });
@@ -709,9 +716,16 @@ export function setupAuth(app: Express) {
         ipAddress: req.ip
       });
       
-      res.json({ success: true });
+      // Return user without sensitive data
+      if (updatedUser) {
+        const { password, twofa_secret, ...safeUser } = updatedUser;
+        res.status(200).json(safeUser);
+      } else {
+        res.status(500).json({ message: "Failed to disable 2FA" });
+      }
     } catch (error) {
-      res.status(500).json({ message: "Failed to disable 2FA" });
+      console.error("Error disabling 2FA:", error);
+      res.status(500).json({ message: error instanceof Error ? error.message : "Failed to disable 2FA" });
     }
   });
 

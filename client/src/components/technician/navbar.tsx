@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { User, LogOut, Settings } from "lucide-react";
+import { User, LogOut, Settings, UserCircle } from "lucide-react";
 
 export function TechnicianNavbar() {
   const { user, logoutMutation } = useAuth();
@@ -23,6 +23,10 @@ export function TechnicianNavbar() {
   
   const navigateToAdmin = () => {
     setLocation("/admin");
+  };
+  
+  const navigateToProfile = () => {
+    setLocation("/profile");
   };
 
   return (
@@ -50,6 +54,12 @@ export function TechnicianNavbar() {
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem disabled>
                     {user?.email}
+                  </DropdownMenuItem>
+                  
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={navigateToProfile}>
+                    <UserCircle className="mr-2 h-4 w-4" />
+                    <span>{t("common.profile", "Meu Perfil")}</span>
                   </DropdownMenuItem>
                   
                   {user?.role === "admin" && (
