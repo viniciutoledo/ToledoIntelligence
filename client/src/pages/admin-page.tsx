@@ -11,8 +11,10 @@ import PlanManagement from "@/components/admin/plan-management";
 import PlanPricing from "@/components/admin/plan-pricing";
 import WidgetsManagement from "@/components/admin/widgets-management";
 import LlmUsageLogs from "@/components/admin/llm-usage-logs";
+import { UnifiedSettings } from "@/components/admin/unified-settings";
 import { LlmProvider } from "@/hooks/use-llm";
 import { AvatarProvider } from "@/hooks/use-avatar";
+import { WidgetsProvider } from "@/hooks/use-widgets";
 import { useLanguage } from "@/hooks/use-language";
 import { useAuth } from "@/hooks/use-auth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -64,24 +66,14 @@ export default function AdminPage() {
                 </div>
               </div>
               
-              <div className="space-y-10">
-                <div className="mb-8">
-                  <h2 className="text-xl font-semibold text-neutral-700 mb-4">
-                    {t("admin.avatarSettings")}
-                  </h2>
-                  <AvatarProvider>
-                    <AvatarSettings />
-                  </AvatarProvider>
-                </div>
-                
-                <div>
-                  <h2 className="text-xl font-semibold text-neutral-700 mb-4">
-                    {t("admin.llmSettings")}
-                  </h2>
+              <div>
+                <AvatarProvider>
                   <LlmProvider>
-                    <LlmSettings />
+                    <WidgetsProvider>
+                      <UnifiedSettings />
+                    </WidgetsProvider>
                   </LlmProvider>
-                </div>
+                </AvatarProvider>
               </div>
             </>
           )}
