@@ -1894,6 +1894,260 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(logs);
   });
   
+  // Rota para exportar logs de auditoria
+  app.get("/api/admin/export/audit-logs", isAuthenticated, checkRole("admin"), async (req, res) => {
+    try {
+      // Parâmetros de filtragem opcionais
+      const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
+      const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
+      const actionType = req.query.actionType as string || undefined;
+      const userId = req.query.userId ? Number(req.query.userId) : undefined;
+      
+      // Buscar logs de auditoria
+      let query = sql`SELECT a.id, a.action, a.details, a.ip_address, a.created_at, 
+                              u.id as user_id, u.email, u.role
+                       FROM audit_logs a
+                       LEFT JOIN users u ON a.user_id = u.id
+                       WHERE 1=1`;
+      
+      if (startDate) {
+        query = sql`${query} AND a.created_at >= ${startDate.toISOString()}`;
+      }
+      
+      if (endDate) {
+        query = sql`${query} AND a.created_at <= ${endDate.toISOString()}`;
+      }
+      
+      if (actionType) {
+        query = sql`${query} AND a.action = ${actionType}`;
+      }
+      
+      if (userId) {
+        query = sql`${query} AND a.user_id = ${userId}`;
+      }
+      
+      query = sql`${query} ORDER BY a.created_at DESC`;
+      
+      const result = await db.execute(query);
+      
+      // Transformar os dados para CSV
+      let csvContent = "ID,Ação,Detalhes,Endereço IP,Data,Usuário ID,Email,Perfil\n";
+      
+      for (const row of result.rows) {
+        const details = row.details ? JSON.stringify(row.details).replace(/"/g, '""') : '';
+        const email = row.email || 'Sistema';
+        const role = row.role || 'N/A';
+        
+        csvContent += `${row.id},"${row.action}","${details}","${row.ip_address}","${new Date(row.created_at).toISOString()}",${row.user_id || 'N/A'},"${email}","${role}"\n`;
+      }
+      
+      // Configurar cabeçalhos para download
+      res.setHeader('Content-Disposition', 'attachment; filename=audit-logs.csv');
+      res.setHeader('Content-Type', 'text/csv');
+      
+      // Enviar o arquivo CSV
+      res.send(csvContent);
+      
+      // Log da exportação
+      await logAction({
+        userId: req.user!.id,
+        action: "export_audit_logs",
+        details: { 
+          count: result.rows.length,
+          filters: { startDate, endDate, actionType, userId }
+        },
+        ipAddress: req.ip
+      });
+      
+    } catch (error: any) {
+      console.error("Erro ao exportar logs de auditoria:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Erro ao exportar logs de auditoria", 
+        error: error.message
+      });
+    }
+  });
+  
+  // Rota para exportar estatísticas de uso do sistema
+  app.get("/api/admin/export/system-stats", isAuthenticated, checkRole("admin"), async (req, res) => {
+    try {
+      // Período para estatísticas: últimos 30 dias por padrão, ou personalizado
+      const startDate = req.query.startDate ? new Date(req.query.startDate as string) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      const endDate = req.query.endDate ? new Date(req.query.endDate as string) : new Date();
+      
+      // 1. Estatísticas de uso de LLM por dia
+      const llmStatsByDayQuery = sql`
+        SELECT 
+          DATE_TRUNC('day', created_at) as day,
+          model,
+          COUNT(*) as request_count,
+          SUM(input_tokens) as input_tokens,
+          SUM(output_tokens) as output_tokens,
+          SUM(total_tokens) as total_tokens
+        FROM llm_usage_logs
+        WHERE created_at BETWEEN ${startDate.toISOString()} AND ${endDate.toISOString()}
+        GROUP BY DATE_TRUNC('day', created_at), model
+        ORDER BY day ASC, model
+      `;
+      
+      const llmStatsByDay = await db.execute(llmStatsByDayQuery);
+      
+      // 2. Estatísticas de uso por usuário
+      const userStatsQuery = sql`
+        SELECT 
+          u.id as user_id,
+          u.email,
+          u.role,
+          COUNT(l.id) as request_count,
+          SUM(l.input_tokens) as input_tokens,
+          SUM(l.output_tokens) as output_tokens,
+          SUM(l.total_tokens) as total_tokens
+        FROM llm_usage_logs l
+        JOIN users u ON l.user_id = u.id
+        WHERE l.created_at BETWEEN ${startDate.toISOString()} AND ${endDate.toISOString()}
+        GROUP BY u.id, u.email, u.role
+        ORDER BY SUM(l.total_tokens) DESC
+      `;
+      
+      const userStats = await db.execute(userStatsQuery);
+      
+      // 3. Estatísticas de uso por widget
+      const widgetStatsQuery = sql`
+        SELECT 
+          w.id as widget_id,
+          w.name as widget_name,
+          COUNT(l.id) as request_count,
+          SUM(l.input_tokens) as input_tokens,
+          SUM(l.output_tokens) as output_tokens,
+          SUM(l.total_tokens) as total_tokens
+        FROM llm_usage_logs l
+        JOIN widgets w ON l.widget_id = w.id
+        WHERE l.created_at BETWEEN ${startDate.toISOString()} AND ${endDate.toISOString()}
+        GROUP BY w.id, w.name
+        ORDER BY SUM(l.total_tokens) DESC
+      `;
+      
+      const widgetStats = await db.execute(widgetStatsQuery);
+      
+      // 4. Estatísticas de documentos
+      const documentStatsQuery = sql`
+        SELECT 
+          status,
+          COUNT(*) as count,
+          AVG(EXTRACT(EPOCH FROM (updated_at - created_at))) as avg_processing_time_seconds
+        FROM documents
+        WHERE created_at BETWEEN ${startDate.toISOString()} AND ${endDate.toISOString()}
+        GROUP BY status
+      `;
+      
+      const documentStats = await db.execute(documentStatsQuery);
+      
+      // 5. Atividade de sessões por dia
+      const sessionStatsQuery = sql`
+        SELECT 
+          DATE_TRUNC('day', created_at) as day,
+          COUNT(*) as session_count,
+          'chat' as type
+        FROM chat_sessions
+        WHERE created_at BETWEEN ${startDate.toISOString()} AND ${endDate.toISOString()}
+        GROUP BY DATE_TRUNC('day', created_at)
+        
+        UNION ALL
+        
+        SELECT 
+          DATE_TRUNC('day', created_at) as day,
+          COUNT(*) as session_count,
+          'widget' as type
+        FROM widget_sessions
+        WHERE created_at BETWEEN ${startDate.toISOString()} AND ${endDate.toISOString()}
+        GROUP BY DATE_TRUNC('day', created_at)
+        
+        ORDER BY day ASC, type
+      `;
+      
+      const sessionStats = await db.execute(sessionStatsQuery);
+      
+      // Preparar CSV com várias seções
+      let csvContent = "RELATÓRIO DE ESTATÍSTICAS DO SISTEMA\n";
+      csvContent += `Período: ${startDate.toISOString()} até ${endDate.toISOString()}\n\n`;
+      
+      // Seção 1: Estatísticas de LLM por dia
+      csvContent += "ESTATÍSTICAS DE USO DE LLM POR DIA\n";
+      csvContent += "Data,Modelo,Requisições,Tokens de Entrada,Tokens de Saída,Total de Tokens\n";
+      
+      for (const row of llmStatsByDay.rows) {
+        csvContent += `${new Date(row.day).toISOString().split('T')[0]},"${row.model}",${row.request_count},${row.input_tokens},${row.output_tokens},${row.total_tokens}\n`;
+      }
+      
+      csvContent += "\n";
+      
+      // Seção 2: Estatísticas por usuário
+      csvContent += "ESTATÍSTICAS DE USO POR USUÁRIO\n";
+      csvContent += "ID,Email,Perfil,Requisições,Tokens de Entrada,Tokens de Saída,Total de Tokens\n";
+      
+      for (const row of userStats.rows) {
+        csvContent += `${row.user_id},"${row.email}","${row.role}",${row.request_count},${row.input_tokens},${row.output_tokens},${row.total_tokens}\n`;
+      }
+      
+      csvContent += "\n";
+      
+      // Seção 3: Estatísticas por widget
+      csvContent += "ESTATÍSTICAS DE USO POR WIDGET\n";
+      csvContent += "ID,Nome,Requisições,Tokens de Entrada,Tokens de Saída,Total de Tokens\n";
+      
+      for (const row of widgetStats.rows) {
+        csvContent += `${row.widget_id},"${row.widget_name}",${row.request_count},${row.input_tokens},${row.output_tokens},${row.total_tokens}\n`;
+      }
+      
+      csvContent += "\n";
+      
+      // Seção 4: Estatísticas de documentos
+      csvContent += "ESTATÍSTICAS DE DOCUMENTOS\n";
+      csvContent += "Status,Quantidade,Tempo Médio de Processamento (segundos)\n";
+      
+      for (const row of documentStats.rows) {
+        csvContent += `"${row.status}",${row.count},${Math.round(row.avg_processing_time_seconds || 0)}\n`;
+      }
+      
+      csvContent += "\n";
+      
+      // Seção 5: Atividade de sessões
+      csvContent += "ATIVIDADE DE SESSÕES POR DIA\n";
+      csvContent += "Data,Tipo,Quantidade\n";
+      
+      for (const row of sessionStats.rows) {
+        csvContent += `${new Date(row.day).toISOString().split('T')[0]},"${row.type === 'chat' ? 'Chat Principal' : 'Widget Embedado'}",${row.session_count}\n`;
+      }
+      
+      // Configurar cabeçalhos para download
+      res.setHeader('Content-Disposition', 'attachment; filename=system-stats.csv');
+      res.setHeader('Content-Type', 'text/csv');
+      
+      // Enviar o arquivo CSV
+      res.send(csvContent);
+      
+      // Log da exportação
+      await logAction({
+        userId: req.user!.id,
+        action: "export_system_stats",
+        details: { 
+          periodStart: startDate.toISOString(),
+          periodEnd: endDate.toISOString()
+        },
+        ipAddress: req.ip
+      });
+      
+    } catch (error: any) {
+      console.error("Erro ao exportar estatísticas do sistema:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Erro ao exportar estatísticas do sistema", 
+        error: error.message
+      });
+    }
+  });
+  
   // LLM Usage Logs (admin)
   app.get("/api/admin/llm/usage-logs", isAuthenticated, checkRole("admin"), async (req, res) => {
     try {
