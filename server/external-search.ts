@@ -405,10 +405,24 @@ async function technicalTopicsInQuery(query: string): Promise<string[]> {
     const lowerQuery = query.toLowerCase();
     const topics = await getTechnicalTopics();
     
-    return topics.filter((topic: string) => 
+    const foundTopics = topics.filter((topic: string) => 
       lowerQuery.includes(topic) || 
       lowerQuery.includes(topic + 's')  // Plural
     );
+    
+    // Para cada tópico encontrado, atualizar a contagem de uso
+    if (foundTopics.length > 0) {
+      for (const topic of foundTopics) {
+        await storage.updateTechnicalTopicUsage(topic).catch(err => {
+          console.error(`Erro ao atualizar uso do tópico "${topic}":`, err);
+        });
+      }
+      
+      // Tentar identificar possíveis novos tópicos técnicos na consulta
+      await learnNewTopics(query, foundTopics);
+    }
+    
+    return foundTopics;
   } catch (error) {
     console.error('Erro ao identificar temas técnicos na consulta:', error);
     // Em caso de erro, retornar array vazio
@@ -684,5 +698,114 @@ export async function addTechnicalTopic(topic: string): Promise<boolean> {
   } catch (error) {
     console.error('Erro ao adicionar novo tópico técnico:', error);
     return false;
+  }
+}
+
+/**
+ * Analisa a consulta do usuário para tentar identificar novos tópicos técnicos
+ * Usa heurísticas simples e contexto dos tópicos já encontrados
+ * 
+ * @param query A consulta original do usuário
+ * @param foundTopics Tópicos técnicos já encontrados na consulta
+ * @returns Promise que resolve quando a análise for concluída
+ */
+async function learnNewTopics(query: string, foundTopics: string[]): Promise<void> {
+  // Se não houver tópicos conhecidos, não temos contexto suficiente para aprender
+  if (foundTopics.length === 0) {
+    return;
+  }
+  
+  try {
+    const lowerQuery = query.toLowerCase();
+    
+    // Palavras muito comuns que não devem ser consideradas como tópicos técnicos
+    const stopwords = [
+      'o', 'a', 'os', 'as', 'um', 'uma', 'uns', 'umas', 'de', 'do', 'da', 'dos', 'das', 'no', 'na',
+      'nos', 'nas', 'ao', 'aos', 'à', 'às', 'pelo', 'pela', 'pelos', 'pelas', 'em', 'por', 'para',
+      'com', 'sem', 'sob', 'sobre', 'entre', 'contra', 'que', 'porque', 'como', 'quando', 'onde',
+      'quem', 'qual', 'quais', 'cujo', 'cujos', 'cuja', 'cujas', 'e', 'ou', 'mas', 'porém', 'contudo',
+      'todavia', 'entretanto', 'então', 'portanto', 'logo', 'assim', 'se', 'caso', 'embora', 'apesar',
+      'ainda', 'já', 'nunca', 'sempre', 'também', 'nem', 'é', 'são', 'foi', 'eram', 'estar', 'eu',
+      'tu', 'ele', 'ela', 'nós', 'vós', 'eles', 'elas', 'meu', 'minha', 'seu', 'sua', 'este', 'esse',
+      'aquele', 'isso', 'isto', 'aquilo', 'ter', 'fazer', 'ir', 'vir', 'pôr', 'ver', 'pode', 'será',
+      'preciso', 'deveria', 'gostaria', 'quero', 'está', 'tem', 'foi', 'seria', 'há'
+    ];
+    
+    // Extrair palavras-chave da consulta
+    // Dividir a string em palavras
+    const words = lowerQuery.split(/\s+/)
+      .map(word => word.replace(/[.,!?;:(){}[\]<>]/g, '')) // Remover pontuação
+      .filter(word => word.length > 3) // Palavras com mais de 3 caracteres
+      .filter(word => !stopwords.includes(word)) // Excluir stopwords
+    
+    // Encontrar termos técnicos potenciais
+    // 1. Palavras próximas a termos técnicos conhecidos
+    const potentialTopics: string[] = [];
+    
+    // Examinar palavras específicas
+    for (const word of words) {
+      // Ignorar palavras que já são tópicos técnicos conhecidos
+      if (foundTopics.some(topic => word.includes(topic) || topic.includes(word))) {
+        continue;
+      }
+      
+      // Verificar palavras técnicas específicas (sufixos e prefixos)
+      const technicalIndicators = ['ador', 'sor', 'metro', 'scope', 'grafo', 'tech', 'ônico', 'ência', 'lógico', 'tron'];
+      if (technicalIndicators.some(indicator => word.includes(indicator))) {
+        potentialTopics.push(word);
+        continue;
+      }
+      
+      // Verificar palavras que podem ser modelos específicos (combinações de letras e números)
+      if (/^[a-z]{1,4}\d{1,4}[a-z]?\d?$/i.test(word)) {
+        potentialTopics.push(word);
+        continue;
+      }
+      
+      // Verificar palavras com hífen que podem indicar componentes técnicos
+      if (word.includes('-') && word.length > 5) {
+        potentialTopics.push(word);
+        continue;
+      }
+    }
+    
+    // 2. Verificar frases substantivas (n-gramas) para termos compostos
+    // Termos técnicos frequentemente são compostos por 2-3 palavras
+    for (let i = 0; i < words.length - 1; i++) {
+      const bigram = `${words[i]} ${words[i+1]}`;
+      
+      // Verificar se algum dos termos já conhecidos está no bigrama
+      if (foundTopics.some(topic => bigram.includes(topic))) {
+        // Não adicionar termos que são apenas variações de termos já conhecidos
+        continue;
+      }
+      
+      // Adicionar termos substantivos compostos que pareçam técnicos
+      if (!stopwords.includes(words[i]) && !stopwords.includes(words[i+1])) {
+        if (words[i].length > 3 && words[i+1].length > 3) {
+          potentialTopics.push(bigram);
+        }
+      }
+    }
+    
+    // Limitar a quantidade de novos tópicos por consulta para evitar ruído
+    if (potentialTopics.length > 0) {
+      // Ordenar por comprimento (priorizar termos mais curtos e mais precisos)
+      potentialTopics.sort((a, b) => a.length - b.length);
+      
+      // Adicionar até 2 novos tópicos por consulta
+      const topicsToAdd = potentialTopics.slice(0, 2);
+      
+      for (const topic of topicsToAdd) {
+        // Adicionar somente se o tópico tiver entre 4 e 25 caracteres (evitar termos muito curtos ou muito longos)
+        if (topic.length >= 4 && topic.length <= 25) {
+          await addTechnicalTopic(topic).catch(err => {
+            console.error(`Erro ao adicionar novo tópico técnico potencial "${topic}":`, err);
+          });
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Erro ao analisar consulta para aprendizado de novos tópicos:', error);
   }
 }
