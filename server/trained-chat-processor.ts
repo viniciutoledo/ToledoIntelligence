@@ -4,6 +4,7 @@ import { logLlmUsage } from './llm';
 import { storage } from './storage';
 import { searchRelevantDocuments } from './document-embedding';
 import { processQueryWithRAG, hybridSearch, formatRelevantDocumentsForPrompt } from './rag-processor';
+import { searchExternalKnowledge, shouldUseExternalSearch } from './external-search';
 
 /**
  * Processa uma mensagem de chat garantindo que documentos de treinamento sejam usados
