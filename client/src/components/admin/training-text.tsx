@@ -291,7 +291,7 @@ export function TrainingText() {
           <Button
             type="button" 
             onClick={handleTextSubmit}
-            disabled={isSubmitting || !textContent.trim()}
+            disabled={isSubmitting || (!textContent.trim() && !selectedImage)}
             size="sm"
             className="h-8"
           >
@@ -304,7 +304,7 @@ export function TrainingText() {
                 Processando...
               </span>
             ) : (
-              "Enviar Texto"
+              selectedImage ? "Enviar Imagem" : "Enviar Texto"
             )}
           </Button>
         </div>
