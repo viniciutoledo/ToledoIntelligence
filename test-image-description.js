@@ -4,13 +4,24 @@
  * 
  * Execute com: node test-image-description.js
  */
-const fs = require('fs');
-const path = require('path');
-const { extractContentFromImage } = require('./server/document-processors');
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Importação dinâmica para carregar module
+let extractContentFromImage;
+const loadDependencies = async () => {
+  const documentProcessors = await import('./server/document-processors.js');
+  extractContentFromImage = documentProcessors.extractContentFromImage;
+};
 
 // Definir caminho da imagem e descrição
-const testImagePath = process.argv[2] || './uploads/files/test-circuit-board.jpg'; // Substituir por uma imagem real
-const imageDescription = process.argv[3] || 'Placa de circuito com problemas no capacitor C13 e conexões soltas no resistor R22';
+const testImagePath = process.argv[2] || './uploads/files/circuit-board-test.jpg'; 
+const imageDescription = process.argv[3] || 'Placa de circuito com possíveis problemas no capacitor principal e conectores soltos na área superior direita';
 
 async function runTest() {
   console.log('Iniciando teste de processamento de imagem com descrição...');
@@ -18,6 +29,9 @@ async function runTest() {
   console.log(`Descrição: "${imageDescription}"`);
   
   try {
+    // Carregar dependências primeiro
+    await loadDependencies();
+    
     // Verificar se o arquivo existe
     if (!fs.existsSync(testImagePath)) {
       console.error(`Erro: Arquivo de imagem não encontrado: ${testImagePath}`);
@@ -43,4 +57,5 @@ async function runTest() {
   }
 }
 
+// Executar o teste
 runTest().catch(console.error);
