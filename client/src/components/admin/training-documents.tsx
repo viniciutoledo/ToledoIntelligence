@@ -151,6 +151,12 @@ export function TrainingDocuments() {
     setIsEditDialogOpen(open);
   };
   
+  // Função para lidar com diferentes tipos de documentos
+  const handleAddDocumentType = (type: string) => {
+    addForm.setValue("document_type", type);
+    setIsAddDialogOpen(true);
+  };
+  
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setSelectedFile(e.target.files[0]);
@@ -367,13 +373,26 @@ export function TrainingDocuments() {
           {t("admin.training.documentsList")}
         </h3>
         
-        <Dialog open={isAddDialogOpen} onOpenChange={handleAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <PlusCircle className="h-4 w-4 mr-2" />
-              {t("admin.training.addDocument")}
-            </Button>
-          </DialogTrigger>
+        <div className="flex items-center gap-2">
+          {/* Botão para adicionar texto */}
+          <Button variant="outline" onClick={() => handleAddDocumentType("text")}>
+            <FileText className="h-4 w-4 mr-2" />
+            Texto
+          </Button>
+          
+          {/* Botão para adicionar imagem */}
+          <Button variant="outline" onClick={() => handleAddDocumentType("file")}>
+            <Image className="h-4 w-4 mr-2" />
+            Imagem
+          </Button>
+          
+          <Dialog open={isAddDialogOpen} onOpenChange={handleAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <PlusCircle className="h-4 w-4 mr-2" />
+                {t("admin.training.addDocument")}
+              </Button>
+            </DialogTrigger>
           <DialogContent className="sm:max-w-[625px]">
             <DialogHeader>
               <DialogTitle>{t("admin.training.newDocument")}</DialogTitle>
@@ -568,6 +587,7 @@ export function TrainingDocuments() {
             </Form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
       
       <div className="border rounded-md">
