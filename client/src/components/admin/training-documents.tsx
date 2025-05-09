@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -144,13 +145,19 @@ export function TrainingDocuments() {
   const onAddSubmit = (data: DocumentFormValues) => {
     // Handle file upload
     if (data.document_type === "file" && selectedFile) {
-      const documentData: DocumentFormData = {
+      const documentData: any = {
         ...data,
+        description: data.description || null,
         file: selectedFile,
       };
       createDocumentMutation.mutate(documentData);
     } else {
-      createDocumentMutation.mutate(data);
+      // Garante que description nunca seja undefined
+      const submitData = {
+        ...data,
+        description: data.description || null
+      };
+      createDocumentMutation.mutate(submitData);
     }
     
     setIsAddDialogOpen(false);
@@ -561,7 +568,7 @@ export function TrainingDocuments() {
             <DialogTitle>{t("admin.training.editDocument")}</DialogTitle>
             {documentToEdit?.status === 'processing' && (
               <DialogDescription className="text-amber-600">
-                {t("admin.training.editProcessingWarning", "Este documento está sendo processado. Editar e salvar irá resetar seu status para permitir reprocessamento.")}
+                Este documento está sendo processado. Editar e salvar irá resetar seu status para permitir reprocessamento.
               </DialogDescription>
             )}
           </DialogHeader>
