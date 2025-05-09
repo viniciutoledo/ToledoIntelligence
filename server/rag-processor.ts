@@ -867,12 +867,19 @@ ${systemPrompt}`;
       );
     } else {
       // Usar OpenAI
-      const apiKey = llmConfig?.api_key || process.env.OPENAI_API_KEY;
+      let apiKey = llmConfig?.api_key || process.env.OPENAI_API_KEY;
       
       if (!apiKey) {
         throw new Error('Chave API OpenAI não disponível');
       }
       
+      // Limpar a chave da API para garantir que não haja espaços ou prefixos "Bearer "
+      apiKey = apiKey.trim();
+      if (apiKey.startsWith('Bearer ')) {
+        apiKey = apiKey.substring(7).trim();
+      }
+      
+      console.log('Usando OpenAI com chave limpa');
       const openai = new OpenAI({ apiKey });
       
       const completion = await openai.chat.completions.create({
@@ -991,12 +998,19 @@ Respond in a helpful, accurate, and concise manner.`;
         }
       } else {
         // Verificar se temos chave API para OpenAI
-        const apiKey = process.env.OPENAI_API_KEY;
+        let apiKey = process.env.OPENAI_API_KEY;
         
         if (!apiKey) {
           throw new Error('Sem chave API OpenAI disponível para fallback');
         }
         
+        // Limpar a chave da API para garantir que não haja espaços ou prefixos "Bearer "
+        apiKey = apiKey.trim();
+        if (apiKey.startsWith('Bearer ')) {
+          apiKey = apiKey.substring(7).trim();
+        }
+        
+        console.log('Usando OpenAI com chave limpa (fallback)');
         const openai = new OpenAI({ apiKey });
         
         const completion = await openai.chat.completions.create({
@@ -1270,12 +1284,18 @@ export async function extractQueryTopics(query: string): Promise<string[]> {
     }
     
     // Determinar qual API usar
-    const useOpenAI = llmConfig.provider === 'openai' || !llmConfig.provider;
-    const apiKey = llmConfig.api_key || (useOpenAI ? process.env.OPENAI_API_KEY : process.env.ANTHROPIC_API_KEY);
+    const useOpenAI = llmConfig.model_name.startsWith('gpt-') || !llmConfig.model_name.startsWith('claude-');
+    let apiKey = llmConfig.api_key || (useOpenAI ? process.env.OPENAI_API_KEY : process.env.ANTHROPIC_API_KEY);
     
     if (!apiKey) {
       console.error('API key não disponível para extração de tópicos');
       return extractKeywords(query); // Fallback para método simples
+    }
+    
+    // Limpar a chave da API
+    apiKey = apiKey.trim();
+    if (apiKey.startsWith('Bearer ')) {
+      apiKey = apiKey.substring(7).trim();
     }
     
     const systemPrompt = `
@@ -1364,12 +1384,18 @@ export async function analyzeQueryIntent(query: string, language: 'pt' | 'en' = 
     }
     
     // Determinar qual API usar
-    const useOpenAI = llmConfig.provider === 'openai' || !llmConfig.provider;
-    const apiKey = llmConfig.api_key || (useOpenAI ? process.env.OPENAI_API_KEY : process.env.ANTHROPIC_API_KEY);
+    const useOpenAI = llmConfig.model_name.startsWith('gpt-') || !llmConfig.model_name.startsWith('claude-');
+    let apiKey = llmConfig.api_key || (useOpenAI ? process.env.OPENAI_API_KEY : process.env.ANTHROPIC_API_KEY);
     
     if (!apiKey) {
       console.error('API key não disponível para análise de intenção');
       return null;
+    }
+    
+    // Limpar a chave da API
+    apiKey = apiKey.trim();
+    if (apiKey.startsWith('Bearer ')) {
+      apiKey = apiKey.substring(7).trim();
     }
     
     const systemPrompt = language === 'pt' ? 
