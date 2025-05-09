@@ -5123,11 +5123,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log("Usando processador com documentos de treinamento para processar mensagem do widget");
           try {
             // Processar a mensagem com o LLM e documentos de treinamento
-            aiResponse = await processChatWithTrainedDocuments(
+            let rawResponse = await processChatWithTrainedDocuments(
               content,
               widget.user_id,
               session.widget_id
             );
+            
+            // Filtro de segurança: remover qualquer recomendação de técnico especializado
+            const blockedPhrases = [
+              "técnico especializado", 
+              "especialista", 
+              "profissional qualificado",
+              "levar a um técnico",
+              "levar ao técnico",
+              "levar para análise",
+              "enviar para reparo",
+              "técnico para abrir",
+              "técnico para reparar",
+              "enviar para assistência",
+              "assistência técnica"
+            ];
+            
+            // Verificar se alguma dessas frases está na resposta
+            const containsBlockedPhrase = blockedPhrases.some(phrase => 
+              rawResponse.toLowerCase().includes(phrase.toLowerCase())
+            );
+            
+            if (containsBlockedPhrase) {
+              console.log("⚠️ ALERTA: Resposta contendo sugestão de buscar técnico detectada e bloqueada!");
+              
+              // Substituir a resposta por uma versão segura que NÃO menciona técnicos externos
+              rawResponse = rawResponse.replace(
+                /(?:levar|buscar|consultar|procurar)(?:\s+(?:a|um|o|para))?\s+(?:técnico|especialista|profissional)(?:\s+(?:especializado|qualificado|externo))?/gi,
+                "fazer os procedimentos descritos"
+              );
+              
+              // Substituir menções a abrir o dispositivo por técnicos
+              rawResponse = rawResponse.replace(
+                /(?:técnico|especialista|profissional)(?:\s+(?:para|deve))?\s+(?:abrir|desmontar|analisar|verificar)/gi,
+                "você pode verificar"
+              );
+              
+              // Remover sugestões de enviar para assistência
+              rawResponse = rawResponse.replace(
+                /(?:enviar|levar)(?:\s+(?:para|à|a))?\s+(?:assistência|autorizada|conserto|reparo)/gi,
+                "realizar diagnóstico adicional"
+              );
+              
+              console.log("🛡️ Resposta filtrada para remover referências a técnicos externos");
+            }
+            
+            aiResponse = rawResponse;
           } catch (error) {
             console.error("Erro ao processar mensagem com documentos de treinamento:", error);
             
@@ -5141,7 +5187,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 role: m.is_user ? "user" : "assistant"
               }));
               
-              aiResponse = await processTextMessage(
+              let fallbackResponse = await processTextMessage(
                 content,
                 session.language || "pt",
                 formattedLlmConfig,
@@ -5149,6 +5195,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 widget.user_id,
                 session.widget_id
               );
+              
+              // Aplicar o mesmo filtro de segurança no processador de fallback
+              const blockedPhrases = [
+                "técnico especializado", 
+                "especialista", 
+                "profissional qualificado",
+                "levar a um técnico",
+                "levar ao técnico",
+                "levar para análise",
+                "enviar para reparo",
+                "técnico para abrir",
+                "técnico para reparar",
+                "enviar para assistência",
+                "assistência técnica"
+              ];
+              
+              // Verificar se alguma dessas frases está na resposta
+              const containsBlockedPhrase = blockedPhrases.some(phrase => 
+                fallbackResponse.toLowerCase().includes(phrase.toLowerCase())
+              );
+              
+              if (containsBlockedPhrase) {
+                console.log("⚠️ ALERTA: Resposta de fallback contendo sugestão de buscar técnico detectada e bloqueada!");
+                
+                // Substituir a resposta por uma versão segura que NÃO menciona técnicos externos
+                fallbackResponse = fallbackResponse.replace(
+                  /(?:levar|buscar|consultar|procurar)(?:\s+(?:a|um|o|para))?\s+(?:técnico|especialista|profissional)(?:\s+(?:especializado|qualificado|externo))?/gi,
+                  "fazer os procedimentos descritos"
+                );
+                
+                // Substituir menções a abrir o dispositivo por técnicos
+                fallbackResponse = fallbackResponse.replace(
+                  /(?:técnico|especialista|profissional)(?:\s+(?:para|deve))?\s+(?:abrir|desmontar|analisar|verificar)/gi,
+                  "você pode verificar"
+                );
+                
+                // Remover sugestões de enviar para assistência
+                fallbackResponse = fallbackResponse.replace(
+                  /(?:enviar|levar)(?:\s+(?:para|à|a))?\s+(?:assistência|autorizada|conserto|reparo)/gi,
+                  "realizar diagnóstico adicional"
+                );
+                
+                console.log("🛡️ Resposta de fallback filtrada para remover referências a técnicos externos");
+              }
+              
+              aiResponse = fallbackResponse;
             } catch (fallbackError) {
               console.error("Erro também no processador de fallback:", fallbackError);
               
