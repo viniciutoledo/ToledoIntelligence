@@ -3,6 +3,12 @@ import { useTraining } from "@/hooks/use-training";
 import { useLanguage } from "@/hooks/use-language";
 import { Button } from "@/components/ui/button";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -65,6 +71,7 @@ import {
   RefreshCw,
   Trash2,
   Image,
+  MoreVertical,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
@@ -269,6 +276,23 @@ export function TrainingDocuments() {
       });
       
       setIsImageDialogOpen(false);
+    }
+  };
+  
+  // Função específica para editar apenas o texto do documento
+  const handleEditText = (document: any) => {
+    if (document.document_type === 'text') {
+      setDocumentToEdit(document);
+      
+      const defaultValues: any = {
+        name: document.name,
+        description: document.description || null,
+        document_type: "text",
+        content: document.content || "",
+      };
+      
+      editForm.reset(defaultValues);
+      setIsEditDialogOpen(true);
     }
   };
   
@@ -595,54 +619,59 @@ export function TrainingDocuments() {
                       )}
                       
                       {document.document_type === 'text' && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="text-indigo-500"
-                          onClick={() => handleAddImage(document)}
-                          title="Adicionar imagem"
-                        >
-                          <Image className="h-4 w-4" />
-                          <span className="sr-only">Adicionar imagem</span>
-                        </Button>
-                      )}
-                    
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleEditDocument(document)}
-                      >
-                        <Pen className="h-4 w-4" />
-                        <span className="sr-only">{t("common.edit")}</span>
-                      </Button>
-                      
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button size="sm" variant="ghost" className="text-red-500">
-                            <Trash2 className="h-4 w-4" />
-                            <span className="sr-only">{t("common.delete")}</span>
+                        <>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-indigo-500"
+                            onClick={() => handleAddImage(document)}
+                            title="Adicionar imagem"
+                          >
+                            <Image className="h-4 w-4" />
+                            <span className="sr-only">Adicionar imagem</span>
                           </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>
-                              {t("admin.training.confirmDelete")}
-                            </AlertDialogTitle>
-                            <AlertDialogDescription>
-                              {t("admin.training.deleteWarning")}
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => handleDeleteDocument(document.id)}
-                              className="bg-red-500 hover:bg-red-600"
-                            >
-                              {t("common.delete")}
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
+                          
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-emerald-500"
+                            onClick={() => handleEditText(document)}
+                            title="Editar texto"
+                          >
+                            <FileText className="h-4 w-4" />
+                            <span className="sr-only">Editar texto</span>
+                          </Button>
+                        </>
+                      )}
+                      
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleEditDocument(document)}>
+                            <Pen className="h-4 w-4 mr-2" /> Editar documento
+                          </DropdownMenuItem>
+                          {document.document_type === 'text' && (
+                            <DropdownMenuItem onClick={() => handleEditText(document)}>
+                              <FileText className="h-4 w-4 mr-2" /> Editar texto
+                            </DropdownMenuItem>
+                          )}
+                          {document.document_type === 'text' && (
+                            <DropdownMenuItem onClick={() => handleAddImage(document)}>
+                              <Image className="h-4 w-4 mr-2" /> Adicionar imagem
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuItem
+                            className="text-red-600"
+                            onClick={() => handleDeleteDocument(document.id)}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" /> Excluir
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </TableCell>
                 </TableRow>
