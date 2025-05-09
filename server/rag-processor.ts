@@ -488,7 +488,8 @@ export function buildContextForLLM(
   query: string,
   documents: any[],
   language: 'pt' | 'en' = 'pt',
-  forceExtraction: boolean = false
+  forceExtraction: boolean = false,
+  behaviorInstructions?: string
 ): string {
   // Verificar se temos documentos e logar para depuração
   if (!documents || documents.length === 0) {
@@ -504,6 +505,42 @@ export function buildContextForLLM(
   
   // Formatar documentos relevantes
   const documentContext = formatRelevantDocumentsForPrompt(documents);
+  
+  // Preparar instruções de comportamento personalizadas se existirem
+  let behaviorSection = '';
+  if (behaviorInstructions && behaviorInstructions.trim().length > 0) {
+    console.log('Preparando instruções de comportamento personalizadas para o contexto');
+    
+    // Processar e formatar instruções de comportamento para maior clareza
+    const formattedBehaviorInstructions = behaviorInstructions
+      .trim()
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line.length > 0)
+      .map(line => {
+        // Se a linha não começa com número ou marcador, adicionar um
+        if (!/^(\d+[\.\):]|\-|\•|\*|\>)/.test(line)) {
+          return `• ${line}`;
+        }
+        return line;
+      })
+      .join('\n');
+    
+    // Criar seção de instruções de comportamento
+    behaviorSection = `
+=============================================================================
+!!!!!!! INSTRUÇÕES DE COMPORTAMENTO E PERSONALIDADE - OBRIGATÓRIAS !!!!!!!!!
+=============================================================================
+
+CONFORMIDADE OBRIGATÓRIA: Estas instruções de personalidade e tom são REQUISITOS CONTRATUAIS.
+A não conformidade com estas instruções resultará em violação de acordo.
+Você DEVE seguir estas instruções em CADA resposta, sem exceções.
+
+${formattedBehaviorInstructions}
+
+=============================================================================
+`;
+  }
   
   // Construir prompt com base no idioma
   let systemPrompt = '';
@@ -625,6 +662,22 @@ export function buildContextForLLM(
     }
   }
   
+  // Se temos instruções de comportamento, adicioná-las ao prompt
+  if (behaviorSection) {
+    // Adicionar ao início para dar maior visibilidade e prioridade
+    systemPrompt = `${behaviorSection}${systemPrompt}`;
+    
+    // Adicionar lembrete ao final também para reforçar
+    systemPrompt = `${systemPrompt}
+
+=============================================================================
+LEMBRETE FINAL - CONFORMIDADE OBRIGATÓRIA COM PERSONALIDADE:
+=============================================================================
+
+Você DEVE seguir as instruções de comportamento e personalidade acima em CADA resposta.
+=============================================================================`;
+  }
+  
   return systemPrompt;
 }
 
@@ -667,7 +720,7 @@ export async function generateRAGResponse(
     console.log(`Usando instruções de comportamento: ${behaviorInstructions ? 'Sim' : 'Não'}`);
     
     // Construir o prompt/contexto
-    let systemPrompt = buildContextForLLM(query, documents, language, forceExtraction);
+    let systemPrompt = buildContextForLLM(query, documents, language, forceExtraction, behaviorInstructions);
     
     // Sistema de análise de intenção da consulta para melhorar recuperação de documentos
     console.log('Analisando intenção da consulta para otimizar recuperação de documentos...');
