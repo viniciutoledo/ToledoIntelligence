@@ -3093,6 +3093,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (document_type === "text") {
         content = req.body.content;
+      } else if (document_type === "image" && req.file) {
+        // Processar upload de imagem sem necessidade de conteúdo de texto
+        file_url = `/uploads/${req.file.filename}`;
+        console.log(`Processando imagem: ${file_url} - Tipo MIME: ${req.file.mimetype} - Tamanho: ${(req.file.size / (1024 * 1024)).toFixed(2)}MB`);
+        
+        try {
+          // Importar o processador de documentos usando dynamic import
+          const documentProcessors = await import('./document-processors');
+          
+          // Processar a imagem para extrair conteúdo usando LLM multimodal
+          const filePath = path.join(process.cwd(), "uploads/files", req.file.filename);
+          content = await documentProcessors.processDocumentContent("image", filePath);
+          
+          if (!content) {
+            console.warn(`Não foi possível extrair o conteúdo da imagem ${req.file.originalname}`);
+          } else {
+            console.log(`Conteúdo extraído da imagem com sucesso: ${content.length} caracteres`);
+          }
+        } catch (extractionError) {
+          console.error(`Erro ao processar imagem ${req.file.originalname}:`, extractionError);
+          content = `[ERRO DE ANÁLISE] Não foi possível analisar a imagem: ${extractionError instanceof Error ? extractionError.message : 'Erro desconhecido'}`;
+        }
       } else if (document_type === "file" && req.file) {
         file_url = `/uploads/${req.file.filename}`;
         
