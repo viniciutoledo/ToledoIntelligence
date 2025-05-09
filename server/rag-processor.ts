@@ -679,10 +679,16 @@ export async function generateRAGResponse(
         console.log('Tópicos identificados na consulta:', queryTopics.join(', '));
         
         // Buscar documentos adicionais relacionados aos tópicos identificados
+        console.log(`[RAG] Buscando documentos relevantes para os tópicos: ${queryTopics.join(', ')}`);
         const topicDocuments = await storage.getDocumentsByTopics(queryTopics);
         
         if (topicDocuments && topicDocuments.length > 0) {
-          console.log(`Encontrados ${topicDocuments.length} documentos adicionais relacionados ao contexto da consulta`);
+          console.log(`[RAG] Encontrados ${topicDocuments.length} documentos adicionais relacionados ao contexto da consulta`);
+          
+          // Log detalhado dos documentos encontrados
+          topicDocuments.forEach((doc, index) => {
+            console.log(`[RAG] Documento #${index + 1}: "${doc.name}" (${doc.content?.length || 0} caracteres)`);
+          });
           
           // Adicionar estes documentos ao prompt com formatação especial
           let additionalContext = `\n\nDOCUMENTOS RELEVANTES AO CONTEXTO:\n`;
