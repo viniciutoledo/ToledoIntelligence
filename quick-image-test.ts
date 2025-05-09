@@ -106,10 +106,5 @@ async function testImageAnalysis() {
   }
 }
 
-// Função auxiliar dirname
-function dirname(path: string) {
-  return new URL('.', path).pathname;
-}
-
 // Executar o teste
 testImageAnalysis().catch(console.error);

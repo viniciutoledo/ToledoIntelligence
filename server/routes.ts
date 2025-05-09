@@ -3045,6 +3045,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Rota para testar o processamento de imagem com descrição (apenas admin)
+  app.post("/api/admin/test/image-analysis", isAuthenticated, checkRole("admin"), upload.single('image'), async (req, res) => {
+    try {
+      console.log("POST /api/admin/test/image-analysis - Testando análise de imagem com descrição");
+      
+      if (!req.file) {
+        return res.status(400).json({ message: "Nenhuma imagem fornecida" });
+      }
+      
+      const description = req.body.description || undefined;
+      const filePath = path.join(process.cwd(), "uploads/files", req.file.filename);
+      
+      // Registrar detalhes do processo
+      await storage.createAuditLog({
+        user_id: req.user!.id,
+        action: "TEST_IMAGE_ANALYSIS",
+        details: JSON.stringify({
+          file: req.file.originalname,
+          size: req.file.size,
+          description: description || "Nenhuma descrição fornecida"
+        })
+      });
+      
+      // Importar o processador de documentos
+      const documentProcessors = await import('./document-processors');
+      
+      // Processar a imagem com ou sem descrição
+      console.log(`Processando imagem ${req.file.originalname}${description ? ' com descrição' : ''}`);
+      const analysisResult = await documentProcessors.extractContentFromImage(filePath, description);
+      
+      // Retornar o resultado da análise
+      res.json({
+        success: true,
+        file: {
+          name: req.file.originalname,
+          size: `${(req.file.size / 1024).toFixed(2)} KB`,
+          type: req.file.mimetype,
+          path: `/uploads/files/${req.file.filename}`
+        },
+        description: description || null,
+        analysis: analysisResult
+      });
+      
+    } catch (error) {
+      console.error("Erro ao analisar imagem:", error);
+      res.status(500).json({
+        success: false,
+        message: "Erro ao analisar imagem",
+        error: error instanceof Error ? error.message : "Erro desconhecido"
+      });
+    }
+  });
+
   // Audit logs (admin only)
   app.get("/api/admin/audit", isAuthenticated, checkRole("admin"), async (req, res) => {
     const logs = await storage.getAuditLogs();
