@@ -13,6 +13,7 @@ export type Document = {
   file_path: string | null;
   file_url: string | null;
   website_url: string | null;
+  image_url: string | null;
   file_metadata: Record<string, any> | null;
   status: "pending" | "processing" | "completed" | "error" | "indexed";
   error_message: string | null;
