@@ -13,6 +13,7 @@ import { WidgetsManagement } from "@/components/admin/widgets-management";
 import LlmUsageLogs from "@/components/admin/llm-usage-logs";
 import { UnifiedSettings } from "@/components/admin/unified-settings";
 import { ImageAnalysisTest } from "@/components/admin/image-analysis-test";
+import { RagPerformanceTest } from "@/components/admin/rag-performance";
 import { LlmProvider } from "@/hooks/use-llm";
 import { AvatarProvider } from "@/hooks/use-avatar";
 import { WidgetsProvider } from "@/hooks/use-widgets";
@@ -214,10 +215,24 @@ export default function AdminPage() {
               </div>
               
               <div className="space-y-8">
-                <Tabs defaultValue="image-analysis" className="mb-8">
+                <Tabs defaultValue="rag-test" className="mb-8">
                   <TabsList className="mb-4">
+                    <TabsTrigger value="rag-test">Teste RAG</TabsTrigger>
                     <TabsTrigger value="image-analysis">Análise de Imagem</TabsTrigger>
                   </TabsList>
+                  
+                  <TabsContent value="rag-test" className="mt-4">
+                    <div className="space-y-4">
+                      <h2 className="text-xl font-semibold text-neutral-700">
+                        Teste do Sistema RAG (Retrieval Augmented Generation)
+                      </h2>
+                      <p className="text-neutral-600">
+                        Esta ferramenta permite testar como o sistema RAG recupera documentos 
+                        relevantes com base em consultas, usando embeddings semânticos e análise de tópicos.
+                      </p>
+                      <RagPerformanceTest />
+                    </div>
+                  </TabsContent>
                   
                   <TabsContent value="image-analysis" className="mt-4">
                     <div className="space-y-4">

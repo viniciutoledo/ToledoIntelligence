@@ -1,255 +1,236 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { apiRequest } from '@/lib/queryClient';
-import { useToast } from '@/hooks/use-toast';
-import { Loader2, FileText, Search, BookOpen } from 'lucide-react';
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle, Check, Database, FileText, Search } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/hooks/use-language";
+import { apiRequest } from "@/lib/queryClient";
+import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 interface RAGTestResult {
   query: string;
   topics: string[];
   documents: Array<{
-    name: string;
+    id: number;
+    title: string;
     content: string;
-    relevance?: number;
   }>;
   response: string;
-  processingTime: number;
 }
 
-const RagPerformance = () => {
-  const [query, setQuery] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [testResult, setTestResult] = useState<RAGTestResult | null>(null);
-  const [testHistory, setTestHistory] = useState<RAGTestResult[]>([]);
+export function RagPerformanceTest() {
+  const { t } = useLanguage();
   const { toast } = useToast();
-
-  // Carregar histórico de testes do localStorage
-  useEffect(() => {
-    const savedHistory = localStorage.getItem('rag_test_history');
-    if (savedHistory) {
-      try {
-        setTestHistory(JSON.parse(savedHistory));
-      } catch (e) {
-        console.error('Erro ao carregar histórico de testes RAG:', e);
-      }
-    }
-  }, []);
-
-  // Salvar histórico de testes no localStorage
-  useEffect(() => {
-    if (testHistory.length > 0) {
-      localStorage.setItem('rag_test_history', JSON.stringify(testHistory.slice(0, 20)));
-    }
-  }, [testHistory]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [testQuery, setTestQuery] = useState("");
+  const [result, setResult] = useState<RAGTestResult | null>(null);
 
   const runTest = async () => {
-    if (!query.trim()) {
+    if (!testQuery.trim()) {
       toast({
-        title: 'Consulta vazia',
-        description: 'Por favor, digite uma consulta para testar',
-        variant: 'destructive'
+        title: t("Campo obrigatório"),
+        description: t("Digite uma consulta para testar o sistema RAG"),
+        variant: "destructive",
       });
       return;
     }
 
     setIsLoading(true);
     try {
-      const startTime = Date.now();
-      const response = await apiRequest('POST', '/api/admin/test-rag', { query });
+      const response = await apiRequest("POST", "/api/admin/test-rag", { query: testQuery });
       const data = await response.json();
-      const endTime = Date.now();
       
-      const result: RAGTestResult = {
-        query,
-        topics: data.topics || [],
-        documents: data.documents || [],
-        response: data.response || 'Sem resposta',
-        processingTime: endTime - startTime
-      };
-      
-      setTestResult(result);
-      setTestHistory(prev => [result, ...prev].slice(0, 20));
-      
+      setResult(data);
       toast({
-        title: 'Teste RAG concluído',
-        description: `Encontrados ${result.documents.length} documentos relevantes`
+        title: t("Teste concluído"),
+        description: t("A consulta foi processada com sucesso"),
       });
     } catch (error) {
+      console.error("Erro ao testar RAG:", error);
       toast({
-        title: 'Erro ao testar o sistema RAG',
-        description: error instanceof Error ? error.message : 'Erro desconhecido',
-        variant: 'destructive'
+        title: t("Erro"),
+        description: t("Não foi possível testar o sistema RAG"),
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const loadTest = (test: RAGTestResult) => {
-    setQuery(test.query);
-    setTestResult(test);
-  };
-
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Análise de Desempenho RAG</CardTitle>
+          <CardTitle>{t("Teste de Recuperação Semântica de Documentos")}</CardTitle>
           <CardDescription>
-            Teste e analise o sistema de Recuperação Aumentada por Geração (RAG)
+            {t("Teste como o sistema RAG recupera documentos relevantes com base na consulta")}
           </CardDescription>
         </CardHeader>
+
         <CardContent>
-          <div className="space-y-4">
-            <div className="flex gap-2">
+          <div className="grid gap-4">
+            <div className="flex items-center gap-2">
               <Input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Digite uma consulta para testar o sistema RAG..."
+                placeholder={t("Digite uma consulta técnica para testar...")}
+                value={testQuery}
+                onChange={(e) => setTestQuery(e.target.value)}
                 className="flex-1"
               />
               <Button 
                 onClick={runTest} 
                 disabled={isLoading}
+                className="w-24"
               >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Processando...
-                  </>
-                ) : (
-                  <>
-                    <Search className="mr-2 h-4 w-4" />
-                    Testar
-                  </>
-                )}
+                {isLoading ? t("Testando...") : t("Testar")}
               </Button>
             </div>
-            
-            <Tabs defaultValue="result" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="result">Resultado</TabsTrigger>
-                <TabsTrigger value="documents">Documentos ({testResult?.documents.length || 0})</TabsTrigger>
-                <TabsTrigger value="history">Histórico ({testHistory.length})</TabsTrigger>
-              </TabsList>
-              <TabsContent value="result" className="space-y-4 mt-4">
-                {testResult ? (
-                  <div className="space-y-4">
-                    <div className="flex flex-wrap gap-2">
-                      <Badge variant="outline" className="text-xs">
-                        Tempo: {testResult.processingTime}ms
-                      </Badge>
-                      <Badge variant="outline" className="text-xs">
-                        Documentos: {testResult.documents.length}
-                      </Badge>
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-semibold">Tópicos Identificados:</h4>
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {testResult.topics.map((topic, index) => (
-                          <Badge key={index} variant="secondary" className="text-xs">
-                            {topic}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-semibold">Resposta:</h4>
-                      <Card className="mt-1">
-                        <CardContent className="p-4">
-                          <p className="whitespace-pre-wrap text-sm">{testResult.response}</p>
-                        </CardContent>
-                      </Card>
-                    </div>
+
+            {result && (
+              <Tabs defaultValue="overview" className="mt-4">
+                <TabsList className="mb-4">
+                  <TabsTrigger value="overview">{t("Visão Geral")}</TabsTrigger>
+                  <TabsTrigger value="topics">{t("Tópicos")}</TabsTrigger>
+                  <TabsTrigger value="documents">{t("Documentos")}</TabsTrigger>
+                  <TabsTrigger value="response">{t("Resposta")}</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="overview" className="space-y-4">
+                  <Alert>
+                    <Search className="h-4 w-4" />
+                    <AlertTitle>{t("Consulta")}</AlertTitle>
+                    <AlertDescription>{result.query}</AlertDescription>
+                  </Alert>
+
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-medium">{t("Tópicos Extraídos")}</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">{result.topics.length}</div>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-medium">{t("Documentos Encontrados")}</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">{result.documents.length}</div>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-medium">{t("Tamanho da Resposta")}</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">{result.response.length} {t("caracteres")}</div>
+                      </CardContent>
+                    </Card>
                   </div>
-                ) : (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <BookOpen className="mx-auto h-12 w-12 mb-4 opacity-20" />
-                    <p>Execute um teste para ver os resultados</p>
-                  </div>
-                )}
-              </TabsContent>
-              <TabsContent value="documents" className="mt-4">
-                {testResult && testResult.documents.length > 0 ? (
-                  <div className="space-y-4">
-                    {testResult.documents.map((doc, index) => (
-                      <Card key={index}>
-                        <CardHeader className="py-3">
-                          <div className="flex items-center justify-between">
-                            <CardTitle className="text-sm font-medium flex items-center">
-                              <FileText className="h-4 w-4 mr-2" />
-                              {doc.name}
-                            </CardTitle>
-                            {doc.relevance && (
-                              <Badge variant="outline" className="text-xs">
-                                Relevância: {(doc.relevance * 100).toFixed(1)}%
-                              </Badge>
-                            )}
-                          </div>
-                        </CardHeader>
-                        <CardContent className="py-2">
-                          <ScrollArea className="h-32">
-                            <p className="text-xs whitespace-pre-wrap">{doc.content.substring(0, 500)}...</p>
-                          </ScrollArea>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <FileText className="mx-auto h-12 w-12 mb-4 opacity-20" />
-                    <p>Nenhum documento relevante encontrado</p>
-                  </div>
-                )}
-              </TabsContent>
-              <TabsContent value="history" className="mt-4">
-                {testHistory.length > 0 ? (
-                  <div className="space-y-2">
-                    {testHistory.map((test, index) => (
-                      <Card key={index} className="cursor-pointer hover:bg-accent/50" onClick={() => loadTest(test)}>
-                        <CardContent className="p-3">
-                          <div className="flex justify-between items-center">
-                            <div className="truncate flex-1">
-                              <p className="font-medium truncate">{test.query}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {test.documents.length} documentos • {test.processingTime}ms
-                              </p>
-                            </div>
-                            <div className="flex gap-1">
-                              {test.topics.slice(0, 3).map((topic, i) => (
-                                <Badge key={i} variant="outline" className="text-xs">
-                                  {topic}
-                                </Badge>
-                              ))}
-                              {test.topics.length > 3 && (
-                                <Badge variant="outline" className="text-xs">
-                                  +{test.topics.length - 3}
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <p>Nenhum teste no histórico</p>
-                  </div>
-                )}
-              </TabsContent>
-            </Tabs>
+                </TabsContent>
+                
+                <TabsContent value="topics">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>{t("Tópicos Extraídos da Consulta")}</CardTitle>
+                      <CardDescription>
+                        {t("Estes são os tópicos identificados e usados para recuperar documentos relevantes")}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {result.topics.length === 0 ? (
+                        <Alert variant="destructive">
+                          <AlertCircle className="h-4 w-4" />
+                          <AlertTitle>{t("Nenhum tópico encontrado")}</AlertTitle>
+                          <AlertDescription>
+                            {t("Não foi possível extrair tópicos relevantes da consulta")}
+                          </AlertDescription>
+                        </Alert>
+                      ) : (
+                        <ul className="list-disc pl-5 space-y-2">
+                          {result.topics.map((topic, index) => (
+                            <li key={index} className="text-md">
+                              {topic}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+                
+                <TabsContent value="documents">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>{t("Documentos Recuperados")}</CardTitle>
+                      <CardDescription>
+                        {t("Documentos encontrados na base de conhecimento relacionados à consulta")}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {result.documents.length === 0 ? (
+                        <Alert variant="destructive">
+                          <AlertCircle className="h-4 w-4" />
+                          <AlertTitle>{t("Nenhum documento encontrado")}</AlertTitle>
+                          <AlertDescription>
+                            {t("Não foram encontrados documentos relevantes para esta consulta")}
+                          </AlertDescription>
+                        </Alert>
+                      ) : (
+                        <Accordion type="single" collapsible className="w-full">
+                          {result.documents.map((doc, index) => (
+                            <AccordionItem key={index} value={`item-${index}`}>
+                              <AccordionTrigger className="text-md font-medium flex items-center">
+                                <FileText className="h-4 w-4 mr-2 inline-block" />
+                                <span className="truncate">{doc.title || `Documento #${doc.id}`}</span>
+                              </AccordionTrigger>
+                              <AccordionContent>
+                                <ScrollArea className="h-[200px] w-full rounded-md border p-4">
+                                  <div className="whitespace-pre-wrap">{doc.content}</div>
+                                </ScrollArea>
+                              </AccordionContent>
+                            </AccordionItem>
+                          ))}
+                        </Accordion>
+                      )}
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+                
+                <TabsContent value="response">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>{t("Resposta Gerada")}</CardTitle>
+                      <CardDescription>
+                        {t("Resposta gerada pelo sistema com base nos documentos recuperados")}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <ScrollArea className="h-[400px] w-full rounded-md border p-4">
+                        <div className="whitespace-pre-wrap">{result.response}</div>
+                      </ScrollArea>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              </Tabs>
+            )}
           </div>
         </CardContent>
+
+        <CardFooter className="flex justify-between border-t pt-4">
+          <div className="flex items-center text-sm text-muted-foreground">
+            <Database className="h-4 w-4 mr-1" />
+            {t("O sistema RAG utiliza embeddings semânticos para recuperar documentos relevantes")}
+          </div>
+        </CardFooter>
       </Card>
     </div>
   );
-};
-
-export default RagPerformance;
+}

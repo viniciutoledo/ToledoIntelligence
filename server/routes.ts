@@ -9,6 +9,7 @@ import { testTopicsLearning, addTechnicalTopic } from "./external-search";
 import { logAction } from "./audit";
 import { systemMaintenanceService } from "./system-maintenance";
 import { registerSecurityRoutes } from "./security-settings";
+import { registerAdminRoutes } from "./admin-routes";
 import multer from "multer";
 import crypto from "crypto";
 import path from "path";
@@ -308,6 +309,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Configuração de rotas de segurança avançada
   registerSecurityRoutes(app);
+  
+  // Registrar rotas administrativas específicas
+  registerAdminRoutes(app);
   
   // API routes
   // User management
