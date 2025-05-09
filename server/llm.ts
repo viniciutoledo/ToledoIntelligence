@@ -248,25 +248,81 @@ export async function fetchOpenAIDirectly(endpoint: string, data: any, apiKey: s
     }
     
     // Usar concatenação de strings em vez de template literals para evitar problemas com caracteres especiais
+    // Verificar se não há caracteres inválidos no cabeçalho de autenticação
+    // O cabeçalho HTTP não pode conter caracteres de controle ou não-ASCII
     const authHeader = 'Bearer ' + cleanedKey;
     
-    const response = await fetch('https://api.openai.com/v1/' + endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': authHeader,
-        'OpenAI-Beta': 'assistants=v1'
-      },
-      body: JSON.stringify(data)
-    });
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Erro na resposta da OpenAI:', response.status, errorText);
-      throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
+    // Verificar o cabeçalho de autenticação para caracteres inválidos
+    if (/[^\x20-\x7E]/.test(authHeader)) {
+      console.error('ALERTA CRÍTICO: O cabeçalho de autenticação contém caracteres inválidos');
+      
+      // Tentar usar a chave do ambiente como último recurso
+      if (process.env.OPENAI_API_KEY) {
+        console.log('Usando OPENAI_API_KEY do ambiente como solução de emergência');
+        const safeAuthHeader = 'Bearer ' + process.env.OPENAI_API_KEY.trim();
+        
+        const response = await fetch('https://api.openai.com/v1/' + endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': safeAuthHeader,
+            'OpenAI-Beta': 'assistants=v1'
+          },
+          body: JSON.stringify(data)
+        });
+        
+        return handleOpenAIResponse(response);
+      } else {
+        throw new Error('Não foi possível criar um cabeçalho de autenticação válido');
+      }
     }
     
-    return await response.json();
+    try {
+      const response = await fetch('https://api.openai.com/v1/' + endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': authHeader,
+          'OpenAI-Beta': 'assistants=v1'
+        },
+        body: JSON.stringify(data)
+      });
+      
+      return handleOpenAIResponse(response);
+    } catch (fetchError) {
+      console.error('Erro durante a requisição fetch para OpenAI:', fetchError);
+      
+      // Tentar com a chave do ambiente como fallback
+      if (process.env.OPENAI_API_KEY) {
+        console.log('Tentando usar OPENAI_API_KEY do ambiente após falha no fetch');
+        const safeAuthHeader = 'Bearer ' + process.env.OPENAI_API_KEY.trim();
+        
+        const response = await fetch('https://api.openai.com/v1/' + endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': safeAuthHeader,
+            'OpenAI-Beta': 'assistants=v1'
+          },
+          body: JSON.stringify(data)
+        });
+        
+        return handleOpenAIResponse(response);
+      } else {
+        throw fetchError;
+      }
+    }
+    
+    // Função auxiliar para processar a resposta
+    async function handleOpenAIResponse(response) {
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Erro na resposta da OpenAI:', response.status, errorText);
+        throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
+      }
+      
+      return await response.json();
+    }
   } catch (error) {
     console.error('Erro ao chamar OpenAI diretamente:', error);
     throw error;
