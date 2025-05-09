@@ -361,7 +361,7 @@ export function useTraining() {
     onError: (error: Error) => {
       console.error("Erro ao atualizar documento:", error);
       toast({
-        title: t("common.error"),
+        title: "Erro",
         description: error.message || "Erro ao atualizar documento",
         variant: "destructive",
       });
@@ -441,8 +441,8 @@ export function useTraining() {
     },
     onSuccess: () => {
       toast({
-        title: t("common.success"),
-        description: t("admin.training.categoryUpdated"),
+        title: "Sucesso",
+        description: "Categoria atualizada com sucesso",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/training/categories"] });
     },
@@ -466,8 +466,8 @@ export function useTraining() {
     },
     onSuccess: () => {
       toast({
-        title: t("common.success"),
-        description: t("admin.training.categoryDeleted"),
+        title: "Sucesso",
+        description: "Categoria excluída com sucesso",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/training/categories"] });
     },
@@ -521,7 +521,7 @@ export function useTraining() {
     },
     onError: (error: Error) => {
       toast({
-        title: t("common.error"),
+        title: "Erro",
         description: error.message || "Erro ao processar embeddings",
         variant: "destructive",
       });
@@ -543,7 +543,7 @@ export function useTraining() {
     },
     onError: (error: Error) => {
       toast({
-        title: t("common.error"),
+        title: "Erro",
         description: error.message || "Erro ao resetar status do documento",
         variant: "destructive",
       });
