@@ -584,7 +584,7 @@ export async function generateRAGResponse(
     
     // Determinar qual provedor usar
     const useModel = model || llmConfig?.model_name || 'gpt-4o';
-    const provider = useModel.startsWith('claude') ? 'anthropic' : 'openai';
+    const providerToUse = useModel.startsWith('claude') ? 'anthropic' : 'openai';
     const temperature = llmConfig?.temperature || '0.3';
     
     // Obter instruções de comportamento da configuração do LLM
@@ -609,7 +609,7 @@ ${systemPrompt}`;
     // Chamar o LLM apropriado
     let response: string;
     
-    if (provider === 'anthropic') {
+    if (providerToUse === 'anthropic') {
       // Usar Anthropic Claude
       const apiKey = llmConfig?.api_key || process.env.ANTHROPIC_API_KEY;
       
@@ -696,7 +696,7 @@ ${systemPrompt}`;
     try {
       console.log('Tentando fallback para outro modelo após erro...');
       
-      // Determinar o provedor do modelo atual
+      // Extrair o provedor atual do modelo
       const currentProvider = model?.startsWith('claude') ? 'anthropic' : 'openai';
       
       // Se o modelo atual é OpenAI, tentar Claude e vice-versa
