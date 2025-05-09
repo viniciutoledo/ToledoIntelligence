@@ -28,11 +28,14 @@ export default function AdminPage() {
   
   // Lidar com a navegação em seções especiais
   const handleSectionChange = (section: string) => {
+    console.log("Navegando para a seção:", section);
+    // Atualizar a seção ativa imediatamente
+    setActiveSection(section);
+    
+    // Se for a seção de testes, apenas atualizar a seção e NÃO redirecionar
+    // A redireção estava causando problemas na navegação
     if (section === "tests") {
-      // Redirecionar para a página de testes completa
-      setLocation("/tests");
-    } else {
-      setActiveSection(section);
+      console.log("Carregando seção de testes diretamente na página admin");
     }
   };
   
