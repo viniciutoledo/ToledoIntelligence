@@ -66,9 +66,15 @@ export function TrainingText() {
   const textDocuments = documents?.filter(doc => doc.document_type === "text") || [];
   
   const handleTextSubmit = async () => {
-    if (!textContent.trim()) return;
+    // Permite o envio se houver texto OU imagem
+    if (!textContent.trim() && !selectedImage) return;
     
     setIsSubmitting(true);
+    console.log("Iniciando envio de conteúdo", { 
+      hasText: !!textContent.trim(), 
+      hasImage: !!selectedImage,
+      imageName: selectedImage?.name 
+    });
     
     try {
       // Prepara o FormData para suportar envio de imagem junto com o texto
@@ -224,14 +230,14 @@ export function TrainingText() {
         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
           <FileText className="h-4 w-4 text-primary" />
         </div>
-        <h3 className="ml-2 text-base font-medium">Novo Treinamento de Texto</h3>
+        <h3 className="ml-2 text-base font-medium">Novo Treinamento (Texto e/ou Imagem)</h3>
       </div>
 
       {/* Área de input do texto */}
       <div className="mb-6 rounded-lg border bg-card">
         <div className="p-4">
           <Textarea
-            placeholder="Digite o conteúdo de texto para treinar o modelo de IA..."
+            placeholder="Digite o conteúdo de texto para treinar o modelo de IA (opcional se uma imagem for adicionada)..."
             value={textContent}
             onChange={e => setTextContent(e.target.value)}
             className="min-h-[120px] resize-none border-0 bg-transparent p-0 text-sm ring-0 focus-visible:ring-0 focus-visible:ring-offset-0"
@@ -286,7 +292,7 @@ export function TrainingText() {
         
         <div className="flex items-center justify-between border-t bg-muted/20 px-4 py-2">
           <div className="flex items-center text-xs text-muted-foreground">
-            <span>Digite ou cole o conteúdo de texto</span>
+            <span>Digite texto e/ou adicione uma imagem para treinamento</span>
           </div>
           <Button
             type="button" 
@@ -321,9 +327,9 @@ export function TrainingText() {
             <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted">
               <FileText className="h-10 w-10 text-muted-foreground/60" />
             </div>
-            <h3 className="mt-4 text-lg font-medium">Nenhum Treinamento de Texto</h3>
+            <h3 className="mt-4 text-lg font-medium">Nenhum Item de Treinamento</h3>
             <p className="mt-2 text-sm text-muted-foreground text-center max-w-sm">
-              Digite conteúdo de texto para treinar o modelo de IA
+              Adicione texto ou imagens para treinar o modelo de IA
             </p>
           </div>
         ) : (
@@ -430,9 +436,9 @@ export function TrainingText() {
         <Dialog open={!!editingDocument} onOpenChange={(open) => !open && closeEditModal()}>
           <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Editar Treinamento de Texto</DialogTitle>
+              <DialogTitle>Editar Item de Treinamento</DialogTitle>
               <DialogDescription>
-                Edite o conteúdo do texto e adicione uma imagem ilustrativa se necessário.
+                Edite o conteúdo de texto e/ou imagem usados para treinar o modelo de IA.
               </DialogDescription>
             </DialogHeader>
             
