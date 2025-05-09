@@ -637,15 +637,14 @@ ${systemPrompt}`;
       }
       
       // Registrar uso
-      await logLlmUsage({
-        model_name: useModel,
-        provider: 'anthropic',
-        operation_type: 'text',
-        user_id: userId,
-        widget_id: widgetId,
-        token_count: (message.usage?.input_tokens || 0) + (message.usage?.output_tokens || 0),
-        success: true
-      });
+      await logLlmUsage(
+        useModel,
+        'text',
+        true,
+        userId,
+        widgetId,
+        (message.usage?.input_tokens || 0) + (message.usage?.output_tokens || 0)
+      );
     } else {
       // Usar OpenAI
       const apiKey = llmConfig?.api_key || process.env.OPENAI_API_KEY;
@@ -668,33 +667,137 @@ ${systemPrompt}`;
       response = completion.choices[0]?.message?.content || 'Não foi possível gerar uma resposta.';
       
       // Registrar uso
-      await logLlmUsage({
-        model_name: useModel,
-        provider: 'openai',
-        operation_type: 'text',
-        user_id: userId,
-        widget_id: widgetId,
-        token_count: completion.usage?.total_tokens || 0,
-        success: true
-      });
+      await logLlmUsage(
+        useModel,
+        'text',
+        true,
+        userId,
+        widgetId,
+        completion.usage?.total_tokens || 0
+      );
     }
     
     return response;
   } catch (error: any) {
     console.error('Erro ao gerar resposta RAG:', error);
     
-    await logLlmUsage({
-      model_name: model || 'unknown',
-      provider: model?.startsWith('claude') ? 'anthropic' : 'openai',
-      operation_type: 'text',
-      user_id: userId,
-      widget_id: widgetId,
-      token_count: 0,
-      success: false,
-      error_message: error.message
-    });
+    // Registrar o erro com o modelo original
+    await logLlmUsage(
+      model || 'unknown',
+      'text',
+      false,
+      userId,
+      widgetId,
+      0,
+      error.message
+    );
     
-    return `Erro ao gerar resposta: ${error.message}`;
+    // Tentar com um modelo alternativo (fallback)
+    try {
+      console.log('Tentando fallback para outro modelo após erro...');
+      
+      // Determinar qual modelo alternativo usar
+      // Se o modelo atual é OpenAI, tentar Claude e vice-versa
+      const fallbackProvider = provider === 'openai' ? 'anthropic' : 'openai';
+      const fallbackModel = fallbackProvider === 'anthropic' 
+        ? 'claude-3-7-sonnet-20250219' // the newest Anthropic model
+        : 'gpt-4o-mini'; // modelo mais leve da OpenAI para fallback
+      
+      console.log(`Usando fallback para ${fallbackProvider} / ${fallbackModel}`);
+      
+      if (fallbackProvider === 'anthropic') {
+        // Verificar se temos chave API para Anthropic
+        const apiKey = process.env.ANTHROPIC_API_KEY;
+        
+        if (!apiKey) {
+          throw new Error('Sem chave API Anthropic disponível para fallback');
+        }
+        
+        const anthropic = new Anthropic({ apiKey });
+        
+        const message = await anthropic.messages.create({
+          model: fallbackModel,
+          max_tokens: 1000,
+          temperature: 0.3, // temperatura mais baixa para fallback
+          system: systemPrompt,
+          messages: [
+            { role: 'user', content: query }
+          ]
+        });
+        
+        // Extrair texto da resposta
+        if (message.content[0] && typeof message.content[0] === 'object' && 'text' in message.content[0]) {
+          const response = message.content[0].text;
+          
+          // Registrar uso do fallback
+          await logLlmUsage(
+            fallbackModel,
+            'text',
+            true,
+            userId,
+            widgetId,
+            (message.usage?.input_tokens || 0) + (message.usage?.output_tokens || 0)
+          );
+          
+          console.log('Fallback para Anthropic bem-sucedido');
+          return response;
+        }
+      } else {
+        // Verificar se temos chave API para OpenAI
+        const apiKey = process.env.OPENAI_API_KEY;
+        
+        if (!apiKey) {
+          throw new Error('Sem chave API OpenAI disponível para fallback');
+        }
+        
+        const openai = new OpenAI({ apiKey });
+        
+        const completion = await openai.chat.completions.create({
+          model: fallbackModel,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: query }
+          ],
+          temperature: 0.3 // temperatura mais baixa para fallback
+        });
+        
+        const response = completion.choices[0]?.message?.content || 'Não foi possível gerar uma resposta.';
+        
+        // Registrar uso do fallback
+        await logLlmUsage({
+          model_name: fallbackModel,
+          provider: 'openai',
+          operation_type: 'text',
+          user_id: userId,
+          widget_id: widgetId,
+          token_count: completion.usage?.total_tokens || 0,
+          success: true
+        });
+        
+        console.log('Fallback para OpenAI bem-sucedido');
+        return response;
+      }
+    } catch (fallbackError: any) {
+      console.error('Erro também no modelo de fallback:', fallbackError);
+      
+      // Registrar erro no fallback também
+      await logLlmUsage({
+        model_name: fallbackError.fallbackModel || 'fallback-unknown',
+        provider: fallbackError.fallbackProvider || 'unknown',
+        operation_type: 'text',
+        user_id: userId,
+        widget_id: widgetId,
+        token_count: 0,
+        success: false,
+        error_message: fallbackError.message
+      });
+      
+      // Mensagem de erro mais amigável para o usuário final
+      return `Não foi possível processar sua consulta neste momento. Por favor, tente novamente mais tarde.`;
+    }
+    
+    // Isso só será alcançado se houver um erro não tratado no código de fallback
+    return `Desculpe, estamos enfrentando problemas técnicos. Por favor, tente novamente em alguns minutos.`;
   }
 }
 

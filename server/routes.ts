@@ -5130,23 +5130,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
             );
           } catch (error) {
             console.error("Erro ao processar mensagem com documentos de treinamento:", error);
-            // Fallback para o processador original se houver algum erro
-            console.log("Usando processador original como fallback");
             
-            // Converter mensagens para o formato antigo
-            const messageHistory = messages.filter(m => m.id !== userMessage.id).map(m => ({
-              content: m.content || "",
-              role: m.is_user ? "user" : "assistant"
-            }));
-            
-            aiResponse = await processTextMessage(
-              content,
-              session.language || "pt",
-              formattedLlmConfig,
-              messageHistory,
-              widget.user_id,
-              session.widget_id
-            );
+            try {
+              // Fallback para o processador original se houver algum erro
+              console.log("Usando processador original como fallback");
+              
+              // Converter mensagens para o formato antigo
+              const messageHistory = messages.filter(m => m.id !== userMessage.id).map(m => ({
+                content: m.content || "",
+                role: m.is_user ? "user" : "assistant"
+              }));
+              
+              aiResponse = await processTextMessage(
+                content,
+                session.language || "pt",
+                formattedLlmConfig,
+                messageHistory,
+                widget.user_id,
+                session.widget_id
+              );
+            } catch (fallbackError) {
+              console.error("Erro também no processador de fallback:", fallbackError);
+              
+              // Fornecer uma resposta mais amigável para o usuário em vez de mostrar o erro técnico
+              const errorLanguage = session.language || "pt";
+              if (errorLanguage === "pt") {
+                aiResponse = "Estou enfrentando dificuldades técnicas no momento. Por favor, tente novamente em alguns instantes ou entre em contato com o suporte técnico.";
+              } else {
+                aiResponse = "I'm experiencing technical difficulties at the moment. Please try again in a few moments or contact technical support.";
+              }
+              
+              // Registrar o erro para diagnóstico
+              await storage.logSystemEvent({
+                event_type: 'widget_ai_error',
+                user_id: widget.user_id,
+                details: JSON.stringify({
+                  error: (fallbackError as Error).message,
+                  sessionId: session_id,
+                  widgetId: session.widget_id
+                }),
+                severity: 'error'
+              });
+            }
           }
         } catch (error) {
           console.error("Erro ao processar mensagem com LLM:", error);
