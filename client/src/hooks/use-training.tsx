@@ -118,8 +118,8 @@ export function useTraining() {
     },
     onSuccess: () => {
       toast({
-        title: t("common.success"),
-        description: t("admin.training.documentCreated"),
+        title: "Sucesso",
+        description: "Documento criado com sucesso",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/training/documents"] });
     },
@@ -178,8 +178,8 @@ export function useTraining() {
     },
     onSuccess: () => {
       toast({
-        title: t("common.success"),
-        description: t("admin.training.textTrainingAdded"),
+        title: "Sucesso",
+        description: "Texto adicionado com sucesso para treinamento",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/training/documents"] });
     },
@@ -207,8 +207,8 @@ export function useTraining() {
     },
     onSuccess: () => {
       toast({
-        title: t("common.success"),
-        description: t("admin.training.websiteTrainingAdded"),
+        title: "Sucesso",
+        description: "Website adicionado com sucesso para treinamento",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/training/documents"] });
     },
@@ -264,8 +264,8 @@ export function useTraining() {
     },
     onSuccess: () => {
       toast({
-        title: t("common.success"),
-        description: t("admin.training.videoTrainingAdded"),
+        title: "Sucesso",
+        description: "Vídeo adicionado com sucesso para treinamento",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/training/documents"] });
     },
@@ -294,13 +294,9 @@ export function useTraining() {
       return await res.json();
     },
     onSuccess: () => {
-      // Log para depurar
-      console.log('Chave de tradução:', 'admin.training.documentTrainingAdded');
-      console.log('Tradução:', t('admin.training.documentTrainingAdded'));
-      
       toast({
-        title: t("common.success"),
-        description: "Treinamento de documento adicionado com sucesso",
+        title: "Sucesso",
+        description: "Arquivo adicionado com sucesso para treinamento",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/training/documents"] });
     },
@@ -357,8 +353,8 @@ export function useTraining() {
     onSuccess: (data) => {
       console.log("Documento atualizado com sucesso:", data);
       toast({
-        title: t("common.success"),
-        description: t("admin.training.documentUpdated") || "Documento atualizado com sucesso",
+        title: "Sucesso",
+        description: "Documento atualizado com sucesso",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/training/documents"] });
     },
@@ -383,8 +379,8 @@ export function useTraining() {
     },
     onSuccess: () => {
       toast({
-        title: t("common.success"),
-        description: t("admin.training.documentDeleted"),
+        title: "Sucesso",
+        description: "Documento excluído com sucesso",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/training/documents"] });
     },
@@ -424,8 +420,8 @@ export function useTraining() {
     },
     onSuccess: () => {
       toast({
-        title: t("common.success"),
-        description: t("admin.training.categoryCreated"),
+        title: "Sucesso",
+        description: "Categoria criada com sucesso",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/training/categories"] });
     },
@@ -518,7 +514,7 @@ export function useTraining() {
     },
     onSuccess: (data) => {
       toast({
-        title: t("common.success"),
+        title: "Sucesso",
         description: data.message || "Embeddings processados com sucesso",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/training/documents"] });
@@ -540,7 +536,7 @@ export function useTraining() {
     },
     onSuccess: (data) => {
       toast({
-        title: t("common.success"),
+        title: "Sucesso",
         description: data.message || "Status do documento resetado com sucesso",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/training/documents"] });
