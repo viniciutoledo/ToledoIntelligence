@@ -58,6 +58,8 @@ export function TrainingText() {
   
   // Estado para upload de imagem
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imageDescription, setImageDescription] = useState<string>("");
+  const [showImageDescription, setShowImageDescription] = useState<boolean>(false);
   const [editSelectedImage, setEditSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isEditingImage, setIsEditingImage] = useState(false);
@@ -79,12 +81,21 @@ export function TrainingText() {
     try {
       // Prepara o FormData para suportar envio de imagem junto com o texto
       const formData = new FormData();
-      formData.append('name', `Treinamento de texto ${new Date().toLocaleString()}`);
+      const docName = selectedImage && !textContent.trim() 
+        ? `Treinamento de imagem ${new Date().toLocaleString()}`
+        : `Treinamento de texto ${new Date().toLocaleString()}`;
+      
+      formData.append('name', docName);
       formData.append('document_type', 'text');
       formData.append('content', textContent);
       
       if (selectedImage) {
         formData.append('file', selectedImage);
+        
+        // Adiciona a descrição da imagem (se existir)
+        if (imageDescription.trim()) {
+          formData.append('description', imageDescription);
+        }
       }
       
       // Usar a mutation genérica que suporta FormData
@@ -105,6 +116,8 @@ export function TrainingText() {
       // Limpar o formulário
       setTextContent("");
       setSelectedImage(null);
+      setImageDescription("");
+      setShowImageDescription(false);
       if (imageInputRef.current) {
         imageInputRef.current.value = "";
       }
@@ -127,6 +140,7 @@ export function TrainingText() {
     const file = e.target.files?.[0];
     if (file) {
       setSelectedImage(file);
+      setShowImageDescription(true);
     }
   };
   
@@ -269,6 +283,8 @@ export function TrainingText() {
                   size="sm"
                   onClick={() => {
                     setSelectedImage(null);
+                    setShowImageDescription(false);
+                    setImageDescription("");
                     if (imageInputRef.current) {
                       imageInputRef.current.value = "";
                     }
@@ -288,6 +304,25 @@ export function TrainingText() {
               className="hidden"
             />
           </div>
+          
+          {/* Campo de descrição para a imagem */}
+          {showImageDescription && selectedImage && (
+            <div className="mt-2">
+              <Label htmlFor="image-description" className="text-xs mb-1 block">
+                Descrição da imagem (opcional)
+              </Label>
+              <Textarea
+                id="image-description"
+                placeholder="Adicione uma descrição sobre a imagem para orientar o LLM durante o treinamento..."
+                value={imageDescription}
+                onChange={e => setImageDescription(e.target.value)}
+                className="min-h-[80px] text-sm"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                A descrição ajuda o modelo a entender melhor o contexto da imagem.
+              </p>
+            </div>
+          )}
         </div>
         
         <div className="flex items-center justify-between border-t bg-muted/20 px-4 py-2">
