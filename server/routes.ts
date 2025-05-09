@@ -3241,6 +3241,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Rota PATCH para atualização parcial com suporte a imagens
+  app.patch("/api/training/documents/:id", isAuthenticated, checkRole("admin"), trainingDocumentUpload.single('image'), async (req, res) => {
+    try {
+      console.log("PATCH /api/training/documents/:id - Atualizando documento com imagem");
+      const id = parseInt(req.params.id);
+      
+      // Obter documento atual
+      const existingDoc = await storage.getTrainingDocument(id);
+      if (!existingDoc) {
+        return res.status(404).json({ message: "Document not found" });
+      }
+      
+      // Preparar dados para atualização
+      const updateData: any = {
+        updated_at: new Date()
+      };
+      
+      // Adicionar campos do body se presentes
+      if (req.body.name) updateData.name = req.body.name;
+      if (req.body.description !== undefined) updateData.description = req.body.description;
+      if (req.body.content) updateData.content = req.body.content;
+      if (req.body.website_url) updateData.website_url = req.body.website_url;
+      if (req.body.status) updateData.status = req.body.status;
+      
+      // Processar arquivo de imagem se enviado
+      if (req.file) {
+        console.log("Arquivo de imagem recebido:", req.file.filename);
+        updateData.image_url = `/uploads/${req.file.filename}`;
+        
+        // Se documento já tinha uma imagem, excluir a antiga
+        if (existingDoc.image_url) {
+          try {
+            const oldFilePath = path.join(UPLOADS_DIR, existingDoc.image_url.replace("/uploads/", ""));
+            if (fs.existsSync(oldFilePath)) {
+              fs.unlinkSync(oldFilePath);
+              console.log(`Arquivo antigo excluído: ${oldFilePath}`);
+            }
+          } catch (err) {
+            console.error("Erro ao excluir arquivo antigo:", err);
+          }
+        }
+      }
+      
+      // Atualizar documento
+      const updatedDoc = await storage.updateTrainingDocument(id, updateData);
+      res.json(updatedDoc);
+    } catch (error) {
+      console.error("Erro ao atualizar documento:", error);
+      res.status(500).json({ 
+        message: "Error updating training document", 
+        error: error instanceof Error ? error.message : "Unknown error" 
+      });
+    }
+  });
+  
   app.delete("/api/training/documents/:id", isAuthenticated, checkRole("admin"), async (req, res) => {
     try {
       const id = parseInt(req.params.id);

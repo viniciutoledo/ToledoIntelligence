@@ -172,6 +172,7 @@ export const trainingDocuments = pgTable("training_documents", {
   file_path: text("file_path"),
   file_url: text("file_url"),
   website_url: text("website_url"),
+  image_url: text("image_url"), // URL para a imagem associada ao documento (treinamento de imagens)
   file_metadata: json("file_metadata"),
   status: text("status", { enum: ["pending", "processing", "completed", "error", "indexed"] }).notNull().default("pending"),
   error_message: text("error_message"),
@@ -190,6 +191,7 @@ export const insertTrainingDocumentSchema = createInsertSchema(trainingDocuments
   file_path: true,
   file_url: true,
   website_url: true,
+  image_url: true,
   file_metadata: true,
   created_by: true,
 });
