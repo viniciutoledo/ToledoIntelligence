@@ -3060,7 +3060,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(documents);
     } catch (error) {
       console.error("Erro ao buscar documentos de treinamento:", error);
-      res.status(500).json({ message: "Error fetching training documents", error: error.message });
+      res.status(500).json({ message: "Erro ao buscar documentos de treinamento", error: error.message });
     }
   });
   
@@ -3070,12 +3070,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const document = await storage.getTrainingDocument(parseInt(req.params.id));
       if (!document) {
         console.log("Documento não encontrado:", req.params.id);
-        return res.status(404).json({ message: "Document not found" });
+        return res.status(404).json({ message: "Documento não encontrado" });
       }
       res.json(document);
     } catch (error) {
       console.error("Erro ao buscar documento de treinamento:", error);
-      res.status(500).json({ message: "Error fetching training document", error: error.message });
+      res.status(500).json({ message: "Erro ao buscar documento de treinamento", error: error.message });
     }
   });
   
@@ -3232,12 +3232,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       if (!document) {
-        return res.status(404).json({ message: "Document not found" });
+        return res.status(404).json({ message: "Documento não encontrado" });
       }
       
       res.json(document);
     } catch (error) {
-      res.status(500).json({ message: "Error updating training document" });
+      res.status(500).json({ message: "Erro ao atualizar documento de treinamento" });
     }
   });
   
@@ -3250,7 +3250,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Obter documento atual
       const existingDoc = await storage.getTrainingDocument(id);
       if (!existingDoc) {
-        return res.status(404).json({ message: "Document not found" });
+        return res.status(404).json({ message: "Documento não encontrado" });
       }
       
       // Preparar dados para atualização
@@ -3290,8 +3290,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Erro ao atualizar documento:", error);
       res.status(500).json({ 
-        message: "Error updating training document", 
-        error: error instanceof Error ? error.message : "Unknown error" 
+        message: "Erro ao atualizar documento de treinamento", 
+        error: error instanceof Error ? error.message : "Erro desconhecido" 
       });
     }
   });
