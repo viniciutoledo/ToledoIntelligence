@@ -760,7 +760,19 @@ export function ERPIntegration() {
                       <div>
                         <h4 className="font-medium text-neutral-800">Atenção ao mapear campos</h4>
                         <p className="text-sm text-neutral-600 mt-1">
-                          Campos marcados como obrigatórios são essenciais para o funcionamento correto da integração e não podem ser desativados. Se o seu sistema ERP não possuir campos equivalentes para alguns itens obrigatórios, por favor entre em contato com o suporte.
+                          Campos marcados como obrigatórios são essenciais para o funcionamento correto da integração e não podem ser desativados. Se o seu sistema ERP/CRM não possuir campos equivalentes para alguns itens obrigatórios, por favor entre em contato com o suporte.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="p-4 border rounded-md bg-blue-50 mt-4">
+                    <div className="flex items-start gap-2">
+                      <Info className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <h4 className="font-medium text-blue-800">Sobre integração personalizada</h4>
+                        <p className="text-sm text-blue-700 mt-1">
+                          A integração pode ser feita com qualquer sistema ERP/CRM que disponibilize uma API. Para sistemas não listados, selecione "Outro (Personalizado)" e forneça a URL da API e a chave de autenticação. Você pode precisar consultar a documentação da API do seu sistema para obter os endpoints corretos. Para Gestão Click ou qualquer outro sistema, as análises do ToledoIA podem ser automaticamente enviadas como ordens de serviço.
                         </p>
                       </div>
                     </div>
@@ -909,14 +921,15 @@ export function ERPIntegration() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
+                          <SelectItem value="gestao_click">Gestão Click</SelectItem>
                           <SelectItem value="sap">SAP PM</SelectItem>
                           <SelectItem value="oracle">Oracle EAM</SelectItem>
                           <SelectItem value="maximo">IBM Maximo</SelectItem>
-                          <SelectItem value="custom">Personalizado</SelectItem>
+                          <SelectItem value="custom">Outro (Personalizado)</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormDescription>
-                        Selecione o tipo de sistema ERP para usar o template correto
+                        Selecione o tipo de sistema ou escolha "Outro" para qualquer ERP/CRM personalizado
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -929,17 +942,100 @@ export function ERPIntegration() {
                 name="apiUrl"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>URL da API</FormLabel>
+                    <FormLabel>URL Base da API</FormLabel>
                     <FormControl>
                       <Input placeholder="https://api.example.com/erp" {...field} />
                     </FormControl>
                     <FormDescription>
-                      O endereço da API de integração do sistema ERP
+                      O endereço base da API de integração do sistema ERP/CRM
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+              
+              {form.watch("type") === "custom" && (
+                <div className="space-y-4 p-4 border rounded-md bg-neutral-50">
+                  <h4 className="font-medium">Endpoints Personalizados</h4>
+                  <p className="text-sm text-neutral-600 mb-3">
+                    Configure os endpoints específicos para seu sistema. Deixe em branco para usar os padrões.
+                  </p>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <FormField
+                        control={form.control}
+                        name="endpoints.orders"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Ordens de Serviço</FormLabel>
+                            <FormControl>
+                              <Input placeholder="/api/orders" {...field} />
+                            </FormControl>
+                            <FormDescription className="text-xs">
+                              Endpoint para criar ordens de serviço
+                            </FormDescription>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    
+                    <div>
+                      <FormField
+                        control={form.control}
+                        name="endpoints.assets"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Ativos/Equipamentos</FormLabel>
+                            <FormControl>
+                              <Input placeholder="/api/assets" {...field} />
+                            </FormControl>
+                            <FormDescription className="text-xs">
+                              Endpoint para acessar informações de ativos
+                            </FormDescription>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    
+                    <div>
+                      <FormField
+                        control={form.control}
+                        name="endpoints.technicians"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Técnicos</FormLabel>
+                            <FormControl>
+                              <Input placeholder="/api/technicians" {...field} />
+                            </FormControl>
+                            <FormDescription className="text-xs">
+                              Endpoint para acessar lista de técnicos
+                            </FormDescription>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    
+                    <div>
+                      <FormField
+                        control={form.control}
+                        name="endpoints.status"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Status</FormLabel>
+                            <FormControl>
+                              <Input placeholder="/api/status" {...field} />
+                            </FormControl>
+                            <FormDescription className="text-xs">
+                              Endpoint para atualizar status de ordens
+                            </FormDescription>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
               
               <FormField
                 control={form.control}
