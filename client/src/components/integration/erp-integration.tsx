@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { useToast } from "@/hooks/use-toast";
 import { 
   Loader2, Settings, Database, RefreshCw, CheckCircle2, XCircle,
-  ArrowUpDown, AlertTriangle, Save, Link2, FileSpreadsheet
+  ArrowUpDown, AlertTriangle, Save, Link2, FileSpreadsheet, Info
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";

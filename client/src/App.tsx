@@ -23,6 +23,7 @@ import EmbedPage from "@/pages/embed";
 import IframePage from "@/pages/iframe";
 import WidgetDocsPage from "@/pages/widget-docs";
 import ImageTestPage from "@/pages/image-test";
+import TestsPage from "@/pages/tests-page";
 
 function Router() {
   return (
@@ -52,6 +53,7 @@ function Router() {
       {/* Protected routes */}
       <ProtectedRoute path="/technician" component={TechnicianPage} roles={["technician", "admin"]} />
       <ProtectedRoute path="/admin" component={AdminPage} roles={["admin"]} />
+      <ProtectedRoute path="/tests" component={TestsPage} roles={["admin"]} />
       <ProtectedRoute path="/subscription" component={SubscriptionPage} />
       <ProtectedRoute path="/dashboard" component={TechnicianPage} roles={["technician", "admin"]} />
       <ProtectedRoute path="/profile" component={ProfilePage} />
