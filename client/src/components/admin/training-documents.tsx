@@ -100,6 +100,7 @@ export function TrainingDocuments() {
     documentsLoading,
     categories,
     createDocumentMutation,
+    createImageDocumentMutation,
     updateDocumentMutation,
     deleteDocumentMutation,
     resetDocumentStatusMutation,
@@ -170,7 +171,19 @@ export function TrainingDocuments() {
   };
   
   const onAddSubmit = (data: DocumentFormValues) => {
-    // Objeto base para submissão
+    // Manipulação específica para tipo "image"
+    if (data.document_type === "image" && selectedImage) {
+      // Usar a mutation específica para imagens
+      createImageDocumentMutation.mutate({
+        name: data.name,
+        description: data.description || null,
+        image: selectedImage
+      });
+      setIsAddDialogOpen(false);
+      return;
+    }
+    
+    // Objeto base para submissão para outros tipos
     const submitData: any = {
       ...data,
       description: data.description || null
@@ -183,11 +196,6 @@ export function TrainingDocuments() {
     
     // Handle de upload de imagem para texto
     if (data.document_type === "text" && selectedImage) {
-      submitData.image = selectedImage;
-    }
-    
-    // Handle de upload para tipo image
-    if (data.document_type === "image" && selectedImage) {
       submitData.image = selectedImage;
     }
     
