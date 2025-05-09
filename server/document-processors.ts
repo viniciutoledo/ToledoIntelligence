@@ -405,6 +405,7 @@ export async function extractTextFromDOCX(filePath: string): Promise<string> {
 /**
  * Processa uma imagem e extrai seu conteúdo textual usando modelos multimodais
  * @param filePath Caminho completo para o arquivo de imagem
+ * @param description Descrição opcional fornecida pelo usuário para dar contexto à análise da imagem
  * @returns Texto descritivo da imagem gerado por IA
  */
 export async function extractContentFromImage(filePath: string, description?: string): Promise<string> {
@@ -681,7 +682,7 @@ export async function processDocumentContent(
       }
       else if (extension === ".jpg" || extension === ".jpeg" || extension === ".png" || extension === ".gif" || extension === ".webp") {
         console.log(`Detectado arquivo de imagem: ${extension}. Processando com LLM para análise visual.`);
-        return await extractContentFromImage(filePath);
+        return await extractContentFromImage(filePath, description);
       }
       else {
         console.warn(`Tipo de arquivo não processável: ${extension}`);
@@ -706,8 +707,8 @@ export async function processDocumentContent(
         return "[Caminho da imagem não fornecido]";
       }
       
-      console.log(`Processando imagem como documento principal: ${filePath}`);
-      return await extractContentFromImage(filePath);
+      console.log(`Processando imagem como documento principal: ${filePath}${description ? ' com descrição' : ''}`);
+      return await extractContentFromImage(filePath, description);
     }
     else {
       console.error(`Tipo de documento não suportado: ${documentType}`);

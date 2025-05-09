@@ -3102,9 +3102,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Importar o processador de documentos usando dynamic import
           const documentProcessors = await import('./document-processors');
           
-          // Processar a imagem para extrair conteúdo usando LLM multimodal
+          // Processar a imagem para extrair conteúdo usando LLM multimodal, incluindo a descrição quando disponível
           const filePath = path.join(process.cwd(), "uploads/files", req.file.filename);
-          content = await documentProcessors.processDocumentContent("image", filePath);
+          content = await documentProcessors.processDocumentContent("image", filePath, undefined, undefined, description);
           
           if (!content) {
             console.warn(`Não foi possível extrair o conteúdo da imagem ${req.file.originalname}`);
@@ -3290,7 +3290,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Processar arquivo de imagem se enviado
       if (req.file) {
         console.log("Arquivo de imagem recebido:", req.file.filename);
-        updateData.image_url = `/uploads/${req.file.filename}`;
+        const file_url = `/uploads/${req.file.filename}`;
+        updateData.image_url = file_url;
+        
+        // Processar conteúdo da imagem com descrição se for documento do tipo imagem
+        if (existingDoc.document_type === "image") {
+          try {
+            // Importar o processador de documentos usando dynamic import
+            const documentProcessors = await import('./document-processors');
+            
+            // Processar a imagem para extrair conteúdo usando LLM multimodal, incluindo a descrição quando disponível
+            const filePath = path.join(process.cwd(), "uploads/files", req.file.filename);
+            const description = updateData.description || existingDoc.description;
+            const content = await documentProcessors.processDocumentContent("image", filePath, undefined, undefined, description);
+            
+            if (content) {
+              console.log(`Conteúdo extraído da imagem com sucesso: ${content.length} caracteres`);
+              updateData.content = content;
+            }
+          } catch (extractionError) {
+            console.error(`Erro ao processar imagem ${req.file.originalname}:`, extractionError);
+          }
+        }
         
         // Se documento já tinha uma imagem, excluir a antiga
         if (existingDoc.image_url) {
