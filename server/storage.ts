@@ -1519,7 +1519,8 @@ export class MemStorage implements IStorage {
 
 import { db, pool } from './db';
 import connectPg from "connect-pg-simple";
-import { eq, and, isNull, lt, gt, gte, lte, or, desc, asc, ilike } from 'drizzle-orm';
+import { eq, and, isNull, lt, gt, gte, lte, or, desc, asc, ilike, like, not, sql } from 'drizzle-orm';
+import { inArray } from 'drizzle-orm';
 import { 
   usersSessions, 
   trainingDocuments, 
@@ -2572,6 +2573,94 @@ export class DatabaseStorage implements IStorage {
     console.log(`Encontrados ${results.length} documentos no banco de dados que correspondem aos termos de pesquisa`);
     
     return results;
+  }
+  
+  /**
+   * Busca documentos baseados em tópicos identificados semanticamente
+   * Mais avançado que a busca por keywords, este método considera contexto semântico
+   * @param topics Array de tópicos ou conceitos extraídos da consulta
+   * @returns Array de documentos simplificados (nome e conteúdo)
+   */
+  async getDocumentsByTopics(topics: string[]): Promise<{name: string, content: string}[]> {
+    try {
+      if (!topics || topics.length === 0) {
+        console.log('Nenhum tópico fornecido para busca de documentos');
+        return [];
+      }
+
+      // Converter tópicos para minúsculas e remover duplicatas
+      const uniqueTopics = [...new Set(topics.map(topic => topic.toLowerCase()))];
+      console.log(`Buscando documentos para ${uniqueTopics.length} tópicos: ${uniqueTopics.join(', ')}`);
+      
+      // Primeiro, tentar buscar documentos com correspondência exata nos títulos ou tags
+      // Isso prioriza documentos mais relevantes semanticamente
+      const exactMatchDocs = await db
+        .select({
+          id: trainingDocuments.id,
+          name: trainingDocuments.name,
+          content: trainingDocuments.content,
+        })
+        .from(trainingDocuments)
+        .where(
+          and(
+            eq(trainingDocuments.is_active, true),
+            eq(trainingDocuments.status, 'completed'),
+            or(
+              ...uniqueTopics.map(topic => 
+                or(
+                  like(sql`lower(${trainingDocuments.name})`, `%${topic}%`),
+                  like(sql`lower(${trainingDocuments.tags})`, `%${topic}%`)
+                )
+              )
+            )
+          )
+        )
+        .limit(5); // Limitar a 5 documentos com correspondência exata
+      
+      // Em seguida, buscar documentos que contenham os tópicos no conteúdo
+      // mas apenas se não encontramos muitos com correspondência exata
+      let contentMatchDocs: {id: number, name: string, content: string}[] = [];
+      
+      if (exactMatchDocs.length < 3) {
+        const exactIds = exactMatchDocs.length > 0 ? exactMatchDocs.map(doc => doc.id) : [-1];
+        
+        contentMatchDocs = await db
+          .select({
+            id: trainingDocuments.id,
+            name: trainingDocuments.name,
+            content: trainingDocuments.content,
+          })
+          .from(trainingDocuments)
+          .where(
+            and(
+              eq(trainingDocuments.is_active, true),
+              eq(trainingDocuments.status, 'completed'),
+              or(
+                ...uniqueTopics.map(topic => 
+                  like(sql`lower(${trainingDocuments.content})`, `%${topic}%`)
+                )
+              ),
+              // Excluir documentos já encontrados na busca anterior
+              not(inArray(trainingDocuments.id, exactIds))
+            )
+          )
+          .limit(5);
+      }
+      
+      // Combinar os resultados, priorizando os com correspondência exata
+      const combinedResults = [...exactMatchDocs, ...contentMatchDocs];
+      
+      console.log(`Encontrados ${combinedResults.length} documentos relevantes para os tópicos`);
+      
+      // Formatar os documentos para retorno, mantendo apenas nome e conteúdo
+      return combinedResults.map(doc => ({
+        name: doc.name,
+        content: doc.content || 'Sem conteúdo disponível'
+      }));
+    } catch (error) {
+      console.error('Erro ao buscar documentos por tópicos:', error);
+      return [];
+    }
   }
   
   async createTrainingDocument(document: InsertTrainingDocument): Promise<TrainingDocument> {
