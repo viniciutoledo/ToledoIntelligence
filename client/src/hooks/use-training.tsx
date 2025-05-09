@@ -37,11 +37,12 @@ export type Category = {
 export type DocumentFormData = {
   name: string;
   description: string | null;
-  document_type: "text" | "file" | "website" | "video";
+  document_type: "text" | "file" | "website" | "video" | "image";
   content?: string;
   website_url?: string;
   categories?: number[];
   file?: File;
+  image?: File;
 };
 
 export type CategoryFormData = {
@@ -91,6 +92,10 @@ export function useTraining() {
       
       if (document.document_type === 'video' && document.file) {
         formData.append('file', document.file);
+      }
+      
+      if (document.document_type === 'image' && document.image) {
+        formData.append('file', document.image);
       }
       
       if (document.document_type === 'website' && document.website_url) {
@@ -297,6 +302,52 @@ export function useTraining() {
       toast({
         title: "Sucesso",
         description: "Arquivo adicionado com sucesso para treinamento",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/training/documents"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: t("common.error"),
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Mutation específica para imagens
+  const createImageDocumentMutation = useMutation({
+    mutationFn: async (data: { name: string; description?: string | null; image?: File }) => {
+      // Se for um upload de arquivo de imagem
+      if (data.image) {
+        const formData = new FormData();
+        formData.append('name', data.name);
+        formData.append('document_type', 'image');
+        formData.append('file', data.image);
+        
+        if (data.description) {
+          formData.append('description', data.description);
+        }
+        
+        const res = await fetch("/api/training/documents", {
+          method: "POST",
+          body: formData,
+          credentials: "include" // Importante para manter a sessão de autenticação
+        });
+        
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.message || "Falha ao enviar imagem");
+        }
+        
+        return await res.json();
+      }
+      
+      throw new Error("Uma imagem é obrigatória");
+    },
+    onSuccess: () => {
+      toast({
+        title: "Sucesso",
+        description: "Imagem adicionada com sucesso para treinamento",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/training/documents"] });
     },
@@ -562,6 +613,7 @@ export function useTraining() {
     createWebsiteDocumentMutation,
     createVideoDocumentMutation,
     createFileDocumentMutation,
+    createImageDocumentMutation,
     updateDocumentMutation,
     deleteDocumentMutation,
     
