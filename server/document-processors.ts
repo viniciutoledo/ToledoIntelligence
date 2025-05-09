@@ -3,6 +3,13 @@ import fetch from 'node-fetch';
 import path from 'path';
 import pdfParse from 'pdf-parse';
 import mammoth from 'mammoth';
+import { promisify } from 'util';
+import OpenAI from 'openai';
+import Anthropic from '@anthropic-ai/sdk';
+import { logLlmUsage } from './llm';
+
+// Método auxiliar para ler arquivos como Promise
+const readFile = promisify(fs.readFile);
 
 // Funções auxiliares para extração de texto de diferentes tipos de arquivos
 export async function extractTextFromPDF(filePath: string): Promise<string> {
@@ -395,6 +402,173 @@ export async function extractTextFromDOCX(filePath: string): Promise<string> {
   }
 }
 
+/**
+ * Processa uma imagem e extrai seu conteúdo textual usando modelos multimodais
+ * @param filePath Caminho completo para o arquivo de imagem
+ * @returns Texto descritivo da imagem gerado por IA
+ */
+export async function extractContentFromImage(filePath: string): Promise<string> {
+  try {
+    console.log(`Iniciando processamento de imagem: ${filePath}`);
+    
+    // Verificar existência do arquivo
+    if (!fs.existsSync(filePath)) {
+      console.error(`Arquivo de imagem não encontrado: ${filePath}`);
+      return "Arquivo de imagem não encontrado";
+    }
+    
+    // Verificar tamanho da imagem
+    const fileStats = fs.statSync(filePath);
+    const fileSizeMB = fileStats.size / (1024 * 1024);
+    console.log(`Arquivo de imagem encontrado: ${filePath}, tamanho: ${fileSizeMB.toFixed(2)} MB`);
+    
+    // Verificar limite de tamanho
+    const MAX_IMAGE_SIZE = 20; // 20MB
+    if (fileSizeMB > MAX_IMAGE_SIZE) {
+      console.error(`Imagem muito grande: ${fileSizeMB.toFixed(2)} MB. Limite é ${MAX_IMAGE_SIZE} MB`);
+      return `[Imagem muito grande (${fileSizeMB.toFixed(2)} MB). O limite é ${MAX_IMAGE_SIZE} MB. Por favor, reduza o tamanho da imagem.]`;
+    }
+    
+    try {
+      // Carregar a imagem como base64
+      const imageBuffer = await readFile(filePath);
+      const base64Image = imageBuffer.toString('base64');
+      
+      // Detectar extensão da imagem para determinar o MIME type
+      const extension = path.extname(filePath).toLowerCase();
+      let mimeType: 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp' = 'image/jpeg'; // Padrão
+      
+      if (extension === '.png') {
+        mimeType = 'image/png';
+      } else if (extension === '.gif') {
+        mimeType = 'image/gif';
+      } else if (extension === '.webp') {
+        mimeType = 'image/webp';
+      }
+      
+      console.log(`Usando LLM para analisar imagem: ${path.basename(filePath)} (${mimeType})`);
+      
+      // Tentar primeiro com OpenAI GPT-4o (Vision)
+      if (process.env.OPENAI_API_KEY) {
+        try {
+          const openai = new OpenAI({
+            apiKey: process.env.OPENAI_API_KEY
+          });
+          
+          console.log("Processando imagem usando OpenAI GPT-4o Vision...");
+          
+          const response = await openai.chat.completions.create({
+            model: "gpt-4o", // O modelo mais recente com capacidades de visão
+            messages: [
+              {
+                role: "system",
+                content: "Você é um especialista em manutenção de placas de circuito. Analise a imagem fornecida detalhadamente, identificando componentes, conexões, possíveis problemas e características relevantes para técnicos de manutenção. Descreva com precisão o que você vê, incluindo detalhes como números de série visíveis, códigos de componentes, padrões de solda e quaisquer danos ou anomalias. Sua análise será usada como referência para diagnósticos técnicos."
+              },
+              {
+                role: "user",
+                content: [
+                  { type: "text", text: "Analise esta imagem de placa de circuito em detalhes para fins de manutenção:" },
+                  {
+                    type: "image_url",
+                    image_url: {
+                      url: `data:${mimeType};base64,${base64Image}`
+                    }
+                  }
+                ]
+              }
+            ],
+            max_tokens: 1000
+          });
+          
+          // Registrar uso do LLM
+          await logLlmUsage(
+            "gpt-4o",
+            "image",
+            true,
+            undefined,
+            undefined,
+            response.usage?.total_tokens || 0
+          );
+          
+          const analysisText = response.choices[0].message.content || "";
+          console.log(`Análise da imagem concluída: ${analysisText.length} caracteres`);
+          
+          return `[ANÁLISE DE IMAGEM - GPT-4 Vision]\n\n${analysisText}`;
+        } catch (openaiError) {
+          console.error("Erro ao processar imagem com OpenAI:", openaiError);
+          console.log("Tentando com Claude como fallback...");
+        }
+      }
+      
+      // Fallback para Anthropic Claude 3
+      if (process.env.ANTHROPIC_API_KEY) {
+        try {
+          const anthropic = new Anthropic({
+            apiKey: process.env.ANTHROPIC_API_KEY
+          });
+          
+          console.log("Processando imagem usando Anthropic Claude 3...");
+          
+          const response = await anthropic.messages.create({
+            model: "claude-3-7-sonnet-20250219", // O modelo mais recente da Anthropic
+            max_tokens: 1000,
+            system: "Você é um especialista em manutenção de placas de circuito. Analise a imagem fornecida detalhadamente, identificando componentes, conexões, possíveis problemas e características relevantes para técnicos de manutenção. Descreva com precisão o que você vê, incluindo detalhes como números de série visíveis, códigos de componentes, padrões de solda e quaisquer danos ou anomalias. Sua análise será usada como referência para diagnósticos técnicos.",
+            messages: [
+              {
+                role: "user",
+                content: [
+                  {
+                    type: "text",
+                    text: "Analise esta imagem de placa de circuito em detalhes para fins de manutenção:"
+                  },
+                  {
+                    type: "image",
+                    source: {
+                      type: "base64",
+                      media_type: mimeType,
+                      data: base64Image
+                    }
+                  }
+                ]
+              }
+            ]
+          });
+          
+          // Registrar uso do LLM
+          await logLlmUsage(
+            "claude-3-7-sonnet-20250219",
+            "image",
+            true,
+            undefined,
+            undefined,
+            response.usage?.input_tokens || 0 + response.usage?.output_tokens || 0
+          );
+          
+          const analysisText = typeof response.content[0] === 'object' && 'text' in response.content[0] 
+            ? response.content[0].text as string
+            : 'Análise de imagem concluída, mas sem texto extraível.';
+          console.log(`Análise da imagem concluída: ${analysisText.length} caracteres`);
+          
+          return `[ANÁLISE DE IMAGEM - Claude 3]\n\n${analysisText}`;
+        } catch (claudeError) {
+          console.error("Erro ao processar imagem com Claude:", claudeError);
+        }
+      }
+      
+      // Se nenhum modelo foi capaz de processar a imagem
+      console.error("Não foi possível processar a imagem - nenhum modelo disponível ou todos falharam");
+      return "[AVISO: Não foi possível analisar esta imagem. Verifique se as chaves API dos modelos de IA estão configuradas corretamente ou se o formato da imagem é suportado.]";
+      
+    } catch (processError) {
+      console.error("Erro ao processar imagem:", processError);
+      return `Erro ao processar a imagem: ${processError instanceof Error ? processError.message : 'Erro desconhecido'}`;
+    }
+  } catch (error) {
+    console.error("Erro não tratado ao extrair conteúdo da imagem:", error);
+    return "Falha na extração do conteúdo da imagem. Por favor, verifique se o arquivo é válido.";
+  }
+}
+
 export async function extractTextFromWebsite(url: string): Promise<string> {
   try {
     // Verificar se é uma URL válida
@@ -496,7 +670,11 @@ export async function processDocumentContent(
       } 
       else if (extension === ".docx" || extension === ".doc") {
         return await extractTextFromDOCX(filePath);
-      } 
+      }
+      else if (extension === ".jpg" || extension === ".jpeg" || extension === ".png" || extension === ".gif" || extension === ".webp") {
+        console.log(`Detectado arquivo de imagem: ${extension}. Processando com LLM para análise visual.`);
+        return await extractContentFromImage(filePath);
+      }
       else {
         console.warn(`Tipo de arquivo não processável: ${extension}`);
         return `[Conteúdo não processável para arquivo do tipo ${extension}]`;
