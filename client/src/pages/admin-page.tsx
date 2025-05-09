@@ -12,6 +12,7 @@ import PlanPricing from "@/components/admin/plan-pricing";
 import { WidgetsManagement } from "@/components/admin/widgets-management";
 import LlmUsageLogs from "@/components/admin/llm-usage-logs";
 import { UnifiedSettings } from "@/components/admin/unified-settings";
+import { ImageAnalysisTest } from "@/components/admin/image-analysis-test";
 import { LlmProvider } from "@/hooks/use-llm";
 import { AvatarProvider } from "@/hooks/use-avatar";
 import { WidgetsProvider } from "@/hooks/use-widgets";
@@ -184,6 +185,41 @@ export default function AdminPage() {
                 </div>
               </div>
               <WidgetsManagement />
+            </>
+          )}
+          
+          {activeSection === "tests" && (
+            <>
+              <div className="flex justify-between items-center mb-8 border-b pb-4">
+                <h1 className="text-3xl font-bold text-primary-800">
+                  {t("admin.tests") || "Testes"}
+                </h1>
+                <div className="bg-white px-4 py-2 rounded-md shadow-sm text-sm text-neutral-500 flex items-center">
+                  <span className="font-medium mr-1">ToledoIA</span>
+                  <span>Admin Panel</span>
+                </div>
+              </div>
+              
+              <div className="space-y-8">
+                <Tabs defaultValue="image-analysis" className="mb-8">
+                  <TabsList className="mb-4">
+                    <TabsTrigger value="image-analysis">Análise de Imagem</TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="image-analysis" className="mt-4">
+                    <div className="space-y-4">
+                      <h2 className="text-xl font-semibold text-neutral-700">
+                        Teste de Análise de Imagem com Descrição
+                      </h2>
+                      <p className="text-neutral-600">
+                        Esta ferramenta permite testar o processamento de imagens com descrições personalizadas 
+                        para melhorar a análise contextual.
+                      </p>
+                      <ImageAnalysisTest />
+                    </div>
+                  </TabsContent>
+                </Tabs>
+              </div>
             </>
           )}
         </div>
