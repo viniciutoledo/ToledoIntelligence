@@ -3302,7 +3302,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.deleteTrainingDocument(id);
       res.status(204).send();
     } catch (error) {
-      res.status(500).json({ message: "Error deleting training document" });
+      res.status(500).json({ message: "Erro ao excluir documento de treinamento" });
     }
   });
   
@@ -3312,7 +3312,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const categories = await storage.getTrainingCategories();
       res.json(categories);
     } catch (error) {
-      res.status(500).json({ message: "Error fetching training categories" });
+      res.status(500).json({ message: "Erro ao buscar categorias de treinamento" });
     }
   });
   
@@ -3320,11 +3320,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const category = await storage.getTrainingCategory(parseInt(req.params.id));
       if (!category) {
-        return res.status(404).json({ message: "Category not found" });
+        return res.status(404).json({ message: "Categoria não encontrada" });
       }
       res.json(category);
     } catch (error) {
-      res.status(500).json({ message: "Error fetching training category" });
+      res.status(500).json({ message: "Erro ao buscar categoria de treinamento" });
     }
   });
   
@@ -3340,7 +3340,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.status(201).json(category);
     } catch (error) {
-      res.status(500).json({ message: "Error creating training category" });
+      res.status(500).json({ message: "Erro ao criar categoria de treinamento" });
     }
   });
   
@@ -3356,12 +3356,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       if (!category) {
-        return res.status(404).json({ message: "Category not found" });
+        return res.status(404).json({ message: "Categoria não encontrada" });
       }
       
       res.json(category);
     } catch (error) {
-      res.status(500).json({ message: "Error updating training category" });
+      res.status(500).json({ message: "Erro ao atualizar categoria de treinamento" });
     }
   });
   
@@ -3371,7 +3371,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.deleteTrainingCategory(id);
       res.status(204).send();
     } catch (error) {
-      res.status(500).json({ message: "Error deleting training category" });
+      res.status(500).json({ message: "Erro ao excluir categoria de treinamento" });
     }
   });
   
