@@ -158,12 +158,28 @@ export function TrainingDocuments() {
   
   const onEditSubmit = (data: DocumentFormValues) => {
     if (documentToEdit) {
+      // Use any para permitir a inclusão de campos adicionais não presentes no tipo DocumentFormData
+      const updateData: any = {
+        name: data.name,
+        description: data.description || null,
+      };
+      
+      // Adiciona campos específicos baseados no tipo de documento
+      if (data.document_type === 'text' && data.content) {
+        updateData.content = data.content;
+      } else if (data.document_type === 'website' && data.website_url) {
+        updateData.website_url = data.website_url;
+      }
+      
+      // Adiciona reset de status para documentos presos em "processing"
+      if (documentToEdit.status === 'processing') {
+        updateData.status = 'pending';
+        updateData.error_message = null;
+      }
+      
       updateDocumentMutation.mutate({
         id: documentToEdit.id,
-        document: {
-          name: data.name,
-          description: data.description,
-        }
+        document: updateData
       });
     }
     
@@ -172,11 +188,22 @@ export function TrainingDocuments() {
   
   const handleEditDocument = (document: any) => {
     setDocumentToEdit(document);
-    editForm.reset({
+    
+    // Prepara os valores iniciais do formulário com base no tipo de documento
+    const defaultValues: any = {
       name: document.name,
       description: document.description || null,
       document_type: document.document_type || "text",
-    });
+    };
+    
+    // Adiciona campos específicos com base no tipo de documento
+    if (document.document_type === 'text') {
+      defaultValues.content = document.content || '';
+    } else if (document.document_type === 'website') {
+      defaultValues.website_url = document.website_url || '';
+    }
+    
+    editForm.reset(defaultValues);
     setIsEditDialogOpen(true);
   };
   
@@ -529,9 +556,14 @@ export function TrainingDocuments() {
       
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={handleEditDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[625px]">
           <DialogHeader>
             <DialogTitle>{t("admin.training.editDocument")}</DialogTitle>
+            {documentToEdit?.status === 'processing' && (
+              <DialogDescription className="text-amber-600">
+                {t("admin.training.editProcessingWarning", "Este documento está sendo processado. Editar e salvar irá resetar seu status para permitir reprocessamento.")}
+              </DialogDescription>
+            )}
           </DialogHeader>
           
           <Form {...editForm}>
@@ -569,6 +601,54 @@ export function TrainingDocuments() {
                   </FormItem>
                 )}
               />
+              
+              {/* Campos condicionais com base no tipo de documento */}
+              {editForm.watch("document_type") === "text" && (
+                <FormField
+                  control={editForm.control}
+                  name="content"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("admin.training.textContent")}</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder={t("admin.training.enterTextContent")}
+                          className="min-h-[200px]"
+                          value={field.value || ""}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                          name={field.name}
+                          ref={field.ref}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+              
+              {editForm.watch("document_type") === "website" && (
+                <FormField
+                  control={editForm.control}
+                  name="website_url"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("admin.training.websiteUrl")}</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="https://example.com"
+                          value={field.value || ""}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                          name={field.name}
+                          ref={field.ref}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
               
               <DialogFooter>
                 <DialogClose asChild>
