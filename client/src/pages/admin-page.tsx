@@ -26,6 +26,16 @@ export default function AdminPage() {
   const [, setLocation] = useLocation();
   const [activeSection, setActiveSection] = useState("dashboard");
   
+  // Lidar com a navegação em seções especiais
+  const handleSectionChange = (section: string) => {
+    if (section === "tests") {
+      // Redirecionar para a página de testes completa
+      setLocation("/tests");
+    } else {
+      setActiveSection(section);
+    }
+  };
+  
   // Verificação explícita de função de usuário - garantir que apenas admins tenham acesso
   useEffect(() => {
     if (!user) {
@@ -42,7 +52,7 @@ export default function AdminPage() {
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-neutral-50 to-neutral-100">
-      <AdminSidebar activeItem={activeSection} onItemClick={setActiveSection} />
+      <AdminSidebar activeItem={activeSection} onItemClick={handleSectionChange} />
       
       <div className="flex-1 overflow-auto">
         <div className="max-w-7xl mx-auto p-6">
