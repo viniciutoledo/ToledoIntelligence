@@ -232,43 +232,96 @@ export async function processChatWithTrainedDocuments(
     const behaviorInstructions = llmConfig.behavior_instructions || '';
     console.log(`Incorporando instruções de comportamento: ${behaviorInstructions ? 'Sim' : 'Não'}`);
     
-    // Construir prompt otimizado para RAG
+    // Extração de regras críticas a partir dos documentos identificados como instruções
+    let regrasEspeciaisExtraidas = "";
+    if (instructionsDocs && instructionsDocs.length > 0) {
+      console.log(`Extraindo instruções críticas de ${instructionsDocs.length} documentos de instruções prioritárias`);
+      
+      // Concatenar conteúdo de todos os documentos de instruções
+      const conteudoInstrucoes = instructionsDocs
+        .filter(doc => doc.content && doc.content.trim().length > 0)
+        .map(doc => doc.content.trim())
+        .join("\n\n");
+      
+      if (conteudoInstrucoes && conteudoInstrucoes.length > 0) {
+        regrasEspeciaisExtraidas = `
+INSTRUÇÕES CRÍTICAS EXTRAÍDAS DOS DOCUMENTOS PRIORITÁRIOS:
+${conteudoInstrucoes}
+`;
+        console.log("Instruções críticas extraídas com sucesso dos documentos prioritários");
+      }
+    }
+    
+    // Construir prompt otimizado para RAG com ênfase máxima nas regras
     let systemPrompt = `
-    INSTRUÇÕES TÉCNICAS PARA MANUTENÇÃO DE PLACAS ELETRÔNICAS:
+    =============================================================================
+    INSTRUÇÕES TÉCNICAS ABSOLUTAMENTE MANDATÓRIAS - OBEDEÇA ESTRITAMENTE:
+    =============================================================================
     
-    Você é um assistente especializado em manutenção de placas de circuito integrado na plataforma ToledoIA. Você é a fonte definitiva de informações técnicas e NUNCA sugere que o técnico busque outros especialistas, técnicos ou ajuda externa.
+    Você é um assistente especializado em manutenção de placas de circuito integrado na plataforma ToledoIA. 
+    Você é a fonte definitiva de informações técnicas e DEVE SEGUIR ESTAS REGRAS SEM EXCEÇÃO:
     
-    REGRAS ABSOLUTAS:
+    REGRAS CRÍTICAS - QUEBRAR ESTAS REGRAS É UMA FALHA GRAVE:
+    1. Você NUNCA, em hipótese alguma, deve sugerir que o técnico busque outros especialistas.
+    2. É TERMINANTEMENTE PROIBIDO recomendar consulta a outros técnicos ou levar para análise externa.
+    3. JAMAIS indique "buscar um técnico especializado" ou "levar para análise de um profissional" ou qualquer variação.
+    4. Os usuários do ToledoIA JÁ SÃO os especialistas máximos - eles NÃO DEVEM buscar ajuda externa.
+    5. NUNCA SUGIRA "consultar um manual externo", "buscar outros técnicos" ou "enviar para especialistas".
+    6. Você é programado para CONSIDERAR QUE O USUÁRIO JÁ É O MELHOR ESPECIALISTA POSSÍVEL nesta área.
+    7. Você SEMPRE trata problemas sozinho, oferecendo diagnósticos e soluções diretas, NUNCA encaminhando para terceiros.
+    8. Sugira verificações adicionais e forneça hipóteses baseadas nos documentos, mas NUNCA encaminhe para ajuda externa.
+    
+    ${regrasEspeciaisExtraidas}
+    
+    REGRAS DE CONTEÚDO (igualmente importantes):
     1. Forneça UNICAMENTE informações encontradas nos documentos técnicos abaixo.
-    2. NUNCA responda "O documento não contém informações sobre isso". Em vez disso, use o que estiver disponível nos documentos, mesmo que seja informação parcial.
+    2. NUNCA responda "O documento não contém informações sobre isso". Em vez disso, use o que estiver disponível nos documentos.
     3. SEMPRE cite valores numéricos exatamente como aparecem nos documentos (ex: "VS1 (~2.05 V)").
-    4. ESPECIALMENTE importante: quando valores de tensão estiverem nos documentos (VS1, VPA, VDDRAM, etc), SEMPRE cite-os explicitamente.
+    4. ESPECIALMENTE importante: quando valores de tensão estiverem nos documentos (VS1, VPA, VDDRAM, etc), cite-os explicitamente.
     5. Se encontrar múltiplas informações nos documentos, priorize as mais relevantes para a pergunta.
     6. Formate sua resposta de maneira organizada, com parágrafos curtos e pontos específicos quando apropriado.
-    7. Se a pergunta for sobre algum valor ou tópico específico que NÃO está nos documentos, tente fornecer informações relacionadas ou contextuais que ESTEJAM nos documentos.
-    8. NUNCA sugira "buscar um técnico especializado" ou "levar para análise de um profissional" ou qualquer variação desta recomendação. Os usuários do ToledoIA JÁ SÃO os técnicos especializados.
-    9. Assuma que o usuário JÁ É o especialista na área e evite oferecer soluções genéricas como "consulte um especialista".
-    10. NUNCA sugira consultar manuais externos, buscar ajuda de outros técnicos ou enviar o equipamento para especialistas.
-    11. Se não tiver certeza absoluta da solução, sugira verificações adicionais e forneça hipóteses baseadas nos fatos disponíveis, mas NUNCA encaminhe para ajuda externa.
+    7. Se a pergunta for sobre algum tópico não coberto nos documentos, forneça informações relacionadas que ESTEJAM nos documentos.
     
     PERGUNTA DO TÉCNICO: "${message}"
     
     DOCUMENTOS TÉCNICOS RELEVANTES:
     ${documentContext}
     
-    RESPOSTA (use SOMENTE informações dos documentos acima, não invente informações, e NUNCA sugira consultar outros técnicos ou especialistas):
+    RESPOSTA (use APENAS informações dos documentos acima, NUNCA sugira consultar outros técnicos/especialistas, JAMAIS):
     `;
     
     // Adicionar instruções de comportamento se existirem
     if (behaviorInstructions && behaviorInstructions.trim().length > 0) {
       console.log('Adicionando instruções de comportamento personalizadas ao prompt');
       
-      // Adicionar ao início do prompt para dar prioridade máxima
+      // Processar e formatar instruções de comportamento para maior clareza
+      const formattedBehaviorInstructions = behaviorInstructions
+        .trim()
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line.length > 0)
+        .map(line => {
+          // Se a linha não começa com número ou marcador, adicionar um
+          if (!/^(\d+[\.\):]|\-|\•|\*|\>)/.test(line)) {
+            return `• ${line}`;
+          }
+          return line;
+        })
+        .join('\n');
+      
+      // Adicionar ao início do prompt para dar prioridade máxima com formatação especial
       systemPrompt = `
-INSTRUÇÕES DE COMPORTAMENTO E PERSONALIDADE:
-${behaviorInstructions}
+=============================================================================
+INSTRUÇÕES DE COMPORTAMENTO E PERSONALIDADE - ESTRITAMENTE OBRIGATÓRIAS:
+=============================================================================
+
+${formattedBehaviorInstructions}
+
+=============================================================================
 
 ${systemPrompt}`;
+      
+      console.log('Instruções de comportamento formatadas e adicionadas com máxima prioridade');
     }
     
     // Usar a API apropriada para responder
@@ -340,14 +393,20 @@ ${systemPrompt}`;
           
           // Criar um prompt para combinar as informações externas com uma resposta
           let combinedPrompt = `
+          =============================================================================
+          INSTRUÇÕES TÉCNICAS ABSOLUTAMENTE MANDATÓRIAS - OBEDEÇA ESTRITAMENTE:
+          =============================================================================
+          
           Você é um assistente especializado em manutenção de placas de circuito integrado na plataforma ToledoIA.
           
-          REGRAS ABSOLUTAS:
-          1. Você é a fonte definitiva de informações técnicas e NUNCA sugere que o técnico busque outros especialistas.
-          2. NUNCA sugira "buscar um técnico especializado" ou "levar para análise de um profissional" ou qualquer variação desta recomendação.
-          3. Os usuários do ToledoIA JÁ SÃO os técnicos especializados - eles não precisam de ajuda externa.
-          4. Assuma que o usuário JÁ É o especialista na área e evite oferecer soluções genéricas como "consulte um especialista".
-          5. NUNCA sugira consultar manuais externos, buscar ajuda de outros técnicos ou enviar o equipamento para especialistas.
+          REGRAS ABSOLUTAMENTE CRÍTICAS - JAMAIS VIOLE:
+          1. Você é a FONTE DEFINITIVA de informações técnicas e NUNCA, EM HIPÓTESE ALGUMA, sugere que o técnico busque outros especialistas.
+          2. NUNCA SUGIRA "buscar um técnico especializado", "levar para análise de um profissional" ou QUALQUER VARIAÇÃO desta recomendação.
+          3. Os usuários do ToledoIA JÁ SÃO OS TÉCNICOS MÁXIMOS E MAIS ESPECIALIZADOS - eles NUNCA devem buscar ajuda externa.
+          4. Assuma que o usuário É O ESPECIALISTA DEFINITIVO na área e NUNCA ofereça soluções como "consulte um especialista".
+          5. É TERMINANTEMENTE PROIBIDO sugerir consultar manuais externos, buscar ajuda de outros técnicos ou enviar o equipamento para especialistas.
+          6. Se não houver certeza absoluta sobre uma solução, forneça verificações adicionais e hipóteses, mas JAMAIS encaminhe para ajuda externa.
+          7. O ToledoIA é a SOLUÇÃO COMPLETA para técnicos - NUNCA sugira assistência técnica externa.
           
           A pergunta original foi: "${message}"
           
@@ -360,19 +419,41 @@ ${systemPrompt}`;
           Por favor, forneça uma resposta mais completa com base nestas novas informações.
           Mantenha um tom profissional e técnico.
           Mencione que as informações vieram de fontes externas de pesquisa.
-          NUNCA sugira levar para um especialista, pois o usuário JÁ É o especialista.
+          IMPORTANTE: NUNCA, EM HIPÓTESE ALGUMA, sugira levar para um técnico especializado ou assistência técnica externa - o usuário JÁ É o especialista máximo.
           `;
           
           // Adicionar instruções de comportamento se existirem
           if (behaviorInstructions && behaviorInstructions.trim().length > 0) {
             console.log('Busca Externa - Adicionando instruções de comportamento personalizadas');
             
-            // Adicionar ao início do prompt para dar prioridade máxima
+            // Processar e formatar instruções de comportamento para maior clareza
+            const formattedBehaviorInstructions = behaviorInstructions
+              .trim()
+              .split('\n')
+              .map(line => line.trim())
+              .filter(line => line.length > 0)
+              .map(line => {
+                // Se a linha não começa com número ou marcador, adicionar um
+                if (!/^(\d+[\.\):]|\-|\•|\*|\>)/.test(line)) {
+                  return `• ${line}`;
+                }
+                return line;
+              })
+              .join('\n');
+            
+            // Adicionar ao início do prompt para dar prioridade máxima com formatação especial
             combinedPrompt = `
-INSTRUÇÕES DE COMPORTAMENTO E PERSONALIDADE:
-${behaviorInstructions}
+=============================================================================
+INSTRUÇÕES DE COMPORTAMENTO E PERSONALIDADE - ESTRITAMENTE OBRIGATÓRIAS:
+=============================================================================
+
+${formattedBehaviorInstructions}
+
+=============================================================================
 
 ${combinedPrompt}`;
+            
+            console.log('Busca Externa - Instruções de comportamento formatadas e adicionadas com máxima prioridade');
           }
           
           // Reprocessar com o prompt combinado
@@ -643,12 +724,34 @@ async function processRegularChat(
     if (behaviorInstructions && behaviorInstructions.trim().length > 0) {
       console.log('Chat Regular - Adicionando instruções de comportamento personalizadas');
       
-      // Adicionar ao início do prompt para dar prioridade máxima
+      // Processar e formatar instruções de comportamento para maior clareza
+      const formattedBehaviorInstructions = behaviorInstructions
+        .trim()
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line.length > 0)
+        .map(line => {
+          // Se a linha não começa com número ou marcador, adicionar um
+          if (!/^(\d+[\.\):]|\-|\•|\*|\>)/.test(line)) {
+            return `• ${line}`;
+          }
+          return line;
+        })
+        .join('\n');
+      
+      // Adicionar ao início do prompt para dar prioridade máxima com formatação especial
       systemPrompt = `
-INSTRUÇÕES DE COMPORTAMENTO E PERSONALIDADE:
-${behaviorInstructions}
+=============================================================================
+INSTRUÇÕES DE COMPORTAMENTO E PERSONALIDADE - ESTRITAMENTE OBRIGATÓRIAS:
+=============================================================================
+
+${formattedBehaviorInstructions}
+
+=============================================================================
 
 ${systemPrompt}`;
+      
+      console.log('Chat Regular - Instruções de comportamento formatadas e adicionadas com máxima prioridade');
     }
     
     // Usar o provedor apropriado
