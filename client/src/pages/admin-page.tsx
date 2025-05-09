@@ -27,7 +27,13 @@ export default function AdminPage() {
   
   // Verificação explícita de função de usuário - garantir que apenas admins tenham acesso
   useEffect(() => {
-    if (user && user.role !== "admin") {
+    if (!user) {
+      console.log("Redirecionando: usuário não está autenticado");
+      setLocation("/auth");
+      return;
+    }
+    
+    if (user.role !== "admin") {
       console.log("Redirecionando: usuário não é administrador");
       setLocation("/technician");
     }
