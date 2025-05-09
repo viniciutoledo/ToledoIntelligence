@@ -815,7 +815,7 @@ export function TrainingDocuments() {
           
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="image-upload">Selecione uma imagem</Label>
+              <FormLabel htmlFor="image-upload">Selecione uma imagem</FormLabel>
               <Input
                 id="image-upload"
                 type="file"
