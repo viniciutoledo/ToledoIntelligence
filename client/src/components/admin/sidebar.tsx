@@ -35,43 +35,43 @@ export function AdminSidebar({ activeItem, onItemClick }: SidebarProps) {
   const menuItems = [
     {
       id: "dashboard",
-      label: t("admin.dashboard"),
-      icon: <LayoutDashboard className="mr-3 h-5 w-5" />,
+      label: t("admin.dashboard") || "Dashboard",
+      icon: <LayoutDashboard className="h-5 w-5" />,
     },
     {
       id: "settings",
-      label: t("admin.settings"),
-      icon: <Settings className="mr-3 h-5 w-5" />,
+      label: t("admin.settings") || "Configurações",
+      icon: <Settings className="h-5 w-5" />,
     },
     {
       id: "users",
-      label: t("admin.users"),
-      icon: <Users className="mr-3 h-5 w-5" />,
+      label: t("admin.users") || "Usuários",
+      icon: <Users className="h-5 w-5" />,
     },
     {
       id: "plans",
       label: t("admin.plans") || "Planos",
-      icon: <CreditCard className="mr-3 h-5 w-5" />,
+      icon: <CreditCard className="h-5 w-5" />,
     },
     {
       id: "widgets",
       label: t("admin.widgets") || "Widgets",
-      icon: <MessageSquare className="mr-3 h-5 w-5" />,
+      icon: <MessageSquare className="h-5 w-5" />,
     },
     {
       id: "training",
-      label: t("admin.training"),
-      icon: <BookOpen className="mr-3 h-5 w-5" />,
+      label: t("admin.training") || "Treinamento",
+      icon: <BookOpen className="h-5 w-5" />,
     },
     {
       id: "tests",
       label: t("admin.tests") || "Testes",
-      icon: <TestTube className="mr-3 h-5 w-5" />,
+      icon: <TestTube className="h-5 w-5" />,
     },
     {
       id: "logs",
-      label: t("admin.logs"),
-      icon: <FileText className="mr-3 h-5 w-5" />,
+      label: t("admin.logs") || "Registros",
+      icon: <FileText className="h-5 w-5" />,
     },
   ];
 
@@ -90,7 +90,7 @@ export function AdminSidebar({ activeItem, onItemClick }: SidebarProps) {
             key={item.id}
             variant="ghost"
             className={cn(
-              "flex w-full items-center px-4 py-3 text-neutral-300 hover:bg-neutral-700 hover:text-white",
+              "flex w-full items-center justify-start gap-3 px-4 py-3 text-neutral-300 hover:bg-neutral-700 hover:text-white",
               activeItem === item.id && "bg-neutral-700 text-white"
             )}
             onClick={() => {
@@ -105,11 +105,11 @@ export function AdminSidebar({ activeItem, onItemClick }: SidebarProps) {
         <LanguageToggle className="mx-4 mt-4" />
         <Button
           variant="ghost"
-          className="flex w-full items-center px-4 py-3 text-neutral-300 hover:bg-neutral-700 hover:text-white mt-4"
+          className="flex w-full items-center justify-start gap-3 px-4 py-3 text-neutral-300 hover:bg-neutral-700 hover:text-white mt-4"
           onClick={handleLogout}
         >
-          <LogOut className="mr-3 h-5 w-5" />
-          <span>{t("common.logout")}</span>
+          <LogOut className="h-5 w-5" />
+          <span>{t("common.logout") || "Sair"}</span>
         </Button>
       </nav>
     </>
