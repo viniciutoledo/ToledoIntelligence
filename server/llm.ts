@@ -247,19 +247,17 @@ export async function fetchOpenAIDirectly(endpoint: string, data: any, apiKey: s
       throw new Error('Formato de chave API inválido. Deve começar com sk- ou sk-proj-');
     }
     
-    // Usar concatenação de strings em vez de template literals para evitar problemas com caracteres especiais
-    // Verificar se não há caracteres inválidos no cabeçalho de autenticação
-    // O cabeçalho HTTP não pode conter caracteres de controle ou não-ASCII
-    const authHeader = 'Bearer ' + cleanedKey;
-    
-    // Verificar o cabeçalho de autenticação para caracteres inválidos
-    if (/[^\x20-\x7E]/.test(authHeader)) {
-      console.error('ALERTA CRÍTICO: O cabeçalho de autenticação contém caracteres inválidos');
+    // Verificar e limpar a chave API antes de usá-la
+    if (!cleanedKey || cleanedKey.includes('•')) {
+      console.error('ALERTA CRÍTICO: A chave API parece estar mascarada ou inválida');
       
       // Tentar usar a chave do ambiente como último recurso
       if (process.env.OPENAI_API_KEY) {
         console.log('Usando OPENAI_API_KEY do ambiente como solução de emergência');
-        const safeAuthHeader = 'Bearer ' + process.env.OPENAI_API_KEY.trim();
+        const safeKey = process.env.OPENAI_API_KEY.trim();
+        
+        // Criar cabeçalho apenas com caracteres válidos
+        const safeAuthHeader = 'Bearer ' + safeKey;
         
         const response = await fetch('https://api.openai.com/v1/' + endpoint, {
           method: 'POST',
@@ -276,6 +274,9 @@ export async function fetchOpenAIDirectly(endpoint: string, data: any, apiKey: s
         throw new Error('Não foi possível criar um cabeçalho de autenticação válido');
       }
     }
+    
+    // Construir cabeçalho de autorização com a chave limpa
+    const authHeader = 'Bearer ' + cleanedKey;
     
     try {
       const response = await fetch('https://api.openai.com/v1/' + endpoint, {
