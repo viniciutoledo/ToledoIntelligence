@@ -462,13 +462,14 @@ export function TrainingDocuments() {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end space-x-2">
-                      {(document.status === 'error' || document.status === 'pending') && (
+                      {(document.status === 'error' || document.status === 'pending' || document.status === 'processing') && (
                         <Button
                           size="sm"
                           variant="ghost"
                           className="text-blue-500"
                           onClick={() => handleResetDocumentStatus(document.id)}
                           disabled={resetDocumentStatusMutation.isPending}
+                          title={t("admin.training.resetStatus")}
                         >
                           <RefreshCw className="h-4 w-4" />
                           <span className="sr-only">{t("admin.training.resetStatus")}</span>
