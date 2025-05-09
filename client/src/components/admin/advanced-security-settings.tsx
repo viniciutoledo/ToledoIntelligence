@@ -112,8 +112,8 @@ export function AdvancedSecuritySettings({ open, onClose }: AdvancedSecuritySett
     } catch (error) {
       console.error("Erro ao carregar configurações de segurança:", error);
       toast({
-        title: "Erro",
-        description: "Não foi possível carregar as configurações de segurança",
+        title: t("error"),
+        description: t("failed_to_load_security_settings"),
         variant: "destructive",
       });
     } finally {
@@ -153,21 +153,21 @@ export function AdvancedSecuritySettings({ open, onClose }: AdvancedSecuritySett
       
       if (response.ok) {
         toast({
-          title: "Sucesso",
-          description: "Configurações de segurança salvas com sucesso",
+          title: t("success"),
+          description: t("security_settings_saved"),
         });
       } else {
         toast({
-          title: "Erro",
-          description: "Não foi possível salvar as configurações de segurança",
+          title: t("error"),
+          description: t("failed_to_save_security_settings"),
           variant: "destructive",
         });
       }
     } catch (error) {
       console.error("Erro ao salvar configurações de segurança:", error);
       toast({
-        title: "Erro",
-        description: "Ocorreu um erro ao salvar as configurações",
+        title: t("error"),
+        description: t("error_saving_settings"),
         variant: "destructive",
       });
     } finally {
@@ -184,21 +184,21 @@ export function AdvancedSecuritySettings({ open, onClose }: AdvancedSecuritySett
       if (response.ok) {
         setBlockedUsers(blockedUsers.filter(user => user.id !== userId));
         toast({
-          title: "Sucesso",
-          description: "Usuário desbloqueado com sucesso",
+          title: t("success"),
+          description: t("user_unblocked_successfully"),
         });
       } else {
         toast({
-          title: "Erro",
-          description: "Não foi possível desbloquear o usuário",
+          title: t("error"),
+          description: t("failed_to_unblock_user"),
           variant: "destructive",
         });
       }
     } catch (error) {
       console.error("Erro ao desbloquear usuário:", error);
       toast({
-        title: "Erro",
-        description: "Ocorreu um erro ao desbloquear o usuário",
+        title: t("error"),
+        description: t("error_unblocking_user"),
         variant: "destructive",
       });
     } finally {
@@ -217,10 +217,10 @@ export function AdvancedSecuritySettings({ open, onClose }: AdvancedSecuritySett
         <DialogHeader>
           <DialogTitle className="flex items-center text-xl">
             <ShieldAlert className="mr-2 h-5 w-5" />
-            Configurações Avançadas de Segurança
+            {t("advanced_security_settings")}
           </DialogTitle>
           <DialogDescription>
-            Configure opções avançadas de segurança para proteger sua aplicação
+            {t("configure_advanced_security_options")}
           </DialogDescription>
         </DialogHeader>
         
@@ -228,15 +228,15 @@ export function AdvancedSecuritySettings({ open, onClose }: AdvancedSecuritySett
           <TabsList className="grid grid-cols-3 mb-4 w-full">
             <TabsTrigger value="general">
               <Shield className="h-4 w-4 mr-2" />
-              Geral
+              {t("general")}
             </TabsTrigger>
             <TabsTrigger value="password">
               <Key className="h-4 w-4 mr-2" />
-              Política de Senhas
+              {t("password_policy")}
             </TabsTrigger>
             <TabsTrigger value="blocked">
               <UserX className="h-4 w-4 mr-2" />
-              Usuários Bloqueados
+              {t("blocked_users")}
             </TabsTrigger>
           </TabsList>
           
