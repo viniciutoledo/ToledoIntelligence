@@ -407,9 +407,9 @@ export async function extractTextFromDOCX(filePath: string): Promise<string> {
  * @param filePath Caminho completo para o arquivo de imagem
  * @returns Texto descritivo da imagem gerado por IA
  */
-export async function extractContentFromImage(filePath: string): Promise<string> {
+export async function extractContentFromImage(filePath: string, description?: string): Promise<string> {
   try {
-    console.log(`Iniciando processamento de imagem: ${filePath}`);
+    console.log(`Iniciando processamento de imagem: ${filePath}${description ? ' com descrição' : ''}`);
     
     // Verificar existência do arquivo
     if (!fs.existsSync(filePath)) {
@@ -467,7 +467,12 @@ export async function extractContentFromImage(filePath: string): Promise<string>
               {
                 role: "user",
                 content: [
-                  { type: "text", text: "Analise esta imagem de placa de circuito em detalhes para fins de manutenção:" },
+                  { 
+                    type: "text", 
+                    text: description 
+                      ? `Analise esta imagem de placa de circuito em detalhes para fins de manutenção. Descrição fornecida pelo usuário: "${description}"` 
+                      : "Analise esta imagem de placa de circuito em detalhes para fins de manutenção:"
+                  },
                   {
                     type: "image_url",
                     image_url: {
@@ -519,7 +524,9 @@ export async function extractContentFromImage(filePath: string): Promise<string>
                 content: [
                   {
                     type: "text",
-                    text: "Analise esta imagem de placa de circuito em detalhes para fins de manutenção:"
+                    text: description 
+                      ? `Analise esta imagem de placa de circuito em detalhes para fins de manutenção. Descrição fornecida pelo usuário: "${description}"` 
+                      : "Analise esta imagem de placa de circuito em detalhes para fins de manutenção:"
                   },
                   {
                     type: "image",
@@ -605,7 +612,8 @@ export async function processDocumentContent(
   documentType: string,
   filePath?: string,
   websiteUrl?: string,
-  textContent?: string
+  textContent?: string,
+  description?: string
 ): Promise<string> {
   try {
     console.log(`Iniciando processamento de documento do tipo: ${documentType}`);
