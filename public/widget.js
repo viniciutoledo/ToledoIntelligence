@@ -116,7 +116,7 @@
     
     // Adicionar atributos de sandbox e permite permissions para melhor funcionamento do iframe
     widgetIframe.setAttribute('allow', 'clipboard-write; autoplay; encrypted-media');
-    widgetIframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-popups allow-forms');
+    widgetIframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-popups allow-forms allow-top-navigation');
     
     // Passar a chave API através do nome da janela também (alternativa para quando postMessage falha)
     widgetIframe.name = `apiKey=${options.apiKey}`;
