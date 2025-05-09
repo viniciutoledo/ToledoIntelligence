@@ -5,11 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, Info, CircuitBoard } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 
 // Schema para validação do formulário
 const imageAnalysisSchema = z.object({
@@ -28,6 +31,8 @@ export function ImageAnalysisTest() {
   const [isLoading, setIsLoading] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<string | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [modelUsed, setModelUsed] = useState<string>("");
+  const [analysisTime, setAnalysisTime] = useState<number | null>(null);
   
   // Configuração do formulário com React Hook Form
   const form = useForm<ImageAnalysisFormValues>({
@@ -42,7 +47,10 @@ export function ImageAnalysisTest() {
     try {
       setIsLoading(true);
       setAnalysisResult(null);
+      setModelUsed("");
+      setAnalysisTime(null);
       
+      const startTime = performance.now();
       const formData = new FormData();
       formData.append("image", data.image[0]);
       
@@ -53,9 +61,16 @@ export function ImageAnalysisTest() {
       // Chamada à API
       const response = await apiRequest("POST", "/api/admin/test/image-analysis", formData);
       const result = await response.json();
+      const endTime = performance.now();
+      
+      // Calcula o tempo de análise em segundos
+      const timeInSeconds = ((endTime - startTime) / 1000).toFixed(2);
+      setAnalysisTime(parseFloat(timeInSeconds));
       
       if (result.success) {
         setAnalysisResult(result.analysis);
+        setModelUsed(result.model || "Modelo Multimodal");
+        
         toast({
           title: "Análise concluída",
           description: "A imagem foi analisada com sucesso.",
@@ -177,14 +192,48 @@ export function ImageAnalysisTest() {
         
         {/* Exibição do resultado da análise */}
         {analysisResult && (
-          <div className="mt-6">
-            <h3 className="text-lg font-medium mb-2">Resultado da Análise:</h3>
-            <div className="bg-secondary p-4 rounded-md text-sm whitespace-pre-wrap">
-              {analysisResult}
+          <div className="mt-6 space-y-4">
+            <div className="flex flex-wrap gap-3 items-center">
+              <h3 className="text-lg font-medium">Resultado da Análise:</h3>
+              
+              {modelUsed && (
+                <Badge variant="outline" className="bg-primary/10 text-primary">
+                  <CircuitBoard className="h-3 w-3 mr-1" />
+                  {modelUsed}
+                </Badge>
+              )}
+              
+              {analysisTime !== null && (
+                <Badge variant="outline" className="bg-secondary/20">
+                  Tempo: {analysisTime}s
+                </Badge>
+              )}
+            </div>
+            
+            <Alert variant="default" className="bg-secondary/10 border-secondary">
+              <div className="bg-secondary p-4 rounded-md text-sm whitespace-pre-wrap">
+                {analysisResult}
+              </div>
+            </Alert>
+            
+            <div className="text-xs text-muted-foreground mt-2 flex items-center">
+              <Info className="h-3 w-3 mr-1" />
+              <span>As análises são realizadas pelo modelo selecionado com base nas configurações do sistema.</span>
             </div>
           </div>
         )}
       </CardContent>
+      
+      {!analysisResult && (
+        <CardFooter className="border-t bg-secondary/5 px-6 py-4">
+          <div className="flex items-center text-sm text-muted-foreground">
+            <Info className="h-4 w-4 mr-2 text-primary/60" />
+            <span>
+              Forneça uma descrição clara e detalhada para obter melhores resultados ao analisar circuitos eletrônicos complexos.
+            </span>
+          </div>
+        </CardFooter>
+      )}
     </Card>
   );
 }

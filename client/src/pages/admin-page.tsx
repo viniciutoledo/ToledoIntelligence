@@ -192,11 +192,11 @@ export default function AdminPage() {
             <>
               <div className="flex justify-between items-center mb-8 border-b pb-4">
                 <h1 className="text-3xl font-bold text-primary-800">
-                  {t("admin.tests") || "Testes"}
+                  Testes
                 </h1>
                 <div className="bg-white px-4 py-2 rounded-md shadow-sm text-sm text-neutral-500 flex items-center">
                   <span className="font-medium mr-1">ToledoIA</span>
-                  <span>Admin Panel</span>
+                  <span>Painel de Administração</span>
                 </div>
               </div>
               
