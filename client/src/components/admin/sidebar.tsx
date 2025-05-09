@@ -65,7 +65,7 @@ export function AdminSidebar({ activeItem, onItemClick }: SidebarProps) {
     },
     {
       id: "tests",
-      label: t("admin.tests") || "Testes",
+      label: "Testes",
       icon: <TestTube className="h-5 w-5" />,
     },
     {
