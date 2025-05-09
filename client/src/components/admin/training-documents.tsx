@@ -624,6 +624,7 @@ export function TrainingDocuments() {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end space-x-2">
+                      {/* Botão para resetar status de documentos com problemas */}
                       {(document.status === 'error' || document.status === 'pending' || document.status === 'processing') && (
                         <Button
                           size="sm"
@@ -638,60 +639,54 @@ export function TrainingDocuments() {
                         </Button>
                       )}
                       
+                      {/* Botões para documentos do tipo texto */}
                       {document.document_type === 'text' && (
                         <>
                           <Button
                             size="sm"
-                            variant="ghost"
-                            className="text-indigo-500"
-                            onClick={() => handleAddImage(document)}
-                            title="Adicionar imagem"
+                            variant="outline"
+                            className="text-emerald-600 border-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                            onClick={() => handleEditText(document)}
                           >
-                            <Image className="h-4 w-4" />
-                            <span className="sr-only">Adicionar imagem</span>
+                            <FileText className="h-4 w-4 mr-1" />
+                            Editar texto
                           </Button>
                           
                           <Button
                             size="sm"
-                            variant="ghost"
-                            className="text-emerald-500"
-                            onClick={() => handleEditText(document)}
-                            title="Editar texto"
+                            variant="outline"
+                            className="text-indigo-600 border-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
+                            onClick={() => handleAddImage(document)}
                           >
-                            <FileText className="h-4 w-4" />
-                            <span className="sr-only">Editar texto</span>
+                            <Image className="h-4 w-4 mr-1" />
+                            Adicionar imagem
                           </Button>
                         </>
                       )}
                       
-                      <div className="relative group">
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                          <MoreVertical className="h-4 w-4" />
+                      {/* Botão para editar documento padrão */}
+                      {document.document_type !== 'text' && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-blue-600 border-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                          onClick={() => handleEditDocument(document)}
+                        >
+                          <Pen className="h-4 w-4 mr-1" />
+                          Editar
                         </Button>
-                        <div className="absolute right-0 top-full z-50 mt-1 min-w-[160px] bg-white shadow-md rounded-md border border-gray-200 py-1 hidden group-hover:block">
-                          {document.document_type === 'text' && (
-                            <>
-                              <div className="px-3 py-1.5 text-sm hover:bg-gray-100 cursor-pointer flex items-center" onClick={() => handleEditText(document)}>
-                                <Pen className="h-4 w-4 mr-2" /> Editar texto
-                              </div>
-                              <div className="px-3 py-1.5 text-sm hover:bg-gray-100 cursor-pointer flex items-center" onClick={() => handleAddImage(document)}>
-                                <Image className="h-4 w-4 mr-2" /> Adicionar imagem
-                              </div>
-                            </>
-                          )}
-                          {document.document_type === 'file' && (
-                            <div className="px-3 py-1.5 text-sm hover:bg-gray-100 cursor-pointer flex items-center" onClick={() => handleEditDocument(document)}>
-                              <Pen className="h-4 w-4 mr-2" /> Editar documento
-                            </div>
-                          )}
-                          <div className="px-3 py-1.5 text-sm hover:bg-gray-100 cursor-pointer flex items-center" onClick={() => handleEditDocument(document)}>
-                            <Pen className="h-4 w-4 mr-2" /> Editar
-                          </div>
-                          <div className="px-3 py-1.5 text-sm hover:bg-gray-100 cursor-pointer text-red-600 flex items-center" onClick={() => handleDeleteDocument(document.id)}>
-                            <Trash2 className="h-4 w-4 mr-2" /> Excluir
-                          </div>
-                        </div>
-                      </div>
+                      )}
+                      
+                      {/* Botão para excluir documento */}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-red-600 border-red-600 hover:text-red-700 hover:bg-red-50"
+                        onClick={() => handleDeleteDocument(document.id)}
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Excluir
+                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>
