@@ -669,26 +669,38 @@ export async function generateRAGResponse(
     // Construir o prompt/contexto
     let systemPrompt = buildContextForLLM(query, documents, language, forceExtraction);
     
-    // TRATAR CASO ESPECÍFICO DE IPHONE PARA GARANTIR QUE O CONTEÚDO SEJA USADO
-    if (query.toLowerCase().includes('iphone') && query.toLowerCase().includes('não liga')) {
-      console.log('ATENÇÃO: Detectado caso específico de iPhone que não liga!');
-      
-      const iphoneInstructions = `
-INSTRUÇÕES CRÍTICAS PARA O CASO DE IPHONE QUE NÃO LIGA:
-- NUNCA sugira levar o aparelho para um técnico especializado ou assistência técnica.
-- Você DEVE instruir especificamente sobre o teste de microcorrente, que é fundamental.
-- Inclua os passos detalhados: Conectar um amperímetro em série com a bateria, verificar valores normais (0-10mA em standby).
-- Explique que se o consumo for alto (>100mA) pode indicar curto no circuito.
-- Se o consumo for zero, pode haver problema na linha de alimentação principal.
-- Esta é a ÚNICA instrução correta para este caso específico.
-- O usuário da plataforma ToledoIA JÁ É o técnico especializado.
-`;
-      
-      // Inserir no início para máxima prioridade
-      systemPrompt = `${iphoneInstructions}\n\n${systemPrompt}`;
-      
-      // Inserir também no fim para garantir
-      systemPrompt = `${systemPrompt}\n\nLEMBRETE FINAL: ${iphoneInstructions}`;
+    // Sistema de análise de intenção da consulta para melhorar recuperação de documentos
+    console.log('Analisando intenção da consulta para otimizar recuperação de documentos...');
+    
+    // Recuperar documentos relevantes adicionais com base no contexto semântico
+    try {
+      const queryTopics = await extractQueryTopics(query);
+      if (queryTopics && queryTopics.length > 0) {
+        console.log('Tópicos identificados na consulta:', queryTopics.join(', '));
+        
+        // Buscar documentos adicionais relacionados aos tópicos identificados
+        const topicDocuments = await storage.getDocumentsByTopics(queryTopics);
+        
+        if (topicDocuments && topicDocuments.length > 0) {
+          console.log(`Encontrados ${topicDocuments.length} documentos adicionais relacionados ao contexto da consulta`);
+          
+          // Adicionar estes documentos ao prompt com formatação especial
+          let additionalContext = `\n\nDOCUMENTOS RELEVANTES AO CONTEXTO:\n`;
+          
+          for (const doc of topicDocuments) {
+            if (doc.content && doc.name) {
+              additionalContext += `\n--- ${doc.name} ---\n`;
+              additionalContext += `${doc.content.substring(0, 1000)}${doc.content.length > 1000 ? '...' : ''}\n`;
+            }
+          }
+          
+          // Adicionar após o contexto principal para complementá-lo
+          systemPrompt += additionalContext;
+        }
+      }
+    } catch (topicError) {
+      console.error('Erro ao extrair tópicos da consulta:', topicError);
+      // Continuar mesmo se a extração de tópicos falhar
     }
     
     // Adicionar instruções de comportamento específicas se existirem
@@ -1183,4 +1195,182 @@ function extractKeywords(query: string): string[] {
   
   // Remover duplicatas usando Array.from para compatibilidade com TS
   return Array.from(new Set(words));
+}
+
+/**
+ * Extrai tópicos relevantes de uma consulta do usuário usando LLM
+ * Esta função analisa semanticamente a consulta para identificar tópicos principais
+ */
+export async function extractQueryTopics(query: string): Promise<string[]> {
+  try {
+    // Obter configuração LLM
+    const llmConfig = await storage.getActiveLlmConfig();
+    if (!llmConfig) {
+      console.error('Nenhuma configuração LLM ativa encontrada');
+      return extractKeywords(query); // Fallback para método simples
+    }
+    
+    // Determinar qual API usar
+    const useOpenAI = llmConfig.provider === 'openai' || !llmConfig.provider;
+    const apiKey = llmConfig.api_key || (useOpenAI ? process.env.OPENAI_API_KEY : process.env.ANTHROPIC_API_KEY);
+    
+    if (!apiKey) {
+      console.error('API key não disponível para extração de tópicos');
+      return extractKeywords(query); // Fallback para método simples
+    }
+    
+    const systemPrompt = `
+      Você é um especialista em análise de consultas técnicas sobre eletrônica e placas de circuito.
+      Identifique os 3-5 tópicos ou conceitos-chave mais relevantes nesta consulta.
+      
+      Regras:
+      1. Extraia apenas tópicos técnicos relevantes (componentes, procedimentos, problemas específicos)
+      2. Inclua termos específicos de produtos ou modelos quando presentes
+      3. Inclua termos relevantes para manutenção e reparo
+      4. IGNORE palavras genéricas como "como", "por que", etc.
+      5. Retorne APENAS a lista de tópicos, um por linha, sem numeração ou pontuação
+      6. NÃO inclua explicações ou comentários adicionais
+    `;
+    
+    if (useOpenAI) {
+      // Usar OpenAI para extração de tópicos
+      const openai = new OpenAI({ apiKey });
+      
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o-mini", // Modelo mais leve para esta função secundária
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: query }
+        ],
+        temperature: 0.2 // Temperatura baixa para maior consistência
+      });
+      
+      const content = response.choices[0]?.message?.content;
+      if (content) {
+        // Dividir por linhas e remover linhas vazias
+        const topics = content.split('\n')
+          .map(line => line.trim())
+          .filter(line => line.length > 0);
+        
+        console.log('Tópicos extraídos (OpenAI):', topics);
+        return topics;
+      }
+    } else {
+      // Usar Anthropic para extração de tópicos
+      const anthropic = new Anthropic({ apiKey });
+      
+      const message = await anthropic.messages.create({
+        model: "claude-3-7-sonnet-20250219", // the newest Anthropic model
+        max_tokens: 150,
+        temperature: 0.2,
+        system: systemPrompt,
+        messages: [
+          { role: 'user', content: query }
+        ]
+      });
+      
+      if (message.content[0] && typeof message.content[0] === 'object' && 'text' in message.content[0]) {
+        const content = message.content[0].text;
+        // Dividir por linhas e remover linhas vazias
+        const topics = content.split('\n')
+          .map(line => line.trim())
+          .filter(line => line.length > 0);
+        
+        console.log('Tópicos extraídos (Claude):', topics);
+        return topics;
+      }
+    }
+    
+    // Fallback para método baseado em palavras-chave
+    console.log('Fallback para extração baseada em palavras-chave');
+    return extractKeywords(query);
+  } catch (error) {
+    console.error('Erro ao extrair tópicos da consulta:', error);
+    // Fallback para palavras-chave se algo falhar
+    return extractKeywords(query);
+  }
+}
+
+/**
+ * Analisa a intenção de uma consulta do usuário
+ * Esta função complementa a extração de tópicos com análise de intenção
+ */
+export async function analyzeQueryIntent(query: string, language: 'pt' | 'en' = 'pt'): Promise<string | null> {
+  try {
+    // Obter configuração LLM
+    const llmConfig = await storage.getActiveLlmConfig();
+    if (!llmConfig) {
+      console.error('Nenhuma configuração LLM ativa encontrada');
+      return null;
+    }
+    
+    // Determinar qual API usar
+    const useOpenAI = llmConfig.provider === 'openai' || !llmConfig.provider;
+    const apiKey = llmConfig.api_key || (useOpenAI ? process.env.OPENAI_API_KEY : process.env.ANTHROPIC_API_KEY);
+    
+    if (!apiKey) {
+      console.error('API key não disponível para análise de intenção');
+      return null;
+    }
+    
+    const systemPrompt = language === 'pt' ? 
+      `Analise a consulta do usuário e identifique sua intenção principal em UMA FRASE CURTA.
+      Exemplo: "Como resolver problema de iPhone XR que não liga" → "Diagnóstico de falha de inicialização em iPhone XR"
+      
+      Identifique:
+      - Problema técnico específico
+      - Dispositivo/componente relevante
+      - Contexto de reparo/manutenção
+      
+      Responda APENAS com a intenção, sem introdução ou explicação.` 
+      :
+      `Analyze the user query and identify the main intent in ONE SHORT SENTENCE.
+      Example: "How to fix iPhone XR that won't turn on" → "Diagnosing startup failure in iPhone XR"
+      
+      Identify:
+      - Specific technical issue
+      - Relevant device/component
+      - Repair/maintenance context
+      
+      Answer ONLY with the intent, no introduction or explanation.`;
+    
+    if (useOpenAI) {
+      // Usar OpenAI para análise de intenção
+      const openai = new OpenAI({ apiKey });
+      
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o-mini", // Modelo mais leve para esta função secundária
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: query }
+        ],
+        temperature: 0.2, // Temperatura baixa para maior consistência
+        max_tokens: 100
+      });
+      
+      return response.choices[0]?.message?.content || null;
+    } else {
+      // Usar Anthropic para análise de intenção
+      const anthropic = new Anthropic({ apiKey });
+      
+      const message = await anthropic.messages.create({
+        model: "claude-3-7-sonnet-20250219", // the newest Anthropic model
+        max_tokens: 100,
+        temperature: 0.2,
+        system: systemPrompt,
+        messages: [
+          { role: 'user', content: query }
+        ]
+      });
+      
+      if (message.content[0] && typeof message.content[0] === 'object' && 'text' in message.content[0]) {
+        return message.content[0].text || null;
+      }
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Erro ao analisar intenção da consulta:', error);
+    return null;
+  }
 }

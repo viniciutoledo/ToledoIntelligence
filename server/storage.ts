@@ -128,6 +128,7 @@ export interface IStorage {
   deleteTrainingDocument(id: number): Promise<void>;
   updateTrainingDocumentStatus(id: number, status: string, errorMessage?: string): Promise<TrainingDocument | undefined>;
   searchTrainingDocuments(terms: string[]): Promise<TrainingDocument[]>;
+  getDocumentsByTopics(topics: string[]): Promise<{name: string, content: string}[]>;
   
   // Training categories
   getTrainingCategory(id: number): Promise<TrainingCategory | undefined>;
