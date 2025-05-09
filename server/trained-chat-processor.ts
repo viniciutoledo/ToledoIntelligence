@@ -37,6 +37,25 @@ export async function processChatWithTrainedDocuments(
       return await processRegularChat(message, llmConfig, userId, widgetId);
     }
     
+    // Verificar se temos documentos de instruções prioritárias
+    const trainingDocuments = await storage.getTrainingDocuments();
+    const instructionsDocs = trainingDocuments.filter((doc: any) => {
+      const docName = (doc.name || '').toLowerCase();
+      return docName.includes('instruç') || 
+             docName.includes('instruc') || 
+             docName.includes('priorit') || 
+             docName.includes('regras');
+    });
+    
+    if (instructionsDocs.length > 0) {
+      console.log(`IMPORTANTE: Encontrados ${instructionsDocs.length} documentos de instruções prioritárias para incluir no contexto.`);
+      instructionsDocs.forEach((doc: any) => {
+        console.log(`- Documento de instrução: "${doc.name}" (ID: ${doc.id})`);
+      });
+    } else {
+      console.log('AVISO: Nenhum documento de instruções prioritárias encontrado.');
+    }
+    
     // Determinar modelo a usar
     const provider = llmConfig.model_name.startsWith('gpt') ? 'openai' : 'anthropic';
     const modelName = llmConfig.model_name;
@@ -126,8 +145,32 @@ export async function processChatWithTrainedDocuments(
         language: 'pt'
       });
       
+      // Adicionar documentos de instruções prioritárias explicitamente
+      if (instructionsDocs && instructionsDocs.length > 0) {
+        console.log(`Adicionando explicitamente ${instructionsDocs.length} documentos de instruções prioritárias`);
+        
+        for (const instructionDoc of instructionsDocs) {
+          // Verificar se este documento já está nos resultados relevantes
+          const isAlreadyIncluded = relevantDocuments.some((doc: any) => 
+            doc.document_id === instructionDoc.id);
+          
+          if (!isAlreadyIncluded && instructionDoc.content && instructionDoc.content.trim().length > 0) {
+            console.log(`Adicionando manualmente documento de instrução "${instructionDoc.name}" (ID: ${instructionDoc.id})`);
+            
+            // Adicionar no início para priorizar
+            relevantDocuments.unshift({
+              content: instructionDoc.content,
+              document_name: instructionDoc.name,
+              similarity: 1.0, // Máxima prioridade
+              document_id: instructionDoc.id,
+              relevance_score: 1.0
+            });
+          }
+        }
+      }
+      
       if (relevantDocuments && relevantDocuments.length > 0) {
-        console.log(`Encontrados ${relevantDocuments.length} documentos via busca híbrida RAG`);
+        console.log(`Usando total de ${relevantDocuments.length} documentos via busca híbrida RAG`);
         documentContext = formatRelevantDocumentsForPrompt(relevantDocuments);
       } else {
         throw new Error("Sem resultados na busca híbrida");

@@ -390,36 +390,93 @@ export function formatRelevantDocumentsForPrompt(documents: any[]): string {
     return 'Nenhum documento relevante encontrado.';
   }
   
+  // Identificar quais documentos são de instruções prioritárias
+  const instructionDocs = documents.filter(doc => {
+    const docName = (doc.document_name || '').toLowerCase();
+    return docName.includes('instruç') || 
+           docName.includes('instruc') || 
+           docName.includes('priorit') || 
+           docName.includes('regras');
+  });
+  
+  // Separar outros documentos
+  const normalDocs = documents.filter(doc => {
+    const docName = (doc.document_name || '').toLowerCase();
+    return !(docName.includes('instruç') || 
+             docName.includes('instruc') || 
+             docName.includes('priorit') || 
+             docName.includes('regras'));
+  });
+  
   let formattedText = '';
   
-  documents.forEach((doc, index) => {
-    formattedText += `\n\n------------------------\n`;
+  // Primeiro adicionar as instruções prioritárias
+  if (instructionDocs.length > 0) {
+    formattedText += `\n\n===== INSTRUÇÕES PRIORITÁRIAS =====\n`;
+    formattedText += `Estas regras devem ser seguidas rigorosamente para todas as respostas:\n\n`;
     
-    // Incluir informações do documento de forma mais visível para o LLM
-    const docName = doc.document_name || `Documento sem nome ${index + 1}`;
-    formattedText += `DOCUMENTO ${index + 1}: "${docName}"`;
+    instructionDocs.forEach((doc, index) => {
+      formattedText += `\n\n------------------------\n`;
+      
+      // Destacar que é um documento prioritário
+      const docName = doc.document_name || `Instrução prioritária ${index + 1}`;
+      formattedText += `INSTRUÇÃO PRIORITÁRIA ${index + 1}: "${docName}"`;
+      
+      // Adicionar score de relevância se disponível (sempre alta para instruções)
+      formattedText += ` (Relevância: ${(doc.similarity || 1.0).toFixed(2)})`;
+      
+      formattedText += `\n------------------------\n\n`;
+      
+      console.log(`[RAG] Adicionando instrução prioritária "${docName}" ao prompt (${(doc.content || doc.text || '').length} caracteres)`);
+      
+      // Adicionar conteúdo do documento
+      const docContent = doc.content || doc.text || '';
+      
+      // Limitar o tamanho para evitar exceder os limites de tokens
+      const maxContentLength = 50000;
+      const truncatedContent = docContent.length > maxContentLength 
+        ? docContent.substring(0, maxContentLength) + `\n[...Conteúdo truncado, excede ${maxContentLength} caracteres]` 
+        : docContent;
+      
+      formattedText += truncatedContent;
+    });
     
-    // Adicionar score de relevância se disponível
-    if (doc.similarity) {
-      formattedText += ` (Relevância: ${doc.similarity.toFixed(2)})`;
-    }
+    formattedText += `\n\n===== FIM DAS INSTRUÇÕES PRIORITÁRIAS =====\n\n`;
+  }
+  
+  // Depois adicionar os documentos técnicos normais
+  if (normalDocs.length > 0) {
+    formattedText += `\n\n===== DOCUMENTOS TÉCNICOS =====\n`;
+    formattedText += `Informações técnicas para consulta:\n\n`;
     
-    formattedText += `\n------------------------\n\n`;
-    
-    // Log para ajudar na depuração
-    console.log(`[RAG] Adicionando documento "${docName}" ao prompt (${(doc.content || doc.text || '').length} caracteres)`);
-    
-    // Adicionar conteúdo do documento
-    const docContent = doc.content || doc.text || '';
-    
-    // Limitar o tamanho para evitar exceder os limites de tokens (50,000 caracteres é um limite seguro)
-    const maxContentLength = 50000;
-    const truncatedContent = docContent.length > maxContentLength 
-      ? docContent.substring(0, maxContentLength) + `\n[...Conteúdo truncado, excede ${maxContentLength} caracteres]` 
-      : docContent;
-    
-    formattedText += truncatedContent;
-  });
+    normalDocs.forEach((doc, index) => {
+      formattedText += `\n\n------------------------\n`;
+      
+      // Incluir informações do documento
+      const docName = doc.document_name || `Documento técnico ${index + 1}`;
+      formattedText += `DOCUMENTO TÉCNICO ${index + 1}: "${docName}"`;
+      
+      // Adicionar score de relevância se disponível
+      if (doc.similarity) {
+        formattedText += ` (Relevância: ${doc.similarity.toFixed(2)})`;
+      }
+      
+      formattedText += `\n------------------------\n\n`;
+      
+      console.log(`[RAG] Adicionando documento técnico "${docName}" ao prompt (${(doc.content || doc.text || '').length} caracteres)`);
+      
+      // Adicionar conteúdo do documento
+      const docContent = doc.content || doc.text || '';
+      
+      // Limitar o tamanho para evitar exceder os limites de tokens
+      const maxContentLength = 50000;
+      const truncatedContent = docContent.length > maxContentLength 
+        ? docContent.substring(0, maxContentLength) + `\n[...Conteúdo truncado, excede ${maxContentLength} caracteres]` 
+        : docContent;
+      
+      formattedText += truncatedContent;
+    });
+  }
   
   return formattedText;
 }
@@ -884,7 +941,23 @@ export async function processQueryWithRAG(
       }
     }
     
-    // Realizar busca híbrida para obter documentos relevantes
+    // Primeiro, procurar documentos prioritários de instruções
+    const instructionDocuments = trainingDocuments.filter((doc: any) => 
+      doc.name.toLowerCase().includes('instrução') || 
+      doc.name.toLowerCase().includes('instrucoes') || 
+      doc.name.toLowerCase().includes('instruções') ||
+      doc.name.toLowerCase().includes('priorit') ||
+      doc.name.toLowerCase().includes('regras') ||
+      (doc.tags && Array.isArray(doc.tags) && (
+        doc.tags.includes('instrucoes') || 
+        doc.tags.includes('prioritario') || 
+        doc.tags.includes('regras')
+      ))
+    );
+    
+    console.log(`Encontrados ${instructionDocuments.length} documentos de instruções prioritárias`);
+    
+    // Realizar busca híbrida para obter documentos relevantes para a consulta
     const relevantDocuments = await hybridSearch(query, { 
       language, 
       limit 
@@ -892,9 +965,31 @@ export async function processQueryWithRAG(
     
     console.log(`Encontrados ${relevantDocuments.length} documentos relevantes através de busca híbrida`);
     
+    // SEMPRE incluir os documentos de instruções prioritárias
+    if (instructionDocuments.length > 0) {
+      console.log(`IMPORTANTE: Adicionando ${instructionDocuments.length} documentos de instruções prioritárias ao contexto`);
+      
+      for (const instructionDoc of instructionDocuments) {
+        // Verificar se este documento já está nos resultados relevantes
+        const isAlreadyIncluded = relevantDocuments.some(existing => 
+          existing.document_id === instructionDoc.id);
+        
+        if (!isAlreadyIncluded && instructionDoc.content && instructionDoc.content.trim().length > 0) {
+          console.log(`Adicionando documento de instrução prioritária "${instructionDoc.name}" (ID: ${instructionDoc.id}) com ${instructionDoc.content.length} caracteres`);
+          // Nota: Usamos similaridade 1.0 para documentos de instruções para garantir maior peso
+          relevantDocuments.unshift({
+            content: instructionDoc.content,
+            document_name: instructionDoc.name,
+            similarity: 1.0, // Máxima similaridade para documentos de instruções
+            document_id: instructionDoc.id
+          });
+        }
+      }
+    }
+    
     // Verificar se temos conteúdo nos documentos retornados
     const documentsWithContent = relevantDocuments.filter(doc => doc.content && doc.content.trim().length > 0);
-    console.log(`Documentos com conteúdo: ${documentsWithContent.length}`);
+    console.log(`Documentos com conteúdo após inclusão de instruções prioritárias: ${documentsWithContent.length}`);
     
     // FORÇAR USO DE TODOS OS DOCUMENTOS TREINADOS
     console.log("IMPORTANTE: FORÇANDO ANÁLISE COMPLETA DE TODOS OS DOCUMENTOS TREINADOS");
