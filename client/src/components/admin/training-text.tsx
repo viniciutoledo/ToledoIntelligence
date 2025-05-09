@@ -76,7 +76,7 @@ export function TrainingText() {
       formData.append('content', textContent);
       
       if (selectedImage) {
-        formData.append('image', selectedImage);
+        formData.append('file', selectedImage);
       }
       
       // Usar a mutation genérica que suporta FormData
@@ -171,7 +171,7 @@ export function TrainingText() {
           formData.append('description', editDescription);
         }
         formData.append('content', editContent);
-        formData.append('image', editSelectedImage);
+        formData.append('file', editSelectedImage);
         
         await fetch(`/api/training/documents/${editingDocument.id}`, {
           method: "PATCH",
