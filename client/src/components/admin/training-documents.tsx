@@ -173,12 +173,13 @@ export function TrainingDocuments() {
   const onAddSubmit = (data: DocumentFormValues) => {
     // Manipulação específica para tipo "image"
     if (data.document_type === "image" && selectedImage) {
-      // Usar a mutation específica para imagens
-      createImageDocumentMutation.mutate({
+      const imageData = {
         name: data.name,
         description: data.description || null,
         image: selectedImage
-      });
+      };
+      console.log("Enviando imagem:", imageData.name);
+      createImageDocumentMutation.mutate(imageData);
       setIsAddDialogOpen(false);
       return;
     }
