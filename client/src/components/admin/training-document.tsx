@@ -1,25 +1,41 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useTraining } from "@/hooks/use-training";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { FileText, UploadCloud, MoreVertical, Check, X, Download, FileIcon } from "lucide-react";
+import { 
+  FileText, UploadCloud, MoreVertical, Check, X, Download, FileIcon, 
+  Edit, Image as ImageIcon, Eye, Save
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { ptBR, enUS } from "date-fns/locale";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface DocumentFormData {
   name: string;
   description: string | null;
   file?: File | null;
+  image?: File | null;
 }
 
 export function TrainingDocument() {
@@ -29,12 +45,25 @@ export function TrainingDocument() {
     documentsLoading,
     createFileDocumentMutation,
     deleteDocumentMutation,
+    updateDocumentMutation,
   } = useTraining();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [documentDescription, setDocumentDescription] = useState("");
+  
+  // Estado para o modal de edição
+  const [editingDocument, setEditingDocument] = useState<any | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editDescription, setEditDescription] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState<string | null>(null);
+  const [isEditingImage, setIsEditingImage] = useState(false);
+  const [editSelectedImage, setEditSelectedImage] = useState<File | null>(null);
+  const [editIsSubmitting, setEditIsSubmitting] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const fileDocuments = documents?.filter(doc => doc.document_type === "file") || [];
 
@@ -107,6 +136,92 @@ export function TrainingDocument() {
       return <FileText className="h-4 w-4 text-gray-500" />;
     } else {
       return <FileIcon className="h-4 w-4 text-gray-500" />;
+    }
+  };
+  
+  // Métodos para o modal de edição de documentos
+  const openEditModal = (doc: any) => {
+    setEditingDocument(doc);
+    setEditName(doc.name || "");
+    setEditDescription(doc.description || "");
+    setEditContent(doc.content || "");
+    setEditSelectedImage(null);
+    setIsEditingImage(false);
+    
+    // Se o documento tiver uma imagem, carregá-la para o preview
+    if (doc.image_url) {
+      setImagePreview(doc.image_url);
+    } else {
+      setImagePreview(null);
+    }
+  };
+  
+  const closeEditModal = () => {
+    setEditingDocument(null);
+    setEditName("");
+    setEditDescription("");
+    setEditContent("");
+    setEditSelectedImage(null);
+    setIsEditingImage(false);
+    setImagePreview(null);
+  };
+  
+  const handleEditImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      
+      // Verificar se o arquivo é uma imagem válida
+      if (file.type.startsWith('image/')) {
+        setEditSelectedImage(file);
+        
+        // Criar URL para preview
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          if (event.target && event.target.result) {
+            setImagePreview(event.target.result as string);
+          }
+        };
+        reader.readAsDataURL(file);
+      } else {
+        alert("Por favor, selecione um arquivo de imagem válido.");
+        e.target.value = "";
+      }
+    }
+  };
+  
+  const handleSaveDocument = async () => {
+    if (!editingDocument || editIsSubmitting) return;
+    
+    setEditIsSubmitting(true);
+    try {
+      const updateData: any = {
+        id: editingDocument.id,
+        document: {
+          name: editName,
+          description: editDescription,
+        }
+      };
+      
+      // Se estiver editando conteúdo, adicionar ao payload
+      if (editContent !== null && editContent !== editingDocument.content) {
+        updateData.document.content = editContent;
+      }
+      
+      // Se uma nova imagem foi selecionada, adicioná-la ao payload
+      if (editSelectedImage) {
+        console.log("Adicionando imagem ao payload");
+        updateData.document.image = editSelectedImage;
+      }
+      
+      // Fazer a chamada de atualização
+      await updateDocumentMutation.mutateAsync(updateData);
+      
+      // Fechar o modal após o sucesso
+      closeEditModal();
+    } catch (error) {
+      console.error("Erro ao salvar documento:", error);
+    } finally {
+      setEditIsSubmitting(false);
     }
   };
 
@@ -330,6 +445,14 @@ export function TrainingDocument() {
                             </DropdownMenuItem>
                           )}
                           <DropdownMenuItem 
+                            className="flex cursor-pointer items-center"
+                            onClick={() => openEditModal(doc)}
+                          >
+                            <Edit className="mr-2 h-4 w-4" />
+                            <span>Editar</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
                             className="flex cursor-pointer items-center text-red-600 focus:text-red-600"
                             onClick={() => handleDeleteDocument(doc.id)}
                           >
@@ -345,6 +468,173 @@ export function TrainingDocument() {
           </>
         )}
       </div>
+      
+      {/* Modal de Edição de Documento */}
+      {editingDocument && (
+        <Dialog open={!!editingDocument} onOpenChange={(open) => !open && closeEditModal()}>
+          <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Editar Documento</DialogTitle>
+              <DialogDescription>
+                Edite as informações do documento e adicione uma imagem ilustrativa se necessário.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <Tabs defaultValue="details" className="w-full mt-4">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="details">Detalhes</TabsTrigger>
+                <TabsTrigger value="content" disabled={!editingDocument.content && !isEditingImage}>Conteúdo</TabsTrigger>
+                <TabsTrigger value="image" disabled={!imagePreview && !isEditingImage}>Imagem</TabsTrigger>
+              </TabsList>
+              
+              {/* Tab de Detalhes */}
+              <TabsContent value="details" className="space-y-4 mt-4">
+                <div>
+                  <Label htmlFor="edit_name">Nome do Documento</Label>
+                  <Input
+                    id="edit_name"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="mt-1"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="edit_description">Descrição</Label>
+                  <Textarea
+                    id="edit_description"
+                    placeholder="Digite uma descrição para o documento (opcional)"
+                    value={editDescription || ""}
+                    onChange={(e) => setEditDescription(e.target.value)}
+                    className="mt-1 resize-none min-h-[100px]"
+                  />
+                </div>
+                
+                <div>
+                  <Label className="block mb-2">Status</Label>
+                  <Badge className={`px-2 py-1 text-xs ${
+                    editingDocument.status === 'completed' || editingDocument.status === 'indexed'
+                      ? 'bg-green-100 text-green-800 border border-green-200' 
+                      : editingDocument.status === 'processing'
+                      ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                      : editingDocument.status === 'error'
+                      ? 'bg-red-100 text-red-800 border border-red-200'
+                      : 'bg-amber-100 text-amber-800 border border-amber-200'
+                  }`}>
+                    {(editingDocument.status === 'completed' || editingDocument.status === 'indexed') && <Check className="mr-1 h-3 w-3 inline" />}
+                    {editingDocument.status === 'completed' ? 'Concluído' : 
+                     editingDocument.status === 'indexed' ? 'Treinado' :
+                     editingDocument.status === 'processing' ? 'Processando' : 
+                     editingDocument.status === 'error' ? 'Erro' : 'Pendente'}
+                  </Badge>
+                </div>
+              </TabsContent>
+              
+              {/* Tab de Conteúdo */}
+              <TabsContent value="content" className="space-y-4 mt-4">
+                <div>
+                  <Label htmlFor="edit_content">Conteúdo do Documento</Label>
+                  <Textarea
+                    id="edit_content"
+                    value={editContent || ""}
+                    onChange={(e) => setEditContent(e.target.value)}
+                    className="mt-1 min-h-[300px] font-mono text-sm"
+                  />
+                </div>
+              </TabsContent>
+              
+              {/* Tab de Imagem */}
+              <TabsContent value="image" className="space-y-4 mt-4">
+                <div className="border rounded-md p-4">
+                  {imagePreview ? (
+                    <div className="space-y-4">
+                      <div className="relative aspect-video w-full overflow-hidden rounded-md">
+                        <img 
+                          src={imagePreview} 
+                          alt="Preview da imagem" 
+                          className="object-contain w-full h-full"
+                        />
+                      </div>
+                      
+                      <div className="flex justify-end space-x-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setImagePreview(null);
+                            setEditSelectedImage(null);
+                            if (imageInputRef.current) {
+                              imageInputRef.current.value = "";
+                            }
+                          }}
+                        >
+                          <X className="h-4 w-4 mr-1" /> Remover
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div
+                      className="flex flex-col items-center justify-center py-8 cursor-pointer"
+                      onClick={() => {
+                        setIsEditingImage(true);
+                        imageInputRef.current?.click();
+                      }}
+                    >
+                      <div className="rounded-full bg-primary/10 p-3 mb-3">
+                        <ImageIcon className="h-6 w-6 text-primary" />
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Clique para adicionar uma imagem ilustrativa
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Formatos suportados: JPG, PNG, GIF (máx. 5MB)
+                      </p>
+                    </div>
+                  )}
+                  
+                  <input
+                    type="file"
+                    accept="image/*"
+                    ref={imageInputRef}
+                    onChange={handleEditImageChange}
+                    className="hidden"
+                  />
+                </div>
+              </TabsContent>
+            </Tabs>
+            
+            <DialogFooter>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={closeEditModal}
+                disabled={editIsSubmitting}
+              >
+                Cancelar
+              </Button>
+              
+              <Button 
+                type="button" 
+                onClick={handleSaveDocument}
+                disabled={editIsSubmitting}
+              >
+                {editIsSubmitting ? (
+                  <span className="flex items-center">
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Salvando...
+                  </span>
+                ) : (
+                  <span>Salvar Alterações</span>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

@@ -313,21 +313,59 @@ export function useTraining() {
   });
 
   const updateDocumentMutation = useMutation({
-    mutationFn: async (data: { id: number; document: Partial<DocumentFormData> }) => {
-      const res = await apiRequest("PATCH", `/api/training/documents/${data.id}`, data.document);
-      return await res.json();
+    mutationFn: async (data: { id: number; document: Partial<DocumentFormData> & { image?: File } }) => {
+      // Verificar se há uma imagem ou outros arquivos para upload
+      if (data.document.image) {
+        console.log("Preparando upload de imagem para documento:", data.id);
+        
+        // Usar FormData para enviar arquivos
+        const formData = new FormData();
+        
+        // Adicionar todos os campos como string
+        if (data.document.name) formData.append('name', data.document.name);
+        if (data.document.description !== undefined) 
+          formData.append('description', data.document.description !== null ? data.document.description : '');
+        if (data.document.content) formData.append('content', data.document.content);
+        if (data.document.website_url) formData.append('website_url', data.document.website_url);
+        
+        // Adicionar o arquivo de imagem
+        formData.append('image', data.document.image);
+        
+        console.log("Enviando FormData com imagem");
+        
+        // Usar fetch diretamente para upload com FormData
+        const res = await fetch(`/api/training/documents/${data.id}`, {
+          method: "PATCH",
+          body: formData,
+          credentials: "include" // Importante para manter a sessão de autenticação
+        });
+        
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.message || "Falha ao atualizar documento com imagem");
+        }
+        
+        return await res.json();
+      } else {
+        // Sem arquivos: usar API request normal
+        console.log("Atualizando documento sem imagem:", data.id);
+        const res = await apiRequest("PATCH", `/api/training/documents/${data.id}`, data.document);
+        return await res.json();
+      }
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("Documento atualizado com sucesso:", data);
       toast({
         title: t("common.success"),
-        description: t("admin.training.documentUpdated"),
+        description: t("admin.training.documentUpdated") || "Documento atualizado com sucesso",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/training/documents"] });
     },
     onError: (error: Error) => {
+      console.error("Erro ao atualizar documento:", error);
       toast({
         title: t("common.error"),
-        description: error.message,
+        description: error.message || "Erro ao atualizar documento",
         variant: "destructive",
       });
     }
