@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FileText, MoreVertical, Check, ClipboardIcon, Edit, X, ImageIcon, Pencil } from "lucide-react";
+import { queryClient } from "@/lib/queryClient";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -41,7 +42,8 @@ export function TrainingText() {
     documentsLoading,
     createTextDocumentMutation,
     deleteDocumentMutation,
-    updateDocumentMutation
+    updateDocumentMutation,
+    refetchDocuments
   } = useTraining();
   
   const [textContent, setTextContent] = useState("");
@@ -90,6 +92,9 @@ export function TrainingText() {
         }
         return res.json();
       });
+      
+      // Recarregar a lista de documentos usando a função refetchDocuments
+      await refetchDocuments();
       
       // Limpar o formulário
       setTextContent("");
