@@ -558,10 +558,10 @@ export function ERPIntegration() {
             <div>
               <CardTitle className="text-2xl flex items-center gap-2">
                 <Database className="h-6 w-6 text-primary" />
-                Integração com Sistemas ERP
+                Integração com Sistemas ERP/CRM
               </CardTitle>
               <CardDescription className="mt-2">
-                Configure e gerencie a integração com sistemas de gerenciamento de manutenção
+                Configure e gerencie a integração com qualquer sistema de gerenciamento empresarial via API
               </CardDescription>
             </div>
             
@@ -592,7 +592,7 @@ export function ERPIntegration() {
                       Nenhum sistema integrado
                     </h3>
                     <p className="text-neutral-500 mt-2 max-w-md">
-                      Adicione sistemas ERP para começar a sincronizar análises e ordens de serviço.
+                      Adicione sistemas ERP/CRM para começar a sincronizar análises e ordens de serviço.
                     </p>
                     <Button onClick={handleAddNew} className="mt-4">
                       Adicionar Sistema
@@ -706,7 +706,7 @@ export function ERPIntegration() {
                     <div>
                       <h3 className="text-lg font-medium">Mapeamento de Campos</h3>
                       <p className="text-sm text-neutral-500 mt-1">
-                        Configure como os campos das análises do ToledoIA são mapeados para o seu sistema ERP
+                        Configure como os campos das análises do ToledoIA são mapeados para o seu sistema ERP/CRM
                       </p>
                     </div>
                     
@@ -786,7 +786,7 @@ export function ERPIntegration() {
                     <div>
                       <h3 className="text-lg font-medium">Histórico de Sincronização</h3>
                       <p className="text-sm text-neutral-500 mt-1">
-                        Acompanhe o histórico de sincronizações entre o ToledoIA e seus sistemas ERP
+                        Acompanhe o histórico de sincronizações entre o ToledoIA e seus sistemas ERP/CRM
                       </p>
                     </div>
                   </div>
@@ -854,7 +854,7 @@ export function ERPIntegration() {
                       <div>
                         <h4 className="font-medium text-neutral-800">Sobre a sincronização</h4>
                         <p className="text-sm text-neutral-600 mt-1">
-                          A sincronização permite que análises de circuitos realizadas no ToledoIA sejam enviadas automaticamente para seu sistema ERP, criando ordens de serviço e registros de manutenção. Isto facilita o fluxo de trabalho dos técnicos e garante que todas as análises estejam devidamente documentadas no sistema oficial da empresa.
+                          A sincronização permite que análises de circuitos realizadas no ToledoIA sejam enviadas automaticamente para seu sistema ERP/CRM, criando ordens de serviço e registros de manutenção. Isto facilita o fluxo de trabalho dos técnicos e garante que todas as análises estejam devidamente documentadas no sistema oficial da empresa.
                         </p>
                       </div>
                     </div>
@@ -868,7 +868,7 @@ export function ERPIntegration() {
         <CardFooter className="border-t bg-neutral-50 text-sm text-neutral-500 flex items-center">
           <Link2 className="h-4 w-4 mr-2 text-neutral-400" />
           <p>
-            A integração com sistemas ERP permite a gestão centralizada de manutenções e análises técnicas.
+            A integração com sistemas ERP/CRM permite a gestão centralizada de manutenções e análises técnicas.
           </p>
         </CardFooter>
       </Card>
@@ -878,7 +878,7 @@ export function ERPIntegration() {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>
-              {isEditing ? "Editar Sistema ERP" : "Adicionar Sistema ERP"}
+              {isEditing ? "Editar Sistema ERP/CRM" : "Adicionar Sistema ERP/CRM"}
             </DialogTitle>
             <DialogDescription>
               Configure os detalhes de conexão com seu sistema de gerenciamento de manutenção
@@ -1047,7 +1047,7 @@ export function ERPIntegration() {
                       <Input type="password" placeholder="••••••••••••••••" {...field} />
                     </FormControl>
                     <FormDescription>
-                      A chave de autenticação para acesso à API do sistema ERP
+                      A chave de autenticação para acesso à API do sistema ERP/CRM
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
