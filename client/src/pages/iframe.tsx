@@ -50,6 +50,25 @@ export default function IframePage() {
     document.documentElement.classList.add('iframe-embedded');
     document.body.classList.add('iframe-embedded-body');
     
+    // Adicionar suporte para mensagens específicas para integração com o site host
+    window.addEventListener('message', function(event) {
+      // Verificar mensagens do site host
+      if (event.data && event.data.type === 'HOST_NAVIGATION_CLICK') {
+        // Propagar cliques de navegação do site host
+        console.log('Iframe recebeu evento de navegação do site host');
+      }
+    });
+    
+    // Informar ao site host que o iframe está pronto
+    try {
+      window.parent.postMessage({
+        type: 'TOLEDOIA_IFRAME_READY',
+        status: 'loaded'
+      }, '*');
+    } catch (e) {
+      console.warn('Erro ao enviar mensagem para o site host:', e);
+    }
+    
     return () => {
       document.documentElement.classList.remove('iframe-embedded');
       document.body.classList.remove('iframe-embedded-body');

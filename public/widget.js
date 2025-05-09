@@ -62,6 +62,49 @@
   let hostPlatform = 'generic';
   try {
     const url = window.location.href.toLowerCase();
+    
+    // Verifica se estamos no site especialistatemplacas.com.br e aplica correções específicas
+    if (url.includes('especialistatemplacas')) {
+      // Adiciona um script para resolver problemas de navegação do menu lateral
+      const fixScript = document.createElement('script');
+      fixScript.innerHTML = `
+        // Corrige problemas de interação com o menu lateral
+        document.addEventListener('DOMContentLoaded', function() {
+          // Aguarda carregamento completo
+          setTimeout(function() {
+            // Permite que o menu lateral funcione corretamente
+            const sidebarLinks = document.querySelectorAll('.sidebar-menu a, .sidebar a');
+            if (sidebarLinks.length > 0) {
+              sidebarLinks.forEach(function(link) {
+                link.style.pointerEvents = 'auto';
+                link.style.cursor = 'pointer';
+                // Força a propagação de eventos de clique
+                link.addEventListener('click', function(e) {
+                  e.stopPropagation = function() {};
+                }, true);
+              });
+              console.log('ToledoIA: Correção de menu aplicada a ' + sidebarLinks.length + ' links');
+            }
+          }, 1500);
+        });
+      `;
+      document.head.appendChild(fixScript);
+      
+      // Adiciona estilo para garantir que elementos específicos sejam clicáveis
+      const fixStyle = document.createElement('style');
+      fixStyle.textContent = `
+        .sidebar-menu a, .sidebar a, .main-menu a {
+          pointer-events: auto !important;
+          cursor: pointer !important;
+          z-index: 10;
+        }
+        #toledoia-widget-iframe {
+          z-index: 9999 !important;
+        }
+      `;
+      document.head.appendChild(fixStyle);
+    }
+    
     if (url.includes('especialistatemplacas') || 
         url.includes('lms.') || 
         url.includes('moodle') || 
