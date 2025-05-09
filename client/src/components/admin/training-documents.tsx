@@ -670,20 +670,25 @@ export function TrainingDocuments() {
                         </Button>
                         <div className="absolute right-0 top-full z-50 mt-1 min-w-[160px] bg-white shadow-md rounded-md border border-gray-200 py-1 hidden group-hover:block">
                           {document.document_type === 'text' && (
-                            <div className="px-3 py-1.5 text-sm hover:bg-gray-100 cursor-pointer flex items-center" onClick={() => handleEditText(document)}>
-                              <FileText className="h-4 w-4 mr-2" /> Editar texto
+                            <>
+                              <div className="px-3 py-1.5 text-sm hover:bg-gray-100 cursor-pointer flex items-center" onClick={() => handleEditText(document)}>
+                                <Pen className="h-4 w-4 mr-2" /> Editar texto
+                              </div>
+                              <div className="px-3 py-1.5 text-sm hover:bg-gray-100 cursor-pointer flex items-center" onClick={() => handleAddImage(document)}>
+                                <Image className="h-4 w-4 mr-2" /> Adicionar imagem
+                              </div>
+                            </>
+                          )}
+                          {document.document_type === 'file' && (
+                            <div className="px-3 py-1.5 text-sm hover:bg-gray-100 cursor-pointer flex items-center" onClick={() => handleEditDocument(document)}>
+                              <Pen className="h-4 w-4 mr-2" /> Editar documento
                             </div>
                           )}
-                          {document.document_type === 'text' && (
-                            <div className="px-3 py-1.5 text-sm hover:bg-gray-100 cursor-pointer flex items-center" onClick={() => handleAddImage(document)}>
-                              <Image className="h-4 w-4 mr-2" /> Adicionar imagem
-                            </div>
-                          )}
-                          <div className="px-3 py-1.5 text-sm hover:bg-gray-100 cursor-pointer flex items-center" onClick={() => navigator.clipboard.writeText(document.content || '')}>
-                            <div className="h-4 w-4 mr-2" /> Copiar
+                          <div className="px-3 py-1.5 text-sm hover:bg-gray-100 cursor-pointer flex items-center" onClick={() => handleEditDocument(document)}>
+                            <Pen className="h-4 w-4 mr-2" /> Editar
                           </div>
                           <div className="px-3 py-1.5 text-sm hover:bg-gray-100 cursor-pointer text-red-600 flex items-center" onClick={() => handleDeleteDocument(document.id)}>
-                            <div className="h-4 w-4 mr-2" /> Excluir
+                            <Trash2 className="h-4 w-4 mr-2" /> Excluir
                           </div>
                         </div>
                       </div>
@@ -784,7 +789,7 @@ export function TrainingDocuments() {
                         accept=".jpg,.jpeg,.png"
                       />
                     </FormControl>
-                    <FormDescription>
+                    <div className="text-sm text-gray-500 mt-1">
                       {documentToEdit?.image_url ? (
                         <div className="mt-2">
                           <p className="text-sm text-gray-500 mb-1">Imagem atual:</p>
@@ -797,7 +802,7 @@ export function TrainingDocuments() {
                       ) : (
                         "Adicione uma imagem ao documento se necessário"
                       )}
-                    </FormDescription>
+                    </div>
                     <FormMessage />
                   </FormItem>
                 </>
