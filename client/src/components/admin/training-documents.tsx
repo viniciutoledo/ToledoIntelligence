@@ -3,12 +3,6 @@ import { useTraining } from "@/hooks/use-training";
 import { useLanguage } from "@/hooks/use-language";
 import { Button } from "@/components/ui/button";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger
-} from "@/components/ui/dropdown-menu";
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -59,6 +53,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
 import {
   CircleCheck,
   CircleDashed,
@@ -152,7 +152,7 @@ export function TrainingDocuments() {
   };
   
   // Função para lidar com diferentes tipos de documentos
-  const handleAddDocumentType = (type: string) => {
+  const handleAddDocumentType = (type: "text" | "file" | "website" | "image") => {
     addForm.setValue("document_type", type);
     setIsAddDialogOpen(true);
   };
@@ -381,7 +381,7 @@ export function TrainingDocuments() {
           </Button>
           
           {/* Botão para adicionar imagem */}
-          <Button variant="outline" onClick={() => handleAddDocumentType("file")}>
+          <Button variant="outline" onClick={() => handleAddDocumentType("image")}>
             <Image className="h-4 w-4 mr-2" />
             Imagem
           </Button>
