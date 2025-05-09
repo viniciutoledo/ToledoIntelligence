@@ -692,6 +692,15 @@ export async function processDocumentContent(
       console.warn("Processamento de vídeo não implementado");
       return "[Processamento de vídeo não implementado]";
     }
+    else if (documentType === "image") {
+      if (!filePath) {
+        console.error("Erro: caminho da imagem não fornecido para tipo 'image'");
+        return "[Caminho da imagem não fornecido]";
+      }
+      
+      console.log(`Processando imagem como documento principal: ${filePath}`);
+      return await extractContentFromImage(filePath);
+    }
     else {
       console.error(`Tipo de documento não suportado: ${documentType}`);
       return `[Tipo de documento não suportado: ${documentType}]`;
