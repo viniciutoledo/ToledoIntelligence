@@ -69,7 +69,7 @@ import { format } from "date-fns";
 const documentFormSchema = z.object({
   name: z.string().min(1, { message: "Name is required" }),
   description: z.string().nullable().optional(),
-  document_type: z.enum(["text", "file", "website"]),
+  document_type: z.enum(["text", "file", "website", "image"]),
   content: z.string().optional(),
   website_url: z.string().url().optional(),
   categories: z.array(z.number()).optional(),
@@ -77,9 +77,10 @@ const documentFormSchema = z.object({
 
 type DocumentFormValues = z.infer<typeof documentFormSchema>;
 
-// Estendendo o tipo para incluir o arquivo
+// Estendendo o tipo para incluir os arquivos
 interface DocumentFormData extends DocumentFormValues {
   file?: File;
+  image?: File;
 }
 
 export function TrainingDocuments() {
@@ -95,6 +96,7 @@ export function TrainingDocuments() {
   } = useTraining();
   
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [documentToEdit, setDocumentToEdit] = useState<any | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -124,6 +126,7 @@ export function TrainingDocuments() {
     if (!open) {
       addForm.reset();
       setSelectedFile(null);
+      setSelectedImage(null);
     }
     setIsAddDialogOpen(open);
   };
@@ -142,24 +145,35 @@ export function TrainingDocuments() {
     }
   };
   
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setSelectedImage(e.target.files[0]);
+    }
+  };
+  
   const onAddSubmit = (data: DocumentFormValues) => {
+    // Objeto base para submissão
+    const submitData: any = {
+      ...data,
+      description: data.description || null
+    };
+    
     // Handle file upload
     if (data.document_type === "file" && selectedFile) {
-      const documentData: any = {
-        ...data,
-        description: data.description || null,
-        file: selectedFile,
-      };
-      createDocumentMutation.mutate(documentData);
-    } else {
-      // Garante que description nunca seja undefined
-      const submitData = {
-        ...data,
-        description: data.description || null
-      };
-      createDocumentMutation.mutate(submitData);
+      submitData.file = selectedFile;
     }
     
+    // Handle de upload de imagem para texto
+    if (data.document_type === "text" && selectedImage) {
+      submitData.image = selectedImage;
+    }
+    
+    // Handle de upload para tipo image
+    if (data.document_type === "image" && selectedImage) {
+      submitData.image = selectedImage;
+    }
+    
+    createDocumentMutation.mutate(submitData);
     setIsAddDialogOpen(false);
   };
   
@@ -359,6 +373,7 @@ export function TrainingDocuments() {
                           <SelectItem value="text">{t("admin.training.textType")}</SelectItem>
                           <SelectItem value="file">{t("admin.training.fileType")}</SelectItem>
                           <SelectItem value="website">{t("admin.training.websiteType")}</SelectItem>
+                          <SelectItem value="image">Imagem</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -367,23 +382,37 @@ export function TrainingDocuments() {
                 />
                 
                 {addForm.watch("document_type") === "text" && (
-                  <FormField
-                    control={addForm.control}
-                    name="content"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t("admin.training.textContent")}</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            placeholder={t("admin.training.enterTextContent")}
-                            className="min-h-[200px]"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <>
+                    <FormField
+                      control={addForm.control}
+                      name="content"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t("admin.training.textContent")}</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              placeholder={t("admin.training.enterTextContent")}
+                              className="min-h-[200px]"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormItem>
+                      <FormLabel>Adicionar Imagem (opcional)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="file"
+                          onChange={handleImageChange}
+                          accept=".jpg,.jpeg,.png"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  </>
                 )}
                 
                 {addForm.watch("document_type") === "file" && (
@@ -417,6 +446,23 @@ export function TrainingDocuments() {
                       </FormItem>
                     )}
                   />
+                )}
+                
+                {addForm.watch("document_type") === "image" && (
+                  <FormItem>
+                    <FormLabel>Upload de Imagem</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="file"
+                        onChange={handleImageChange}
+                        accept=".jpg,.jpeg,.png"
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Selecione uma imagem para análise e treinamento (JPG, PNG)
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
                 )}
                 
                 {categories && categories.length > 0 && (
