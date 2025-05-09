@@ -30,6 +30,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -62,6 +63,7 @@ import {
   PlusCircle,
   RefreshCw,
   Trash2,
+  Image,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
@@ -293,6 +295,8 @@ export function TrainingDocuments() {
         return <FileText className="h-4 w-4 mr-1" />;
       case "website":
         return <Globe className="h-4 w-4 mr-1" />;
+      case "image":
+        return <Image className="h-4 w-4 mr-1" />;
       default:
         return null;
     }
