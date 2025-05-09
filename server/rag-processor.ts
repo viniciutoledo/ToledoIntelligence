@@ -696,14 +696,21 @@ ${systemPrompt}`;
     try {
       console.log('Tentando fallback para outro modelo após erro...');
       
-      // Determinar qual modelo alternativo usar
+      // Determinar o provedor do modelo atual
+      const currentProvider = model?.startsWith('claude') ? 'anthropic' : 'openai';
+      
       // Se o modelo atual é OpenAI, tentar Claude e vice-versa
-      const fallbackProvider = provider === 'openai' ? 'anthropic' : 'openai';
+      const fallbackProvider = currentProvider === 'openai' ? 'anthropic' : 'openai';
       const fallbackModel = fallbackProvider === 'anthropic' 
         ? 'claude-3-7-sonnet-20250219' // the newest Anthropic model
         : 'gpt-4o-mini'; // modelo mais leve da OpenAI para fallback
       
       console.log(`Usando fallback para ${fallbackProvider} / ${fallbackModel}`);
+      
+      // Construir o prompt do sistema com base na linguagem
+      const systemInstructions = language === 'pt' 
+        ? 'Você é um assistente especializado em análise de placas de circuito. Responda de forma útil, precisa e concisa.'
+        : 'You are an assistant specialized in circuit board analysis. Respond in a helpful, accurate and concise manner.';
       
       if (fallbackProvider === 'anthropic') {
         // Verificar se temos chave API para Anthropic
@@ -719,7 +726,7 @@ ${systemPrompt}`;
           model: fallbackModel,
           max_tokens: 1000,
           temperature: 0.3, // temperatura mais baixa para fallback
-          system: systemPrompt,
+          system: systemInstructions,
           messages: [
             { role: 'user', content: query }
           ]
@@ -755,7 +762,7 @@ ${systemPrompt}`;
         const completion = await openai.chat.completions.create({
           model: fallbackModel,
           messages: [
-            { role: 'system', content: systemPrompt },
+            { role: 'system', content: systemInstructions },
             { role: 'user', content: query }
           ],
           temperature: 0.3 // temperatura mais baixa para fallback
@@ -764,15 +771,14 @@ ${systemPrompt}`;
         const response = completion.choices[0]?.message?.content || 'Não foi possível gerar uma resposta.';
         
         // Registrar uso do fallback
-        await logLlmUsage({
-          model_name: fallbackModel,
-          provider: 'openai',
-          operation_type: 'text',
-          user_id: userId,
-          widget_id: widgetId,
-          token_count: completion.usage?.total_tokens || 0,
-          success: true
-        });
+        await logLlmUsage(
+          fallbackModel,
+          'text',
+          true,
+          userId,
+          widgetId,
+          completion.usage?.total_tokens || 0
+        );
         
         console.log('Fallback para OpenAI bem-sucedido');
         return response;
@@ -781,16 +787,15 @@ ${systemPrompt}`;
       console.error('Erro também no modelo de fallback:', fallbackError);
       
       // Registrar erro no fallback também
-      await logLlmUsage({
-        model_name: fallbackError.fallbackModel || 'fallback-unknown',
-        provider: fallbackError.fallbackProvider || 'unknown',
-        operation_type: 'text',
-        user_id: userId,
-        widget_id: widgetId,
-        token_count: 0,
-        success: false,
-        error_message: fallbackError.message
-      });
+      await logLlmUsage(
+        fallbackError.fallbackModel || 'fallback-unknown',
+        'text',
+        false,
+        userId,
+        widgetId,
+        0,
+        fallbackError.message
+      );
       
       // Mensagem de erro mais amigável para o usuário final
       return `Não foi possível processar sua consulta neste momento. Por favor, tente novamente mais tarde.`;
