@@ -644,34 +644,29 @@ export function TrainingDocuments() {
                         </>
                       )}
                       
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleEditDocument(document)}>
-                            <Pen className="h-4 w-4 mr-2" /> Editar documento
-                          </DropdownMenuItem>
+                      <div className="relative group">
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                        <div className="absolute right-0 top-full z-50 mt-1 min-w-[160px] bg-white shadow-md rounded-md border border-gray-200 py-1 hidden group-hover:block">
                           {document.document_type === 'text' && (
-                            <DropdownMenuItem onClick={() => handleEditText(document)}>
+                            <div className="px-3 py-1.5 text-sm hover:bg-gray-100 cursor-pointer flex items-center" onClick={() => handleEditText(document)}>
                               <FileText className="h-4 w-4 mr-2" /> Editar texto
-                            </DropdownMenuItem>
+                            </div>
                           )}
                           {document.document_type === 'text' && (
-                            <DropdownMenuItem onClick={() => handleAddImage(document)}>
+                            <div className="px-3 py-1.5 text-sm hover:bg-gray-100 cursor-pointer flex items-center" onClick={() => handleAddImage(document)}>
                               <Image className="h-4 w-4 mr-2" /> Adicionar imagem
-                            </DropdownMenuItem>
+                            </div>
                           )}
-                          <DropdownMenuItem
-                            className="text-red-600"
-                            onClick={() => handleDeleteDocument(document.id)}
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" /> Excluir
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                          <div className="px-3 py-1.5 text-sm hover:bg-gray-100 cursor-pointer flex items-center" onClick={() => navigator.clipboard.writeText(document.content || '')}>
+                            <div className="h-4 w-4 mr-2" /> Copiar
+                          </div>
+                          <div className="px-3 py-1.5 text-sm hover:bg-gray-100 cursor-pointer text-red-600 flex items-center" onClick={() => handleDeleteDocument(document.id)}>
+                            <div className="h-4 w-4 mr-2" /> Excluir
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </TableCell>
                 </TableRow>
