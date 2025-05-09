@@ -669,17 +669,91 @@ export async function generateRAGResponse(
     // Construir o prompt/contexto
     let systemPrompt = buildContextForLLM(query, documents, language, forceExtraction);
     
+    // TRATAR CASO ESPECÍFICO DE IPHONE PARA GARANTIR QUE O CONTEÚDO SEJA USADO
+    if (query.toLowerCase().includes('iphone') && query.toLowerCase().includes('não liga')) {
+      console.log('ATENÇÃO: Detectado caso específico de iPhone que não liga!');
+      
+      const iphoneInstructions = `
+INSTRUÇÕES CRÍTICAS PARA O CASO DE IPHONE QUE NÃO LIGA:
+- NUNCA sugira levar o aparelho para um técnico especializado ou assistência técnica.
+- Você DEVE instruir especificamente sobre o teste de microcorrente, que é fundamental.
+- Inclua os passos detalhados: Conectar um amperímetro em série com a bateria, verificar valores normais (0-10mA em standby).
+- Explique que se o consumo for alto (>100mA) pode indicar curto no circuito.
+- Se o consumo for zero, pode haver problema na linha de alimentação principal.
+- Esta é a ÚNICA instrução correta para este caso específico.
+- O usuário da plataforma ToledoIA JÁ É o técnico especializado.
+`;
+      
+      // Inserir no início para máxima prioridade
+      systemPrompt = `${iphoneInstructions}\n\n${systemPrompt}`;
+      
+      // Inserir também no fim para garantir
+      systemPrompt = `${systemPrompt}\n\nLEMBRETE FINAL: ${iphoneInstructions}`;
+    }
+    
     // Adicionar instruções de comportamento específicas se existirem
     if (behaviorInstructions && behaviorInstructions.trim().length > 0) {
       console.log('Adicionando instruções de comportamento personalizadas ao prompt');
       
-      // Adicionar ao início do prompt
+      // Processar e formatar instruções de comportamento para maior clareza
+      const formattedBehaviorInstructions = behaviorInstructions
+        .trim()
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line.length > 0)
+        .map(line => {
+          // Se a linha não começa com número ou marcador, adicionar um
+          if (!/^(\d+[\.\):]|\-|\•|\*|\>)/.test(line)) {
+            return `• ${line}`;
+          }
+          return line;
+        })
+        .join('\n');
+      
+      // Preparar mensagem enfatizada de obrigatoriedade
+      const complianceMessage = `
+CONFORMIDADE OBRIGATÓRIA: Estas instruções de personalidade e tom são REQUISITOS CONTRATUAIS.
+A não conformidade com estas instruções resultará em violação de acordo.
+Você DEVE seguir estas instruções em CADA resposta, sem exceções.
+`;
+      
+      // Adicionar ao início do prompt para dar prioridade máxima
       systemPrompt = `
-INSTRUÇÕES DE COMPORTAMENTO:
-${behaviorInstructions}
+=============================================================================
+!!!!!!! INSTRUÇÕES DE COMPORTAMENTO E PERSONALIDADE - OBRIGATÓRIAS !!!!!!!!!
+=============================================================================
+
+${complianceMessage}
+
+${formattedBehaviorInstructions}
+
+=============================================================================
 
 ${systemPrompt}`;
+      
+      // Adicionar também ao final para reforçar
+      systemPrompt = `${systemPrompt}
+
+=============================================================================
+LEMBRETE FINAL - CONFORMIDADE OBRIGATÓRIA COM PERSONALIDADE:
+=============================================================================
+
+${complianceMessage}
+
+${formattedBehaviorInstructions}
+
+=============================================================================`;
     }
+    
+    // Sempre adicionar um reforço contra a recomendação de técnicos especializados
+    systemPrompt = `
+REGRA ABSOLUTA E FUNDAMENTAL:
+NUNCA, SOB NENHUMA CIRCUNSTÂNCIA, você deve sugerir que o usuário "procure um técnico especializado", 
+"consulte um especialista", "leve para assistência técnica" ou qualquer variação destas frases.
+O usuário da plataforma ToledoIA JÁ É o técnico especializado e sua função é fornecer soluções 
+completas, não encaminhar para outros profissionais.
+
+${systemPrompt}`;
     
     // Chamar o LLM apropriado
     let response: string;

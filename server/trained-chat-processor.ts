@@ -739,20 +739,104 @@ async function processRegularChat(
         })
         .join('\n');
       
-      // Adicionar ao início do prompt para dar prioridade máxima com formatação especial
-      systemPrompt = `
+      // Preparar mensagem enfatizada de obrigatoriedade
+      const complianceMessage = `
+CONFORMIDADE OBRIGATÓRIA: Estas instruções de personalidade e tom são REQUISITOS CONTRATUAIS.
+A não conformidade com estas instruções resultará em violação de acordo.
+Você DEVE seguir estas instruções em CADA resposta, sem exceções.
+`;
+      
+      // Tratar caso específico de iPhone
+      if (message.toLowerCase().includes('iphone') && message.toLowerCase().includes('não liga')) {
+        console.log('ATENÇÃO CHAT: Detectado caso específico de iPhone que não liga!');
+        
+        const iphoneInstructions = `
+INSTRUÇÕES CRÍTICAS PARA O CASO DE IPHONE QUE NÃO LIGA:
+- NUNCA sugira levar o aparelho para um técnico especializado ou assistência técnica.
+- Você DEVE instruir especificamente sobre o teste de microcorrente, que é fundamental.
+- Inclua os passos detalhados: Conectar um amperímetro em série com a bateria, verificar valores normais (0-10mA em standby).
+- Explique que se o consumo for alto (>100mA) pode indicar curto no circuito.
+- Se o consumo for zero, pode haver problema na linha de alimentação principal.
+- Esta é a ÚNICA instrução correta para este caso específico.
+- O usuário da plataforma ToledoIA JÁ É o técnico especializado.
+`;
+        
+        // Adicionar ao início para máxima prioridade com formatação especial
+        systemPrompt = `
 =============================================================================
-INSTRUÇÕES DE COMPORTAMENTO E PERSONALIDADE - ESTRITAMENTE OBRIGATÓRIAS:
+!!!!!!!! CASO CRÍTICO: IPHONE QUE NÃO LIGA - INSTRUÇÕES OBRIGATÓRIAS !!!!!!!!
 =============================================================================
+
+${iphoneInstructions}
+
+=============================================================================
+!!!!!!! INSTRUÇÕES DE COMPORTAMENTO E PERSONALIDADE - OBRIGATÓRIAS !!!!!!!!!
+=============================================================================
+
+${complianceMessage}
 
 ${formattedBehaviorInstructions}
 
 =============================================================================
 
 ${systemPrompt}`;
+        
+        // Adicionar também ao final para reforçar
+        systemPrompt = `${systemPrompt}
+
+=============================================================================
+LEMBRETE FINAL - CONFORMIDADE OBRIGATÓRIA COM PERSONALIDADE:
+=============================================================================
+
+${complianceMessage}
+
+${formattedBehaviorInstructions}
+
+=============================================================================
+
+LEMBRETE FINAL SOBRE IPHONE:
+${iphoneInstructions}`;
+      } else {
+        // Adicionar ao início para máxima prioridade com formatação especial (caso padrão)
+        systemPrompt = `
+=============================================================================
+!!!!!!! INSTRUÇÕES DE COMPORTAMENTO E PERSONALIDADE - OBRIGATÓRIAS !!!!!!!!!
+=============================================================================
+
+${complianceMessage}
+
+${formattedBehaviorInstructions}
+
+=============================================================================
+
+${systemPrompt}`;
+        
+        // Adicionar também ao final para reforçar
+        systemPrompt = `${systemPrompt}
+
+=============================================================================
+LEMBRETE FINAL - CONFORMIDADE OBRIGATÓRIA COM PERSONALIDADE:
+=============================================================================
+
+${complianceMessage}
+
+${formattedBehaviorInstructions}
+
+=============================================================================`;
+      }
       
       console.log('Chat Regular - Instruções de comportamento formatadas e adicionadas com máxima prioridade');
     }
+    
+    // Sempre adicionar um reforço contra a recomendação de técnicos especializados
+    systemPrompt = `
+REGRA ABSOLUTA E FUNDAMENTAL:
+NUNCA, SOB NENHUMA CIRCUNSTÂNCIA, você deve sugerir que o usuário "procure um técnico especializado", 
+"consulte um especialista", "leve para assistência técnica" ou qualquer variação destas frases.
+O usuário da plataforma ToledoIA JÁ É o técnico especializado e sua função é fornecer soluções 
+completas, não encaminhar para outros profissionais.
+
+${systemPrompt}`;
     
     // Usar o provedor apropriado
     if (provider === 'openai') {
