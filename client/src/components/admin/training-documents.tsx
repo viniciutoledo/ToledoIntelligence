@@ -539,16 +539,16 @@ export function TrainingDocuments() {
                 
                 {addForm.watch("document_type") === "image" && (
                   <FormItem>
-                    <FormLabel>Upload de Imagem</FormLabel>
+                    <FormLabel>Imagem</FormLabel>
                     <FormControl>
                       <Input
                         type="file"
                         onChange={handleImageChange}
-                        accept=".jpg,.jpeg,.png"
+                        accept="image/*"
                       />
                     </FormControl>
                     <FormDescription>
-                      Selecione uma imagem para análise e treinamento (JPG, PNG)
+                      Formatos suportados: JPG, PNG, GIF e WebP. Recomendamos imagens de até 4MB para melhor desempenho.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
