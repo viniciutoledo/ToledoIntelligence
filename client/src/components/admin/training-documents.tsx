@@ -12,6 +12,7 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import {
   Table,
   TableBody,
@@ -102,6 +103,8 @@ export function TrainingDocuments() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [documentToEdit, setDocumentToEdit] = useState<any | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isImageDialogOpen, setIsImageDialogOpen] = useState(false);
+  const [documentForImage, setDocumentForImage] = useState<any | null>(null);
   
   const addForm = useForm<DocumentFormValues>({
     resolver: zodResolver(documentFormSchema),
@@ -236,6 +239,37 @@ export function TrainingDocuments() {
   
   const handleResetDocumentStatus = (documentId: number) => {
     resetDocumentStatusMutation.mutate(documentId);
+  };
+  
+  const handleAddImage = (document: any) => {
+    setDocumentForImage(document);
+    setIsImageDialogOpen(true);
+  };
+  
+  const handleImageDialogOpen = (open: boolean) => {
+    if (!open) {
+      setSelectedImage(null);
+    }
+    setIsImageDialogOpen(open);
+  };
+  
+  const handleImageSubmit = () => {
+    if (documentForImage && selectedImage) {
+      // Criar um objeto de atualização com a imagem
+      const updateData: any = {
+        name: documentForImage.name,
+        description: documentForImage.description || null,
+        image: selectedImage
+      };
+      
+      // Chamar a API para adicionar a imagem
+      updateDocumentMutation.mutate({
+        id: documentForImage.id,
+        document: updateData
+      });
+      
+      setIsImageDialogOpen(false);
+    }
   };
   
   const getStatusBadge = (status: string, document?: any) => {
@@ -559,6 +593,19 @@ export function TrainingDocuments() {
                           <span className="sr-only">{t("admin.training.resetStatus")}</span>
                         </Button>
                       )}
+                      
+                      {document.document_type === 'text' && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-indigo-500"
+                          onClick={() => handleAddImage(document)}
+                          title="Adicionar imagem"
+                        >
+                          <Image className="h-4 w-4" />
+                          <span className="sr-only">Adicionar imagem</span>
+                        </Button>
+                      )}
                     
                       <Button
                         size="sm"
@@ -661,27 +708,55 @@ export function TrainingDocuments() {
               
               {/* Campos condicionais com base no tipo de documento */}
               {editForm.watch("document_type") === "text" && (
-                <FormField
-                  control={editForm.control}
-                  name="content"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t("admin.training.textContent")}</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder={t("admin.training.enterTextContent")}
-                          className="min-h-[200px]"
-                          value={field.value || ""}
-                          onChange={field.onChange}
-                          onBlur={field.onBlur}
-                          name={field.name}
-                          ref={field.ref}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <>
+                  <FormField
+                    control={editForm.control}
+                    name="content"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("admin.training.textContent")}</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder={t("admin.training.enterTextContent")}
+                            className="min-h-[200px]"
+                            value={field.value || ""}
+                            onChange={field.onChange}
+                            onBlur={field.onBlur}
+                            name={field.name}
+                            ref={field.ref}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                
+                  <FormItem>
+                    <FormLabel>Imagem associada (opcional)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="file"
+                        onChange={handleImageChange}
+                        accept=".jpg,.jpeg,.png"
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      {documentToEdit?.image_url ? (
+                        <div className="mt-2">
+                          <p className="text-sm text-gray-500 mb-1">Imagem atual:</p>
+                          <img 
+                            src={documentToEdit.image_url} 
+                            alt="Imagem atual" 
+                            className="max-h-[200px] rounded border border-gray-200"
+                          />
+                        </div>
+                      ) : (
+                        "Adicione uma imagem ao documento se necessário"
+                      )}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                </>
               )}
               
               {editForm.watch("document_type") === "website" && (
@@ -721,6 +796,74 @@ export function TrainingDocuments() {
               </DialogFooter>
             </form>
           </Form>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Dialog para adicionar imagem a um documento existente */}
+      <Dialog open={isImageDialogOpen} onOpenChange={handleImageDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Adicionar imagem ao documento</DialogTitle>
+            <DialogDescription>
+              {documentForImage?.name ? (
+                <span>Adicione uma imagem ao documento: <strong>{documentForImage.name}</strong></span>
+              ) : (
+                "Selecione uma imagem para adicionar ao documento"
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="image-upload">Selecione uma imagem</Label>
+              <Input
+                id="image-upload"
+                type="file"
+                onChange={handleImageChange}
+                accept=".jpg,.jpeg,.png"
+              />
+              <p className="text-sm text-muted-foreground">
+                Formatos suportados: JPG, PNG
+              </p>
+            </div>
+            
+            {selectedImage && (
+              <div className="mt-4">
+                <p className="text-sm font-medium mb-2">Arquivo selecionado:</p>
+                <p className="text-sm text-muted-foreground">
+                  {selectedImage.name} ({Math.round(selectedImage.size / 1024)} KB)
+                </p>
+              </div>
+            )}
+            
+            {documentForImage?.image_url && (
+              <div className="mt-4">
+                <p className="text-sm font-medium mb-2">Imagem atual:</p>
+                <img
+                  src={documentForImage.image_url}
+                  alt="Imagem atual"
+                  className="max-h-[200px] rounded border border-gray-200"
+                />
+              </div>
+            )}
+          </div>
+          
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button type="button" variant="outline">
+                {t("common.cancel")}
+              </Button>
+            </DialogClose>
+            <Button 
+              onClick={handleImageSubmit} 
+              disabled={!selectedImage || updateDocumentMutation.isPending}
+            >
+              {updateDocumentMutation.isPending 
+                ? "Salvando..." 
+                : "Salvar imagem"
+              }
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
