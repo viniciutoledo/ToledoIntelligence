@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Paperclip, Image, Send, Loader2, X, ExternalLink } from "lucide-react";
 import { SimpleImage } from "./simple-image";
+import { MarkdownRenderer } from "./markdown-renderer";
 
 // Função utilitária para otimizar URLs de arquivos
 function getOptimizedFileUrl(fileUrl: string | null): string {
