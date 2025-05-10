@@ -1253,6 +1253,8 @@ export async function analyzeFile(filePath: string, language: string, llmConfig?
          Mantenha a resposta EXTREMAMENTE CONCISA (máximo 3-4 frases) e use linguagem técnica direta.
          Evite explicações longas e teóricas e introduções desnecessárias.
          
+         Formate suas respostas usando Markdown quando apropriado para facilitar a leitura.
+         
          LEMBRE-SE: O usuário da plataforma ToledoIA JÁ É o técnico especializado e você DEVE fornecer todas as informações necessárias para que ELE resolva o problema, sem NUNCA sugerir assistência externa.
          ${toneStyle} ${customBehavior}
          Responda em Português.`
@@ -1262,6 +1264,9 @@ export async function analyzeFile(filePath: string, language: string, llmConfig?
          If the document is not technical, just provide a brief analysis of its main content.
          Keep your response EXTREMELY CONCISE (maximum 3-4 sentences) and use direct technical language.
          Avoid lengthy theoretical explanations and unnecessary introductions.
+         
+         Format your responses using Markdown when appropriate to improve readability.
+         
          ${toneStyle} ${customBehavior}
          Respond in English.`;
 
