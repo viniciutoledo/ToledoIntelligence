@@ -265,7 +265,7 @@ export function ChatInterface({
                   : customStyles.botMessageBgColor || "#F2EFE5" // mesma cor para bot (da imagem)
               }}>
               {msg.message_type === "text" ? (
-                <p className="text-base" style={{ fontSize: customStyles.fontSize || '16px' }}>
+                <>
                   {msg.content && msg.content.startsWith('[IMAGEM_EXTERNA]') ? (
                     <>
                       <div className="flex items-center mb-2">
@@ -289,10 +289,18 @@ export function ChatInterface({
                         Abrir imagem original
                       </a>
                     </>
+                  ) : msg.is_user ? (
+                    <p className="text-base" style={{ fontSize: customStyles.fontSize || '16px' }}>
+                      {msg.content}
+                    </p>
                   ) : (
-                    msg.content
+                    <MarkdownRenderer 
+                      content={msg.content || ''}
+                      className="text-base" 
+                      style={{ fontSize: customStyles.fontSize || '16px' }}
+                    />
                   )}
-                </p>
+                </>
               ) : msg.message_type === "image" ? (
                 <div>
                   <div className="flex items-center mb-2">

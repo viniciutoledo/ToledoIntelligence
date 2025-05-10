@@ -1,9 +1,9 @@
+/* Importar estilos do Markdown */
+@import './styles/markdown.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-/* Importar estilos do Markdown */
-@import './styles/markdown.css';
 
 :root {
   --background: 0 0% 100%;

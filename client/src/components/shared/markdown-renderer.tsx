@@ -1,14 +1,16 @@
 import ReactMarkdown from 'react-markdown';
 import { cn } from '@/lib/utils';
+import { CSSProperties } from 'react';
 
 interface MarkdownRendererProps {
   content: string;
   className?: string;
+  style?: CSSProperties;
 }
 
-export function MarkdownRenderer({ content, className }: MarkdownRendererProps) {
+export function MarkdownRenderer({ content, className, style }: MarkdownRendererProps) {
   return (
-    <div className={cn("markdown-content", className)}>
+    <div className={cn("markdown-content", className)} style={style}>
       <ReactMarkdown
         components={{
           // Estilizando headings
