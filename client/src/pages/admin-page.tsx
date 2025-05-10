@@ -14,6 +14,7 @@ import LlmUsageLogs from "@/components/admin/llm-usage-logs";
 import { UnifiedSettings } from "@/components/admin/unified-settings";
 import { ImageAnalysisTest } from "@/components/admin/image-analysis-test";
 import { RagPerformanceTest } from "@/components/admin/rag-performance";
+import SystemMaintenance from "@/components/admin/system-maintenance";
 import { LlmProvider } from "@/hooks/use-llm";
 import { AvatarProvider } from "@/hooks/use-avatar";
 import { WidgetsProvider } from "@/hooks/use-widgets";
@@ -199,6 +200,21 @@ export default function AdminPage() {
                 </div>
               </div>
               <WidgetsManagement />
+            </>
+          )}
+          
+          {activeSection === "maintenance" && (
+            <>
+              <div className="flex justify-between items-center mb-8 border-b pb-4">
+                <h1 className="text-3xl font-bold text-primary-800">
+                  Manutenção do Sistema
+                </h1>
+                <div className="bg-white px-4 py-2 rounded-md shadow-sm text-sm text-neutral-500 flex items-center">
+                  <span className="font-medium mr-1">ToledoIA</span>
+                  <span>Painel de Administração</span>
+                </div>
+              </div>
+              <SystemMaintenance />
             </>
           )}
           

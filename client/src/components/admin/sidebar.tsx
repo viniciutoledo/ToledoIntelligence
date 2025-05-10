@@ -14,7 +14,8 @@ import {
   BookOpen,
   CreditCard,
   MessageSquare,
-  TestTube
+  TestTube,
+  Wrench
 } from "lucide-react";
 import { LanguageToggle } from "@/components/language-toggle";
 
@@ -62,6 +63,11 @@ export function AdminSidebar({ activeItem, onItemClick }: SidebarProps) {
       id: "training",
       label: t("admin.training") || "Treinamento",
       icon: <BookOpen className="h-5 w-5" />,
+    },
+    {
+      id: "maintenance",
+      label: "Manutenção do Sistema",
+      icon: <Wrench className="h-5 w-5" />,
     },
     {
       id: "tests",
