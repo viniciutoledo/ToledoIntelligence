@@ -231,149 +231,55 @@ export async function getActiveLlmInfo(): Promise<LlmFullConfig> {
 // Client singleton para OpenAI
 let openaiClient: OpenAI | null = null;
 
-// Create OpenAI client
-// Adaptador que usa chamadas fetch diretamente em vez de usar o cliente OpenAI
-// para evitar os problemas persistentes com headers HTTP
+/**
+ * Implementação segura de chamadas diretas para a API da OpenAI
+ * Esta função evita problemas de formatação com tokens Bearer em headers HTTP
+ */
 export async function fetchOpenAIDirectly(endpoint: string, data: any, apiKey: string) {
   console.log('Chamando OpenAI diretamente via fetch: ' + endpoint);
   
-  // Verificar se a chave API contém caracteres inválidos ou mascarados (•)
-  if (apiKey.includes('•') || apiKey.includes('…')) {
-    console.error('ERRO: Chave API contém caracteres de mascaramento');
-    // Usar a chave de ambiente se disponível
-    if (process.env.OPENAI_API_KEY) {
-      console.log('Usando chave OpenAI do ambiente como alternativa');
-      apiKey = process.env.OPENAI_API_KEY;
-    } else {
-      throw new Error('Chave API contém caracteres inválidos e não há chave alternativa disponível');
-    }
+  // Sempre tentar usar a chave do ambiente primeiro
+  let secureKey = process.env.OPENAI_API_KEY || '';
+  
+  // Se não temos chave no ambiente, usar a chave fornecida
+  if (!secureKey || secureKey.length < 20) {
+    console.log('Chave OpenAI do ambiente não disponível, usando chave fornecida');
+    secureKey = apiKey || '';
   }
   
-  // Garantir que a chave está limpa
-  if (typeof apiKey !== 'string') {
-    throw new Error('API key inválida para OpenAI: não é uma string');
-  }
+  // Limpeza básica da chave
+  secureKey = secureKey.replace(/^bearer\s+/i, '').replace(/["']/g, '').trim();
   
-  // URGENTE: Limpar a chave apenas de prefixos e aspas, sem remover outros caracteres
-  // que podem ser parte da chave
-  let cleanedKey = apiKey.replace(/^bearer\s+/i, '').replace(/["']/g, '').trim();
-  
-  // Verificar se a chave não está vazia ou muito curta após a limpeza
-  if (!cleanedKey || cleanedKey.length < 10) {
-    console.error('ALERTA: Chave API ficou muito curta após limpeza, usando original');
-    cleanedKey = apiKey.trim();
-  }
-  
-  // Verificação adicional - garantir que a chave não foi completamente zerada
-  if (!cleanedKey) {
-    console.error('ERRO CRÍTICO: Chave OpenAI está vazia após limpeza');
-    // Usar chave direta do ambiente em caso de emergência
-    if (process.env.OPENAI_API_KEY) {
-      console.log('Tentando usar chave OpenAI do ambiente como fallback');
-      cleanedKey = process.env.OPENAI_API_KEY;
-    }
+  // Verificação final
+  if (!secureKey || secureKey.length < 20) {
+    throw new Error('Nenhuma chave API válida disponível para OpenAI');
   }
   
   try {
-    // Verificar se há caracteres não-ASCII na chave
-    for (let i = 0; i < cleanedKey.length; i++) {
-      if (cleanedKey.charCodeAt(i) > 255) {
-        console.error(`Caractere inválido encontrado na posição ${i}: ${cleanedKey.charCodeAt(i)}`);
-        if (process.env.OPENAI_API_KEY) {
-          console.log('Usando chave OpenAI do ambiente devido a caracteres inválidos');
-          cleanedKey = process.env.OPENAI_API_KEY;
-          break;
-        } else {
-          throw new Error('A chave de API contém caracteres inválidos');
-        }
-      }
+    // Montar a URL correta
+    const url = `https://api.openai.com/v1/${endpoint.startsWith('/') ? endpoint.substring(1) : endpoint}`;
+    
+    // Fazer a requisição usando fetch direto
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${secureKey}`
+      },
+      body: JSON.stringify(data)
+    });
+    
+    // Verificar resposta
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Erro OpenAI (${response.status}): ${errorText}`);
+      throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
     }
     
-    // Validar formato da chave API (aceitar tanto 'sk-' quanto 'sk-proj-')
-    if (!cleanedKey.startsWith('sk-')) {
-      console.error('ALERTA: Chave OpenAI não tem o formato esperado (sk- ou sk-proj-)');
-      throw new Error('Formato de chave API inválido. Deve começar com sk- ou sk-proj-');
-    }
-    
-    // Verificar e limpar a chave API antes de usá-la
-    if (!cleanedKey || cleanedKey.includes('•')) {
-      console.error('ALERTA CRÍTICO: A chave API parece estar mascarada ou inválida');
-      
-      // Tentar usar a chave do ambiente como último recurso
-      if (process.env.OPENAI_API_KEY) {
-        console.log('Usando OPENAI_API_KEY do ambiente como solução de emergência');
-        const safeKey = process.env.OPENAI_API_KEY.trim();
-        
-        // Criar cabeçalho apenas com caracteres válidos
-        const safeAuthHeader = 'Bearer ' + safeKey;
-        
-        const response = await fetch('https://api.openai.com/v1/' + endpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': safeAuthHeader,
-            'OpenAI-Beta': 'assistants=v1'
-          },
-          body: JSON.stringify(data)
-        });
-        
-        return handleOpenAIResponse(response);
-      } else {
-        throw new Error('Não foi possível criar um cabeçalho de autenticação válido');
-      }
-    }
-    
-    // Construir cabeçalho de autorização com a chave limpa
-    const authHeader = 'Bearer ' + cleanedKey;
-    
-    try {
-      const response = await fetch('https://api.openai.com/v1/' + endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': authHeader,
-          'OpenAI-Beta': 'assistants=v1'
-        },
-        body: JSON.stringify(data)
-      });
-      
-      return handleOpenAIResponse(response);
-    } catch (fetchError) {
-      console.error('Erro durante a requisição fetch para OpenAI:', fetchError);
-      
-      // Tentar com a chave do ambiente como fallback
-      if (process.env.OPENAI_API_KEY) {
-        console.log('Tentando usar OPENAI_API_KEY do ambiente após falha no fetch');
-        const safeAuthHeader = 'Bearer ' + process.env.OPENAI_API_KEY.trim();
-        
-        const response = await fetch('https://api.openai.com/v1/' + endpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': safeAuthHeader,
-            'OpenAI-Beta': 'assistants=v1'
-          },
-          body: JSON.stringify(data)
-        });
-        
-        return handleOpenAIResponse(response);
-      } else {
-        throw fetchError;
-      }
-    }
-    
-    // Função auxiliar para processar a resposta
-    async function handleOpenAIResponse(response) {
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Erro na resposta da OpenAI:', response.status, errorText);
-        throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
-      }
-      
-      return await response.json();
-    }
+    // Retornar dados JSON
+    return await response.json();
   } catch (error) {
-    console.error('Erro ao chamar OpenAI diretamente:', error);
+    console.error('Erro ao chamar OpenAI:', error);
     throw error;
   }
 }
@@ -433,68 +339,32 @@ function getOpenAIClient(apiKey: string) {
 // Client singleton para Anthropic
 let anthropicClient: Anthropic | null = null;
 
-// Create Anthropic client
-// Adaptador que usa chamadas fetch diretamente em vez de usar o cliente Anthropic
-// para evitar os problemas persistentes com headers HTTP
+/**
+ * Implementação segura de chamadas diretas para a API da Anthropic
+ * Esta função evita problemas de formatação com tokens Bearer e headers HTTP
+ */
 export async function fetchAnthropicDirectly(endpoint: string, data: any, apiKey: string) {
   console.log('Chamando Anthropic diretamente via fetch: ' + endpoint);
   
-  // Verificar se a chave API contém caracteres inválidos ou mascarados (•)
-  if (apiKey.includes('•') || apiKey.includes('…')) {
-    console.error('ERRO: Chave API Anthropic contém caracteres de mascaramento');
-    // Usar a chave de ambiente se disponível
-    if (process.env.ANTHROPIC_API_KEY) {
-      console.log('Usando chave Anthropic do ambiente como alternativa');
-      apiKey = process.env.ANTHROPIC_API_KEY;
-    } else {
-      throw new Error('Chave API contém caracteres inválidos e não há chave alternativa disponível');
-    }
+  // Sempre tentar usar a chave do ambiente primeiro
+  let secureKey = process.env.ANTHROPIC_API_KEY || '';
+  
+  // Se não temos chave no ambiente, usar a chave fornecida
+  if (!secureKey || secureKey.length < 20) {
+    console.log('Chave Anthropic do ambiente não disponível, usando chave fornecida');
+    secureKey = apiKey || '';
   }
   
-  // Garantir que a chave está limpa
-  if (typeof apiKey !== 'string') {
-    throw new Error('API key inválida para Anthropic: não é uma string');
+  // Limpeza básica da chave
+  secureKey = secureKey.replace(/^bearer\s+/i, '').replace(/["']/g, '').trim();
+  
+  // Verificação final
+  if (!secureKey || secureKey.length < 20) {
+    throw new Error('Nenhuma chave API válida disponível para Anthropic');
   }
   
-  // URGENTE: Limpar a chave apenas de prefixos e aspas, sem remover outros caracteres
-  // que podem ser parte da chave
-  let cleanedKey = apiKey.replace(/^bearer\s+/i, '').replace(/["']/g, '').trim();
-  
-  // Verificar se a chave não está vazia ou muito curta após a limpeza
-  if (!cleanedKey || cleanedKey.length < 10) {
-    console.error('ALERTA: Chave API Anthropic ficou muito curta após limpeza, usando original');
-    cleanedKey = apiKey.trim();
-  }
-  
-  // Verificação adicional - garantir que a chave não foi completamente zerada
-  if (!cleanedKey) {
-    console.error('ERRO CRÍTICO: Chave Anthropic está vazia após limpeza');
-    // Usar chave direta do ambiente em caso de emergência
-    if (process.env.ANTHROPIC_API_KEY) {
-      console.log('Tentando usar chave Anthropic do ambiente como fallback');
-      cleanedKey = process.env.ANTHROPIC_API_KEY;
-    }
-  }
-  
-  // Verificar se há caracteres não-ASCII na chave
-  for (let i = 0; i < cleanedKey.length; i++) {
-    if (cleanedKey.charCodeAt(i) > 255) {
-      console.error(`Caractere inválido encontrado na posição ${i}: ${cleanedKey.charCodeAt(i)}`);
-      if (process.env.ANTHROPIC_API_KEY) {
-        console.log('Usando chave Anthropic do ambiente devido a caracteres inválidos');
-        cleanedKey = process.env.ANTHROPIC_API_KEY;
-        break;
-      } else {
-        throw new Error('A chave de API contém caracteres inválidos');
-      }
-    }
-  }
-  
-  // Correção para formatar os dados conforme esperado pela API do Anthropic
-  // A API espera { prompt: "" } para Claude 1/2 ou { messages: [] } para Claude 3
+  // Formatação de dados para a API do Anthropic
   const formattedData = { ...data };
-  
-  console.log('DADOS ORIGINAIS ANTHROPIC:', JSON.stringify(data, null, 2));
   
   // Verificar se estamos tentando usar o formato Claude 3 (messages) com um modelo Claude 2
   if (data.messages && (data.model === 'claude-2' || data.model === 'claude-2.0' || data.model === 'claude-2.1')) {
@@ -510,40 +380,37 @@ export async function fetchAnthropicDirectly(endpoint: string, data: any, apiKey
   
   // Verificar o formato correto com base no modelo
   if (!formattedData.prompt && !formattedData.messages) {
-    console.error('AVISO: Dados do Anthropic não têm prompt nem messages, tentando corrigir');
-    
-    // Tentar criar um prompt básico como fallback
+    console.error('AVISO: Dados do Anthropic não têm prompt nem messages');
+    // Adicionar um prompt padrão como fallback
     formattedData.prompt = "\n\nHuman: Hello\n\nAssistant: ";
   }
   
-  console.log('DADOS FORMATADOS ANTHROPIC:', JSON.stringify(formattedData, null, 2));
-  
   try {
-    // Construir URL e cabeçalhos usando concatenação para evitar problemas com caracteres Unicode
-    const url = 'https://api.anthropic.com/v1/' + endpoint;
-    
-    // Verificar versão da API baseado no modelo
+    // Versão da API correta
     const apiVersion = data.model?.includes('claude-3') ? '2023-06-01' : '2023-06-01';
     
-    const response = await fetch(url, {
+    // Fazer a requisição usando fetch
+    const response = await fetch(`https://api.anthropic.com/v1/${endpoint}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': cleanedKey,
+        'x-api-key': secureKey,
         'anthropic-version': apiVersion
       },
       body: JSON.stringify(formattedData)
     });
     
+    // Verificar resposta
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Erro na resposta da Anthropic:', response.status, errorText);
+      console.error(`Erro Anthropic (${response.status}): ${errorText}`);
       throw new Error(`Anthropic API error: ${response.status} - ${errorText}`);
     }
     
+    // Retornar dados JSON
     return await response.json();
   } catch (error) {
-    console.error('Erro ao chamar Anthropic diretamente:', error);
+    console.error('Erro ao chamar Anthropic:', error);
     throw error;
   }
 }
