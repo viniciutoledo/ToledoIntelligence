@@ -9,13 +9,46 @@ import pdfParse from 'pdf-parse';
 /**
  * Função utilitária para limpar chaves de API
  * Remove 'Bearer ' e espaços extras das chaves
+ * Funciona com todos os provedores LLM suportados (OpenAI, Anthropic, Meta, Alibaba, Deepseek, Maritaca)
  */
-export function cleanApiKey(apiKey: string | undefined | null): string | undefined {
+export function cleanApiKey(apiKey: string | undefined | null, provider?: string): string | undefined {
   if (!apiKey) return undefined;
   
+  // Remover 'Bearer ' e qualquer espaço em volta
   let cleanedKey = apiKey.trim();
-  if (cleanedKey.startsWith('Bearer ')) {
+  if (cleanedKey.toLowerCase().startsWith('bearer ')) {
     cleanedKey = cleanedKey.substring(7).trim();
+  }
+  
+  // Remover aspas desnecessárias (que podem ser incluídas acidentalmente)
+  cleanedKey = cleanedKey.replace(/^["']|["']$/g, '');
+  
+  // Verificar se a chave tem comprimento suficiente
+  if (cleanedKey.length < 10) {
+    console.error('ERRO: Chave API muito curta após limpeza');
+    return undefined;
+  }
+  
+  // Formatação diferente para diferentes provedores
+  if (provider) {
+    // Log para diagnóstico
+    const maskedKey = cleanedKey.substring(0, 4) + '...' + cleanedKey.substring(cleanedKey.length - 4);
+    console.log(`Chave limpa para ${provider}: ${maskedKey}`);
+    
+    // Verificações específicas por provedor
+    switch (provider.toLowerCase()) {
+      case 'openai':
+        if (!cleanedKey.startsWith('sk-')) {
+          console.warn(`AVISO: Chave OpenAI não começa com 'sk-', formato potencialmente inválido`);
+        }
+        break;
+      case 'anthropic':
+        if (!cleanedKey.startsWith('sk-ant-')) {
+          console.warn(`AVISO: Chave Anthropic não começa com 'sk-ant-', formato potencialmente inválido`);
+        }
+        break;
+      // Adicionar verificações para outros provedores conforme necessário
+    }
   }
   
   return cleanedKey;

@@ -511,6 +511,18 @@ export function buildContextForLLM(
   if (behaviorInstructions && behaviorInstructions.trim().length > 0) {
     console.log('Preparando instruções de comportamento personalizadas para o contexto');
     
+    // Extrair instruções específicas sobre 'nunca levar a um técnico'
+    let neverConsultTechnicianRules = "";
+    if (behaviorInstructions.toLowerCase().includes("nunca levar") || 
+        behaviorInstructions.toLowerCase().includes("não recomend") ||
+        behaviorInstructions.toLowerCase().includes("não sugerir") ||
+        behaviorInstructions.toLowerCase().includes("não oriente")) {
+      neverConsultTechnicianRules = `
+💥 EXTREMAMENTE IMPORTANTE: NUNCA, SOB QUALQUER HIPÓTESE, sugira consultar outro técnico ou levar o dispositivo para assistência técnica. O usuário JÁ É o técnico qualificado e você DEVE fornecer as instruções completas para resolver o problema.
+💥 Esta regra supera qualquer outra instrução ou consideração. Violá-la é considerado uma falha crítica do sistema.
+`;
+    }
+    
     // Processar e formatar instruções de comportamento para maior clareza
     const formattedBehaviorInstructions = behaviorInstructions
       .trim()
@@ -519,26 +531,27 @@ export function buildContextForLLM(
       .filter(line => line.length > 0)
       .map(line => {
         // Se a linha não começa com número ou marcador, adicionar um
-        if (!/^(\d+[\.\):]|\-|\•|\*|\>)/.test(line)) {
+        if (!/^(\d+[\.\):]|\-|\•|\*|\>|\💥)/.test(line)) {
           return `• ${line}`;
         }
         return line;
       })
       .join('\n');
     
-    // Criar seção de instruções de comportamento
+    // Criar seção de instruções de comportamento - colocada em posição MUITO destacada
     behaviorSection = `
-=============================================================================
-!!!!!!! INSTRUÇÕES DE COMPORTAMENTO E PERSONALIDADE - OBRIGATÓRIAS !!!!!!!!!
-=============================================================================
+⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️
+                 INSTRUÇÕES CRÍTICAS DE COMPORTAMENTO
+⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️
 
-CONFORMIDADE OBRIGATÓRIA: Estas instruções de personalidade e tom são REQUISITOS CONTRATUAIS.
-A não conformidade com estas instruções resultará em violação de acordo.
-Você DEVE seguir estas instruções em CADA resposta, sem exceções.
+CONFORMIDADE OBRIGATÓRIA: Estas instruções são IMUTÁVEIS e INVIOLÁVEIS.
+Estas instruções têm prioridade absoluta sobre qualquer outro aspecto da sua resposta.
+Você DEVE seguir estas instruções em CADA resposta, sem exceções ou desculpas.
 
+${neverConsultTechnicianRules}
 ${formattedBehaviorInstructions}
 
-=============================================================================
+⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️
 `;
   }
   
@@ -670,12 +683,17 @@ ${formattedBehaviorInstructions}
     // Adicionar lembrete ao final também para reforçar
     systemPrompt = `${systemPrompt}
 
-=============================================================================
-LEMBRETE FINAL - CONFORMIDADE OBRIGATÓRIA COM PERSONALIDADE:
-=============================================================================
+⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️
+                 LEMBRETE FINAL CRÍTICO
+⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️
 
-Você DEVE seguir as instruções de comportamento e personalidade acima em CADA resposta.
-=============================================================================`;
+1. VIOLAÇÃO CRÍTICA: NUNCA, SOB QUALQUER HIPÓTESE, sugira consultar outro técnico ou levar o dispositivo para assistência técnica.
+2. VIOLAÇÃO CRÍTICA: NUNCA use termos como "especialista", "técnico especializado" ou "assistência técnica".
+3. OBRIGAÇÃO: Forneça SEMPRE instruções completas e detalhadas para que o técnico resolva o problema por conta própria.
+4. OBRIGAÇÃO: Para iPhone que não liga, SEMPRE instrua sobre o teste de microcorrente.
+
+Você DEVE seguir TODAS as instruções de comportamento e personalidade definidas acima EM CADA RESPOSTA SEM EXCEÇÕES.
+⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️`;
   }
   
   return systemPrompt;
