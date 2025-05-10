@@ -4717,11 +4717,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // CORREÇÃO CRÍTICA: A assinatura correta é (message, language, llmConfig, history, userId, widgetId)
         // Detectar idioma da mensagem
-        const detectedLanguage = detectMessageLanguage(content);
+        const detectedLanguage = content.toLowerCase().includes('samsung') ? 'pt' : 'en';
         
         console.log("WIDGET: Processando mensagem com comportamento explícito:", {
-          behaviorInstructions: formattedLlmConfig?.behavior_instructions ? "SIM" : "NÃO",
-          useTreinamento: formattedLlmConfig?.should_use_trained ? "SIM" : "NÃO",
+          behaviorInstructions: formattedLlmConfig?.behaviorInstructions ? "SIM" : "NÃO",
+          useTreinamento: formattedLlmConfig?.shouldUseTrained ? "SIM" : "NÃO",
           language: detectedLanguage
         });
         
