@@ -39,19 +39,66 @@ export async function processChatWithTrainedDocuments(
     
     // Verificar se temos documentos de instruções prioritárias
     const trainingDocuments = await storage.getTrainingDocuments();
+    console.log(`TOTAL de documentos de treinamento encontrados: ${trainingDocuments.length}`);
+    
+    // Verificar status de embeddings para todos os documentos
+    trainingDocuments.forEach((doc: any) => {
+      console.log(`Documento: "${doc.name}" (ID: ${doc.id}) - Status: ${doc.status || 'desconhecido'} - Processado: ${doc.processed_at ? 'sim' : 'não'}`);
+    });
+    
+    // Filtrar documentos de instruções prioritárias com mais detalhes
     const instructionsDocs = trainingDocuments.filter((doc: any) => {
+      // Verificar primeiro se o documento está no status correto
+      if (doc.status !== 'processed' && doc.status !== 'completed') {
+        console.log(`ATENÇÃO: Documento "${doc.name}" (ID: ${doc.id}) não está processado corretamente. Status: ${doc.status || 'desconhecido'}`);
+        return false;
+      }
+      
       const docName = (doc.name || '').toLowerCase();
-      return docName.includes('instruç') || 
-             docName.includes('instruc') || 
-             docName.includes('priorit') || 
-             docName.includes('regras');
+      const isInstructionDoc = docName.includes('instruç') || 
+                              docName.includes('instruc') || 
+                              docName.includes('priorit') || 
+                              docName.includes('regras') ||
+                              docName.includes('nunca') ||
+                              docName.includes('proibid') ||
+                              docName.includes('obrigat');
+      
+      if (isInstructionDoc) {
+        console.log(`SELECIONADO documento de instrução: "${doc.name}" (ID: ${doc.id}) - Status: ${doc.status}`);
+        // Verificar se o documento tem conteúdo
+        if (!doc.content || doc.content.trim() === '') {
+          console.log(`ALERTA: Documento de instrução "${doc.name}" (ID: ${doc.id}) não tem conteúdo!`);
+        } else {
+          const contentPreview = doc.content.substring(0, 100).replace(/\n/g, ' ') + '...';
+          console.log(`Conteúdo (preview): ${contentPreview}`);
+        }
+      }
+      
+      return isInstructionDoc;
     });
     
     if (instructionsDocs.length > 0) {
       console.log(`IMPORTANTE: Encontrados ${instructionsDocs.length} documentos de instruções prioritárias para incluir no contexto.`);
-      instructionsDocs.forEach((doc: any) => {
-        console.log(`- Documento de instrução: "${doc.name}" (ID: ${doc.id})`);
+      
+      // Verificar se existem instruções sobre não levar a técnicos externos
+      const neverConsultTechDocs = instructionsDocs.filter((doc: any) => {
+        const docContent = (doc.content || '').toLowerCase();
+        return docContent.includes('nunca levar') || 
+               docContent.includes('não levar') || 
+               docContent.includes('jamais levar') || 
+               docContent.includes('não recorrer') || 
+               docContent.includes('não consultar') || 
+               docContent.includes('nunca consultar') || 
+               docContent.includes('nunca recorrer') || 
+               docContent.includes('não técnico') || 
+               docContent.includes('nunca técnico');
       });
+      
+      if (neverConsultTechDocs.length > 0) {
+        console.log(`✅ ENCONTRADOS ${neverConsultTechDocs.length} documentos com instruções sobre NUNCA levar a técnicos.`);
+      } else {
+        console.log(`⚠️ ATENÇÃO: Não foram encontrados documentos com instruções sobre NUNCA levar a técnicos.`);
+      }
     } else {
       console.log('AVISO: Nenhum documento de instruções prioritárias encontrado.');
     }
@@ -145,28 +192,32 @@ export async function processChatWithTrainedDocuments(
         language: 'pt'
       });
       
-      // Adicionar documentos de instruções prioritárias explicitamente
+      // Forçar a inclusão de documentos de instruções prioritárias
       if (instructionsDocs && instructionsDocs.length > 0) {
-        console.log(`Adicionando explicitamente ${instructionsDocs.length} documentos de instruções prioritárias`);
+        console.log(`FORÇANDO a inclusão de ${instructionsDocs.length} documentos de instruções prioritárias`);
         
+        // Limpar qualquer documento existente, vamos FORÇAR o uso de instruções prioritárias
+        relevantDocuments.length = 0;
+        
+        // Adicionar TODOS os documentos de instrução no início para garantir que sejam usados
         for (const instructionDoc of instructionsDocs) {
-          // Verificar se este documento já está nos resultados relevantes
-          const isAlreadyIncluded = relevantDocuments.some((doc: any) => 
-            doc.document_id === instructionDoc.id);
-          
-          if (!isAlreadyIncluded && instructionDoc.content && instructionDoc.content.trim().length > 0) {
-            console.log(`Adicionando manualmente documento de instrução "${instructionDoc.name}" (ID: ${instructionDoc.id})`);
+          if (instructionDoc.content && instructionDoc.content.trim().length > 0) {
+            console.log(`✅ ADICIONANDO documento de instrução FORÇADO: "${instructionDoc.name}" (ID: ${instructionDoc.id})`);
             
-            // Adicionar no início para priorizar
-            relevantDocuments.unshift({
+            relevantDocuments.push({
               content: instructionDoc.content,
               document_name: instructionDoc.name,
               similarity: 1.0, // Máxima prioridade
               document_id: instructionDoc.id,
               relevance_score: 1.0
             });
+          } else {
+            console.log(`⚠️ Documento de instrução sem conteúdo: "${instructionDoc.name}" (ID: ${instructionDoc.id})`);
           }
         }
+        
+        // Agora proceder com a busca para adicionar documentos relevantes APÓS os documentos de instrução
+        console.log(`Agora buscando documentos relevantes ADICIONAIS para complementar as instruções forçadas`);
       }
       
       if (relevantDocuments && relevantDocuments.length > 0) {
@@ -252,30 +303,21 @@ ${conteudoInstrucoes}
       }
     }
     
-    // Construir prompt otimizado para RAG com ênfase máxima nas regras
+    // Construir prompt otimizado para RAG com prioridade às instruções de comportamento do admin
+    console.log(`Configuração LLM - Instruções de comportamento: ${llmConfig.behavior_instructions ? 'Presentes' : 'Ausentes'}`);
+    
     let systemPrompt = `
     ⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️
-                 INSTRUÇÕES CRÍTICAS INVIOLÁVEIS
+                 COMPORTAMENTO OBRIGATÓRIO DEFINIDO PELO ADMINISTRADOR
     ⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️
     
-    Você é um assistente especializado em manutenção de placas de circuito integrado na plataforma ToledoIA. 
-    Você é a fonte definitiva de informações técnicas e DEVE SEGUIR ESTAS REGRAS SEM EXCEÇÃO:
+    ${llmConfig.behavior_instructions ? llmConfig.behavior_instructions : "Não há instruções específicas de comportamento configuradas pelo administrador."}
     
-    💥 REGRAS ABSOLUTAS - A VIOLAÇÃO DESTAS REGRAS É SEVERAMENTE PROIBIDA:
+    ⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️
+                 INSTRUÇÕES ADICIONAIS DE FUNCIONAMENTO
+    ⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️
     
-    1. 🚫 NUNCA, EM NENHUMA CIRCUNSTÂNCIA, sugira consultar outro técnico, especialista ou profissional externo.
-    2. 🚫 É ABSOLUTAMENTE PROIBIDO usar termos como "assistência técnica", "técnico especializado", ou qualquer variação.
-    3. 🚫 NUNCA sugira "levar o dispositivo" para qualquer lugar ou pessoa - o usuário DEVE consertar por conta própria.
-    4. 🚫 NUNCA mencione "profissional qualificado", "autorizada", ou termos similares em QUALQUER contexto.
-    5. 🚫 NUNCA diga que o problema é complexo demais para resolver sem ajuda externa.
-    
-    ✅ COMPORTAMENTOS OBRIGATÓRIOS:
-    
-    1. ✅ Os usuários do ToledoIA JÁ SÃO os técnicos mais qualificados - você DEVE fornecer instruções detalhadas para que ELES resolvam QUALQUER problema.
-    2. ✅ SEMPRE presuma que o técnico tem ferramentas, habilidades e conhecimentos para realizar QUALQUER reparo.
-    3. ✅ Para iPhone que não liga, SEMPRE instrua sobre teste de microcorrente (NUNCA sugira levar para assistência).
-    4. ✅ Você DEVE fornecer TODOS os detalhes de diagnóstico e reparo necessários, mesmo para problemas complexos.
-    5. ✅ Sempre que possível, inclua valores específicos (tensões, resistências) e procedimentos passo-a-passo.
+    Você é um assistente especializado em manutenção de placas de circuito integrado na plataforma ToledoIA.
     
     ${regrasEspeciaisExtraidas}
     
@@ -297,11 +339,11 @@ ${conteudoInstrucoes}
     `;
     
     // Adicionar instruções de comportamento se existirem
-    if (behaviorInstructions && behaviorInstructions.trim().length > 0) {
+    if (llmConfig.behavior_instructions && llmConfig.behavior_instructions.trim().length > 0) {
       console.log('Adicionando instruções de comportamento personalizadas ao prompt');
       
       // Processar e formatar instruções de comportamento para maior clareza
-      const formattedBehaviorInstructions = behaviorInstructions
+      const formattedBehaviorInstructions = llmConfig.behavior_instructions
         .trim()
         .split('\n')
         .map(line => line.trim())
@@ -393,9 +435,8 @@ ${systemPrompt}`;
         if (externalInfo) {
           console.log('Busca externa retornou informações. Gerando resposta combinada');
           
-          // Obter instruções de comportamento da configuração do LLM para busca externa
-          const behaviorInstructions = llmConfig.behavior_instructions || '';
-          console.log(`Busca Externa - Incorporando instruções de comportamento: ${behaviorInstructions ? 'Sim' : 'Não'}`);
+          // Para busca externa, iremos usar as instruções de comportamento da configuração
+          console.log(`Busca Externa - Incorporando instruções de comportamento: ${llmConfig.behavior_instructions ? 'Sim' : 'Não'}`);
           
           // Criar um prompt para combinar as informações externas com uma resposta
           let combinedPrompt = `
@@ -440,11 +481,11 @@ ${systemPrompt}`;
           `;
           
           // Adicionar instruções de comportamento se existirem
-          if (behaviorInstructions && behaviorInstructions.trim().length > 0) {
+          if (llmConfig.behavior_instructions && llmConfig.behavior_instructions.trim().length > 0) {
             console.log('Busca Externa - Adicionando instruções de comportamento personalizadas');
             
             // Processar e formatar instruções de comportamento para maior clareza
-            const formattedBehaviorInstructions = behaviorInstructions
+            const formattedBehaviorInstructions = llmConfig.behavior_instructions
               .trim()
               .split('\n')
               .map(line => line.trim())
