@@ -6,6 +6,21 @@ import { storage } from './storage';
 import path from 'path';
 import pdfParse from 'pdf-parse';
 
+/**
+ * Função utilitária para limpar chaves de API
+ * Remove 'Bearer ' e espaços extras das chaves
+ */
+export function cleanApiKey(apiKey: string | undefined | null): string | undefined {
+  if (!apiKey) return undefined;
+  
+  let cleanedKey = apiKey.trim();
+  if (cleanedKey.startsWith('Bearer ')) {
+    cleanedKey = cleanedKey.substring(7).trim();
+  }
+  
+  return cleanedKey;
+}
+
 // Default models
 // the newest Anthropic model is "claude-3-7-sonnet-20250219" which was released February 24, 2025
 const DEFAULT_CLAUDE_MODEL = 'claude-3-7-sonnet-20250219';
