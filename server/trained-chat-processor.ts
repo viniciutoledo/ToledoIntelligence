@@ -583,16 +583,20 @@ async function processWithOpenAI(
     // Limpar a chave API de possíveis prefixos 'Bearer' ou aspas
     if (typeof apiKey === 'string') {
       // Verificar se a chave está mascarada (caso de debugging/UI)
-      if (apiKey.includes('••••••')) {
+      if (apiKey.includes('••••••') || apiKey.includes('Bearer •')) {
         console.error('ERRO: Chave API mascarada detectada. Usando chave do ambiente.');
         apiKey = process.env.OPENAI_API_KEY || '';
         if (!apiKey) {
           throw new Error('Chave API OpenAI não disponível no ambiente como fallback');
         }
-      } else {
-        // Remover prefixo 'Bearer' e aspas
-        apiKey = apiKey.replace(/^bearer\s+/i, '').replace(/["']/g, '').trim();
+      } else if (apiKey.toLowerCase().startsWith('bearer ')) {
+        // Remover prefixo 'Bearer ' se presente
+        console.log('Removendo prefixo Bearer da chave OpenAI');
+        apiKey = apiKey.substring(7).trim();
       }
+      
+      // Remover quaisquer aspas
+      apiKey = apiKey.replace(/["']/g, '').trim();
       
       // Verificar se a chave tem formato válido após limpeza
       if (!apiKey.startsWith('sk-')) {
@@ -672,16 +676,20 @@ async function processWithAnthropic(
     // Limpar a chave API de possíveis prefixos 'Bearer' ou aspas
     if (typeof apiKey === 'string') {
       // Verificar se a chave está mascarada (caso de debugging/UI)
-      if (apiKey.includes('••••••')) {
+      if (apiKey.includes('••••••') || apiKey.includes('Bearer •')) {
         console.error('ERRO: Chave API mascarada detectada. Usando chave do ambiente.');
         apiKey = process.env.ANTHROPIC_API_KEY || '';
         if (!apiKey) {
           throw new Error('Chave API Anthropic não disponível no ambiente como fallback');
         }
-      } else {
-        // Remover prefixo 'Bearer' e aspas
-        apiKey = apiKey.replace(/^bearer\s+/i, '').replace(/["']/g, '').trim();
+      } else if (apiKey.toLowerCase().startsWith('bearer ')) {
+        // Remover prefixo 'Bearer ' se presente
+        console.log('Removendo prefixo Bearer da chave Anthropic');
+        apiKey = apiKey.substring(7).trim();
       }
+      
+      // Remover quaisquer aspas
+      apiKey = apiKey.replace(/["']/g, '').trim();
       
       // Verificar se a chave tem formato válido após limpeza
       if (!apiKey.startsWith('sk-ant-')) {
