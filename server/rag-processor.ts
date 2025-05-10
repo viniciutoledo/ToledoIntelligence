@@ -1027,11 +1027,32 @@ ${systemPrompt}`;
       
       // Limpar a chave da API para garantir que não haja espaços ou prefixos "Bearer "
       apiKey = apiKey.trim();
-      if (apiKey.startsWith('Bearer ')) {
-        apiKey = apiKey.substring(7).trim();
+      // Limpeza completa da API Key para evitar problemas com Bearer token
+      if (typeof apiKey === 'string') {
+        // Verificar se a chave está mascarada (caso de debugging/UI)
+        if (apiKey.includes('••••••') || apiKey.includes('Bearer •')) {
+          console.error('ERRO: Chave API mascarada detectada no RAG. Usando chave do ambiente.');
+          apiKey = process.env.OPENAI_API_KEY || '';
+          if (!apiKey) {
+            throw new Error('Chave API OpenAI não disponível no ambiente como fallback');
+          }
+        } else if (apiKey.toLowerCase().startsWith('bearer ')) {
+          // Remover prefixo 'Bearer ' se presente
+          console.log('Removendo prefixo Bearer da chave OpenAI no RAG');
+          apiKey = apiKey.substring(7).trim();
+        }
+        
+        // Remover quaisquer aspas
+        apiKey = apiKey.replace(/["']/g, '').trim();
       }
       
-      console.log('Usando OpenAI com chave limpa');
+      console.log('Usando OpenAI com chave limpa no RAG');
+      // Usar ambiente como fallback final se necessário
+      if (!apiKey || apiKey.length < 10) {
+        console.log('Usando chave de ambiente como fallback final no RAG');
+        apiKey = process.env.OPENAI_API_KEY || '';
+      }
+      
       const openai = new OpenAI({ apiKey });
       
       const completion = await openai.chat.completions.create({
@@ -1156,13 +1177,26 @@ Respond in a helpful, accurate, and concise manner.`;
           throw new Error('Sem chave API OpenAI disponível para fallback');
         }
         
-        // Limpar a chave da API para garantir que não haja espaços ou prefixos "Bearer "
-        apiKey = apiKey.trim();
-        if (apiKey.startsWith('Bearer ')) {
-          apiKey = apiKey.substring(7).trim();
+        // Limpeza completa da API Key para evitar problemas com Bearer token
+        if (typeof apiKey === 'string') {
+          // Verificar se a chave está mascarada (caso de debugging/UI)
+          if (apiKey.includes('••••••') || apiKey.includes('Bearer •')) {
+            console.error('ERRO: Chave API mascarada detectada no RAG (fallback). Usando chave do ambiente.');
+            apiKey = process.env.OPENAI_API_KEY || '';
+            if (!apiKey) {
+              throw new Error('Chave API OpenAI não disponível no ambiente como fallback');
+            }
+          } else if (apiKey.toLowerCase().startsWith('bearer ')) {
+            // Remover prefixo 'Bearer ' se presente
+            console.log('Removendo prefixo Bearer da chave OpenAI no RAG (fallback)');
+            apiKey = apiKey.substring(7).trim();
+          }
+          
+          // Remover quaisquer aspas
+          apiKey = apiKey.replace(/["']/g, '').trim();
         }
         
-        console.log('Usando OpenAI com chave limpa (fallback)');
+        console.log('Usando OpenAI com chave limpa no RAG (fallback)');
         const openai = new OpenAI({ apiKey });
         
         const completion = await openai.chat.completions.create({
