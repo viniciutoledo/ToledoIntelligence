@@ -4715,11 +4715,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           role: m.is_user ? "user" : "assistant"
         }));
         
+        // CORREÇÃO CRÍTICA: A assinatura correta é (message, language, llmConfig, history, userId, widgetId)
+        // Detectar idioma da mensagem
+        const detectedLanguage = detectMessageLanguage(content);
+        
+        console.log("WIDGET: Processando mensagem com comportamento explícito:", {
+          behaviorInstructions: formattedLlmConfig?.behavior_instructions ? "SIM" : "NÃO",
+          useTreinamento: formattedLlmConfig?.should_use_trained ? "SIM" : "NÃO",
+          language: detectedLanguage
+        });
+        
         aiResponse = await processTextMessage(
           content,
-          messageHistory,
+          detectedLanguage,
           formattedLlmConfig,
-          undefined,
+          messageHistory,
           widget.user_id,
           session.widget_id
         );

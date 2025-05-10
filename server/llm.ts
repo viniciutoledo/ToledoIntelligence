@@ -1169,6 +1169,33 @@ function detectLanguage(
   return 'en';
 }
 
+// Função simplificada para detecção rápida de idioma da mensagem - para uso no widget
+export function detectMessageLanguage(message: string): 'pt' | 'en' {
+  if (!message || typeof message !== 'string') {
+    return 'pt'; // Padrão para português se mensagem for inválida
+  }
+  
+  // Lista ampliada de termos comuns em português para melhor detecção
+  const portugueseTerms = ['oi', 'olá', 'bom dia', 'boa tarde', 'boa noite', 
+                          'obrigado', 'não', 'sim', 'como', 'porque', 'quero',
+                          'preciso', 'ajuda', 'problema', 'está', 'meu', 'minha',
+                          'você', 'por favor', 'placa', 'conserto', 'ligando',
+                          'tenho', 'funciona', 'quando', 'onde', 'quem', 'qual'];
+  
+  // Converter mensagem para minúsculas para comparação case-insensitive
+  const lowerMessage = message.toLowerCase();
+  
+  // Verificar cada termo português na mensagem
+  for (const term of portugueseTerms) {
+    if (lowerMessage.includes(term)) {
+      return 'pt';
+    }
+  }
+  
+  // Se não detectou português, retornar inglês
+  return 'en';
+}
+
 // Função auxiliar para truncar texto para ficar dentro dos limites
 function truncateText(text: string, maxLength: number = 10000): string {
   if (text.length <= maxLength) {
