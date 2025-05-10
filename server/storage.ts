@@ -2608,8 +2608,9 @@ export class DatabaseStorage implements IStorage {
             or(
               ...uniqueTopics.map(topic => 
                 or(
-                  like(sql`lower(${trainingDocuments.name})`, `%${topic}%`),
-                  like(sql`lower(${trainingDocuments.tags})`, `%${topic}%`)
+                  // Usando ILIKE que é case-insensitive em vez de lower()
+                  sql`${trainingDocuments.name} ILIKE ${`%${topic}%`}`,
+                  sql`${trainingDocuments.tags} ILIKE ${`%${topic}%`}`
                 )
               )
             )
@@ -2637,7 +2638,7 @@ export class DatabaseStorage implements IStorage {
               eq(trainingDocuments.status, 'completed'),
               or(
                 ...uniqueTopics.map(topic => 
-                  like(sql`lower(${trainingDocuments.content})`, `%${topic}%`)
+                  sql`${trainingDocuments.content} ILIKE ${`%${topic}%`}`
                 )
               ),
               // Excluir documentos já encontrados na busca anterior
