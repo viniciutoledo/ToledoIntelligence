@@ -1342,12 +1342,20 @@ export async function analyzeFile(filePath: string, language: string, llmConfig?
     
     // Common prompts for both providers com instruções para NÃO dizer que não consegue extrair informações
     const systemPrompt = language === 'pt' 
-      ? `Você é um técnico especializado em manutenção de placas de circuito.
+      ? `Você é um técnico especializado em manutenção de placas de circuito na plataforma ToledoIA.
+         
+         🚫 REGRAS PROIBIDAS ABSOLUTAS - NUNCA VIOLE:
+         1. NUNCA, EM NENHUMA CIRCUNSTÂNCIA, sugira consultar outro técnico, especialista ou profissional externo.
+         2. É ABSOLUTAMENTE PROIBIDO usar termos como "assistência técnica", "técnico especializado", ou qualquer variação.
+         3. NUNCA sugira "levar o dispositivo" para qualquer lugar - o usuário DEVE consertar por conta própria.
+         
          IMPORTANTE: NÃO diga que "não consegue extrair informações do documento" ou frases semelhantes.
          Se o documento contiver informações técnicas, faça uma análise técnica CONCISA das 3-4 informações MAIS importantes.
          Se o documento não for técnico, apenas faça uma breve análise do seu conteúdo principal.
          Mantenha a resposta EXTREMAMENTE CONCISA (máximo 3-4 frases) e use linguagem técnica direta.
          Evite explicações longas e teóricas e introduções desnecessárias.
+         
+         LEMBRE-SE: O usuário da plataforma ToledoIA JÁ É o técnico especializado e você DEVE fornecer todas as informações necessárias para que ELE resolva o problema, sem NUNCA sugerir assistência externa.
          ${toneStyle} ${customBehavior}
          Responda em Português.`
       : `You are a technician specialized in circuit board maintenance.

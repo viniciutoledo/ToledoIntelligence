@@ -393,55 +393,158 @@ export function formatRelevantDocumentsForPrompt(documents: any[]): string {
   // Identificar quais documentos são de instruções prioritárias
   const instructionDocs = documents.filter(doc => {
     const docName = (doc.document_name || '').toLowerCase();
-    return docName.includes('instruç') || 
-           docName.includes('instruc') || 
-           docName.includes('priorit') || 
-           docName.includes('regras');
+    // Verificar o nome do documento
+    const isInstructionByName = docName.includes('instruç') || 
+                              docName.includes('instruc') || 
+                              docName.includes('priorit') || 
+                              docName.includes('regras') ||
+                              docName.includes('nunca') ||
+                              docName.includes('proibid') ||
+                              docName.includes('obrigat');
+                              
+    // Verificar se o conteúdo do documento contém palavras-chave importantes
+    const docContent = (doc.content || '').toLowerCase();
+    const hasImportantKeywords = docContent.includes('nunca levar') || 
+                               docContent.includes('não levar') ||
+                               docContent.includes('jamais levar') ||
+                               docContent.includes('assistência técnica') ||
+                               docContent.includes('técnico especializado') ||
+                               docContent.includes('não recorrer') ||
+                               docContent.includes('não consultar') ||
+                               docContent.includes('nunca consultar') ||
+                               docContent.includes('nunca recorrer') ||
+                               docContent.includes('não deve levar') ||
+                               docContent.includes('nunca deve levar');
+                               
+    return isInstructionByName || hasImportantKeywords;
   });
+  
+  // Registrar documentos de instruções encontrados
+  if (instructionDocs.length > 0) {
+    console.log(`RAG: Encontrados ${instructionDocs.length} documentos de instruções prioritárias`);
+    instructionDocs.forEach(doc => {
+      console.log(`- Documento de instrução: "${doc.document_name || 'Sem nome'}" (ID: ${doc.id || 'N/A'})`);
+    });
+  } else {
+    console.log('RAG: Nenhum documento de instrução prioritária encontrado');
+  }
   
   // Separar outros documentos
   const normalDocs = documents.filter(doc => {
-    const docName = (doc.document_name || '').toLowerCase();
-    return !(docName.includes('instruç') || 
-             docName.includes('instruc') || 
-             docName.includes('priorit') || 
-             docName.includes('regras'));
+    return !instructionDocs.includes(doc);
   });
   
   let formattedText = '';
   
   // Primeiro adicionar as instruções prioritárias
   if (instructionDocs.length > 0) {
-    formattedText += `\n\n===== INSTRUÇÕES PRIORITÁRIAS =====\n`;
-    formattedText += `Estas regras devem ser seguidas rigorosamente para todas as respostas:\n\n`;
+    formattedText += `\n\n⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️\n`;
+    formattedText += `                 INSTRUÇÕES CRÍTICAS PRIORITÁRIAS\n`;
+    formattedText += `⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️\n\n`;
+    formattedText += `💥 ESTAS INSTRUÇÕES DEVEM SER SEGUIDAS RIGOROSAMENTE - PRIORIDADE MÁXIMA SOBRE QUALQUER OUTRO CONTEÚDO 💥\n\n`;
     
+    // Código para identificar instruções sobre não levar a técnicos externos
+    const neverConsultDocsIndices = [];
     instructionDocs.forEach((doc, index) => {
-      formattedText += `\n\n------------------------\n`;
-      
-      // Destacar que é um documento prioritário
-      const docName = doc.document_name || `Instrução prioritária ${index + 1}`;
-      formattedText += `INSTRUÇÃO PRIORITÁRIA ${index + 1}: "${docName}"`;
-      
-      // Adicionar score de relevância se disponível (sempre alta para instruções)
-      formattedText += ` (Relevância: ${(doc.similarity || 1.0).toFixed(2)})`;
-      
-      formattedText += `\n------------------------\n\n`;
-      
-      console.log(`[RAG] Adicionando instrução prioritária "${docName}" ao prompt (${(doc.content || doc.text || '').length} caracteres)`);
-      
-      // Adicionar conteúdo do documento
-      const docContent = doc.content || doc.text || '';
-      
-      // Limitar o tamanho para evitar exceder os limites de tokens
-      const maxContentLength = 50000;
-      const truncatedContent = docContent.length > maxContentLength 
-        ? docContent.substring(0, maxContentLength) + `\n[...Conteúdo truncado, excede ${maxContentLength} caracteres]` 
-        : docContent;
-      
-      formattedText += truncatedContent;
+      const docContent = (doc.content || doc.text || '').toLowerCase();
+      if (docContent.includes('nunca levar') || 
+          docContent.includes('não levar') || 
+          docContent.includes('jamais levar') || 
+          docContent.includes('não recorrer') || 
+          docContent.includes('não consultar') || 
+          docContent.includes('nunca consultar') || 
+          docContent.includes('nunca recorrer') || 
+          docContent.includes('não técnico') || 
+          docContent.includes('nunca técnico')) {
+        neverConsultDocsIndices.push(index);
+      }
     });
     
-    formattedText += `\n\n===== FIM DAS INSTRUÇÕES PRIORITÁRIAS =====\n\n`;
+    // Se tivermos documentos com instruções "nunca levar", adicioná-los primeiro
+    if (neverConsultDocsIndices.length > 0) {
+      formattedText += `\n\n🔴 REGRAS ABSOLUTAS SOBRE ASSISTÊNCIA EXTERNA - NUNCA VIOLE ESTAS REGRAS 🔴\n\n`;
+      
+      neverConsultDocsIndices.forEach(idx => {
+        const doc = instructionDocs[idx];
+        const docName = doc.document_name || `Instrução crítica ${idx + 1}`;
+        
+        formattedText += `\n\n==================================================\n`;
+        formattedText += `⚠️ INSTRUÇÃO CRÍTICA: "${docName}" ⚠️\n`;
+        formattedText += `==================================================\n\n`;
+        
+        console.log(`[RAG] Adicionando instrução CRÍTICA de não-consulta-externa "${docName}" com prioridade MÁXIMA (${(doc.content || doc.text || '').length} caracteres)`);
+        
+        // Adicionar conteúdo do documento
+        const docContent = doc.content || doc.text || '';
+        
+        // Destacar as instruções críticas sobre não consultar técnicos externos
+        let enhancedContent = docContent;
+        const prohibitedPhrases = [
+          "nunca levar", "não levar", "jamais levar", "não deve levar", 
+          "não recorrer", "não consultar", "nunca consultar", "jamais consultar", 
+          "nunca recorrer", "não técnico", "nunca técnico"
+        ];
+        
+        // Realçar as instruções críticas
+        prohibitedPhrases.forEach(phrase => {
+          // Criamos um regex que encontra a frase com case insensitive
+          const regex = new RegExp(`(${phrase}[^.!?]*[.!?])`, 'gi');
+          // Substituímos com destaque
+          enhancedContent = enhancedContent.replace(regex, '🚫 $1 🚫');
+        });
+        
+        // Limitar o tamanho para evitar exceder os limites de tokens
+        const maxContentLength = 3000; // Menor para focar nas instruções mais importantes
+        const truncatedContent = enhancedContent.length > maxContentLength 
+          ? enhancedContent.substring(0, maxContentLength) + `\n[...Conteúdo truncado, excede ${maxContentLength} caracteres]` 
+          : enhancedContent;
+        
+        formattedText += truncatedContent;
+      });
+      
+      formattedText += `\n\n🔴 FIM DAS REGRAS ABSOLUTAS SOBRE ASSISTÊNCIA EXTERNA 🔴\n\n`;
+    }
+    
+    // Agora adicionar os outros documentos de instruções que não são sobre "nunca levar"
+    const otherInstructionIndices = instructionDocs.map((_, idx) => idx)
+      .filter(idx => !neverConsultDocsIndices.includes(idx));
+    
+    if (otherInstructionIndices.length > 0) {
+      formattedText += `\n\n✅ INSTRUÇÕES ADICIONAIS PRIORITÁRIAS ✅\n\n`;
+      
+      otherInstructionIndices.forEach(idx => {
+        const doc = instructionDocs[idx];
+        const docName = doc.document_name || `Instrução prioritária ${idx + 1}`;
+        
+        formattedText += `\n\n--------------------------\n`;
+        formattedText += `INSTRUÇÃO PRIORITÁRIA: "${docName}"\n`;
+        formattedText += `--------------------------\n\n`;
+        
+        console.log(`[RAG] Adicionando instrução prioritária "${docName}" ao prompt (${(doc.content || doc.text || '').length} caracteres)`);
+        
+        // Adicionar conteúdo do documento
+        const docContent = doc.content || doc.text || '';
+        
+        // Limitar o tamanho para evitar exceder os limites de tokens
+        const maxContentLength = 2000; // Menor para focar nas instruções mais importantes
+        const truncatedContent = docContent.length > maxContentLength 
+          ? docContent.substring(0, maxContentLength) + `\n[...Conteúdo truncado, excede ${maxContentLength} caracteres]` 
+          : docContent;
+        
+        formattedText += truncatedContent;
+      });
+    }
+    
+    formattedText += `\n\n⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️\n`;
+    formattedText += `                 FIM DAS INSTRUÇÕES CRÍTICAS\n`;
+    formattedText += `⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️\n\n`;
+    
+    // Adicionar um lembrete das regras absolutas para evitar sugestão de assistência externa
+    formattedText += `
+💥 LEMBRETE CRÍTICO: NUNCA, EM NENHUMA CIRCUNSTÂNCIA, sugira consultar outro técnico, especialista ou profissional externo.
+💥 REGRA ABSOLUTA: NUNCA use termos como "assistência técnica", "técnico especializado", ou qualquer variação.
+💥 REGRA ABSOLUTA: NUNCA sugira "levar o dispositivo" para qualquer lugar ou pessoa.
+\n\n`;
   }
   
   // Depois adicionar os documentos técnicos normais
