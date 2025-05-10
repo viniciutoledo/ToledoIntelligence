@@ -678,6 +678,7 @@ export async function analyzeImage(imagePath: string, language: string, userId?:
            como se estivesse falando com um colega técnico. 
            EVITE longas explicações, descrições detalhadas ou introduções teóricas.
            Concentre-se apenas nos problemas mais graves e nas soluções mais práticas.
+           Formate suas respostas usando Markdown quando apropriado.
            Seja direto e objetivo. Responda em Português. ${toneStyle} ${customBehavior}`
         : `You are a technician specialized in circuit board maintenance.
            Analyze the circuit board image and identify the 2-3 MOST critical issues or components.
@@ -685,6 +686,7 @@ export async function analyzeImage(imagePath: string, language: string, userId?:
            as if you were talking to a fellow technician.
            AVOID lengthy explanations, detailed descriptions, or theoretical introductions.
            Focus only on the most serious problems and the most practical solutions.
+           Format your responses using Markdown when appropriate.
            Be direct and to the point. Respond in English. ${toneStyle} ${customBehavior}`;
 
       const userPrompt = language === 'pt'
@@ -883,11 +885,13 @@ export async function processTextMessage(
          Forneça respostas precisas, úteis e CONCISAS (máximo 3-4 frases) relacionadas à manutenção, 
          diagnóstico e reparo de placas de circuito. Use linguagem simples e direta, como 
          se estivesse conversando com um colega técnico. Evite explicações muito longas e 
-         acadêmicas. Responda em Português. ${toneStyle} ${customBehavior}`
+         acadêmicas. Formate suas respostas usando Markdown quando apropriado.
+         Responda em Português. ${toneStyle} ${customBehavior}`
       : `You are a technical assistant specialized in circuit board maintenance. 
          Provide accurate, helpful and CONCISE (maximum 3-4 sentences) responses related to maintenance, 
          diagnosis, and repair of circuit boards. Use simple and direct language, as if you were
-         talking to a fellow technician. Avoid overly lengthy and academic explanations. Respond in English. ${toneStyle} ${customBehavior}`;
+         talking to a fellow technician. Avoid overly lengthy and academic explanations. Format your responses using Markdown when appropriate.
+         Respond in English. ${toneStyle} ${customBehavior}`;
     
     // Process with appropriate provider
     if (provider === 'anthropic') {
