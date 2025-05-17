@@ -5,6 +5,8 @@ import { useWidgetChat } from "@/hooks/use-widget-chat";
 import { useTranslation } from "react-i18next";
 import { useLanguage } from "@/hooks/use-language";
 import { ChatInterface as SharedChatInterface } from "@/components/shared/chat-interface";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { useTheme } from "next-themes";
 
 // Função utilitária para otimizar URLs de arquivos
 function getOptimizedFileUrl(fileUrl: string | null): string {
@@ -36,6 +38,7 @@ interface EmbeddedChatProps {
 }
 
 export function EmbeddedChat({ apiKey, initialOpen = false, hideHeader = false, fullHeight = false }: EmbeddedChatProps) {
+  const { theme } = useTheme();
   // Tipagem do widget para uso na função
   type WidgetType = {
     id: string;
@@ -283,8 +286,8 @@ export function EmbeddedChat({ apiKey, initialOpen = false, hideHeader = false, 
     right: isInIframe || fullHeight ? 0 : "1rem",
     height: isInIframe || fullHeight ? "100%" : (widget?.default_height ? `${widget.default_height}px` : "500px"),
     width: isInIframe || fullHeight ? "100%" : (widget?.default_width ? `${widget.default_width}px` : "350px"),
-    backgroundColor: widget?.background_color || "#000000", // Fundo totalmente preto (conforme imagem)
-    color: widget?.font_color || "#F5F5F5", // Texto claro para fundo escuro
+    backgroundColor: theme === "dark" ? "#121212" : (widget?.background_color || "#FFFFFF"),
+    color: theme === "dark" ? "#FFFFFF" : (widget?.font_color || "#000000"),
     fontSize: widget?.font_size || "14px", // Tamanho padrão
   } as React.CSSProperties;
   
@@ -328,7 +331,10 @@ export function EmbeddedChat({ apiKey, initialOpen = false, hideHeader = false, 
       {!shouldHideHeader && widget && (
         <div 
           className="p-3 flex items-center justify-between border-b"
-          style={{ backgroundColor: widget.theme_color || "#5B58F0", color: "white" }}
+          style={{ 
+            backgroundColor: theme === "dark" ? "#1A1A1A" : (widget.theme_color || "#5B58F0"), 
+            color: theme === "dark" ? "#FFFFFF" : "white" 
+          }}
         >
           <div className="flex items-center">
             <div className="h-8 w-8 rounded-full flex-shrink-0 overflow-hidden">
@@ -350,6 +356,9 @@ export function EmbeddedChat({ apiKey, initialOpen = false, hideHeader = false, 
             </div>
           </div>
           <div className="flex space-x-1">
+            {/* Botão de mudança de tema */}
+            <ThemeToggle />
+            
             {/* Botão de minimizar desativado a pedido do cliente */}
             {/* Botão de fechar apenas quando não está configurado para ocultar */}
             {!widget.hide_close_button && (
@@ -378,11 +387,11 @@ export function EmbeddedChat({ apiKey, initialOpen = false, hideHeader = false, 
           onSendMessage={handleSendMessage}
           onFileUpload={handleFileUpload}
           customStyles={{
-            backgroundColor: widget?.background_color || "#000000",
-            fontColor: widget?.font_color || "#F5F5F5",
+            backgroundColor: theme === "dark" ? "#121212" : (widget?.background_color || "#FFFFFF"),
+            fontColor: theme === "dark" ? "#FFFFFF" : (widget?.font_color || "#000000"),
             fontSize: widget?.font_size || "16px", // Aumentando tamanho padrão para 16px
-            botMessageBgColor: widget?.bot_message_bg_color || "#F2EFE5", // Cor creme/bege claro para mensagens do bot
-            userMessageBgColor: widget?.user_message_bg_color || "#F2EFE5" // Mesma cor para mensagens do usuário
+            botMessageBgColor: theme === "dark" ? "#2A2A2A" : (widget?.bot_message_bg_color || "#F2EFE5"),
+            userMessageBgColor: theme === "dark" ? "#2A2A2A" : (widget?.user_message_bg_color || "#F2EFE5")
           }}
           customTexts={customTexts}
         />
