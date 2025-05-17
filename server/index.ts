@@ -12,25 +12,14 @@ import { initializeSecuritySettings } from "./security-settings";
 
 const app = express();
 
-// Health check endpoints before ANY middleware
-app.use((req, res, next) => {
-  if (req.path === '/health' || req.path === '/') {
-    res.setHeader('Cache-Control', 'no-cache');
-    return res.status(200).send('Service is running');
-  }
-  next();
-});
-
-// Other middleware after health checks
+// Middleware básico
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Ensure root path is accessible even in production
-app.use((req, res, next) => {
-  if (req.path === '/') {
-    return res.status(200).send('Service is running');
-  }
-  next();
+// Health check endpoint - MUITO SIMPLES
+// Esta é a versão mais simples possível para garantir que os health checks funcionem
+app.get('/', (req, res) => {
+  res.status(200).send('OK');
 });
 
 // Serve static files from the dist/public directory in production
