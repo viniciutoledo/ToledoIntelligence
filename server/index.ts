@@ -12,12 +12,7 @@ import { initializeSecuritySettings } from "./security-settings";
 
 const app = express();
 
-// Health check endpoints must be first
-app.get('/', (req, res) => {
-  res.status(200).type('text/plain').send('OK');
-  return;
-});
-
+// Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).type('text/plain').send('OK');
   return;
