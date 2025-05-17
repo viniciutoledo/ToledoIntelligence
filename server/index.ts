@@ -11,13 +11,14 @@ import { startDocumentMonitor } from "./document-monitor";
 import { initializeSecuritySettings } from "./security-settings";
 
 const app = express();
-// Health check endpoints must be first
-app.get('/health', (req, res) => {
-  return res.status(200).send('Service is running');
-});
 
-app.get('/', (req, res) => {
-  return res.status(200).send('Service is running');
+// Health check endpoints before ANY middleware
+app.use((req, res, next) => {
+  if (req.path === '/health' || req.path === '/') {
+    res.setHeader('Cache-Control', 'no-cache');
+    return res.status(200).send('Service is running');
+  }
+  next();
 });
 
 // Other middleware after health checks
