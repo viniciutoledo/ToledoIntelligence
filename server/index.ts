@@ -12,10 +12,13 @@ import { initializeSecuritySettings } from "./security-settings";
 
 const app = express();
 
-// Health check endpoint apenas na rota /health
+// Health check endpoint separado - importante para o deploy
 app.get('/health', (req, res) => {
   res.status(200).type('text/plain').send('OK');
 });
+
+// O acesso à raiz será tratado pelo Vite em desenvolvimento
+// e pelo middleware do SPA em produção
 
 // Basic middleware
 app.use(express.json());
