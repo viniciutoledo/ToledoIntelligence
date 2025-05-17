@@ -105,16 +105,18 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <LanguageProvider>
-        <AuthProvider>
-          <WidgetChatProvider>
-            <TooltipProvider>
-              <Toaster />
-              <Router />
-            </TooltipProvider>
-          </WidgetChatProvider>
-        </AuthProvider>
-      </LanguageProvider>
+      <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+        <LanguageProvider>
+          <AuthProvider>
+            <WidgetChatProvider>
+              <TooltipProvider>
+                <Toaster />
+                <Router />
+              </TooltipProvider>
+            </WidgetChatProvider>
+          </AuthProvider>
+        </LanguageProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }
