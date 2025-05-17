@@ -15,12 +15,10 @@ const app = express();
 // Health check endpoints
 app.get('/', (req, res) => {
   res.status(200).type('text/plain').send('OK');
-  return;
 });
 
 app.get('/health', (req, res) => {
   res.status(200).type('text/plain').send('OK');
-  return;
 });
 
 // Basic middleware
@@ -269,20 +267,10 @@ app.use((req, res, next) => {
     process.exit(1);
   });
 
-  // Prevent the server from closing when main execution ends
-  process.on('beforeExit', () => {
-    log('Keeping server running in background');
-  });
-
-  // Keep the process running indefinitely
-  process.stdin.resume();
-
   // Handle termination signals properly
   ['SIGINT', 'SIGTERM', 'SIGQUIT'].forEach(signal => {
     process.on(signal, () => {
-      log(`Received ${signal}, shutting down gracefully`);
       server.close(() => {
-        log('Server closed');
         process.exit(0);
       });
     });
