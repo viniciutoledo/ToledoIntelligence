@@ -12,18 +12,25 @@ import { initializeSecuritySettings } from "./security-settings";
 
 const app = express();
 
-// Health check endpoints - importante para o deploy
+// Health check endpoint padrão
 app.get('/health', (req, res) => {
   res.status(200).type('text/plain').send('OK');
 });
 
-// Rota da raiz para corresponder ao health check padrão do deployment
-app.get('/', (req, res) => {
+// Endpoint de saúde específico para o deploy
+app.get('/_health', (req, res) => {
   res.status(200).type('text/plain').send('OK');
 });
 
-// Configurar endpoint de saúde específico para o deploy
-app.get('/_health', (req, res) => {
+// Rota raiz para health check
+// Importante: esta rota deve ser configurada antes de qualquer middleware
+// que possa interferir com a resposta simples de "OK" para o Replit
+app.get('/healthz', (req, res) => {
+  res.status(200).type('text/plain').send('OK');
+});
+
+// Rota raiz que simplesmente envia "OK" para health checks
+app.get('/', (req, res) => {
   res.status(200).type('text/plain').send('OK');
 });
 
@@ -39,11 +46,13 @@ if (process.env.NODE_ENV === "production") {
   const publicPath = path.join(process.cwd(), 'dist/public');
   app.use(express.static(publicPath));
 
-  // SPA fallback route - exclude health check e API paths
+  // SPA fallback para todas as rotas que não são API ou health checks
   app.get('*', (req, res, next) => {
-    if (req.path === '/' || req.path === '/health' || req.path === '/_health' || req.path.startsWith('/api/')) {
+    if (req.path === '/health' || req.path === '/_health' || req.path.startsWith('/api/')) {
+      // Deixar que os endpoints de API e health check sejam tratados pelos handlers específicos
       next();
     } else {
+      // Servir o SPA para todas as outras rotas, incluindo a raiz
       res.sendFile(path.join(publicPath, 'index.html'));
     }
   });
