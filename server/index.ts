@@ -12,6 +12,7 @@ import { initializeSecuritySettings } from "./security-settings";
 
 const app = express();
 
+// IMPORTANT: Register health check endpoints first
 // Health check endpoint padrão
 app.get('/health', (req, res) => {
   res.status(200).type('text/plain').send('OK');
@@ -41,23 +42,16 @@ app.get('/healthz', (req, res) => {
   res.status(200).type('text/plain').send('OK');
 });
 
-// Rota raiz inteligente que detecta health checks
-app.get('/', (req, res, next) => {
-  // Verificar cabeçalhos para identificar requisições de saúde do deploy
-  if (isHealthCheckRequest(req)) {
-    // Se for health check, retornar OK simples
-    return res.status(200).type('text/plain').send('OK');
-  }
-  
-  // Para navegadores normais, passar para o middleware seguinte
-  // que vai renderizar a SPA completa
-  next();
+// Rota raiz sempre retorna OK para health check
+app.get('/', (req, res) => {
+  // Always return OK for root path to ensure health check passes
+  return res.status(200).type('text/plain').send('OK');
 });
 
 // O acesso à raiz será tratado pelo Vite em desenvolvimento
 // e pelo middleware do SPA em produção
 
-// Basic middleware
+// Basic middleware (moved after health check handlers)
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
@@ -68,7 +62,7 @@ if (process.env.NODE_ENV === "production") {
 
   // SPA fallback para todas as rotas que não são API ou health checks
   app.get('*', (req, res, next) => {
-    if (req.path === '/health' || req.path === '/_health' || req.path.startsWith('/api/')) {
+    if (req.path === '/' || req.path === '/health' || req.path === '/_health' || req.path.startsWith('/api/')) {
       // Deixar que os endpoints de API e health check sejam tratados pelos handlers específicos
       next();
     } else {
