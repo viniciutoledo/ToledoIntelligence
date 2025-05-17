@@ -12,20 +12,20 @@ import { initializeSecuritySettings } from "./security-settings";
 
 const app = express();
 
-// Middleware básico
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
-
-// Health check endpoint - MUITO SIMPLES
-// Esta é a versão mais simples possível para garantir que os health checks funcionem
+// Health check endpoints must be first, before any middleware
 app.get('/', (req, res) => {
   res.status(200).send('OK');
+  return;
 });
 
-// Health check endpoint secundário para redundância
 app.get('/health', (req, res) => {
   res.status(200).send('OK');
+  return;
 });
+
+// Basic middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 
 // Serve static files from the dist/public directory in production
 if (process.env.NODE_ENV === "production") {
