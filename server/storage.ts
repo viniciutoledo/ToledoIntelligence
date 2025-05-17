@@ -2221,6 +2221,7 @@ export class DatabaseStorage implements IStorage {
   }
   
   // Implementação das funções de logging de uso de LLM
+  // Implementação corrigida para evitar duplicação
   async logLlmUsage(log: InsertLlmUsageLog): Promise<void> {
     try {
       // Garantir que os valores obrigatórios estão presentes e lidar com valores nulos/indefinidos
@@ -2239,6 +2240,7 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Erro ao registrar uso do LLM:', error);
       // Não propagar o erro para não interromper o fluxo principal da aplicação
+    }
     }
   }
   
