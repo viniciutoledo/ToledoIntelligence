@@ -19,13 +19,19 @@ app.get('/health', (req, res) => {
   res.status(200).send('Service is running');
 });
 
-// Serve static files from the dist/public directory
+// Serve static files from the dist/public directory in production
 if (process.env.NODE_ENV === "production") {
-  app.use(express.static(path.join(process.cwd(), 'dist/public')));
-  
-  // Fallback for SPA routing
+  const publicPath = path.join(process.cwd(), 'dist/public');
+  app.use(express.static(publicPath));
+
+  // Serve index.html for root path and handle SPA routes
+  app.get('/*', (req, res) => {
+    res.sendFile(path.join(publicPath, 'index.html'));
+  });
+} else {
+  // Health check endpoint for development
   app.get('/', (req, res) => {
-    res.sendFile(path.join(process.cwd(), 'dist/public/index.html'));
+    res.status(200).send('Service is running');
   });
 }
 
@@ -44,7 +50,7 @@ app.use('/uploads', express.static(path.join(process.cwd(), 'uploads'), {
     res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
     res.setHeader('Cross-Origin-Embedder-Policy', 'unsafe-none');
     res.setHeader('Cross-Origin-Opener-Policy', 'unsafe-none');
-    
+
     // Headers específicos para imagens
     if (res.req?.path && /\.(jpg|jpeg|png|gif)$/i.test(res.req.path)) {
       res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -56,24 +62,24 @@ app.use('/uploads', express.static(path.join(process.cwd(), 'uploads'), {
 app.use((req, res, next) => {
   // Remover X-Frame-Options para permitir que o site seja embutido em iframes
   res.removeHeader('X-Frame-Options');
-  
+
   // Definir Content-Security-Policy para permitir embedding de forma segura
   res.setHeader(
     'Content-Security-Policy',
     "frame-ancestors 'self' *"
   );
-  
+
   // Permitir CORS para que o widget possa ser carregado em qualquer site
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
   res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type,Authorization');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
-  
+
   // Se for uma requisição OPTIONS, retornar 200 imediatamente (pré-voo CORS)
   if (req.method === 'OPTIONS') {
     return res.sendStatus(200);
   }
-  
+
   next();
 });
 
@@ -91,15 +97,15 @@ app.get('/widget-embed-example.html', async (req, res) => {
   // Usando o path já importado globalmente
   // Usando fs.promises para compatibilidade com ES modules
   const filePath = path.join(process.cwd(), 'public', 'widget-embed-example.html');
-  
+
   try {
     const data = await fs.promises.readFile(filePath, 'utf8');
-    
+
     // Definir cabeçalhos para permitir incorporação
     res.setHeader('Content-Type', 'text/html');
     res.setHeader('Content-Security-Policy', "frame-ancestors 'self' *");
     res.setHeader('Access-Control-Allow-Origin', '*');
-    
+
     res.send(data);
   } catch (err) {
     return res.status(404).send('Documentação não encontrada');
@@ -111,15 +117,15 @@ app.get('/widget-inline-demo.html', async (req, res) => {
   // Usando o path já importado globalmente
   // Usando fs.promises para compatibilidade com ES modules
   const filePath = path.join(process.cwd(), 'public', 'widget-inline-demo.html');
-  
+
   try {
     const data = await fs.promises.readFile(filePath, 'utf8');
-    
+
     // Definir cabeçalhos para permitir incorporação
     res.setHeader('Content-Type', 'text/html');
     res.setHeader('Content-Security-Policy', "frame-ancestors 'self' *");
     res.setHeader('Access-Control-Allow-Origin', '*');
-    
+
     res.send(data);
   } catch (err) {
     return res.status(404).send('Demonstração não encontrada');
@@ -163,13 +169,13 @@ app.use((req, res, next) => {
     console.log('Sincronizando o esquema do banco de dados...');
     await syncDatabaseSchema();
     console.log('Esquema do banco de dados sincronizado com sucesso');
-    
+
     // Inicializar os preços dos planos se não existirem
     try {
       // Verificar se já existem preços para os planos
       const basicPricing = await db.select().from(planPricing).where(eq(planPricing.subscription_tier, 'basic'));
       const intermediatePricing = await db.select().from(planPricing).where(eq(planPricing.subscription_tier, 'intermediate'));
-      
+
       // Se não existir preço para o plano básico, criar
       if (basicPricing.length === 0) {
         console.log('Criando preço padrão para o plano básico...');
@@ -181,7 +187,7 @@ app.use((req, res, next) => {
           description: 'Acesso a 2.500 interações por mês',
         });
       }
-      
+
       // Se não existir preço para o plano intermediário, criar
       if (intermediatePricing.length === 0) {
         console.log('Criando preço padrão para o plano intermediário...');
@@ -193,12 +199,12 @@ app.use((req, res, next) => {
           description: 'Acesso a 5.000 interações por mês',
         });
       }
-      
+
       console.log('Preços dos planos verificados/inicializados com sucesso');
     } catch (error) {
       console.error('Erro ao inicializar preços dos planos:', error);
     }
-    
+
     // Inicializar configurações de segurança
     try {
       await initializeSecuritySettings();
@@ -208,7 +214,7 @@ app.use((req, res, next) => {
   } catch (error) {
     console.error('Erro ao sincronizar o esquema do banco de dados:', error);
   }
-  
+
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
@@ -238,7 +244,7 @@ app.use((req, res, next) => {
     reusePort: true,
   }, () => {
     log(`serving on port ${port}`);
-    
+
     // Iniciar monitoramento automático de documentos (verificação a cada 15 minutos)
     startDocumentMonitor(15);
   }).on('error', (error) => {
