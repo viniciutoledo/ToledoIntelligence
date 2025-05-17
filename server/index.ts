@@ -28,15 +28,12 @@ function isHealthCheckRequest(req: Request): boolean {
   const userAgent = req.get('User-Agent') || '';
   const acceptHeader = req.get('Accept') || '';
   
-  return (
-    // Verificar se é um bot de health check pelo User-Agent
-    userAgent.includes('Deployment-Bot') || 
-    userAgent.includes('Health-Check') ||
-    userAgent.includes('Uptime-Check') ||
-    
-    // Ou se explicitamente aceita apenas texto simples
-    (acceptHeader && acceptHeader === 'text/plain')
-  );
+  if (userAgent.includes('Deployment-Bot')) return true;
+  if (userAgent.includes('Health-Check')) return true;
+  if (userAgent.includes('Uptime-Check')) return true;
+  if (acceptHeader === 'text/plain') return true;
+  
+  return false;
 }
 
 // Rota healthz dedicada a health checks (sempre retorna OK)
@@ -46,6 +43,7 @@ app.get('/healthz', (req, res) => {
 
 // Rota raiz inteligente que detecta health checks
 app.get('/', (req, res, next) => {
+  // Verificar cabeçalhos para identificar requisições de saúde do deploy
   if (isHealthCheckRequest(req)) {
     // Se for health check, retornar OK simples
     return res.status(200).type('text/plain').send('OK');
@@ -277,17 +275,18 @@ app.use((req, res, next) => {
     throw err;
   });
 
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
-  if (app.get("env") === "development") {
+  // Configurar Vite para desenvolvimento ou static para produção
+  // IMPORTANTE: Nossas rotas de API já estão registradas a este ponto
+  if (process.env.NODE_ENV === "development") {
+    console.log("Configurando Vite para ambiente de desenvolvimento");
     await setupVite(app, server);
     
-    // Add extra route to help with development
+    // Rota especial para acessar o SPA em desenvolvimento
     app.get("/react-dev", (req, res) => {
       res.redirect("/");
     });
   } else {
+    console.log("Configurando middleware estático para produção");
     serveStatic(app);
   }
 
