@@ -259,29 +259,16 @@ app.use((req, res, next) => {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = 5000;
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
+  server.listen(port, "0.0.0.0", () => {
     log(`serving on port ${port}`);
 
     // Iniciar monitoramento automático de documentos (verificação a cada 15 minutos)
     startDocumentMonitor(15);
-
-    // Log para confirmar que o servidor está rodando
-    console.log('Server is now running and will stay up to handle requests');
   }).on('error', (error) => {
     console.error('Server startup error:', error);
     process.exit(1);
   });
 
-  // Handle termination signals properly
-  ['SIGINT', 'SIGTERM', 'SIGQUIT'].forEach(signal => {
-    process.on(signal, () => {
-      server.close(() => {
-        process.exit(0);
-      });
-    });
-  });
+  // Simplificar o gerenciamento do ciclo de vida do servidor
+  // Não adicionar handlers para sinais que possam interferir com o deploy
 })();
