@@ -22,6 +22,11 @@ app.get('/', (req, res) => {
   res.status(200).send('OK');
 });
 
+// Health check endpoint secundário para redundância
+app.get('/health', (req, res) => {
+  res.status(200).send('OK');
+});
+
 // Serve static files from the dist/public directory in production
 if (process.env.NODE_ENV === "production") {
   const publicPath = path.join(process.cwd(), 'dist/public');
@@ -252,6 +257,9 @@ app.use((req, res, next) => {
 
     // Iniciar monitoramento automático de documentos (verificação a cada 15 minutos)
     startDocumentMonitor(15);
+    
+    // Log para confirmar que o servidor está rodando
+    console.log('Server is now running and will stay up to handle requests');
   }).on('error', (error) => {
     console.error('Server startup error:', error);
     process.exit(1);
@@ -261,6 +269,9 @@ app.use((req, res, next) => {
   process.on('beforeExit', () => {
     log('Keeping server running in background');
   });
+  
+  // Keep the process running indefinitely
+  process.stdin.resume();
   
   // Handle termination signals properly
   ['SIGINT', 'SIGTERM', 'SIGQUIT'].forEach(signal => {

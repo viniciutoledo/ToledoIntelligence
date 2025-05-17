@@ -1,0 +1,72 @@
+async logLlmUsage(log: InsertLlmUsageLog): Promise<void> {
+    const id = this.currentIds.llmUsageLogId++;
+    const now = new Date();
+    
+    // Garanta que valores obrigatórios estejam presentes
+    const usageLog: LlmUsageLog = {
+      id,
+      created_at: now,
+      model_name: log.model_name,
+      provider: log.provider,
+      operation_type: log.operation_type,
+      user_id: log.user_id || null,
+      widget_id: log.widget_id || null,
+      token_count: log.token_count || 0,
+      success: log.success !== undefined ? log.success : true,
+      error_message: log.error_message || null
+    };
+    
+    this.llmUsageLogs.set(id, usageLog);
+    console.log(`Registrado uso do LLM: ${log.model_name} - ${log.operation_type} - ${log.success ? 'Sucesso' : 'Falha'}`);
+  }
+  
+  async getLlmUsageLogs(options?: {
+    startDate?: Date;
+    endDate?: Date;
+    provider?: string;
+    userId?: number;
+    widgetId?: string; // Atualizado para usar UUID/string
+    limit?: number;
+    success?: boolean;
+  }): Promise<LlmUsageLog[]> {
+    let logs = Array.from(this.llmUsageLogs.values());
+    
+    // Aplicar filtros
+    if (options) {
+      if (options.startDate) {
+        logs = logs.filter(log => log.created_at >= options.startDate!);
+      }
+      
+      if (options.endDate) {
+        logs = logs.filter(log => log.created_at <= options.endDate!);
+      }
+      
+      if (options.provider) {
+        logs = logs.filter(log => log.provider === options.provider);
+      }
+      
+      if (options.userId !== undefined) {
+        logs = logs.filter(log => log.user_id === options.userId);
+      }
+      
+      if (options.widgetId !== undefined) {
+        logs = logs.filter(log => String(log.widget_id) === options.widgetId);
+      }
+      
+      if (options.success !== undefined) {
+        logs = logs.filter(log => log.success === options.success);
+      }
+      
+      // Ordenar por data (mais recente primeiro)
+      logs.sort((a, b) => b.created_at.getTime() - a.created_at.getTime());
+      
+      // Aplicar limite se especificado
+      if (options.limit) {
+        logs = logs.slice(0, options.limit);
+      }
+    }
+    
+    return logs;
+  }
+  // Implementation of logLlmUsage and getLlmUsageLogs has been moved to the correct location below
+  // and any duplicate implementations removed to prevent confusion

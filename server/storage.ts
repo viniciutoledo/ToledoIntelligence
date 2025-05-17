@@ -67,7 +67,7 @@ export interface IStorage {
   updateLlmConfig(id: number, data: Partial<LlmConfig>): Promise<LlmConfig | undefined>;
   setActiveLlmConfig(id: number): Promise<LlmConfig | undefined>;
   
-  // LLM usage logging - redundante com a declaração acima, será removida
+  // LLM usage logging já declarado no início da interface
   
   // Avatar management
   getAvatar(id: number): Promise<Avatar | undefined>;
@@ -178,13 +178,7 @@ export interface IStorage {
   checkMessageLimit(userId: number): Promise<boolean>;
   resetMessageCounts(): Promise<void>;
   
-  // Knowledge Base management
-  createKnowledgeEntry(entry: InsertKnowledgeBase): Promise<KnowledgeBase>;
-  getKnowledgeEntry(id: number): Promise<KnowledgeBase | undefined>;
-  getKnowledgeEntries(language: string, limit?: number): Promise<KnowledgeBase[]>;
-  getKnowledgeEntriesBySource(sourceType: string, sourceId: number): Promise<KnowledgeBase[]>;
-  updateKnowledgeEntry(id: number, data: Partial<KnowledgeBase>): Promise<KnowledgeBase | undefined>;
-  deleteKnowledgeEntry(id: number): Promise<void>;
+  // Knowledge Base management - já declarado anteriormente
   getKnowledgeEntriesBySourceType(sourceType: string, language: string): Promise<KnowledgeBase[]>;
   getVerifiedKnowledgeEntries(language: string): Promise<KnowledgeBase[]>;
   findSimilarKnowledge(embedding: number[], language: string, limit?: number): Promise<KnowledgeBase[]>;
