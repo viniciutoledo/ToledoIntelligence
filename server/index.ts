@@ -23,19 +23,8 @@ app.get('/_health', (req, res) => {
   res.status(200).type('text/plain').send('OK');
 });
 
-// Utilitário para detectar requisições de health check do Replit
-function isHealthCheckRequest(req: Request): boolean {
-  // Verificar headers que indicam requisição de health check do Replit
-  const userAgent = req.get('User-Agent') || '';
-  const acceptHeader = req.get('Accept') || '';
-  
-  if (userAgent.includes('Deployment-Bot')) return true;
-  if (userAgent.includes('Health-Check')) return true;
-  if (userAgent.includes('Uptime-Check')) return true;
-  if (acceptHeader === 'text/plain') return true;
-  
-  return false;
-}
+// Função removida - não estamos mais usando a detecção inteligente
+// O health check sempre retorna OK na rota raiz
 
 // Rota healthz dedicada a health checks (sempre retorna OK)
 app.get('/healthz', (req, res) => {
@@ -62,11 +51,11 @@ if (process.env.NODE_ENV === "production") {
 
   // SPA fallback para todas as rotas que não são API ou health checks
   app.get('*', (req, res, next) => {
-    if (req.path === '/' || req.path === '/health' || req.path === '/_health' || req.path.startsWith('/api/')) {
+    if (req.path === '/health' || req.path === '/_health' || req.path === '/' || req.path.startsWith('/api/')) {
       // Deixar que os endpoints de API e health check sejam tratados pelos handlers específicos
       next();
     } else {
-      // Servir o SPA para todas as outras rotas, incluindo a raiz
+      // Servir o SPA para todas as outras rotas
       res.sendFile(path.join(publicPath, 'index.html'));
     }
   });
