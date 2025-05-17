@@ -29,7 +29,7 @@ if (process.env.NODE_ENV === "production") {
 
   // SPA fallback route - exclude health check paths
   app.get('*', (req, res, next) => {
-    if (req.path === '/' || req.path === '/health') {
+    if (req.path === '/health' || req.path.startsWith('/api/')) {
       next();
     } else {
       res.sendFile(path.join(publicPath, 'index.html'));
