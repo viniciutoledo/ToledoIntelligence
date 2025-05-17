@@ -12,20 +12,18 @@ import { initializeSecuritySettings } from "./security-settings";
 
 const app = express();
 
-// Basic middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
-
-// Health check endpoints
+// Health check endpoints must be first
 app.get('/', (req, res) => {
   res.status(200).type('text/plain').send('OK');
-  return;
 });
 
 app.get('/health', (req, res) => {
   res.status(200).type('text/plain').send('OK');
-  return;
 });
+
+// Basic middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 
 // Serve static files from the dist/public directory in production
 if (process.env.NODE_ENV === "production") {
