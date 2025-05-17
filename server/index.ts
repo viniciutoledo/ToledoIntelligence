@@ -28,11 +28,6 @@ app.get('/', (req, res) => {
 if (process.env.NODE_ENV === "production") {
   const publicPath = path.join(process.cwd(), 'dist/public');
   app.use(express.static(publicPath));
-  
-  // SPA fallback route
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(publicPath, 'index.html'));
-  });
 }
 
 // Garantir que o diretório uploads existe
@@ -239,6 +234,12 @@ app.use((req, res, next) => {
     await setupVite(app, server);
   } else {
     serveStatic(app);
+    
+    // SPA fallback route after all other routes
+    const publicPath = path.join(process.cwd(), 'dist/public');
+    app.get('*', (req, res) => {
+      res.sendFile(path.join(publicPath, 'index.html'));
+    });
   }
 
   // ALWAYS serve the app on port 5000
