@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { LanguageProvider } from "@/hooks/use-language";
 import { AuthProvider } from "@/hooks/use-auth";
 import { WidgetChatProvider } from "@/hooks/use-widget-chat";
+import { ThemeProvider } from "next-themes";
 import { ProtectedRoute } from "@/lib/protected-route";
 import NotFound from "@/pages/not-found";
 import AuthPage from "@/pages/auth-page";
@@ -104,16 +105,18 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <LanguageProvider>
-        <AuthProvider>
-          <WidgetChatProvider>
-            <TooltipProvider>
-              <Toaster />
-              <Router />
-            </TooltipProvider>
-          </WidgetChatProvider>
-        </AuthProvider>
-      </LanguageProvider>
+      <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
+        <LanguageProvider>
+          <AuthProvider>
+            <WidgetChatProvider>
+              <TooltipProvider>
+                <Toaster />
+                <Router />
+              </TooltipProvider>
+            </WidgetChatProvider>
+          </AuthProvider>
+        </LanguageProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }

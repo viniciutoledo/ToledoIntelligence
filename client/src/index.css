@@ -55,6 +55,29 @@
   --border: 240 3.7% 15.9%;
   --input: 240 3.7% 15.9%;
   --primary: 207 90% 54%;
+  --primary-foreground: 210 20% 98%;
+  --secondary: 240 3.7% 15.9%;
+  --secondary-foreground: 0 0% 98%;
+  --accent: 269 80% 64%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 98%;
+  --ring: 217.2 32.6% 17.5%;
+  
+  /* Dark mode sidebar colors */
+  --sidebar-background: 220 14% 10%;
+  --sidebar-foreground: 0 0% 98%;
+  --sidebar-primary: 207 90% 54%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 269 80% 64%;
+  --sidebar-accent-foreground: 0 0% 100%;
+  --sidebar-border: 240 3.7% 15.9%;
+  --sidebar-ring: 240 4.9% 83.9%;
+  --card: 240 10% 3.9%;
+  --card-foreground: 0 0% 98%;
+  --border: 240 3.7% 15.9%;
+  --input: 240 3.7% 15.9%;
+  --primary: 207 90% 54%;
   --primary-foreground: 211 100% 99%;
   --secondary: 240 3.7% 15.9%;
   --secondary-foreground: 0 0% 98%;
