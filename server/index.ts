@@ -31,7 +31,7 @@ app.use(express.urlencoded({ extended: false }));
 if (process.env.NODE_ENV === "production") {
   const publicPath = path.join(process.cwd(), 'dist/public');
   app.use(express.static(publicPath));
-  
+
   // SPA fallback route
   app.get('*', (req, res) => {
     res.sendFile(path.join(publicPath, 'index.html'));
@@ -257,22 +257,22 @@ app.use((req, res, next) => {
 
     // Iniciar monitoramento automático de documentos (verificação a cada 15 minutos)
     startDocumentMonitor(15);
-    
+
     // Log para confirmar que o servidor está rodando
     console.log('Server is now running and will stay up to handle requests');
   }).on('error', (error) => {
     console.error('Server startup error:', error);
     process.exit(1);
   });
-  
+
   // Prevent the server from closing when main execution ends
   process.on('beforeExit', () => {
     log('Keeping server running in background');
   });
-  
+
   // Keep the process running indefinitely
   process.stdin.resume();
-  
+
   // Handle termination signals properly
   ['SIGINT', 'SIGTERM', 'SIGQUIT'].forEach(signal => {
     process.on(signal, () => {
