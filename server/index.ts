@@ -14,24 +14,22 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Health check endpoint - must come before static file serving
-app.get('/health', (req, res) => {
-  res.status(200).send('Service is running');
+// Health check endpoint
+app.get('/', (req, res, next) => {
+  if (req.headers['user-agent']?.includes('Health')) {
+    return res.status(200).send('Service is running');
+  }
+  next();
 });
 
 // Serve static files from the dist/public directory in production
 if (process.env.NODE_ENV === "production") {
   const publicPath = path.join(process.cwd(), 'dist/public');
   app.use(express.static(publicPath));
-
-  // Serve index.html for root path and handle SPA routes
-  app.get('/*', (req, res) => {
+  
+  // SPA fallback route
+  app.get('*', (req, res) => {
     res.sendFile(path.join(publicPath, 'index.html'));
-  });
-} else {
-  // Health check endpoint for development
-  app.get('/', (req, res) => {
-    res.status(200).send('Service is running');
   });
 }
 
