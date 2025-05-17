@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLanguage } from "@/hooks/use-language";
 import { useAuth } from "@/hooks/use-auth";
+import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,7 +16,9 @@ import {
   CreditCard,
   MessageSquare,
   TestTube,
-  Wrench
+  Wrench,
+  Moon,
+  Sun
 } from "lucide-react";
 import { LanguageToggle } from "@/components/language-toggle";
 
@@ -28,6 +31,13 @@ export function AdminSidebar({ activeItem, onItemClick }: SidebarProps) {
   const { t } = useLanguage();
   const { user, logoutMutation } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  
+  // Evitar problemas de hidratação
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleLogout = () => {
     logoutMutation.mutate();
@@ -108,7 +118,31 @@ export function AdminSidebar({ activeItem, onItemClick }: SidebarProps) {
             <span>{item.label}</span>
           </Button>
         ))}
-        <LanguageToggle className="mx-4 mt-4" />
+        <div className="mx-4 mt-4 flex flex-col gap-2">
+          <LanguageToggle />
+          
+          {/* Botão de alternar tema claro/escuro */}
+          {mounted && (
+            <Button
+              variant="outline"
+              className="flex items-center justify-between gap-2 w-full text-neutral-200 bg-neutral-700 hover:bg-neutral-600 border-neutral-600"
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            >
+              {theme === "dark" ? (
+                <>
+                  <Sun className="h-5 w-5" />
+                  <span className="text-sm">Modo Claro</span>
+                </>
+              ) : (
+                <>
+                  <Moon className="h-5 w-5" />
+                  <span className="text-sm">Modo Escuro</span>
+                </>
+              )}
+            </Button>
+          )}
+        </div>
+        
         <Button
           variant="ghost"
           className="flex w-full items-center justify-start gap-3 px-4 py-3 text-neutral-300 hover:bg-neutral-700 hover:text-white mt-4"
