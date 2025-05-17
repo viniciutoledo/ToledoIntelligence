@@ -14,10 +14,20 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Health check endpoint
-app.get('/', (req, res) => {
+// Health check endpoint - must come before static file serving
+app.get('/health', (req, res) => {
   res.status(200).send('Service is running');
 });
+
+// Serve static files from the dist/public directory
+if (process.env.NODE_ENV === "production") {
+  app.use(express.static(path.join(process.cwd(), 'dist/public')));
+  
+  // Fallback for SPA routing
+  app.get('/', (req, res) => {
+    res.sendFile(path.join(process.cwd(), 'dist/public/index.html'));
+  });
+}
 
 // Servir arquivos estáticos da pasta uploads com configurações otimizadas
 console.log(`Servindo arquivos estáticos de ${path.join(process.cwd(), 'uploads')} na rota /uploads`);
