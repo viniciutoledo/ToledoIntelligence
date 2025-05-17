@@ -12,7 +12,12 @@ import { initializeSecuritySettings } from "./security-settings";
 
 const app = express();
 
-// Health check endpoint
+// Health check endpoints
+app.get('/', (req, res) => {
+  res.status(200).type('text/plain').send('OK');
+  return;
+});
+
 app.get('/health', (req, res) => {
   res.status(200).type('text/plain').send('OK');
   return;
@@ -27,9 +32,9 @@ if (process.env.NODE_ENV === "production") {
   const publicPath = path.join(process.cwd(), 'dist/public');
   app.use(express.static(publicPath));
 
-  // SPA fallback route - exclude health check paths
+  // SPA fallback route - exclude health check and API paths
   app.get('*', (req, res, next) => {
-    if (req.path === '/health' || req.path.startsWith('/api/')) {
+    if (req.path === '/' || req.path === '/health' || req.path.startsWith('/api/')) {
       next();
     } else {
       res.sendFile(path.join(publicPath, 'index.html'));
