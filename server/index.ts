@@ -14,14 +14,23 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Health check endpoint - responde a todas as solicitações para garantir que o deploy funcione
+// Health check endpoints - ensure they are defined before other routes
 app.get('/health', (req, res) => {
   return res.status(200).send('Service is running');
 });
 
-// Health check endpoint for Replit deployment compatibility
+// Root health check endpoint for Replit deployment compatibility
 app.get('/', (req, res) => {
+  // Always return 200 for root path health checks
   return res.status(200).send('Service is running');
+});
+
+// Ensure root path is accessible even in production
+app.use((req, res, next) => {
+  if (req.path === '/') {
+    return res.status(200).send('Service is running');
+  }
+  next();
 });
 
 // Serve static files from the dist/public directory in production
