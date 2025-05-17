@@ -14,6 +14,11 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// Health check endpoint
+app.get('/', (req, res) => {
+  res.status(200).send('Service is running');
+});
+
 // Servir arquivos estáticos da pasta uploads com configurações otimizadas
 console.log(`Servindo arquivos estáticos de ${path.join(process.cwd(), 'uploads')} na rota /uploads`);
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads'), {
@@ -226,5 +231,8 @@ app.use((req, res, next) => {
     
     // Iniciar monitoramento automático de documentos (verificação a cada 15 minutos)
     startDocumentMonitor(15);
+  }).on('error', (error) => {
+    console.error('Server startup error:', error);
+    process.exit(1);
   });
 })();
