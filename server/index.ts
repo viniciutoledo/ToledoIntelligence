@@ -12,8 +12,13 @@ import { initializeSecuritySettings } from "./security-settings";
 
 const app = express();
 
-// Health check endpoint separado - importante para o deploy
+// Health check endpoints - importante para o deploy
 app.get('/health', (req, res) => {
+  res.status(200).type('text/plain').send('OK');
+});
+
+// Rota da raiz para corresponder ao health check padrão do deployment
+app.get('/', (req, res) => {
   res.status(200).type('text/plain').send('OK');
 });
 
@@ -36,7 +41,7 @@ if (process.env.NODE_ENV === "production") {
 
   // SPA fallback route - exclude health check e API paths
   app.get('*', (req, res, next) => {
-    if (req.path === '/health' || req.path === '/_health' || req.path.startsWith('/api/')) {
+    if (req.path === '/' || req.path === '/health' || req.path === '/_health' || req.path.startsWith('/api/')) {
       next();
     } else {
       res.sendFile(path.join(publicPath, 'index.html'));
