@@ -19,13 +19,9 @@ app.get('/health', (req, res) => {
   return res.status(200).send('Service is running');
 });
 
-// Health check no root para compatibilidade com o sistema de deploy do Replit
-app.get('/', (req, res, next) => {
-  // Se for uma verificação de saúde ou se estivermos em produção
-  if (req.headers['user-agent']?.includes('Health') || process.env.NODE_ENV === 'production') {
-    return res.status(200).send('Service is running');
-  }
-  next();
+// Health check endpoint for Replit deployment compatibility
+app.get('/', (req, res) => {
+  return res.status(200).send('Service is running');
 });
 
 // Serve static files from the dist/public directory in production
