@@ -17,6 +17,11 @@ app.get('/health', (req, res) => {
   res.status(200).type('text/plain').send('OK');
 });
 
+// Configurar endpoint de saúde específico para o deploy
+app.get('/_health', (req, res) => {
+  res.status(200).type('text/plain').send('OK');
+});
+
 // O acesso à raiz será tratado pelo Vite em desenvolvimento
 // e pelo middleware do SPA em produção
 
@@ -31,7 +36,7 @@ if (process.env.NODE_ENV === "production") {
 
   // SPA fallback route - exclude health check e API paths
   app.get('*', (req, res, next) => {
-    if (req.path === '/health' || req.path.startsWith('/api/')) {
+    if (req.path === '/health' || req.path === '/_health' || req.path.startsWith('/api/')) {
       next();
     } else {
       res.sendFile(path.join(publicPath, 'index.html'));
@@ -241,6 +246,11 @@ app.use((req, res, next) => {
   // doesn't interfere with the other routes
   if (app.get("env") === "development") {
     await setupVite(app, server);
+    
+    // Add extra route to help with development
+    app.get("/react-dev", (req, res) => {
+      res.redirect("/");
+    });
   } else {
     serveStatic(app);
   }
