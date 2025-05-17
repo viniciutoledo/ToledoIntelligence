@@ -11,19 +11,18 @@ import { startDocumentMonitor } from "./document-monitor";
 import { initializeSecuritySettings } from "./security-settings";
 
 const app = express();
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
-
-// Health check endpoints - ensure they are defined before other routes
+// Health check endpoints must be first
 app.get('/health', (req, res) => {
   return res.status(200).send('Service is running');
 });
 
-// Root health check endpoint for Replit deployment compatibility
 app.get('/', (req, res) => {
-  // Always return 200 for root path health checks
   return res.status(200).send('Service is running');
 });
+
+// Other middleware after health checks
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 
 // Ensure root path is accessible even in production
 app.use((req, res, next) => {
