@@ -22,16 +22,38 @@ app.get('/_health', (req, res) => {
   res.status(200).type('text/plain').send('OK');
 });
 
-// Rota raiz para health check
-// Importante: esta rota deve ser configurada antes de qualquer middleware
-// que possa interferir com a resposta simples de "OK" para o Replit
+// Utilitário para detectar requisições de health check do Replit
+function isHealthCheckRequest(req: Request): boolean {
+  // Verificar headers que indicam requisição de health check do Replit
+  const userAgent = req.get('User-Agent') || '';
+  const acceptHeader = req.get('Accept') || '';
+  
+  return (
+    // Verificar se é um bot de health check pelo User-Agent
+    userAgent.includes('Deployment-Bot') || 
+    userAgent.includes('Health-Check') ||
+    userAgent.includes('Uptime-Check') ||
+    
+    // Ou se explicitamente aceita apenas texto simples
+    (acceptHeader && acceptHeader === 'text/plain')
+  );
+}
+
+// Rota healthz dedicada a health checks (sempre retorna OK)
 app.get('/healthz', (req, res) => {
   res.status(200).type('text/plain').send('OK');
 });
 
-// Rota raiz que simplesmente envia "OK" para health checks
-app.get('/', (req, res) => {
-  res.status(200).type('text/plain').send('OK');
+// Rota raiz inteligente que detecta health checks
+app.get('/', (req, res, next) => {
+  if (isHealthCheckRequest(req)) {
+    // Se for health check, retornar OK simples
+    return res.status(200).type('text/plain').send('OK');
+  }
+  
+  // Para navegadores normais, passar para o middleware seguinte
+  // que vai renderizar a SPA completa
+  next();
 });
 
 // O acesso à raiz será tratado pelo Vite em desenvolvimento
