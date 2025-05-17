@@ -235,6 +235,7 @@ export class MemStorage implements IStorage {
   }
   
   // LLM usage tracking
+  // Método principal para registrar uso do LLM
   async logLlmUsage(log: InsertLlmUsageLog): Promise<void> {
     const id = this.currentIds.llmUsageLogId++;
     const now = new Date();
@@ -571,19 +572,8 @@ export class MemStorage implements IStorage {
     return this.llmConfigs.get(id);
   }
   
-  // LLM usage logging functions
-  async logLlmUsage(log: InsertLlmUsageLog): Promise<void> {
-    const id = this.currentIds.llmUsageLogId++;
-    const now = new Date();
-    
-    const usageLog: LlmUsageLog = {
-      ...log,
-      id,
-      created_at: now
-    };
-    
-    this.llmUsageLogs.set(id, usageLog);
-  }
+  // Função já implementada acima
+  /* Este método foi removido por ser duplicado */
   
   async getLlmUsageLogs(): Promise<LlmUsageLog[]> {
     return Array.from(this.llmUsageLogs.values())
