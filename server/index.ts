@@ -255,18 +255,15 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // ALWAYS serve the app on port 5000
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = 5000;
-  server.listen(port, "0.0.0.0", () => {
+  // Usar a porta fornecida pelo ambiente ou 5000 como fallback
+  const port = process.env.PORT || 5000;
+  
+  // Usar um método mais simples para listen que é mais compatível com ambientes de produção
+  server.listen(port, () => {
     log(`serving on port ${port}`);
 
     // Iniciar monitoramento automático de documentos (verificação a cada 15 minutos)
     startDocumentMonitor(15);
-  }).on('error', (error) => {
-    console.error('Server startup error:', error);
-    process.exit(1);
   });
 
   // Simplificar o gerenciamento do ciclo de vida do servidor
