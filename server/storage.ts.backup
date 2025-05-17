@@ -2241,6 +2241,7 @@ export class DatabaseStorage implements IStorage {
       console.error('Erro ao registrar uso do LLM:', error);
       // Não propagar o erro para não interromper o fluxo principal da aplicação
     }
+    }
   }
   
   async getLlmUsageLogs(options?: {
