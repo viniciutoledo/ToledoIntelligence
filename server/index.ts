@@ -15,10 +15,12 @@ const app = express();
 // Health check endpoints must be first
 app.get('/', (req, res) => {
   res.status(200).type('text/plain').send('OK');
+  return;
 });
 
 app.get('/health', (req, res) => {
   res.status(200).type('text/plain').send('OK');
+  return;
 });
 
 // Basic middleware
