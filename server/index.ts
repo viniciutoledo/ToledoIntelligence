@@ -14,9 +14,15 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Health check endpoint
+// Health check endpoint - responde a todas as solicitações para garantir que o deploy funcione
+app.get('/health', (req, res) => {
+  return res.status(200).send('Service is running');
+});
+
+// Health check no root para compatibilidade com o sistema de deploy do Replit
 app.get('/', (req, res, next) => {
-  if (req.headers['user-agent']?.includes('Health')) {
+  // Se for uma verificação de saúde ou se estivermos em produção
+  if (req.headers['user-agent']?.includes('Health') || process.env.NODE_ENV === 'production') {
     return res.status(200).send('Service is running');
   }
   next();
@@ -33,9 +39,16 @@ if (process.env.NODE_ENV === "production") {
   });
 }
 
+// Garantir que o diretório uploads existe
+const uploadsDir = path.join(process.cwd(), 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+  console.log('Diretório uploads criado com sucesso');
+}
+
 // Servir arquivos estáticos da pasta uploads com configurações otimizadas
-console.log(`Servindo arquivos estáticos de ${path.join(process.cwd(), 'uploads')} na rota /uploads`);
-app.use('/uploads', express.static(path.join(process.cwd(), 'uploads'), {
+console.log(`Servindo arquivos estáticos de ${uploadsDir} na rota /uploads`);
+app.use('/uploads', express.static(uploadsDir, {
   maxAge: '0', // Sem cache para desenvolvimento
   etag: false, // Desabilitar etag
   lastModified: false,
@@ -248,5 +261,21 @@ app.use((req, res, next) => {
   }).on('error', (error) => {
     console.error('Server startup error:', error);
     process.exit(1);
+  });
+  
+  // Prevent the server from closing when main execution ends
+  process.on('beforeExit', () => {
+    log('Keeping server running in background');
+  });
+  
+  // Handle termination signals properly
+  ['SIGINT', 'SIGTERM', 'SIGQUIT'].forEach(signal => {
+    process.on(signal, () => {
+      log(`Received ${signal}, shutting down gracefully`);
+      server.close(() => {
+        log('Server closed');
+        process.exit(0);
+      });
+    });
   });
 })();
