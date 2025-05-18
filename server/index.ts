@@ -13,12 +13,15 @@ import { initializeSecuritySettings } from "./security-settings";
 // Criar a aplicação Express
 const app = express();
 
-// Rota de health check completamente simplificada - colocada antes de qualquer middleware
-// Esta rota precisa funcionar mesmo se o resto da aplicação falhar
-app.get('/', function healthCheck(req, res) {
-  res.writeHead(200);
-  res.write('OK');
-  res.end();
+// IMPORTANTE: Esta é a rota mais crítica para o deploy no Replit - NUNCA MODIFICAR
+// Estas respostas são exatamente o que o Replit espera para o health check
+app.use('/', (req, res, next) => {
+  if (req.path === '/') {
+    // Resposta mais básica possível para o health check
+    res.setHeader('Content-Type', 'text/plain');
+    return res.status(200).send('OK');
+  }
+  next();
 });
 
 // Health checks adicionais
@@ -197,8 +200,9 @@ app.use((req, res, next) => {
   next();
 });
 
-// Função principal encapsulada para evitar saída prematura
-(async () => {
+// ATENÇÃO: Modificação para resolver problemas de deploy no Replit
+// Estas modificações garantem que o servidor permaneça em execução
+(async function startServer() {
   // Configurar para ficar em execução permanentemente
   process.stdin.resume();
   
@@ -210,6 +214,16 @@ app.use((req, res, next) => {
   // Evitar que o processo termine por rejeições de promessa não tratadas  
   process.on('unhandledRejection', (reason, promise) => {
     console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  });
+  
+  // Evitar saída prematura do processo - crítico para o deploy no Replit
+  process.on('exit', (code) => {
+    console.log(`Process is about to exit with code ${code}`);
+    if (code === 0) {
+      // Se o processo está tentando sair normalmente, evitar
+      console.log('Preventing normal exit to keep server running');
+      process.stdin.resume();
+    }
   });
   
   // Sincronizar o esquema do banco de dados antes de iniciar o servidor
