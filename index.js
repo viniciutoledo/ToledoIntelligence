@@ -1,16 +1,18 @@
-// Arquivo index.js mínimo para deploy no Replit
-// Colocado na raiz para garantir que o Replit o encontre
+// Arquivo de health check ultra-simplificado para deploy no Replit
+// Localizado na raiz como index.js, respondendo na porta 80
 
 const http = require('http');
 
-// Servidor ultra-básico que só responde OK na rota raiz
-http.createServer(function(req, res) {
-  // Responder OK para qualquer rota
+// Criar um servidor que responde apenas na porta 80
+http.createServer((req, res) => {
+  // Responder OK para qualquer requisição
   res.writeHead(200, {'Content-Type': 'text/plain'});
   res.end('OK');
-}).listen(5000, '0.0.0.0', function() {
-  console.log('Servidor rodando em 0.0.0.0:5000');
+}).listen(80, '0.0.0.0', () => {
+  console.log('Servidor rodando na porta 80');
 });
 
-// Forçar o processo a continuar rodando
+// Manter o processo vivo e prevenir encerramentos
 process.stdin.resume();
+process.on('uncaughtException', () => {});
+process.on('unhandledRejection', () => {});
