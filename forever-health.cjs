@@ -11,87 +11,71 @@
 
 const http = require('http');
 
-// Counter para estatísticas
-let requestCount = 0;
+// Contador para identificar requisições
+let requestsCount = 0;
 
-// Criar o servidor mais simples possível
+// Log específico para o servidor
+function log(message) {
+  console.log(`[HEALTH] ${message}`);
+}
+
+// Criar servidor HTTP simples
 const server = http.createServer((req, res) => {
-  requestCount++;
-  const path = req.url || '/';
+  requestsCount++;
   
-  // Log da requisição com contador
-  console.log(`#${requestCount} - Requisição recebida: ${req.method} ${path}`);
+  // Registrar requisição
+  log(`Request #${requestsCount}: ${req.method} ${req.url || '/'}`);
   
-  // Responder com status 200 OK e texto simples
+  // Responder com OK para qualquer rota
   res.writeHead(200, {
     'Content-Type': 'text/plain',
-    'Cache-Control': 'no-cache, no-store, must-revalidate',
-    'Pragma': 'no-cache',
-    'Expires': '0'
+    'Cache-Control': 'no-cache, no-store, must-revalidate'
   });
-  
-  // Resposta simples e direta
   res.end('OK');
 });
 
-// Iniciar o servidor explicitamente na porta 80
+// Iniciar na porta 80
 try {
   server.listen(80, '0.0.0.0', () => {
-    console.log('-------------------------------------------------------');
-    console.log('  SERVER HEALTH CHECK LISTENING ON PORT 80');
-    console.log('  WILL RESPOND "OK" TO ANY REQUEST, INCLUDING ROOT (/)');
-    console.log('  THIS PROCESS WILL NEVER EXIT');
-    console.log('-------------------------------------------------------');
+    log('=========================================');
+    log('Servidor de health check rodando na porta 80');
+    log('Respondendo a todas as requisições com 200 OK');
+    log('=========================================');
   });
-} catch (err) {
-  console.error(`Erro ao iniciar o servidor: ${err.message}`);
-  
-  // Mesmo com erro, NÃO terminar o processo
-  console.log('Servidor falhou, mas o processo continuará executando');
+} catch (error) {
+  log(`Erro ao iniciar servidor: ${error.message}`);
 }
 
-// Loop infinito para garantir que o processo nunca termine
-setInterval(() => {
-  const timestamp = new Date().toISOString();
-  console.log(`[${timestamp}] Health check server ativo - ${requestCount} requisições atendidas`);
+// Registrar eventos do servidor
+server.on('error', (error) => {
+  log(`ERRO: ${error.message}`);
   
-  // Verificar se o servidor ainda está ouvindo
-  if (!server.listening) {
-    console.log('Servidor não está mais escutando. Tentando reiniciar...');
-    
-    try {
-      server.listen(80, '0.0.0.0', () => {
-        console.log('Servidor reiniciado com sucesso');
-      });
-    } catch (err) {
-      console.error(`Falha ao reiniciar servidor: ${err.message}`);
-    }
+  // Tentar reiniciar em caso de erro
+  if (error.code === 'EADDRINUSE') {
+    log('Porta 80 já em uso. Tentando novamente em 3 segundos...');
+    setTimeout(() => {
+      server.close();
+      server.listen(80, '0.0.0.0');
+    }, 3000);
   }
-}, 10000);
-
-// Impedir que o processo termine sob QUALQUER circunstância
-process.on('uncaughtException', (err) => {
-  console.error(`Exceção capturada: ${err.message}`);
-  // Não terminar o processo
 });
 
-process.on('unhandledRejection', (reason) => {
-  console.error(`Rejeição não tratada: ${reason}`);
-  // Não terminar o processo
+// Mostrar sinal de vida a cada minuto
+setInterval(() => {
+  log(`Servidor ativo com ${requestsCount} requisições processadas`);
+}, 60000);
+
+// Evitar que o processo termine com exceções
+process.on('uncaughtException', (error) => {
+  log(`Exceção não tratada: ${error.message}`);
 });
 
-process.on('SIGTERM', () => {
-  console.log('Sinal SIGTERM ignorado');
-  // Não terminar o processo
-});
+// Ignorar sinais que poderiam encerrar o processo
+process.on('SIGINT', () => log('SIGINT recebido, mas ignorado'));
+process.on('SIGTERM', () => log('SIGTERM recebido, mas ignorado'));
 
-process.on('SIGINT', () => {
-  console.log('Sinal SIGINT ignorado');
-  // Não terminar o processo
-});
-
-// Impedir que o processo principal termine
+// COMANDO CRÍTICO: Manter o processo rodando indefinidamente
 process.stdin.resume();
 
-// Nota importante: Este processo NUNCA deve imprimir "main done, exiting!"
-console.log('Servidor iniciado e em execução contínua');
+// Método adicional para garantir que o processo continue rodando
+setInterval(() => {}, 86400000); // 24 horas
