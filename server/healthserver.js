@@ -1,37 +1,39 @@
-// Servidor minimalista dedicado ao health check para deploy no Replit
-// Implementando exatamente o que o Replit recomenda para resolver problemas de deploy
+// Servidor de health check dedicado para Replit
+// Este arquivo NÃO deve ter "main done" ou qualquer código que encerre o processo
 
-// Importações necessárias
-const express = require('express');
-const app = express();
+const http = require('http');
 
-// Definir a porta 5000 explicitamente (sem usar variável de ambiente)
-const PORT = 5000;
-
-// Rota principal para health check - extremamente simplificada
-app.get('/', (req, res) => {
-  res.status(200).send('OK');
+// Servidor que apenas retorna OK em status 200
+const server = http.createServer((req, res) => {
+  console.log(`Recebida requisição health check: ${req.url}`);
+  res.writeHead(200, {'Content-Type': 'text/plain'});
+  res.end('OK');
 });
 
-// Evitar interferência com outras rotas
-app.use('*', (req, res) => {
-  if (req.path !== '/') {
-    res.redirect('/app');
-  }
+// Porta 5000 fixamente configurada
+const PORT = process.env.PORT || 5000;
+const HOST = '0.0.0.0';
+
+// Iniciar o servidor com log
+server.listen(PORT, HOST, () => {
+  console.log(`Servidor de health check rodando em ${HOST}:${PORT}`);
 });
 
-// Iniciar o servidor escutando em todas as interfaces
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Servidor de health check rodando em 0.0.0.0:${PORT}`);
-});
-
-// Evitar que o processo termine
+// Manter o processo vivo
 process.stdin.resume();
 
-// Log para confirmar funcionamento
-console.log('Health check server iniciado com sucesso');
+// Tratar exceções para evitar que o processo termine
+process.on('uncaughtException', (err) => {
+  console.error('Exceção não tratada:', err);
+  // NÃO finalizar o processo
+});
 
-// Heartbeat
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Rejeição não tratada:', reason);
+  // NÃO finalizar o processo
+});
+
+// Log periódico para mostrar que o servidor ainda está ativo
 setInterval(() => {
-  console.log('Health check server heartbeat');
+  console.log('Health check server ativo');
 }, 30000);
