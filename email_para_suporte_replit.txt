@@ -1,0 +1,57 @@
+Assunto: Problemas Persistentes de Deploy com Servidor HTTP Básico
+
+Prezada Equipe de Suporte do Replit,
+
+Estou enfrentando problemas consistentes ao tentar fazer o deploy de um projeto no Replit. Após mais de 30 tentativas com diferentes abordagens, não consigo passar do health check inicial.
+
+**Detalhes do Projeto:**
+- Nome: ToledoIA (SaaS de análise de imagens com IA)
+- Stack: Node.js/Express + React (Vite)
+- URL do replit: [inserir URL do seu replit]
+
+**Erros Recorrentes:**
+1. "Health checks are failing on the root endpoint"
+2. "The server is not correctly listening on port 80"
+3. "The process is exiting or not responding to requests"
+4. "Server is exiting too quickly after startup"
+5. "The app is not properly listening on port 80"
+
+**O que já tentei:**
+1. Criado múltiplos servidores HTTP básicos (app.js, health.js, index.js, minimal-server.js)
+2. Implementado servidores com Node.js nativo (sem Express)
+3. Definido porta 80 explicitamente e usado 0.0.0.0 como host
+4. Adicionado tratamento de exceções e mecanismos para prevenir o encerramento do processo
+5. Implementado logs detalhados para diagnóstico
+6. Usado a variável de ambiente PORT tanto implícita quanto explicitamente
+7. Tentado diferentes comandos de execução (node app.js, PORT=80 node health.js)
+
+**Exemplos de Código:**
+Minha abordagem mais recente é um servidor HTTP extremamente básico:
+
+```javascript
+const http = require('http');
+http.createServer((req, res) => {
+  res.writeHead(200, {'Content-Type': 'text/plain'});
+  res.end('OK');
+}).listen(80, '0.0.0.0', () => {
+  console.log('Servidor rodando na porta 80');
+});
+process.stdin.resume();
+```
+
+Este código funciona perfeitamente no ambiente de desenvolvimento, mas falha consistentemente no deploy.
+
+**Registro de Logs:**
+Os logs de deploy mostram que o processo está sendo iniciado, mas o health check nunca completa com sucesso, apesar do servidor estar escutando na porta 80 e respondendo com 200 OK.
+
+Seria extremamente útil receber alguma orientação específica sobre:
+1. Como solucionar esses erros de health check específicos
+2. Se há configurações adicionais necessárias para o deploy no Replit
+3. Se existem limitações ou requisitos específicos para aplicações Node.js que estou ignorando
+
+Agradeço antecipadamente a atenção e aguardo uma resposta que me ajude a resolver este impasse.
+
+Atenciosamente,
+[Seu nome]
+ID da conta: [Seu ID no Replit]
+E-mail: [Seu e-mail]
