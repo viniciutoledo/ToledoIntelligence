@@ -12,29 +12,22 @@ import { initializeSecuritySettings } from "./security-settings";
 
 const app = express();
 
-// IMPORTANT: Register health check endpoints first
-// Health check endpoint padrão
-app.get('/health', (req, res) => {
+// ÚNICO ENDPOINT NECESSÁRIO PARA O DEPLOY: Rota raiz
+app.get('/', (_req, res) => {
   res.status(200).type('text/plain').send('OK');
 });
 
-// Endpoint de saúde específico para o deploy
-app.get('/_health', (req, res) => {
+// Health checks adicionais
+app.get('/health', (_req, res) => {
   res.status(200).type('text/plain').send('OK');
 });
 
-// Função removida - não estamos mais usando a detecção inteligente
-// O health check sempre retorna OK na rota raiz
-
-// Rota healthz dedicada a health checks (sempre retorna OK)
-app.get('/healthz', (req, res) => {
+app.get('/_health', (_req, res) => {
   res.status(200).type('text/plain').send('OK');
 });
 
-// Rota raiz sempre retorna OK para health check
-app.get('/', (req, res) => {
-  // Always return OK for root path to ensure health check passes
-  return res.status(200).type('text/plain').send('OK');
+app.get('/healthz', (_req, res) => {
+  res.status(200).type('text/plain').send('OK');
 });
 
 // O acesso à raiz será tratado pelo Vite em desenvolvimento
