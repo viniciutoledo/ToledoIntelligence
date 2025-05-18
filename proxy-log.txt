@@ -1,0 +1,25 @@
+[2025-05-18T14:06:55.989Z] Iniciando servidor proxy na porta 80
+[2025-05-18T14:06:55.995Z] Iniciando a aplicação principal (npm run dev)...
+[2025-05-18T14:06:56.013Z] Tudo inicializado! Servidor proxy pronto para receber requisições.
+[2025-05-18T14:06:56.017Z] ==========================================================
+[2025-05-18T14:06:56.019Z] = SERVIDOR PROXY RODANDO EM 0.0.0.0:80 -> 5000 =
+[2025-05-18T14:06:56.020Z] ==========================================================
+[2025-05-18T14:06:56.497Z] [APP] > rest-express@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
+[2025-05-18T14:07:03.650Z] [APP] Servindo arquivos estáticos de /home/runner/workspace/uploads na rota /uploads
+[2025-05-18T14:07:03.654Z] [APP] Sincronizando o esquema do banco de dados...
+[2025-05-18T14:07:03.655Z] [APP] Iniciando sincronização do esquema do banco de dados...
+[2025-05-18T14:07:04.440Z] [APP] Esquema do banco de dados sincronizado com sucesso
+[2025-05-18T14:07:04.442Z] [APP] Esquema do banco de dados sincronizado com sucesso
+[2025-05-18T14:07:04.652Z] [APP] Preços dos planos verificados/inicializados com sucesso
+[2025-05-18T14:07:04.654Z] [APP] Verificando/inicializando configurações de segurança...
+[2025-05-18T14:07:04.686Z] [APP] Configurações de segurança já existem no banco de dados
+[2025-05-18T14:07:04.691Z] [APP] Servindo arquivos estáticos de /home/runner/workspace/uploads na rota /uploads
+[2025-05-18T14:07:04.696Z] [APP] Servindo arquivos estáticos de /home/runner/workspace/uploads na rota /uploads
+[2025-05-18T14:07:04.697Z] [APP] Configurando Vite para ambiente de desenvolvimento
+[2025-05-18T14:07:04.805Z] [APP] Database connection successful
+[2025-05-18T14:07:04.809Z] [APP] Server running on 0.0.0.0:5000
+[2025-05-18T14:07:04.814Z] [APP] Environment: development
+Using PORT: 5000
+Iniciando monitoramento automático de documentos travados a cada 15 minutos
+[2025-05-18T14:07:05.765Z] [APP] Planos e recursos já estão inicializados
