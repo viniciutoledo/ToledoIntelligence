@@ -572,31 +572,8 @@ export class MemStorage implements IStorage {
     return this.llmConfigs.get(id);
   }
   
-  // Função já implementada acima
-  /* Este método foi removido por ser duplicado */
-  
-  async getLlmUsageLogs(): Promise<LlmUsageLog[]> {
-    return Array.from(this.llmUsageLogs.values())
-      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-  }
-  
-  async getLlmUsageLogsByModel(modelName: string): Promise<LlmUsageLog[]> {
-    return Array.from(this.llmUsageLogs.values())
-      .filter(log => log.model_name === modelName)
-      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-  }
-  
-  async getLlmUsageLogsByProvider(provider: string): Promise<LlmUsageLog[]> {
-    return Array.from(this.llmUsageLogs.values())
-      .filter(log => log.provider === provider)
-      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-  }
-  
-  async getLlmUsageLogsByUser(userId: number): Promise<LlmUsageLog[]> {
-    return Array.from(this.llmUsageLogs.values())
-      .filter(log => log.user_id === userId)
-      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-  }
+  // Estes métodos foram removidos pois duplicam a funcionalidade do método principal getLlmUsageLogs com opções
+  // O método principal que aceita opções já foi implementado acima e deve ser usado para consultar os logs
   
   // Avatar management
   async getAvatar(id: number): Promise<Avatar | undefined> {
