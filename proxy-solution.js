@@ -5,7 +5,7 @@
  * 2. Encaminha outras requisições para o servidor principal na porta 5000
  */
 
-const http = require('http');
+import http from 'http';
 
 // Configuração
 const HEALTH_CHECK_PORT = 80; // Porta para o health check do Replit
@@ -71,6 +71,16 @@ process.stdin.resume();
 process.on('uncaughtException', (err) => {
   console.error('Erro não tratado:', err.message);
   // Continuar executando
+});
+
+// Responder ao sinal de SIGTERM mas não encerrar
+process.on('SIGTERM', () => {
+  console.log('Recebido sinal SIGTERM, mas continuando execução');
+});
+
+// Responder ao sinal de SIGINT mas não encerrar
+process.on('SIGINT', () => {
+  console.log('Recebido sinal SIGINT, mas continuando execução');
 });
 
 // Heartbeat para confirmar que está ativo
