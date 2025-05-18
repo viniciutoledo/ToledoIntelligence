@@ -1,6 +1,5 @@
 /**
  * SERVIDOR DE HEALTH CHECK PARA DEPLOY NO REPLIT
- * (Versão CommonJS para máxima compatibilidade)
  * 
  * Características:
  * - Exclusivamente para o health check do Replit
