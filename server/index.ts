@@ -1,36 +1,20 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { syncDatabaseSchema } from "./migrate";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
-import { planPricing } from "@shared/schema";
 import path from "path";
 import fs from "fs";
 import { startDocumentMonitor } from "./document-monitor";
-import { initializeSecuritySettings } from "./security-settings";
 
 // Criar a aplicação Express
 const app = express();
 
-// Rotas para health check do Replit
-// Removida a interceptação da rota raiz para permitir que a landing page seja exibida
-app.get('/health', (_req, res) => {
-  res.status(200).type('text/plain').send('OK');
-});
-
-app.get('/_health', (_req, res) => {
-  res.status(200).type('text/plain').send('OK');
-});
-
+// Rota de health-check para o Render
 app.get('/healthz', (_req, res) => {
-  res.status(200).type('text/plain').send('OK');
+  res.status(200).send('OK');
 });
 
-// O acesso à raiz será tratado pelo Vite em desenvolvimento
-// e pelo middleware do SPA em produção
-
-// Basic middleware (moved after health check handlers)
+// Basic middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
@@ -39,14 +23,9 @@ if (process.env.NODE_ENV === "production") {
   const publicPath = path.join(process.cwd(), 'dist/public');
   app.use(express.static(publicPath));
 
-  // SPA fallback para todas as rotas que não são API ou health checks
-  app.get('*', (req, res, next) => {
-    // Ensure server listens on all interfaces
-    const PORT = process.env.PORT || 5000;
-    const HOST = process.env.HOST || '0.0.0.0';
-    
-    if (req.path === '/health' || req.path === '/_health' || req.path === '/' || req.path.startsWith('/api/')) {
-      // Deixar que os endpoints de API e health check sejam tratados pelos handlers específicos
+  // SPA fallback para todas as rotas que não são API
+  app.get('*', (req, res, next) => {    
+    if (req.path === '/healthz' || req.path.startsWith('/api/')) {
       next();
     } else {
       // Servir o SPA para todas as outras rotas
@@ -62,14 +41,13 @@ if (!fs.existsSync(uploadsDir)) {
   console.log('Diretório uploads criado com sucesso');
 }
 
-// Servir arquivos estáticos da pasta uploads com configurações otimizadas
+// Servir arquivos estáticos da pasta uploads
 console.log(`Servindo arquivos estáticos de ${uploadsDir} na rota /uploads`);
 app.use('/uploads', express.static(uploadsDir, {
-  maxAge: '0', // Sem cache para desenvolvimento
-  etag: false, // Desabilitar etag
+  maxAge: '0',
+  etag: false,
   lastModified: false,
   setHeaders: (res) => {
-    // Headers importantes para permitir acesso cross-origin e cross-frame
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
@@ -78,7 +56,6 @@ app.use('/uploads', express.static(uploadsDir, {
     res.setHeader('Cross-Origin-Embedder-Policy', 'unsafe-none');
     res.setHeader('Cross-Origin-Opener-Policy', 'unsafe-none');
 
-    // Headers específicos para imagens
     if (res.req?.path && /\.(jpg|jpeg|png|gif)$/i.test(res.req.path)) {
       res.setHeader('X-Content-Type-Options', 'nosniff');
     }
@@ -87,22 +64,13 @@ app.use('/uploads', express.static(uploadsDir, {
 
 // Middleware para permitir incorporação em iframes (embeds)
 app.use((req, res, next) => {
-  // Remover X-Frame-Options para permitir que o site seja embutido em iframes
   res.removeHeader('X-Frame-Options');
-
-  // Definir Content-Security-Policy para permitir embedding de forma segura
-  res.setHeader(
-    'Content-Security-Policy',
-    "frame-ancestors 'self' *"
-  );
-
-  // Permitir CORS para que o widget possa ser carregado em qualquer site
+  res.setHeader('Content-Security-Policy', "frame-ancestors 'self' *");
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
   res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type,Authorization');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
 
-  // Se for uma requisição OPTIONS, retornar 200 imediatamente (pré-voo CORS)
   if (req.method === 'OPTIONS') {
     return res.sendStatus(200);
   }
@@ -110,7 +78,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// Rotas especiais para servir documentação do widget diretamente
+// Rotas especiais para widget
 app.get('/widget-demo', (req, res) => {
   res.redirect('/widget-inline-demo.html');
 });
@@ -119,40 +87,30 @@ app.get('/widget-docs', (req, res) => {
   res.redirect('/widget-embed-example.html');
 });
 
-// Rota específica para o arquivo HTML de demonstração do widget
+// Rota para widget embed example
 app.get('/widget-embed-example.html', async (req, res) => {
-  // Usando o path já importado globalmente
-  // Usando fs.promises para compatibilidade com ES modules
   const filePath = path.join(process.cwd(), 'public', 'widget-embed-example.html');
 
   try {
     const data = await fs.promises.readFile(filePath, 'utf8');
-
-    // Definir cabeçalhos para permitir incorporação
     res.setHeader('Content-Type', 'text/html');
     res.setHeader('Content-Security-Policy', "frame-ancestors 'self' *");
     res.setHeader('Access-Control-Allow-Origin', '*');
-
     res.send(data);
   } catch (err) {
     return res.status(404).send('Documentação não encontrada');
   }
 });
 
-// Rota específica para o arquivo HTML de demonstração do widget inline
+// Rota para widget inline demo
 app.get('/widget-inline-demo.html', async (req, res) => {
-  // Usando o path já importado globalmente
-  // Usando fs.promises para compatibilidade com ES modules
   const filePath = path.join(process.cwd(), 'public', 'widget-inline-demo.html');
 
   try {
     const data = await fs.promises.readFile(filePath, 'utf8');
-
-    // Definir cabeçalhos para permitir incorporação
     res.setHeader('Content-Type', 'text/html');
     res.setHeader('Content-Security-Policy', "frame-ancestors 'self' *");
     res.setHeader('Access-Control-Allow-Origin', '*');
-
     res.send(data);
   } catch (err) {
     return res.status(404).send('Demonstração não encontrada');
@@ -190,165 +148,58 @@ app.use((req, res, next) => {
   next();
 });
 
-// ATENÇÃO: Modificação para resolver problemas de deploy no Replit
-// Estas modificações garantem que o servidor permaneça em execução
-(async function startServer() {
-  // Configurar para ficar em execução permanentemente
-  process.stdin.resume();
-  
-  // Evitar que o processo termine por exceções não tratadas
-  process.on('uncaughtException', (err) => {
-    console.error('Uncaught exception:', err);
-  });
-  
-  // Evitar que o processo termine por rejeições de promessa não tratadas  
-  process.on('unhandledRejection', (reason, promise) => {
-    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-  });
-  
-  // Evitar saída prematura do processo - crítico para o deploy no Replit
-  process.on('exit', (code) => {
-    console.log(`Process is about to exit with code ${code}`);
-    if (code === 0) {
-      // Se o processo está tentando sair normalmente, evitar
-      console.log('Preventing normal exit to keep server running');
-      process.stdin.resume();
-    }
-  });
-  
-  // Sincronizar o esquema do banco de dados antes de iniciar o servidor
+// Manipuladores de eventos para tratamento de erros
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught exception:', err);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+// Iniciar o servidor
+async function initServer() {
   try {
-    console.log('Sincronizando o esquema do banco de dados...');
-    await syncDatabaseSchema();
-    console.log('Esquema do banco de dados sincronizado com sucesso');
+    // Registrar rotas da API
+    const server = await registerRoutes(app);
 
-    // Inicializar os preços dos planos se não existirem
-    try {
-      // Verificar se já existem preços para os planos
-      const basicPricing = await db.select().from(planPricing).where(eq(planPricing.subscription_tier, 'basic'));
-      const intermediatePricing = await db.select().from(planPricing).where(eq(planPricing.subscription_tier, 'intermediate'));
+    // Middleware para tratamento de erros
+    app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+      const status = err.status || err.statusCode || 500;
+      const message = err.message || "Internal Server Error";
+      res.status(status).json({ message });
+      console.error(err);
+    });
 
-      // Se não existir preço para o plano básico, criar
-      if (basicPricing.length === 0) {
-        console.log('Criando preço padrão para o plano básico...');
-        await db.insert(planPricing).values({
-          subscription_tier: 'basic',
-          name: 'Plano Básico',
-          price: 2990, // R$ 29,90 em centavos
-          currency: 'BRL',
-          description: 'Acesso a 2.500 interações por mês',
-        });
-      }
-
-      // Se não existir preço para o plano intermediário, criar
-      if (intermediatePricing.length === 0) {
-        console.log('Criando preço padrão para o plano intermediário...');
-        await db.insert(planPricing).values({
-          subscription_tier: 'intermediate',
-          name: 'Plano Intermediário',
-          price: 3990, // R$ 39,90 em centavos
-          currency: 'BRL',
-          description: 'Acesso a 5.000 interações por mês',
-        });
-      }
-
-      console.log('Preços dos planos verificados/inicializados com sucesso');
-    } catch (error) {
-      console.error('Erro ao inicializar preços dos planos:', error);
+    // Configurar Vite para desenvolvimento ou static para produção
+    if (process.env.NODE_ENV === "development") {
+      console.log("Configurando Vite para ambiente de desenvolvimento");
+      await setupVite(app, server);
+    } else {
+      console.log("Configurando middleware estático para produção");
+      serveStatic(app);
     }
 
-    // Inicializar configurações de segurança
+    // Verificar conexão com o banco de dados
     try {
-      await initializeSecuritySettings();
+      await db.query.users.findFirst();
+      console.log('Database connection successful');
     } catch (error) {
-      console.error('Erro ao inicializar configurações de segurança:', error);
+      console.error('Database connection error:', error);
     }
+
+    // Iniciar monitoramento de documentos
+    startDocumentMonitor(15);
+
+    return server;
   } catch (error) {
-    console.error('Erro ao sincronizar o esquema do banco de dados:', error);
+    console.error('Erro ao inicializar servidor:', error);
+    throw error;
   }
+}
 
-  const server = await registerRoutes(app);
-
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
-
-    res.status(status).json({ message });
-    console.error(err);
-  });
-
-  // Configurar Vite para desenvolvimento ou static para produção
-  // IMPORTANTE: Nossas rotas de API já estão registradas a este ponto
-  if (process.env.NODE_ENV === "development") {
-    console.log("Configurando Vite para ambiente de desenvolvimento");
-    await setupVite(app, server);
-    
-    // Rota especial para acessar o SPA em desenvolvimento
-    app.get("/react-dev", (req, res) => {
-      res.redirect("/");
-    });
-  } else {
-    console.log("Configurando middleware estático para produção");
-    serveStatic(app);
-  }
-
-  // Configurar para ouvir na porta fornecida pelo ambiente
-  // Usar explicitamente a variável de ambiente PORT como recomenado pelo Replit
-  const PORT = parseInt(process.env.PORT || "5000");
-  
-  // Testar conexão com o banco de dados antes de iniciar o servidor
-  try {
-    // Verificar a conexão com o banco de dados primeiro
-    await db.query.users.findFirst();
-    console.log('Database connection successful');
-    
-    // Configuração de servidor simplificada para resolver problemas de deploy
-    const startServer = () => {
-      // Usar a variável PORT do ambiente e host 0.0.0.0
-      server.listen(PORT, '0.0.0.0', () => {
-        console.log(`Server running on 0.0.0.0:${PORT}`);
-        console.log(`Environment: ${process.env.NODE_ENV}`);
-        console.log(`Using PORT: ${PORT}`);
-        // Iniciar o monitoramento após confirmar que o servidor está rodando
-        startDocumentMonitor(15);
-      }).on('error', (err: any) => {
-        console.error('Server error:', err);
-        // Não finalizar o servidor em caso de erro
-      });
-    };
-    
-    startServer();
-  } catch (error) {
-    // Tratar erros de inicialização do banco de dados de forma mais suave
-    console.error('Database initialization error:', error);
-    // Continuar com um servidor básico mesmo com erro de banco de dados - usando 0.0.0.0 explicitamente
-    server.listen(PORT, '0.0.0.0', () => {
-      console.log(`Server running on 0.0.0.0:${PORT} (fallback mode)`);
-      console.log(`Environment: ${process.env.NODE_ENV}`);
-      console.log(`Using PORT: ${PORT}`);
-    });
-  }
-
-  // Configurar um intervalo para manter o processo em execução
-  const keepAliveInterval = setInterval(() => {
-    console.log("Keepalive heartbeat - servidor ativo");
-  }, 30000); // A cada 30 segundos
-  
-  // Garantir que o intervalo não impede o processo de terminar quando necessário
-  keepAliveInterval.unref();
-  setInterval(() => {
-    console.log('Heartbeat - keeping application alive');
-  }, 60000);
-  
-  // Lidar com sinais de término de forma mais suave
-  process.on('SIGTERM', () => {
-    console.log('SIGTERM received, gracefully shutting down');
-    server.close(() => {
-      console.log('Server closed');
-      // Não encerrar o processo imediatamente
-      setTimeout(() => {
-        process.exit(0);
-      }, 5000);
-    });
-  });
-})();
+// Iniciar o servidor e fazer o listen na porta
+initServer().then(server => {
+  const port = Number(process.env.PORT) || 5000;
+  app.listen(port, () => console.log(`🚀 Servidor rodando na porta ${port}`));
+});
