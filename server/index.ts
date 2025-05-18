@@ -13,7 +13,7 @@ import { initializeSecuritySettings } from "./security-settings";
 // Criar a aplicação Express
 const app = express();
 
-// CONFIGURAÇÃO DE HEALTH CHECK PARA DEPLOY NO REPLIT
+// CONFIGURAÇÃO DE HEALTH CHECK PARA DEPLOY NO REPLIT - SIMPLIFICADA AO MÁXIMO
 app.get('/', (req, res) => {
   res.set('Content-Type', 'text/plain');
   res.status(200).send('OK');
