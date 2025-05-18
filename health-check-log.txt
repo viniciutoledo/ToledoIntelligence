@@ -1,0 +1,10 @@
+[2025-05-18T15:10:27.660Z] Iniciando servidor de health check na porta 80
+[2025-05-18T15:10:27.669Z] Servidor de health check inicializado com configuração otimizada
+[2025-05-18T15:10:27.675Z] Porta 80 configurada explicitamente para evitar conflitos
+[2025-05-18T15:10:27.676Z] Corpo de resposta não-vazio para todos os health checks
+[2025-05-18T15:10:27.684Z] =====================================================
+[2025-05-18T15:10:27.686Z] SERVIDOR DE HEALTH CHECK RODANDO EM 0.0.0.0:80
+[2025-05-18T15:10:27.686Z] RESPONDENDO COM CORPO NÃO-VAZIO A TODAS AS REQUISIÇÕES
+[2025-05-18T15:10:27.687Z] ESTE PROCESSO NUNCA VAI TERMINAR
+[2025-05-18T15:10:27.687Z] =====================================================
+[2025-05-18T15:10:37.676Z] Servidor de health check ativo - 0 requisições atendidas
