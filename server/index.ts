@@ -13,10 +13,17 @@ import { initializeSecuritySettings } from "./security-settings";
 // Criar a aplicação Express
 const app = express();
 
-// CONFIGURAÇÃO DE HEALTH CHECK PARA DEPLOY NO REPLIT - SIMPLIFICADA AO MÁXIMO
-app.get('/', (req, res) => {
-  res.set('Content-Type', 'text/plain');
-  res.status(200).send('OK');
+// CONFIGURAÇÃO DE HEALTH CHECK PARA DEPLOY NO REPLIT COM TESTE DE BANCO DE DADOS
+app.get('/', async (req, res) => {
+  try {
+    // Testar a conexão com o banco de dados
+    await db.query.users.findFirst();
+    res.set('Content-Type', 'text/plain');
+    res.status(200).send('OK');
+  } catch (error) {
+    console.error('Database connection error:', error);
+    res.status(500).send('Database connection error');
+  }
 });
 
 // Health checks adicionais
@@ -271,12 +278,22 @@ app.use((req, res, next) => {
   // Configurar para ouvir em todas as interfaces (0.0.0.0) conforme recomendado pelo Replit
   const port = parseInt(process.env.PORT || "5000");
   
-  server.listen(port, "0.0.0.0", () => {
-    log(`serving on port ${port}`);
-
-    // Iniciar monitoramento automático de documentos (verificação a cada 15 minutos)
-    startDocumentMonitor(15);
-  });
+  // Testar conexão com o banco de dados antes de iniciar o servidor
+  try {
+    // Verificar a conexão com o banco de dados primeiro
+    await db.query.users.findFirst();
+    console.log('Database connection successful');
+    
+    server.listen(port, "0.0.0.0", () => {
+      log(`serving on port ${port}`);
+  
+      // Iniciar monitoramento automático de documentos (verificação a cada 15 minutos)
+      startDocumentMonitor(15);
+    });
+  } catch (error) {
+    console.error('Failed to connect to database:', error);
+    process.exit(1);
+  }
 
   // Simplificar o gerenciamento do ciclo de vida do servidor
   // Não adicionar handlers para sinais que possam interferir com o deploy
