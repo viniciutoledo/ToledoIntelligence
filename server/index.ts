@@ -13,9 +13,9 @@ import { initializeSecuritySettings } from "./security-settings";
 // Criar a aplicação Express
 const app = express();
 
-// Health check handler for root path (/) - absolutamente mínimo
-// Colocado antes de qualquer outro middleware para garantir que sempre funcione
-app.get('/', (req, res) => {
+// Rota de health check completamente simplificada - colocada antes de qualquer middleware
+// Esta rota precisa funcionar mesmo se o resto da aplicação falhar
+app.get('/', function healthCheck(req, res) {
   res.writeHead(200);
   res.write('OK');
   res.end();
@@ -298,15 +298,18 @@ app.use((req, res, next) => {
     await db.query.users.findFirst();
     console.log('Database connection successful');
     
-    // Configuração seguindo recomendações do assistente do Replit
+    // Configuração de servidor simplificada para resolver problemas de deploy
     const startServer = () => {
-      // Usar explicitamente 0.0.0.0 como host para garantir que está acessível externamente
+      // Usar a variável PORT do ambiente e host 0.0.0.0
       server.listen(PORT, '0.0.0.0', () => {
         console.log(`Server running on 0.0.0.0:${PORT}`);
+        console.log(`Environment: ${process.env.NODE_ENV}`);
+        console.log(`Using PORT: ${PORT}`);
         // Iniciar o monitoramento após confirmar que o servidor está rodando
         startDocumentMonitor(15);
       }).on('error', (err: any) => {
         console.error('Server error:', err);
+        // Não finalizar o servidor em caso de erro
       });
     };
     
@@ -317,6 +320,8 @@ app.use((req, res, next) => {
     // Continuar com um servidor básico mesmo com erro de banco de dados - usando 0.0.0.0 explicitamente
     server.listen(PORT, '0.0.0.0', () => {
       console.log(`Server running on 0.0.0.0:${PORT} (fallback mode)`);
+      console.log(`Environment: ${process.env.NODE_ENV}`);
+      console.log(`Using PORT: ${PORT}`);
     });
   }
 
