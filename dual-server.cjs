@@ -86,45 +86,43 @@ healthServer.on('error', (err) => {
 log('Iniciando o servidor principal da aplicação...');
 
 // Usaremos spawn para iniciar o app principal como um processo filho
-const appProcess = spawn('npm', ['run', 'dev'], {
+let appProcess = spawn('npm', ['run', 'dev'], {
   env: { ...process.env, PORT: APP_PORT.toString() },
   stdio: 'pipe'  // Capturar saída para logs
 });
 
-// Capturar stdout e stderr do processo filho
-appProcess.stdout.on('data', (data) => {
-  log(`[APP] ${data.toString().trim()}`);
-});
+// Função para configurar listeners de eventos para o processo
+function setupProcessListeners(process) {
+  // Capturar stdout e stderr do processo
+  process.stdout.on('data', (data) => {
+    log(`[APP] ${data.toString().trim()}`);
+  });
 
-appProcess.stderr.on('data', (data) => {
-  log(`[APP ERROR] ${data.toString().trim()}`);
-});
+  process.stderr.on('data', (data) => {
+    log(`[APP ERROR] ${data.toString().trim()}`);
+  });
 
-// Monitor de estado do processo filho
-appProcess.on('exit', (code, signal) => {
-  log(`O servidor da aplicação saiu com código ${code} e sinal ${signal}`);
-  
-  // Reiniciar automaticamente se o servidor da aplicação sair
-  log('Reiniciando o servidor da aplicação em 3 segundos...');
-  setTimeout(() => {
-    log('Tentando reiniciar o servidor da aplicação...');
-    const newAppProcess = spawn('npm', ['run', 'dev'], {
-      env: { ...process.env, PORT: APP_PORT.toString() },
-      stdio: 'pipe'
-    });
+  // Monitor de estado do processo
+  process.on('exit', (code, signal) => {
+    log(`O servidor da aplicação saiu com código ${code} e sinal ${signal}`);
     
-    newAppProcess.stdout.on('data', (data) => {
-      log(`[APP REINICIADO] ${data.toString().trim()}`);
-    });
-    
-    newAppProcess.stderr.on('data', (data) => {
-      log(`[APP REINICIADO ERROR] ${data.toString().trim()}`);
-    });
-    
-    // Atualizar a referência do processo
-    appProcess = newAppProcess;
-  }, 3000);
-});
+    // Reiniciar automaticamente se o servidor sair
+    log('Reiniciando o servidor da aplicação em 3 segundos...');
+    setTimeout(() => {
+      log('Tentando reiniciar o servidor da aplicação...');
+      appProcess = spawn('npm', ['run', 'dev'], {
+        env: { ...process.env, PORT: APP_PORT.toString() },
+        stdio: 'pipe'
+      });
+      
+      // Configurar os listeners para o novo processo
+      setupProcessListeners(appProcess);
+    }, 3000);
+  });
+}
+
+// Configurar os listeners para o processo inicial
+setupProcessListeners(appProcess);
 
 // 3. VERIFICAÇÃO PERIÓDICA DE SAÚDE
 // =================================
@@ -181,21 +179,13 @@ setInterval(() => {
   // Verificar também se nosso processo filho continua rodando
   if (appProcess && appProcess.killed) {
     log('Detectado que o processo da aplicação foi encerrado. Tentando reiniciar...');
-    const newAppProcess = spawn('npm', ['run', 'dev'], {
+    appProcess = spawn('npm', ['run', 'dev'], {
       env: { ...process.env, PORT: APP_PORT.toString() },
       stdio: 'pipe'
     });
     
-    newAppProcess.stdout.on('data', (data) => {
-      log(`[APP REINICIADO] ${data.toString().trim()}`);
-    });
-    
-    newAppProcess.stderr.on('data', (data) => {
-      log(`[APP REINICIADO ERROR] ${data.toString().trim()}`);
-    });
-    
-    // Atualizar a referência do processo
-    appProcess = newAppProcess;
+    // Configurar os listeners para o novo processo
+    setupProcessListeners(appProcess);
   }
 }, 60000);
 
