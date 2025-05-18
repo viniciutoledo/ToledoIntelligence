@@ -280,37 +280,45 @@ app.use((req, res, next) => {
     await db.query.users.findFirst();
     console.log('Database connection successful');
     
-    // Configuração sugerida pelo assistente do Replit para deploy
-  const HOST = process.env.HOST || "0.0.0.0";
+    // Configuração explícita para ouvir em 0.0.0.0 conforme recomendado pelo assistente
   const startServer = () => {
-      server.listen(port, HOST, () => {
-        console.log(`Server running at http://${HOST}:${port}`);
+      // Usar explicitamente 0.0.0.0 sem depender de variáveis de ambiente
+      server.listen(port, "0.0.0.0", () => {
+        console.log(`Server running on 0.0.0.0:${port}`);
+        // Iniciar o monitoramento após confirmar que o servidor está rodando
         startDocumentMonitor(15);
       }).on('error', (err: any) => {
-        if (err.code === 'EADDRINUSE') {
-          console.log(`Port ${port} is busy, retrying in 5 seconds...`);
-          setTimeout(startServer, 5000);
-        } else {
-          console.error('Server error:', err);
-        }
+        console.error('Server error:', err);
+        // Não tentar reconectar automaticamente - deixar o processo terminar
       });
     };
     
     startServer();
   } catch (error) {
-    console.error('Failed to connect to database:', error);
-    process.exit(1);
+    // Tratar erros de inicialização do banco de dados de forma mais suave
+    console.error('Database initialization error:', error);
+    // Continuar com um servidor básico mesmo com erro de banco de dados
+    server.listen(port, "0.0.0.0", () => {
+      console.log(`Server running on 0.0.0.0:${port} (fallback mode)`);
+    });
   }
 
-  // Simplificar o gerenciamento do ciclo de vida do servidor
-  // Não adicionar handlers para sinais que possam interferir com o deploy
+  // Evitar que o aplicativo termine após a inicialização
   
-  // Manter o processo ativo para evitar que o servidor termine imediatamente
+  // Manter o processo ativo indefinidamente
+  setInterval(() => {
+    console.log('Heartbeat - keeping application alive');
+  }, 60000);
+  
+  // Lidar com sinais de término de forma mais suave
   process.on('SIGTERM', () => {
     console.log('SIGTERM received, gracefully shutting down');
     server.close(() => {
       console.log('Server closed');
-      process.exit(0);
+      // Não encerrar o processo imediatamente
+      setTimeout(() => {
+        process.exit(0);
+      }, 5000);
     });
   });
 })();
