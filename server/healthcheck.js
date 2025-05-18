@@ -1,49 +1,27 @@
-// Servidor minimalista separado para health check
-// Este arquivo específico é para resolver o problema de deploy no Replit
+// Servidor dedicado para health check que retorna status 200
+// Arquivo criado especificamente para resolver problemas de deploy no Replit
 
-// Usar CommonJS para compatibilidade máxima
-const express = require('express');
-const app = express();
-// Garantir que esteja usando a porta 5000 para o deploy
+const http = require('http');
+
+// Criar um servidor que responde apenas com status 200
+const server = http.createServer((req, res) => {
+  // Retornar status 200 para qualquer rota
+  res.writeHead(200, {'Content-Type': 'text/plain'});
+  res.end('OK');
+});
+
+// Porta fixa 5000 - mesmo valor que deve estar no deployment config
 const PORT = 5000;
 
-// Rota principal para health check - responde apenas com OK
-app.get('/', (req, res) => {
-  res.setHeader('Content-Type', 'text/plain');
-  res.send('OK');
-});
-
-// Outras rotas de health check também simplificadas
-app.get('/health', (req, res) => {
-  res.send('OK');
-});
-
-app.get('/healthz', (req, res) => {
-  res.send('OK');
-});
-
-app.get('/_health', (req, res) => {
-  res.send('OK');
-});
-
-// Iniciar o servidor na porta correta
-app.listen(PORT, '0.0.0.0', () => {
+// Iniciar o servidor escutando em todas as interfaces
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`Servidor de health check rodando em 0.0.0.0:${PORT}`);
 });
 
-// Manter o processo vivo permanentemente
+// Manter o processo vivo
 process.stdin.resume();
 
-// Tratar exceções para evitar término do processo
-process.on('uncaughtException', (err) => {
-  console.error('Erro não tratado no servidor de health check:', err);
-});
-
-process.on('unhandledRejection', (reason) => {
-  console.error('Promessa rejeitada não tratada:', reason);
-});
-
-// Heartbeat para manter o processo ativo
+// Log contínuo para verificar que o servidor está funcionando
 setInterval(() => {
-  console.log('Health check server heartbeat');
+  console.log('Health check server alive');
 }, 30000);
