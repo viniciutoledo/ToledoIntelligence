@@ -13,10 +13,12 @@ import { initializeSecuritySettings } from "./security-settings";
 // Criar a aplicação Express
 const app = express();
 
-// Health check handler for root path (/) - não fazer acesso ao banco de dados 
-// nem usar content-type para evitar problemas no Cloud Run
+// Health check handler for root path (/) - absolutamente mínimo
+// Colocado antes de qualquer outro middleware para garantir que sempre funcione
 app.get('/', (req, res) => {
-  res.status(200).end('OK');
+  res.writeHead(200);
+  res.write('OK');
+  res.end();
 });
 
 // Health checks adicionais
@@ -205,6 +207,11 @@ app.use((req, res, next) => {
     console.error('Uncaught exception:', err);
   });
   
+  // Evitar que o processo termine por rejeições de promessa não tratadas  
+  process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  });
+  
   // Sincronizar o esquema do banco de dados antes de iniciar o servidor
   try {
     console.log('Sincronizando o esquema do banco de dados...');
@@ -313,9 +320,13 @@ app.use((req, res, next) => {
     });
   }
 
-  // Evitar que o aplicativo termine após a inicialização
+  // Configurar um intervalo para manter o processo em execução
+  const keepAliveInterval = setInterval(() => {
+    console.log("Keepalive heartbeat - servidor ativo");
+  }, 30000); // A cada 30 segundos
   
-  // Manter o processo ativo indefinidamente
+  // Garantir que o intervalo não impede o processo de terminar quando necessário
+  keepAliveInterval.unref();
   setInterval(() => {
     console.log('Heartbeat - keeping application alive');
   }, 60000);
