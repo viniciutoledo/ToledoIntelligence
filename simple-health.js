@@ -1,38 +1,24 @@
-// Arquivo para resolver problemas de deploy no Replit
-// Este arquivo deve ser colocado na raiz do projeto, exatamente como recomendado pelo assistente
+// Servidor ultra-minimalista para deploy no Replit
+// Remova qualquer coisa que possa causar falha
 
-// Usar o módulo HTTP nativo
 const http = require('http');
 
-// Criar um servidor super simples para health checks
-const server = http.createServer((req, res) => {
-  // Responder a qualquer rota com OK
+// Servidor que responde OK para qualquer rota
+http.createServer((req, res) => {
   res.writeHead(200, {'Content-Type': 'text/plain'});
   res.end('OK');
+}).listen(5000, '0.0.0.0', () => {
+  console.log('Servidor rodando na porta 5000');
 });
 
-// Usar a porta 5000 explicitamente, sem variáveis de ambiente
-const PORT = 5000;
-
-// Iniciar o servidor
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`Servidor de health check rodando em 0.0.0.0:${PORT}`);
-});
-
-// Evitar que o processo termine
-console.log('Mantendo o processo vivo...');
+// Manter o processo vivo
 process.stdin.resume();
 
-// Evitar que erros encerrem o processo
-process.on('uncaughtException', (err) => {
-  console.error('Erro capturado:', err);
-});
+// Desabilitar encerramento por exceções
+process.on('uncaughtException', () => {});
+process.on('unhandledRejection', () => {});
 
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('Promessa rejeitada não tratada:', reason);
-});
-
-// Verificação periódica para confirmar que está funcionando
+// Heartbeat simples
 setInterval(() => {
-  console.log('Health check server ainda ativo');
-}, 30000);
+  console.log('Servidor ativo');
+}, 60000);
