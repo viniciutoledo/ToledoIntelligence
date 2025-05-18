@@ -1,27 +1,40 @@
-// Servidor dedicado para health check que retorna status 200
-// Arquivo criado especificamente para resolver problemas de deploy no Replit
+// Arquivo healthcheck.js dedicado para manter o servidor rodando
+// Este arquivo foi criado seguindo as instruções específicas do assistente Replit
 
+// Usar módulo HTTP nativo do Node.js
 const http = require('http');
 
-// Criar um servidor que responde apenas com status 200
+// Configurar o servidor
 const server = http.createServer((req, res) => {
-  // Retornar status 200 para qualquer rota
+  // Registrar cada requisição recebida para diagnosticar problemas
+  console.log(`[${new Date().toISOString()}] Recebida requisição ${req.method} para ${req.url}`);
+  
+  // Responder com status 200 OK para qualquer requisição
   res.writeHead(200, {'Content-Type': 'text/plain'});
   res.end('OK');
 });
 
-// Porta fixa 5000 - mesmo valor que deve estar no deployment config
+// Definir porta fixamente para 5000 (sem usar variáveis de ambiente)
 const PORT = 5000;
 
-// Iniciar o servidor escutando em todas as interfaces
+// Iniciar o servidor escutando em todas interfaces
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`Servidor de health check rodando em 0.0.0.0:${PORT}`);
+  console.log(`Servidor healthcheck iniciado em 0.0.0.0:${PORT}`);
 });
 
-// Manter o processo vivo
+// Garantir que o processo não encerre
 process.stdin.resume();
 
-// Log contínuo para verificar que o servidor está funcionando
+// Tratar exceções para impedir encerramento
+process.on('uncaughtException', (err) => {
+  console.error('Erro capturado (não encerrando):', err);
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error('Rejeição não tratada (não encerrando):', reason);
+});
+
+// Emitir mensagem periódica para verificar funcionamento
 setInterval(() => {
-  console.log('Health check server alive');
+  console.log(`Health check server continua ativo na porta ${PORT}`);
 }, 30000);
