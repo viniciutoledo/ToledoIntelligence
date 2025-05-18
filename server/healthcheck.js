@@ -4,7 +4,8 @@
 // Usar CommonJS para compatibilidade máxima
 const express = require('express');
 const app = express();
-const PORT = process.env.PORT || 3000;
+// Garantir que esteja usando a porta 5000 para o deploy
+const PORT = 5000;
 
 // Rota principal para health check - responde apenas com OK
 app.get('/', (req, res) => {
