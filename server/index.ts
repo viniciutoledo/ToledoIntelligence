@@ -10,11 +10,12 @@ import fs from "fs";
 import { startDocumentMonitor } from "./document-monitor";
 import { initializeSecuritySettings } from "./security-settings";
 
+// Criar a aplicação Express
 const app = express();
 
-// ÚNICO ENDPOINT NECESSÁRIO PARA O DEPLOY: Rota raiz
-app.get('/', (_req, res) => {
-  res.status(200).type('text/plain').send('OK');
+// Configuração da rota raiz para health check - EXTREMAMENTE IMPORTANTE PARA O DEPLOY
+app.get('/', (req, res) => {
+  return res.status(200).send('OK');
 });
 
 // Health checks adicionais
