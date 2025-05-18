@@ -269,10 +269,10 @@ app.use((req, res, next) => {
   }
 
   // Usar a porta fornecida pelo ambiente ou 5000 como fallback
-  const port = process.env.PORT || 5000;
+  const port = parseInt(process.env.PORT || "5000");
   
-  // Usar um método mais simples para listen que é mais compatível com ambientes de produção
-  server.listen(port, () => {
+  // Configurar para ouvir em todas as interfaces, conforme recomendado pelo Replit
+  server.listen(port, "0.0.0.0", () => {
     log(`serving on port ${port}`);
 
     // Iniciar monitoramento automático de documentos (verificação a cada 15 minutos)
@@ -281,4 +281,13 @@ app.use((req, res, next) => {
 
   // Simplificar o gerenciamento do ciclo de vida do servidor
   // Não adicionar handlers para sinais que possam interferir com o deploy
+  
+  // Manter o processo ativo para evitar que o servidor termine imediatamente
+  process.on('SIGTERM', () => {
+    console.log('SIGTERM received, gracefully shutting down');
+    server.close(() => {
+      console.log('Server closed');
+      process.exit(0);
+    });
+  });
 })();
