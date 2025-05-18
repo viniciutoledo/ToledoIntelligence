@@ -30,8 +30,8 @@ function Router() {
   return (
     <Switch>
       {/* Public routes */}
-      <Route path="/" component={LandingPage} />
       <Route path="/app" component={LandingPage} />
+      <Route path="/home" component={LandingPage} />
       <Route path="/auth" component={AuthPage} />
       <Route path="/admin-login" component={CpanelLoginPage} />
       

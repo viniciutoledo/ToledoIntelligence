@@ -13,9 +13,10 @@ import { initializeSecuritySettings } from "./security-settings";
 // Criar a aplicação Express
 const app = express();
 
-// Configuração da rota raiz para health check - EXTREMAMENTE IMPORTANTE PARA O DEPLOY
+// CONFIGURAÇÃO DE HEALTH CHECK PARA DEPLOY NO REPLIT
 app.get('/', (req, res) => {
-  return res.status(200).send('OK');
+  res.set('Content-Type', 'text/plain');
+  res.status(200).send('OK');
 });
 
 // Health checks adicionais
