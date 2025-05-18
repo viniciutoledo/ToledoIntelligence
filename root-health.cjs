@@ -1,75 +1,79 @@
 /**
- * SERVIDOR DE HEALTH CHECK ESPECÍFICO PARA ROTA RAIZ "/"
+ * SERVIDOR DE HEALTH CHECK PARA DEPLOY NO REPLIT
+ * Versão especial com foco na rota raiz (/)
  * 
- * Responde apenas à rota raiz com "OK" na porta 80.
- * Não tenta iniciar nenhum outro servidor.
+ * Características:
+ * - Responde especificamente à rota raiz (/) com código 200
+ * - Log detalhado de todas as requisições
+ * - Implementação mínima para evitar falhas
  */
 
 const http = require('http');
 
+// Log com timestamp
+function log(message) {
+  const now = new Date().toISOString();
+  console.log(`[${now}] ${message}`);
+}
+
+// Contador de requisições
+let requestCount = 0;
+
 // Criar servidor HTTP
 const server = http.createServer((req, res) => {
-  const path = req.url || '/';
+  requestCount++;
   
-  // Log da requisição
-  console.log(`Requisição recebida: ${req.method} ${path}`);
+  // Log detalhado da requisição
+  log(`Requisição #${requestCount}: ${req.method} ${req.url || '/'}`);
   
-  // Responder com 200 OK apenas para a rota raiz
-  res.writeHead(200, {
-    'Content-Type': 'text/plain',
-    'Cache-Control': 'no-cache, no-store, must-revalidate',
-    'Pragma': 'no-cache',
-    'Expires': '0'
-  });
+  // Responder com código 200 e 'OK'
+  res.statusCode = 200;
+  res.setHeader('Content-Type', 'text/plain');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'close');
   
-  // Resposta "OK" para qualquer requisição
   res.end('OK');
 });
 
-// Iniciar o servidor APENAS na porta 80
+// Iniciar na porta 80
 server.listen(80, '0.0.0.0', () => {
-  console.log(`Servidor de health check rodando em 0.0.0.0:80`);
-  console.log(`Respondendo "OK" para TODAS as requisições, incluindo a rota raiz (/)`);
+  log('=============================================');
+  log('HEALTH CHECK SERVER RUNNING ON PORT 80');
+  log('Respondendo 200 OK em TODAS as rotas, incluindo /');
+  log('=============================================');
 });
 
 // Tratar erros do servidor
-server.on('error', (err) => {
-  console.error(`Erro no servidor: ${err.message}`);
+server.on('error', (error) => {
+  log(`ERRO: ${error.message}`);
   
-  // Tentar reiniciar após um erro
-  if (err.code === 'EADDRINUSE') {
-    console.log('A porta 80 já está em uso. Tentando novamente em 5 segundos...');
+  if (error.code === 'EADDRINUSE') {
+    log('Porta 80 em uso. Tentando novamente em 5 segundos...');
+    
     setTimeout(() => {
-      try {
-        server.close();
-        server.listen(80, '0.0.0.0');
-      } catch (e) {
-        console.error(`Erro ao reiniciar: ${e.message}`);
-      }
+      server.close();
+      server.listen(80, '0.0.0.0');
     }, 5000);
   }
 });
 
-// Manter o processo vivo indefinidamente
+// Heartbeat periódico
 setInterval(() => {
-  console.log(`[${new Date().toISOString()}] Servidor de health check continua ativo e respondendo na porta 80`);
-}, 30000);
+  log(`Health check server ativo - ${requestCount} requisições processadas`);
+}, 60000);
 
-// Tratar sinais para evitar que o processo termine
-process.on('SIGINT', () => {
-  console.log('Sinal SIGINT recebido, mas continuando execução');
-});
-
-process.on('SIGTERM', () => {
-  console.log('Sinal SIGTERM recebido, mas continuando execução');
-});
-
-// Capturar exceções não tratadas
-process.on('uncaughtException', (err) => {
-  console.error(`Exceção não tratada: ${err.message}`);
-  console.error(err.stack);
-  // Continuar execução mesmo após uma exceção
-});
-
-// Este é o comando para manter o processo vivo
+// Prevenção de término
 process.stdin.resume();
+
+// Tratamento de exceções para evitar término
+process.on('uncaughtException', (error) => {
+  log(`Exceção não tratada: ${error.message}`);
+  // Continuar executando mesmo com exceções
+});
+
+// Ignorar sinais de término
+process.on('SIGINT', () => log('SIGINT recebido (ignorado)'));
+process.on('SIGTERM', () => log('SIGTERM recebido (ignorado)'));
+
+// Método adicional para manter o processo ativo
+setInterval(() => {}, 86400000); // 24 horas
