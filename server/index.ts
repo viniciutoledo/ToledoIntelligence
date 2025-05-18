@@ -250,7 +250,7 @@ app.use((req, res, next) => {
     const message = err.message || "Internal Server Error";
 
     res.status(status).json({ message });
-    throw err;
+    console.error(err);
   });
 
   // Configurar Vite para desenvolvimento ou static para produção
@@ -268,10 +268,9 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // Usar a porta fornecida pelo ambiente ou 5000 como fallback
+  // Configurar para ouvir em todas as interfaces (0.0.0.0) conforme recomendado pelo Replit
   const port = parseInt(process.env.PORT || "5000");
   
-  // Configurar para ouvir em todas as interfaces, conforme recomendado pelo Replit
   server.listen(port, "0.0.0.0", () => {
     log(`serving on port ${port}`);
 
