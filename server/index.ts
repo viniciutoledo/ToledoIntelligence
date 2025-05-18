@@ -194,7 +194,11 @@ app.use((req, res, next) => {
   next();
 });
 
+// Função principal encapsulada para evitar saída prematura
 (async () => {
+  // Processo não deve terminar após a execução principal
+  process.stdin.resume();
+  
   // Sincronizar o esquema do banco de dados antes de iniciar o servidor
   try {
     console.log('Sincronizando o esquema do banco de dados...');
@@ -271,8 +275,9 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // Configurar para ouvir em todas as interfaces (0.0.0.0) conforme recomendado pelo Replit
-  const port = parseInt(process.env.PORT || "5000");
+  // Configurar para ouvir na porta fornecida pelo ambiente
+  // Usar explicitamente a variável de ambiente PORT como recomenado pelo Replit
+  const PORT = parseInt(process.env.PORT || "5000");
   
   // Testar conexão com o banco de dados antes de iniciar o servidor
   try {
@@ -280,16 +285,15 @@ app.use((req, res, next) => {
     await db.query.users.findFirst();
     console.log('Database connection successful');
     
-    // Configuração explícita para ouvir em 0.0.0.0 conforme recomendado pelo assistente
-  const startServer = () => {
-      // Usar explicitamente 0.0.0.0 sem depender de variáveis de ambiente
-      server.listen(port, "0.0.0.0", () => {
-        console.log(`Server running on 0.0.0.0:${port}`);
+    // Configuração seguindo recomendações do assistente do Replit
+    const startServer = () => {
+      // Usar a variável de ambiente PORT em vez de uma porta fixa
+      server.listen(PORT, () => {
+        console.log(`Server running on port ${PORT}`);
         // Iniciar o monitoramento após confirmar que o servidor está rodando
         startDocumentMonitor(15);
       }).on('error', (err: any) => {
         console.error('Server error:', err);
-        // Não tentar reconectar automaticamente - deixar o processo terminar
       });
     };
     
@@ -298,8 +302,8 @@ app.use((req, res, next) => {
     // Tratar erros de inicialização do banco de dados de forma mais suave
     console.error('Database initialization error:', error);
     // Continuar com um servidor básico mesmo com erro de banco de dados
-    server.listen(port, "0.0.0.0", () => {
-      console.log(`Server running on 0.0.0.0:${port} (fallback mode)`);
+    server.listen(PORT, () => {
+      console.log(`Server running on port ${PORT} (fallback mode)`);
     });
   }
 
