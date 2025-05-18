@@ -13,17 +13,9 @@ import { initializeSecuritySettings } from "./security-settings";
 // Criar a aplicação Express
 const app = express();
 
-// CONFIGURAÇÃO DE HEALTH CHECK PARA DEPLOY NO REPLIT COM TESTE DE BANCO DE DADOS
-app.get('/', async (req, res) => {
-  try {
-    // Testar a conexão com o banco de dados
-    await db.query.users.findFirst();
-    res.set('Content-Type', 'text/plain');
-    res.status(200).send('OK');
-  } catch (error) {
-    console.error('Database connection error:', error);
-    res.status(500).send('Database connection error');
-  }
+// Explicit health check handler for root path (/) as suggested by Replit assistant
+app.get('/', (req, res) => {
+  res.status(200).send('OK');
 });
 
 // Health checks adicionais
@@ -53,6 +45,10 @@ if (process.env.NODE_ENV === "production") {
 
   // SPA fallback para todas as rotas que não são API ou health checks
   app.get('*', (req, res, next) => {
+    // Ensure server listens on all interfaces
+    const PORT = process.env.PORT || 5000;
+    const HOST = process.env.HOST || '0.0.0.0';
+    
     if (req.path === '/health' || req.path === '/_health' || req.path === '/' || req.path.startsWith('/api/')) {
       // Deixar que os endpoints de API e health check sejam tratados pelos handlers específicos
       next();
@@ -284,12 +280,23 @@ app.use((req, res, next) => {
     await db.query.users.findFirst();
     console.log('Database connection successful');
     
-    server.listen(port, "0.0.0.0", () => {
-      log(`serving on port ${port}`);
-  
-      // Iniciar monitoramento automático de documentos (verificação a cada 15 minutos)
-      startDocumentMonitor(15);
-    });
+    // Configuração sugerida pelo assistente do Replit para deploy
+  const HOST = process.env.HOST || "0.0.0.0";
+  const startServer = () => {
+      server.listen(port, HOST, () => {
+        console.log(`Server running at http://${HOST}:${port}`);
+        startDocumentMonitor(15);
+      }).on('error', (err: any) => {
+        if (err.code === 'EADDRINUSE') {
+          console.log(`Port ${port} is busy, retrying in 5 seconds...`);
+          setTimeout(startServer, 5000);
+        } else {
+          console.error('Server error:', err);
+        }
+      });
+    };
+    
+    startServer();
   } catch (error) {
     console.error('Failed to connect to database:', error);
     process.exit(1);
