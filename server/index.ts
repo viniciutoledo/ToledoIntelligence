@@ -13,18 +13,8 @@ import { initializeSecuritySettings } from "./security-settings";
 // Criar a aplicação Express
 const app = express();
 
-// IMPORTANTE: Esta é a rota mais crítica para o deploy no Replit - NUNCA MODIFICAR
-// Estas respostas são exatamente o que o Replit espera para o health check
-app.use('/', (req, res, next) => {
-  if (req.path === '/') {
-    // Resposta mais básica possível para o health check
-    res.setHeader('Content-Type', 'text/plain');
-    return res.status(200).send('OK');
-  }
-  next();
-});
-
-// Health checks adicionais
+// Rotas para health check do Replit
+// Removida a interceptação da rota raiz para permitir que a landing page seja exibida
 app.get('/health', (_req, res) => {
   res.status(200).type('text/plain').send('OK');
 });
